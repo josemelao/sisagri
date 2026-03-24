@@ -28,6 +28,49 @@ const modulosInicializados = new Set();
 let globalSearchIndex = [];
 let globalSearchIndexReady = false;
 let globalSearchIndexBuilding = false;
+let bootHideTimer = null;
+
+const bootState = {
+  screen: null,
+  title: null,
+  sub: null,
+  progressBar: null,
+};
+
+function initBootScreen() {
+  bootState.screen = document.getElementById("boot-screen");
+  bootState.title = document.getElementById("boot-title");
+  bootState.sub = document.getElementById("boot-sub");
+  bootState.progressBar = document.getElementById("boot-progress-bar");
+}
+
+function setBootProgress(percent, title, sub) {
+  if (!bootState.screen) return;
+  if (title && bootState.title) bootState.title.textContent = title;
+  if (sub && bootState.sub) bootState.sub.textContent = sub;
+  if (bootState.progressBar) {
+    bootState.progressBar.style.width = `${Math.max(8, Math.min(100, percent))}%`;
+  }
+}
+
+function hideBootScreen() {
+  if (!bootState.screen) return;
+  if (bootHideTimer) clearTimeout(bootHideTimer);
+  bootHideTimer = setTimeout(() => {
+    bootState.screen.classList.add("is-hidden");
+    document.body.classList.remove("app-loading");
+    document.body.style.overflow = "";
+  }, 260);
+}
+
+async function waitForInitialPaint() {
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  if (document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (_) {}
+  }
+}
 
 /** Carrega todas as coleções do DB para as variáveis locais */
 function carregarDados() {
@@ -75,9 +118,12 @@ function scheduleGlobalSearchIndexBuild() {
    INICIALIZAÇÃO
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
+  initBootScreen();
+  setBootProgress(12, "Carregando sistema", "Conectando ao banco e preparando a página inicial.");
   // dbInit() carrega os dados (localStorage ou dados.js)
   // e só então renderiza a aplicação
   dbInit().then(() => {
+    setBootProgress(52, "Dados carregados", "Organizando os módulos e sincronizando as informações iniciais.");
     carregarDados();
     initDate();
     initNavigation();
@@ -87,6 +133,24 @@ document.addEventListener("DOMContentLoaded", () => {
     initMobile();
     initLightbox();
     modulosInicializados.add("dashboard");
+    setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experiência.");
+    return waitForInitialPaint();
+  }).then(() => {
+    if (bootState.screen) {
+      bootState.screen.classList.add("is-complete");
+      bootState.screen.setAttribute("aria-busy", "false");
+    }
+    setBootProgress(100, "Sistema pronto", "Tudo foi carregado com sucesso. Você já pode usar a página.");
+    hideBootScreen();
+  }).catch((error) => {
+    console.error("[App] Falha ao inicializar a aplicação.", error);
+    if (bootState.screen) {
+      bootState.screen.classList.remove("is-complete");
+      bootState.screen.setAttribute("aria-busy", "false");
+    }
+    setBootProgress(100, "Falha ao carregar", "O carregamento não foi concluído corretamente. Atualize a página para tentar novamente.");
+    document.body.classList.remove("app-loading");
+    document.body.style.overflow = "";
   });
 });
 

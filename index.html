@@ -12,7 +12,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body class="app-loading">
+
+  <div id="boot-screen" aria-live="polite" aria-busy="true">
+    <div class="boot-box">
+      <div class="boot-spinner" id="boot-spinner"></div>
+      <div class="boot-check" id="boot-check" aria-hidden="true">
+        <i class="ph-bold ph-check"></i>
+      </div>
+      <div class="boot-title" id="boot-title">Carregando sistema</div>
+      <div class="boot-sub" id="boot-sub">Conectando ao banco e preparando a página inicial.</div>
+      <div class="boot-progress" aria-hidden="true">
+        <span class="boot-progress-bar" id="boot-progress-bar"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- ===================== SIDEBAR ===================== -->
   <aside class="sidebar" id="sidebar">

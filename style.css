@@ -59,10 +59,124 @@ body {
   overflow-x: hidden;
 }
 
+body.app-loading {
+  overflow: hidden;
+}
+
+body.app-loading .sidebar,
+body.app-loading .main-content {
+  visibility: hidden;
+}
+
 a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
 input { font-family: inherit; }
+
+/* ============================================================
+   BOOT / LOADING
+   ============================================================ */
+#boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top, rgba(45,106,79,0.12), transparent 42%),
+    linear-gradient(180deg, #f6f7f2 0%, #eef1e8 100%);
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+#boot-screen.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-box {
+  width: min(420px, calc(100vw - 32px));
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(221,224,213,0.95);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 34px 32px;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.boot-spinner,
+.boot-check {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boot-spinner {
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: boot-spin .8s linear infinite;
+}
+
+.boot-check {
+  display: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.15rem;
+  box-shadow: 0 10px 25px rgba(45,106,79,0.24);
+}
+
+#boot-screen.is-complete .boot-spinner {
+  display: none;
+}
+
+#boot-screen.is-complete .boot-check {
+  display: flex;
+  animation: boot-check-pop 0.24s ease-out;
+}
+
+@keyframes boot-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes boot-check-pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.boot-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  margin-bottom: 6px;
+}
+
+.boot-sub {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.boot-progress {
+  margin-top: 18px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.boot-progress-bar {
+  display: block;
+  height: 100%;
+  width: 18%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #235c42 0%, #2d6a4f 55%, #5a8f73 100%);
+  transition: width 0.25s ease;
+}
 
 /* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar { width: 6px; }
