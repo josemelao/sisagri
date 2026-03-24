@@ -8,33 +8,39 @@
 /* ============================================================
    AUTENTICAÇÃO
    ============================================================ */
-function fazerLogin() {
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
-  if (DB.adminLogin(senha)) {
+  if (await DB.adminLogin(email, senha)) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-app').style.display = 'block';
     initAdmin();
   } else {
-    document.getElementById('login-error').textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('login-error').textContent = 'E-mail ou senha incorretos. Tente novamente.';
+    document.getElementById('login-email').value = email;
     document.getElementById('login-senha').value = '';
   }
 }
+
+document.getElementById('login-email').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') fazerLogin();
+});
 
 document.getElementById('login-senha').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') fazerLogin();
 });
 
-function fazerLogout() {
-  DB.adminLogout();
+async function fazerLogout() {
+  await DB.adminLogout();
   location.reload();
 }
 
 // Verifica se já estava logado (sessão ativa)
 document.addEventListener('DOMContentLoaded', () => {
-  dbInit().then(() => {
+  dbInit().then(async () => {
     atualizarStatusBanco();
     window.addEventListener('db:status-changed', handleDbStatusChanged);
-    if (DB.isAdminLoggedIn()) {
+    if (await DB.isAdminLoggedIn()) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-app').style.display = 'block';
       initAdmin();

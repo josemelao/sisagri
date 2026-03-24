@@ -23,8 +23,6 @@ const DB_CONFIG = {
   SUPABASE_KEY:    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpdWp4ZW1wb2RpbWVnZG9leHFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjY2MzEsImV4cCI6MjA4OTk0MjYzMX0.D4cFcM50yJoxGohOfKQ4P7BoJVF60EVZUFMjjPsQZ8o',              // anon public key
   LS_KEY:          'smader_db_v1', // chave principal do localStorage
   LEGACY_LS_KEY:   'seagri_db_v1', // chave antiga para migração segura
-  ADMIN_PASS_KEY:  'smader_admin',  // chave da senha admin no localStorage
-  ADMIN_PASSWORD:  'smader2026',   // ← altere esta senha antes de usar
 };
 
 /* ============================================================
@@ -620,24 +618,36 @@ const DB = {
     }
   },
 
-  /* ---- Autenticação admin (simples, localStorage) ---- */
+  /* ---- Autenticação admin (Supabase Auth) ---- */
 
   /** Verifica se a sessão admin está ativa */
-  isAdminLoggedIn() {
-    return sessionStorage.getItem(DB_CONFIG.ADMIN_PASS_KEY) === 'ok';
-  },
-
-  /** Tenta fazer login com a senha fornecida */
-  adminLogin(senha) {
-    if (senha === DB_CONFIG.ADMIN_PASSWORD) {
-      sessionStorage.setItem(DB_CONFIG.ADMIN_PASS_KEY, 'ok');
-      return true;
+  async isAdminLoggedIn() {
+    if (!_sb) return false;
+    const { data, error } = await _sb.auth.getSession();
+    if (error) {
+      console.error('[DB] Falha ao verificar sessão admin:', error);
+      return false;
     }
-    return false;
+    return !!data.session;
   },
 
-  adminLogout() {
-    sessionStorage.removeItem(DB_CONFIG.ADMIN_PASS_KEY);
+  /** Tenta fazer login com email e senha */
+  async adminLogin(email, senha) {
+    if (!_sb) return false;
+    const { error } = await _sb.auth.signInWithPassword({ email, password: senha });
+    if (error) {
+      console.error('[DB] Falha no login admin:', error);
+      return false;
+    }
+    return true;
+  },
+
+  async adminLogout() {
+    if (!_sb) return;
+    const { error } = await _sb.auth.signOut();
+    if (error) {
+      console.error('[DB] Falha no logout admin:', error);
+    }
   },
 
   /** Gera o conteúdo do dados.js atualizado para download */
