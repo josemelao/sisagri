@@ -78,12 +78,6 @@ function _createSupabaseClient() {
   return factory(DB_CONFIG.SUPABASE_URL, DB_CONFIG.SUPABASE_KEY);
 }
 
-function _getInitialRecord(colecao, id) {
-  const lista = window.DADOS_INICIAIS?.[colecao];
-  if (!Array.isArray(lista)) return null;
-  return lista.find(item => item.id === id) || null;
-}
-
 function _normalizeSupabaseRow(colecao, row) {
   if (!row) return row;
   switch (colecao) {
@@ -94,12 +88,11 @@ function _normalizeSupabaseRow(colecao, row) {
         lotacao: row.lotacao || row.setor || '',
       };
     case 'veiculos':
-      const initialVeiculo = _getInitialRecord('veiculos', row.id);
       return {
         ...row,
-        icone: row.icone || initialVeiculo?.icone || 'ph-truck',
-        cor: row.cor || initialVeiculo?.cor || '#5c7a3d',
-        cor_veiculo: row.cor_veiculo || initialVeiculo?.cor_veiculo || '',
+        icone: row.icone || 'ph-truck',
+        cor: row.cor || '#5c7a3d',
+        cor_veiculo: row.cor_veiculo || '',
         motorista: row.motorista || row.motoristas || '',
         motoristas: row.motoristas || row.motorista || '',
         motorista_ids: Array.isArray(row.motorista_ids) ? row.motorista_ids : [],
