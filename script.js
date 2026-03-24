@@ -24,6 +24,10 @@ let avisos        = [];
 let agendaEventos = [];
 let escalaFerias  = [];
 let acessoRapido  = [];
+const modulosInicializados = new Set();
+let globalSearchIndex = [];
+let globalSearchIndexReady = false;
+let globalSearchIndexBuilding = false;
 
 /** Carrega todas as coleções do DB para as variáveis locais */
 function carregarDados() {
@@ -43,11 +47,29 @@ function carregarDados() {
   acessoRapido  = DB.get('acessoRapido');
 }
 
-window.addEventListener('db:collection-updated', (event) => {
-  if (event.detail?.colecao === 'arquivos') {
-    arquivos = DB.get('arquivos');
-  }
+window.addEventListener('db:collection-updated', () => {
+  carregarDados();
+  invalidateGlobalSearchIndex();
+  scheduleGlobalSearchIndexBuild();
 });
+
+function invalidateGlobalSearchIndex() {
+  globalSearchIndex = [];
+  globalSearchIndexReady = false;
+  globalSearchIndexBuilding = false;
+}
+
+function scheduleGlobalSearchIndexBuild() {
+  if (globalSearchIndexReady || globalSearchIndexBuilding) return;
+  globalSearchIndexBuilding = true;
+
+  const run = () => rebuildGlobalSearchIndex();
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 1500 });
+  } else {
+    setTimeout(run, 150);
+  }
+}
 
 /* ============================================================
    INICIALIZAÇÃO
@@ -61,20 +83,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initNavigation();
     initDashboardSide();
     initDashBottom();
-    initAgenda();
-    initFuncionarios();
-    initManuais();
-    initProcessos();
-    initArquivos();
-    initInformacoes();
-    initVeiculos();
-    initSistemas();
-    initServicos();
-    initRelatorios();
     initSearch();
-    initFuncSearch();
     initMobile();
     initLightbox();
+    modulosInicializados.add("dashboard");
   });
 });
 
@@ -462,6 +474,8 @@ function initNavigation() {
  * @param {string} pageId - Ex: "dashboard", "funcionarios"
  */
 function navigateTo(pageId) {
+  ensureModuleInitialized(pageId);
+
   // Oculta todas as páginas
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   // Mostra a página selecionada
@@ -478,6 +492,48 @@ function navigateTo(pageId) {
 
   // Scroll para o topo
   document.getElementById("main-content").scrollTo({ top: 0 });
+}
+
+function ensureModuleInitialized(pageId) {
+  if (modulosInicializados.has(pageId)) return;
+
+  switch (pageId) {
+    case "funcionarios":
+      initFuncionarios();
+      initFuncSearch();
+      break;
+    case "manuais":
+      initManuais();
+      break;
+    case "processos":
+      initProcessos();
+      break;
+    case "arquivos":
+      initArquivos();
+      break;
+    case "informacoes":
+      initInformacoes();
+      break;
+    case "veiculos":
+      initVeiculos();
+      break;
+    case "sistemas":
+      initSistemas();
+      break;
+    case "servicos":
+      initServicos();
+      break;
+    case "agenda":
+      initAgenda();
+      break;
+    case "relatorios":
+      initRelatorios();
+      break;
+    default:
+      return;
+  }
+
+  modulosInicializados.add(pageId);
 }
 
 
@@ -1698,6 +1754,8 @@ function initSearch() {
   const resultsBox = document.getElementById("search-results");
   if (!input || !resultsBox) return;
 
+  scheduleGlobalSearchIndexBuild();
+
   input.addEventListener("input", () => {
     const q = input.value.trim();
     if (q.length < 2) { resultsBox.classList.remove("visible"); resultsBox.innerHTML = ""; return; }
@@ -1739,172 +1797,149 @@ function initSearch() {
  */
 function buildGlobalIndex(query) {
   const q = query.toLowerCase();
-  const results = [];
+  if (!globalSearchIndexReady) rebuildGlobalSearchIndex();
+  return globalSearchIndex.filter(item => item.searchText.includes(q));
+}
 
-  /* ---- helper: adiciona match se valor contém a query ---- */
+function rebuildGlobalSearchIndex() {
+  const entries = [];
+
   function add(modulo, itemNome, campo, valor, action) {
-    if (String(valor).toLowerCase().includes(q))
-      results.push({ modulo, itemNome, campo, valor: String(valor), action });
+    if (valor === undefined || valor === null || valor === "") return;
+    entries.push({
+      modulo,
+      itemNome,
+      campo,
+      valor: String(valor),
+      action,
+      searchText: String(valor).toLowerCase()
+    });
   }
 
-  // ── FUNCIONÁRIOS ──────────────────────────────────────────
   funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };
-    add("Funcionários", f.nome, "Nome",     f.nome,     ir);
-    add("Funcionários", f.nome, "Cargo",    f.cargo,    ir);
-    add("Funcionários", f.nome, "Setor",    f.setor,    ir);
-    add("Funcionários", f.nome, "Telefone", f.telefone, ir);
-    add("Funcionários", f.nome, "E-mail",   f.email,    ir);
-    add("Funcionários", f.nome, "Descrição",f.descricao,ir);
+    add("Funcionarios", f.nome, "Nome", f.nome, ir);
+    add("Funcionarios", f.nome, "Cargo", f.cargo, ir);
+    add("Funcionarios", f.nome, "Setor", f.setor, ir);
+    add("Funcionarios", f.nome, "Telefone", f.telefone, ir);
+    add("Funcionarios", f.nome, "E-mail", f.email, ir);
+    add("Funcionarios", f.nome, "Descricao", f.descricao, ir);
   });
 
-  // ── MANUAIS ───────────────────────────────────────────────
   manuais.forEach(m => {
     const ir = () => { navigateTo("manuais"); setTimeout(() => openManual(m.id), 120); };
-    add("Manuais", m.titulo, "Título",    m.titulo,    ir);
+    add("Manuais", m.titulo, "Titulo", m.titulo, ir);
     add("Manuais", m.titulo, "Categoria", m.categoria, ir);
-    add("Manuais", m.titulo, "Observações", m.observacoes, ir);
-    m.passos.forEach((p, i) => add("Manuais", m.titulo, `Passo ${i+1}`, p, ir));
-    m.documentos.forEach(d => add("Manuais", m.titulo, "Documento necessário", d, ir));
+    add("Manuais", m.titulo, "Observacoes", m.observacoes, ir);
+    (m.passos || []).forEach((p, i) => add("Manuais", m.titulo, `Passo ${i + 1}`, typeof p === "object" ? (p.texto || p.descricao || "") : p, ir));
+    (m.documentos || []).forEach(d => add("Manuais", m.titulo, "Documento necessario", d, ir));
   });
 
-  // ── PROCESSOS ─────────────────────────────────────────────
   processos.forEach(p => {
     const ir = () => { navigateTo("processos"); setTimeout(() => openProcesso(p.id), 120); };
-    add("Processos", p.titulo, "Título",    p.titulo,    ir);
+    add("Processos", p.titulo, "Titulo", p.titulo, ir);
     add("Processos", p.titulo, "Categoria", p.categoria, ir);
-    p.etapas.forEach(e => {
-      add("Processos", p.titulo, `Etapa: ${e.titulo}`, e.descricao, ir);
-    });
+    (p.etapas || []).forEach(e => add("Processos", p.titulo, `Etapa: ${e.titulo}`, e.descricao, ir));
   });
 
-  // ── ARQUIVOS ──────────────────────────────────────────────
   arquivos.forEach(a => {
     const ir = () => navigateTo("arquivos");
     add("Arquivos", a.nome, "Nome", a.nome, ir);
     add("Arquivos", a.nome, "Tipo", a.tipo, ir);
-    a.tags.forEach(t => add("Arquivos", a.nome, "Tag", t, ir));
+    (a.tags || []).forEach(t => add("Arquivos", a.nome, "Tag", t, ir));
   });
 
-  // ── INFORMAÇÕES — Secretaria ──────────────────────────────
   infoJuridico.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openJuridico(item.id), 120); };
-    add("Informações", item.titulo, "Título", item.titulo, ir);
-    item.campos.forEach(c => add("Informações", item.titulo, c.label, c.valor, ir));
+    add("Informacoes", item.titulo, "Titulo", item.titulo, ir);
+    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
   });
 
-  // ── INFORMAÇÕES — Município ───────────────────────────────
   infoMunicipio.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openMunicipio(item.id), 120); };
-    add("Informações", item.titulo, "Título", item.titulo, ir);
-    item.campos.forEach(c => add("Informações", item.titulo, c.label, c.valor, ir));
+    add("Informacoes", item.titulo, "Titulo", item.titulo, ir);
+    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
   });
 
-  // ── INFORMAÇÕES — Órgãos ──────────────────────────────────
   infoOrgaos.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openOrgao(item.id), 120); };
-    add("Informações", item.titulo, "Nome",       item.titulo,       ir);
-    add("Informações", item.titulo, "Nome completo", item.nome_completo, ir);
-    add("Informações", item.titulo, "Atribuição", item.atribuicao,   ir);
-    item.campos.forEach(c => add("Informações", item.titulo, c.label, c.valor, ir));
+    add("Informacoes", item.titulo, "Nome", item.titulo, ir);
+    add("Informacoes", item.titulo, "Nome completo", item.nome_completo, ir);
+    add("Informacoes", item.titulo, "Atribuicao", item.atribuicao, ir);
+    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
   });
 
-  // ── VEÍCULOS ──────────────────────────────────────────────
   veiculos.forEach(v => {
     const ir = () => { navigateTo("veiculos"); setTimeout(() => openVeiculo(v.id), 120); };
-    add("Veículos", v.nome, "Nome",          v.nome,          ir);
-    add("Veículos", v.nome, "Tipo",          v.tipo,          ir);
-    add("Veículos", v.nome, "Marca",         v.marca,         ir);
-    add("Veículos", v.nome, "Modelo",        v.modelo,        ir);
-    add("Veículos", v.nome, "Ano",           v.ano,           ir);
-    add("Veículos", v.nome, "Cor",           v.cor_veiculo,   ir);
-    add("Veículos", v.nome, "Placa",         v.placa,         ir);
-    add("Veículos", v.nome, "Nº Patrimônio", v.patrimonio,    ir);
-    add("Veículos", v.nome, "Chassi",        v.chassi,        ir);
-    add("Veículos", v.nome, "RENAVAM",       v.renavam,       ir);
-    add("Veículos", v.nome, "Combustível",   v.combustivel,   ir);
-    add("Veículos", v.nome, "Situação",      v.situacao,      ir);
-    add("Veículos", v.nome, "Motorista",     v.motorista,     ir);
-    add("Veículos", v.nome, "Localização",   v.localizacao,   ir);
-    add("Veículos", v.nome, "Observações",   v.obs,           ir);
+    add("Veiculos", v.nome, "Nome", v.nome, ir);
+    add("Veiculos", v.nome, "Tipo", v.tipo, ir);
+    add("Veiculos", v.nome, "Marca", v.marca, ir);
+    add("Veiculos", v.nome, "Modelo", v.modelo, ir);
+    add("Veiculos", v.nome, "Ano", v.ano, ir);
+    add("Veiculos", v.nome, "Cor", v.cor_veiculo, ir);
+    add("Veiculos", v.nome, "Placa", v.placa, ir);
+    add("Veiculos", v.nome, "N Patrimonio", v.patrimonio, ir);
+    add("Veiculos", v.nome, "Chassi", v.chassi, ir);
+    add("Veiculos", v.nome, "RENAVAM", v.renavam, ir);
+    add("Veiculos", v.nome, "Combustivel", v.combustivel, ir);
+    add("Veiculos", v.nome, "Situacao", v.situacao, ir);
+    add("Veiculos", v.nome, "Motorista", v.motorista, ir);
+    add("Veiculos", v.nome, "Localizacao", v.localizacao, ir);
+    add("Veiculos", v.nome, "Observacoes", v.obs, ir);
   });
 
-  // ── SISTEMAS ──────────────────────────────────────────────
   sistemas.forEach(s => {
     const ir = () => navigateTo("sistemas");
-    add("Sistemas", s.nome, "Nome",         s.nome,          ir);
-    add("Sistemas", s.nome, "Nome completo",s.nome_completo, ir);
-    add("Sistemas", s.nome, "Descrição",    s.descricao,     ir);
-    add("Sistemas", s.nome, "Órgão",        s.orgao,         ir);
-    add("Sistemas", s.nome, "URL",          s.url,           ir);
-    add("Sistemas", s.nome, "Acesso",       s.acesso,        ir);
+    add("Sistemas", s.nome, "Nome", s.nome, ir);
+    add("Sistemas", s.nome, "Nome completo", s.nome_completo, ir);
+    add("Sistemas", s.nome, "Descricao", s.descricao, ir);
+    add("Sistemas", s.nome, "Orgao", s.orgao, ir);
+    add("Sistemas", s.nome, "URL", s.url, ir);
+    add("Sistemas", s.nome, "Acesso", s.acesso, ir);
   });
 
-  // ── SERVIÇOS ──────────────────────────────────────────────
   servicos.forEach(s => {
     const ir = () => { navigateTo("servicos"); setTimeout(() => openServico(s.id), 120); };
-    add("Serviços", s.nome, "Nome",          s.nome,           ir);
-    add("Serviços", s.nome, "Categoria",     s.categoria,      ir);
-    add("Serviços", s.nome, "Descrição",     s.descricao,      ir);
-    add("Serviços", s.nome, "Público-alvo",  s.publico,        ir);
-    add("Serviços", s.nome, "Como solicitar",s.como_solicitar, ir);
-    add("Serviços", s.nome, "Prazo",         s.prazo,          ir);
-    add("Serviços", s.nome, "Observações",   s.obs,            ir);
-    s.documentos.forEach(d => add("Serviços", s.nome, "Documento necessário", d, ir));
+    add("Servicos", s.nome, "Nome", s.nome, ir);
+    add("Servicos", s.nome, "Categoria", s.categoria, ir);
+    add("Servicos", s.nome, "Descricao", s.descricao, ir);
+    add("Servicos", s.nome, "Publico-alvo", s.publico, ir);
+    add("Servicos", s.nome, "Como solicitar", s.como_solicitar, ir);
+    add("Servicos", s.nome, "Prazo", s.prazo, ir);
+    add("Servicos", s.nome, "Observacoes", s.obs, ir);
+    (s.documentos || []).forEach(d => add("Servicos", s.nome, "Documento necessario", d, ir));
   });
 
-  // ── AVISOS ────────────────────────────────────────────────
   avisos.forEach(a => {
     const ir = () => navigateTo("agenda");
     const tipo = tipoAviso[a.tipo]?.label || a.tipo;
-    add("Avisos", a.titulo, "Título", a.titulo,     ir);
-    add("Avisos", a.titulo, "Tipo",   tipo,          ir);
-    if (a.local) add("Avisos", a.titulo, "Local",   a.local,   ir);
-    if (a.desc)  add("Avisos", a.titulo, "Descrição", a.desc,  ir);
+    add("Avisos", a.titulo, "Titulo", a.titulo, ir);
+    add("Avisos", a.titulo, "Tipo", tipo, ir);
+    add("Avisos", a.titulo, "Local", a.local, ir);
+    add("Avisos", a.titulo, "Descricao", a.desc, ir);
   });
 
-  // ── EVENTOS (AGENDA) ──────────────────────────────────────
   agendaEventos.forEach(e => {
     const ir = () => navigateTo("agenda");
     const tipo = tipoEvento[e.tipo]?.label || e.tipo;
-    add("Agenda", e.titulo, "Título",    e.titulo,       ir);
-    add("Agenda", e.titulo, "Tipo",      tipo,           ir);
-    add("Agenda", e.titulo, "Data",      formatDateBR(e.data),         ir);
-    if (e.data_fim) add("Agenda", e.titulo, "Data fim",  formatDateBR(e.data_fim), ir);
-    if (e.hora)     add("Agenda", e.titulo, "Horário",   e.hora,     ir);
-    if (e.local)    add("Agenda", e.titulo, "Local",     e.local,    ir);
-    if (e.desc)     add("Agenda", e.titulo, "Descrição", e.desc,     ir);
+    add("Agenda", e.titulo, "Titulo", e.titulo, ir);
+    add("Agenda", e.titulo, "Tipo", tipo, ir);
+    add("Agenda", e.titulo, "Data", formatDateBR(e.data), ir);
+    add("Agenda", e.titulo, "Data fim", e.data_fim ? formatDateBR(e.data_fim) : "", ir);
+    add("Agenda", e.titulo, "Horario", e.hora, ir);
+    add("Agenda", e.titulo, "Local", e.local, ir);
+    add("Agenda", e.titulo, "Descricao", e.desc, ir);
   });
 
-  // ── AVISOS ────────────────────────────────────────────────
-  avisos.forEach(a => {
-    const ir = () => navigateTo("agenda");
-    add("Avisos", a.titulo, "Título",    a.titulo, ir);
-    add("Avisos", a.titulo, "Tipo",      a.tipo,   ir);
-    add("Avisos", a.titulo, "Descrição", a.desc,   ir);
-    if (a.local) add("Avisos", a.titulo, "Local",  a.local,  ir);
-  });
-
-  // ── AGENDA / EVENTOS ──────────────────────────────────────
-  agendaEventos.forEach(e => {
-    const ir = () => navigateTo("agenda");
-    add("Agenda", e.titulo, "Título",  e.titulo, ir);
-    add("Agenda", e.titulo, "Tipo",    e.tipo,   ir);
-    add("Agenda", e.titulo, "Local",   e.local,  ir);
-    add("Agenda", e.titulo, "Data",    formatDateBR(e.data),   ir);
-    if (e.data_fim) add("Agenda", e.titulo, "Data fim", formatDateBR(e.data_fim), ir);
-    if (e.hora)     add("Agenda", e.titulo, "Hora",     e.hora,     ir);
-    add("Agenda", e.titulo, "Descrição", e.desc, ir);
-  });
-
-  // Deduplica: mesmo módulo + itemNome + campo + valor
   const seen = new Set();
-  return results.filter(r => {
-    const key = `${r.modulo}|${r.itemNome}|${r.campo}|${r.valor}`;
+  globalSearchIndex = entries.filter(entry => {
+    const key = `${entry.modulo}|${entry.itemNome}|${entry.campo}|${entry.valor}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+  globalSearchIndexReady = true;
+  globalSearchIndexBuilding = false;
 }
 
 /** Destaca a substring encontrada em negrito */
