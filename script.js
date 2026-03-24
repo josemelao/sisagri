@@ -43,6 +43,12 @@ function carregarDados() {
   acessoRapido  = DB.get('acessoRapido');
 }
 
+window.addEventListener('db:collection-updated', (event) => {
+  if (event.detail?.colecao === 'arquivos') {
+    arquivos = DB.get('arquivos');
+  }
+});
+
 /* ============================================================
    INICIALIZAÇÃO
    ============================================================ */
@@ -555,11 +561,6 @@ function openFuncionario(id) {
     <hr class="detail-divider">
     <p class="detail-section-title">O que essa pessoa faz</p>
     <p class="detail-desc">${f.descricao}</p>
-    <hr class="detail-divider">
-    <div class="detail-ausencia">
-      <strong><i class="ph-bold ph-warning"></i> Na ausência desta pessoa</strong>
-      <p>${f.ausencia}</p>
-    </div>
   `;
 
   openDetail("func-detail-overlay");
@@ -1593,7 +1594,7 @@ function renderArquivos() {
   container.innerHTML = paginaAtualItens.map(a => {
     const cor   = tipoCor[a.tipo]   || "#5a6354";
     const icone = tipoIcone[a.tipo] || "ph-file";
-    const temArquivo = a.arquivo_data || a.url;
+    const temArquivo = a.arquivo_data || a.arquivo_nome || a.url;
     const extensaoGrupo = getArquivoExtensaoGrupo(getArquivoExtensaoReal(a) || getArquivoExtensaoFallbackPorTipo(a.tipo));
     const tagsHTML = (a.tags || []).map(t =>
       `<span class="arquivo-tag ${tagsAtivas.has(t) ? 'highlight' : ''}">${t}</span>`
@@ -1755,7 +1756,6 @@ function buildGlobalIndex(query) {
     add("Funcionários", f.nome, "Telefone", f.telefone, ir);
     add("Funcionários", f.nome, "E-mail",   f.email,    ir);
     add("Funcionários", f.nome, "Descrição",f.descricao,ir);
-    add("Funcionários", f.nome, "Ausência", f.ausencia, ir);
   });
 
   // ── MANUAIS ───────────────────────────────────────────────

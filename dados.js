@@ -29,8 +29,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2001",
       email: "ana.ferreira@smader.go.gov.br",
       foto: "",
-      descricao: "Responsável pela fiscalização de insumos agrícolas, aplicação de normas sanitárias em propriedades rurais e emissão de laudos técnicos. Coordena vistorias de campo e atende produtores no Escritório Regional.",
-      ausencia: "Em caso de ausência, procurar o Eng. Carlos Lima (ramal 2003) para demandas urgentes de laudo. Processos de fiscalização rotineira devem aguardar o retorno ou ser encaminhados à chefia do setor."
+      descricao: "Responsável pela fiscalização de insumos agrícolas, aplicação de normas sanitárias em propriedades rurais e emissão de laudos técnicos. Coordena vistorias de campo e atende produtores no Escritório Regional."
     },
     {
       id: 2,
@@ -40,8 +39,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2003",
       email: "carlos.lima@smader.go.gov.br",
       foto: "",
-      descricao: "Coordena a equipe de fiscalização, elabora relatórios gerenciais e responde à chefia pelo setor. Atua como substituto da chefia quando necessário. Especialista em agrotóxicos e certificação de sementes.",
-      ausencia: "Procurar a Chefia do Departamento diretamente (ramal 2000). Documentos urgentes podem ser assinados pela servidora Fernanda Souza com autorização da chefia."
+      descricao: "Coordena a equipe de fiscalização, elabora relatórios gerenciais e responde à chefia pelo setor. Atua como substituto da chefia quando necessário. Especialista em agrotóxicos e certificação de sementes."
     },
     {
       id: 3,
@@ -51,8 +49,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2010",
       email: "marcia.santos@smader.go.gov.br",
       foto: "",
-      descricao: "Responsável pelo protocolo e tramitação de documentos, controle de ponto, gestão de contratos de fornecedores e suporte administrativo geral da secretaria. Ponto focal para solicitações de materiais.",
-      ausencia: "Protocolar documentos diretamente na recepção com a servidora Joana (ramal 2020). Para contratos urgentes, acionar o Departamento de Administração no ramal 2015."
+      descricao: "Responsável pelo protocolo e tramitação de documentos, controle de ponto, gestão de contratos de fornecedores e suporte administrativo geral da secretaria. Ponto focal para solicitações de materiais."
     },
     {
       id: 4,
@@ -62,8 +59,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2030",
       email: "roberto.nascimento@smader.go.gov.br",
       foto: "",
-      descricao: "Gerencia a infraestrutura de TI da secretaria, oferece suporte técnico aos servidores, administra os sistemas internos e controla os equipamentos patrimoniais de informática.",
-      ausencia: "Abrir chamado pelo sistema interno (portal.smader.go.gov.br/chamados) ou ligar para o número da SEGOV-TI: (62) 3311-9000. Problemas de rede urgentes: acionar o responsável na Gerência de Infraestrutura."
+      descricao: "Gerencia a infraestrutura de TI da secretaria, oferece suporte técnico aos servidores, administra os sistemas internos e controla os equipamentos patrimoniais de informática."
     },
     {
       id: 5,
@@ -73,8 +69,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2040",
       email: "fernanda.braga@smader.go.gov.br",
       foto: "",
-      descricao: "Presta assistência técnica a agricultores familiares, coordena programas de extensão rural, elabora projetos para captação de recursos junto ao governo federal e realiza cadastramento no Pronaf.",
-      ausencia: "Contato com produtores rurais urgentes pode ser gerenciado pelo coordenador de extensão (ramal 2042). Projetos e formulários Pronaf têm prazo — verificar com a chefia a necessidade de redistribuição."
+      descricao: "Presta assistência técnica a agricultores familiares, coordena programas de extensão rural, elabora projetos para captação de recursos junto ao governo federal e realiza cadastramento no Pronaf."
     },
     {
       id: 6,
@@ -84,8 +79,7 @@ window.DADOS_INICIAIS = {
       telefone: "(62) 3311-2000",
       email: "jose.pereira@smader.go.gov.br",
       foto: "",
-      descricao: "Chefia o Departamento Técnico, coordena as equipes de fiscalização e extensão, assina documentos oficiais e representa a secretaria em reuniões externas. Ponto de escalonamento para demandas complexas.",
-      ausencia: "Em viagem: contato por e-mail institucional. Para documentos que necessitam de assinatura urgente, acionar o Secretário Adjunto diretamente (ramal 1001)."
+      descricao: "Chefia o Departamento Técnico, coordena as equipes de fiscalização e extensão, assina documentos oficiais e representa a secretaria em reuniões externas. Ponto de escalonamento para demandas complexas."
     }
   ],
 

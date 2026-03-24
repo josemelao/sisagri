@@ -558,7 +558,6 @@ function salvarFuncionario(id) {
     departamento:  document.getElementById('f-departamento').value.trim(),
     foto:          document.getElementById('f-foto').value,
     descricao:     document.getElementById('f-descricao').value.trim(),
-    ausencia:      '',
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('funcionarios', id, dados) : DB.insert('funcionarios', dados);

@@ -33,11 +33,25 @@ const DB_CONFIG = {
 let _db = null; // cache em memória
 let _sb = null; // cliente Supabase
 
+function _notifyCollectionUpdated(colecao) {
+  window.dispatchEvent(new CustomEvent('db:collection-updated', { detail: { colecao } }));
+}
+
 const SUPABASE_TABLES = {
   funcionarios: 'funcionarios',
   veiculos: 'veiculos',
   escalaFerias: 'escala_ferias',
   agendaEventos: 'agenda_eventos',
+  infoJuridico: 'info_juridico',
+  infoMunicipio: 'info_municipio',
+  infoOrgaos: 'info_orgaos',
+  servicos: 'servicos',
+  sistemas: 'sistemas',
+  avisos: 'avisos',
+  acessoRapido: 'acesso_rapido',
+  arquivos: 'arquivos',
+  manuais: 'manuais',
+  processos: 'processos',
 };
 
 function _isSupabaseCollection(colecao) {
@@ -74,14 +88,77 @@ function _normalizeSupabaseRow(colecao, row) {
         cor_veiculo: row.cor_veiculo || initialVeiculo?.cor_veiculo || '',
         motorista: row.motorista || row.motoristas || '',
         motoristas: row.motoristas || row.motorista || '',
+        motorista_ids: Array.isArray(row.motorista_ids) ? row.motorista_ids : [],
         obs: row.obs || row.observacoes || '',
         observacoes: row.observacoes || row.obs || '',
+        arquivo_ids: Array.isArray(row.arquivo_ids) ? row.arquivo_ids : [],
       };
     case 'agendaEventos':
       return {
         ...row,
         desc: row.desc || row.descricao || '',
         descricao: row.descricao || row.desc || '',
+      };
+    case 'avisos':
+      return {
+        ...row,
+        desc: row.desc || row.descricao || '',
+        descricao: row.descricao || row.desc || '',
+      };
+    case 'infoJuridico':
+    case 'infoMunicipio':
+      return {
+        ...row,
+        badge: row.badge || row.tag || '',
+        tag: row.tag || row.badge || '',
+        campos: Array.isArray(row.campos) ? row.campos : [],
+      };
+    case 'infoOrgaos':
+      return {
+        ...row,
+        campos: Array.isArray(row.campos) ? row.campos : [],
+      };
+    case 'servicos':
+      return {
+        ...row,
+        categoria_outro: row.categoria_outro || '',
+        documentos: Array.isArray(row.documentos) ? row.documentos : [],
+        obs: row.obs || '',
+        processos_ids: Array.isArray(row.processos_ids) ? row.processos_ids : [],
+      };
+    case 'sistemas':
+      return {
+        ...row,
+        manuais_ids: Array.isArray(row.manuais_ids) ? row.manuais_ids : [],
+        processos_ids: Array.isArray(row.processos_ids) ? row.processos_ids : [],
+      };
+    case 'acessoRapido':
+      return {
+        ...row,
+        descricao: row.descricao || '',
+        coringa: !!row.coringa,
+      };
+    case 'arquivos':
+      return {
+        ...row,
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        url: row.url || '',
+        arquivo_data: row.arquivo_data || '',
+        arquivo_nome: row.arquivo_nome || '',
+      };
+    case 'manuais':
+      return {
+        ...row,
+        descricao: row.descricao || '',
+        observacoes: row.observacoes || '',
+        passos: Array.isArray(row.passos) ? row.passos : [],
+        documentos: Array.isArray(row.documentos) ? row.documentos : [],
+      };
+    case 'processos':
+      return {
+        ...row,
+        descricao: row.descricao || '',
+        etapas: Array.isArray(row.etapas) ? row.etapas : [],
       };
     default:
       return { ...row };
@@ -112,9 +189,12 @@ function _toSupabasePayload(colecao, registro) {
         id: registro.id,
         nome: registro.nome || null,
         tipo: registro.tipo || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
         marca: registro.marca || null,
         modelo: registro.modelo || null,
         ano: registro.ano || null,
+        cor_veiculo: registro.cor_veiculo || null,
         placa: registro.placa || null,
         patrimonio: registro.patrimonio || null,
         chassi: registro.chassi || null,
@@ -123,7 +203,9 @@ function _toSupabasePayload(colecao, registro) {
         situacao: registro.situacao || null,
         localizacao: registro.localizacao || null,
         motoristas: registro.motoristas || registro.motorista || null,
+        motorista_ids: Array.isArray(registro.motorista_ids) ? registro.motorista_ids : [],
         observacoes: registro.observacoes || registro.obs || null,
+        arquivo_ids: Array.isArray(registro.arquivo_ids) ? registro.arquivo_ids : [],
       };
     case 'escalaFerias':
       return {
@@ -147,15 +229,115 @@ function _toSupabasePayload(colecao, registro) {
         local: registro.local || null,
         descricao: registro.descricao || registro.desc || null,
       };
+    case 'infoJuridico':
+    case 'infoMunicipio':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
+        badge: registro.badge || null,
+        tag: registro.tag || null,
+        campos: Array.isArray(registro.campos) ? registro.campos : [],
+      };
+    case 'infoOrgaos':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        nome_completo: registro.nome_completo || null,
+        atribuicao: registro.atribuicao || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
+        campos: Array.isArray(registro.campos) ? registro.campos : [],
+      };
+    case 'servicos':
+      return {
+        id: registro.id,
+        nome: registro.nome || null,
+        categoria: registro.categoria || null,
+        categoria_outro: registro.categoria_outro || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
+        descricao: registro.descricao || null,
+        publico: registro.publico || null,
+        como_solicitar: registro.como_solicitar || null,
+        prazo: registro.prazo || null,
+        obs: registro.obs || null,
+        documentos: Array.isArray(registro.documentos) ? registro.documentos : [],
+        processos_ids: Array.isArray(registro.processos_ids) ? registro.processos_ids : [],
+      };
+    case 'sistemas':
+      return {
+        id: registro.id,
+        nome: registro.nome || null,
+        nome_completo: registro.nome_completo || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
+        descricao: registro.descricao || null,
+        url: registro.url || null,
+        acesso: registro.acesso || null,
+        orgao: registro.orgao || null,
+        manuais_ids: Array.isArray(registro.manuais_ids) ? registro.manuais_ids : [],
+        processos_ids: Array.isArray(registro.processos_ids) ? registro.processos_ids : [],
+      };
+    case 'avisos':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        tipo: registro.tipo || null,
+        local: registro.local || null,
+        descricao: registro.descricao || registro.desc || null,
+      };
+    case 'acessoRapido':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        url: registro.url || null,
+        descricao: registro.descricao || null,
+        icone: registro.icone || null,
+        cor: registro.cor || null,
+        coringa: !!registro.coringa,
+      };
+    case 'arquivos':
+      return {
+        id: registro.id,
+        nome: registro.nome || null,
+        tipo: registro.tipo || null,
+        tags: Array.isArray(registro.tags) ? registro.tags : [],
+        url: registro.url || null,
+        arquivo_data: registro.arquivo_data || null,
+        arquivo_nome: registro.arquivo_nome || null,
+      };
+    case 'manuais':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        categoria: registro.categoria || null,
+        descricao: registro.descricao || null,
+        observacoes: registro.observacoes || null,
+        passos: Array.isArray(registro.passos) ? registro.passos : [],
+        documentos: Array.isArray(registro.documentos) ? registro.documentos : [],
+      };
+    case 'processos':
+      return {
+        id: registro.id,
+        titulo: registro.titulo || null,
+        categoria: registro.categoria || null,
+        descricao: registro.descricao || null,
+        etapas: Array.isArray(registro.etapas) ? registro.etapas : [],
+      };
     default:
       return { ...registro };
   }
 }
 
-async function _loadSupabaseCollection(colecao) {
+async function _loadSupabaseCollection(colecao, options = {}) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
   const tabela = SUPABASE_TABLES[colecao];
-  const { data, error } = await _sb.from(tabela).select('*').order('id', { ascending: true });
+  const columns = (colecao === 'arquivos' && options.metadataOnly)
+    ? 'id,nome,tipo,tags,url,arquivo_nome'
+    : '*';
+  const { data, error } = await _sb.from(tabela).select(columns).order('id', { ascending: true });
   if (error) throw error;
   _db[colecao] = (data || []).map(row => _normalizeSupabaseRow(colecao, row));
 }
@@ -220,9 +402,22 @@ async function _initSupabase() {
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS || {}));
 
   try {
-    await Promise.all(Object.keys(SUPABASE_TABLES).map(_loadSupabaseCollection));
+    const colecoes = Object.keys(SUPABASE_TABLES);
+    await Promise.all(colecoes.filter(c => c !== 'arquivos').map(_loadSupabaseCollection));
+    await _loadSupabaseCollection('arquivos', { metadataOnly: true });
     _persistLocal();
     console.info('[DB] Dados carregados do Supabase.');
+
+    _loadSupabaseCollection('arquivos')
+      .then(() => {
+        _persistLocal();
+        _notifyCollectionUpdated('arquivos');
+        console.info('[DB] Arquivos completos carregados em segundo plano.');
+      })
+      .catch((e) => {
+        console.warn('[DB] Falha ao carregar arquivos completos em segundo plano.', e);
+      });
+
     return Promise.resolve();
   } catch (e) {
     console.warn('[DB] Falha ao carregar do Supabase. Usando fallback local.', e);
