@@ -187,18 +187,22 @@ function toast(msg, tipo = 'success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-function abrirModal(html) {
+let _modalCloseOnBackdrop = false;
+
+function abrirModal(html, options = {}) {
+  _modalCloseOnBackdrop = !!options.closeOnBackdrop;
   document.getElementById('modal-content').innerHTML = html;
   document.getElementById('modal').classList.add('open');
 }
 
 function fecharModal() {
+  _modalCloseOnBackdrop = false;
   document.getElementById('modal').classList.remove('open');
   document.getElementById('modal-content').innerHTML = '';
 }
 
 document.getElementById('modal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modal')) fecharModal();
+  if (_modalCloseOnBackdrop && e.target === document.getElementById('modal')) fecharModal();
 });
 
 document.addEventListener('keydown', (e) => {
