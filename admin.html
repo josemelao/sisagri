@@ -29,10 +29,25 @@
     input, textarea, select { font-family: var(--font-sans); }
 
     /* ---- LOGIN ---- */
+    #boot-screen,
     #login-screen {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; background: var(--bg);
     }
+    #login-screen { display: none; }
+    .boot-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 34px 32px;
+      width: 360px; box-shadow: var(--shadow-md); text-align: center;
+    }
+    .boot-spinner {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      margin: 0 auto 14px; animation: boot-spin .8s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+    .boot-title { font-family: var(--font-serif); font-size: 1.35rem; margin-bottom: 6px; }
+    .boot-sub { font-size: 0.82rem; color: var(--text-muted); }
     .login-box {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 40px 36px;
@@ -414,6 +429,15 @@
   </style>
 </head>
 <body>
+
+<!-- ===== BOOT / SESSAO ===== -->
+<div id="boot-screen">
+  <div class="boot-box">
+    <div class="boot-spinner"></div>
+    <div class="boot-title">Verificando sessão</div>
+    <div class="boot-sub">Aguarde um instante para carregar o painel admin.</div>
+  </div>
+</div>
 
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">

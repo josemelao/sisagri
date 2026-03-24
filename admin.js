@@ -8,12 +8,23 @@
 /* ============================================================
    AUTENTICAÇÃO
    ============================================================ */
+function mostrarLogin() {
+  document.getElementById('boot-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function mostrarAdmin() {
+  document.getElementById('boot-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'block';
+}
+
 async function fazerLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
   if (await DB.adminLogin(email, senha)) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-app').style.display = 'block';
+    mostrarAdmin();
     initAdmin();
   } else {
     document.getElementById('login-error').textContent = 'E-mail ou senha incorretos. Tente novamente.';
@@ -41,10 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
     atualizarStatusBanco();
     window.addEventListener('db:status-changed', handleDbStatusChanged);
     if (await DB.isAdminLoggedIn()) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('admin-app').style.display = 'block';
+      mostrarAdmin();
       initAdmin();
+      return;
     }
+    mostrarLogin();
   });
 });
 
