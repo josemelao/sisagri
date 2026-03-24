@@ -3718,10 +3718,12 @@ function relatorioLayoutHTML({ titulo, descricao, total, conteudo }) {
   `;
 }
 
-function relatorioTabelaHTML(colunas, linhas) {
+function relatorioTabelaHTML(colunas, linhas, tableClass = "") {
+  const classes = ["relatorio-table"];
+  if (tableClass) classes.push(tableClass);
   return `
     <div class="relatorio-table-wrap">
-      <table class="relatorio-table">
+      <table class="${classes.join(" ")}">
         <thead>
           <tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join("")}</tr>
         </thead>
@@ -3775,12 +3777,12 @@ function renderRelatorioFuncionarios() {
     titulo: "Relação de Funcionários",
     descricao: "Listagem textual completa dos funcionários cadastrados.",
     total: linhas.length,
-    conteudo: relatorioTabelaHTML(colunas, linhas),
+    conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--funcionarios"),
   });
 }
 
 function renderRelatorioVeiculos() {
-  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimônio", "Chassi", "RENAVAM", "Combustível", "Situação", "Motorista(s)"];
+  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
   const linhas = veiculos.map(v => [
     v.nome || "—",
     v.tipo || "—",
@@ -3792,7 +3794,6 @@ function renderRelatorioVeiculos() {
     v.chassi || "—",
     v.renavam || "—",
     v.combustivel || "—",
-    v.situacao || "—",
     v.motorista || "—",
   ]);
 
@@ -3800,7 +3801,7 @@ function renderRelatorioVeiculos() {
     titulo: "Relação de Veículos",
     descricao: "Listagem da frota e dos principais dados patrimoniais cadastrados.",
     total: linhas.length,
-    conteudo: relatorioTabelaHTML(colunas, linhas),
+    conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--veiculos"),
   });
 }
 
@@ -3946,7 +3947,7 @@ function renderRelatorioAgenda() {
     titulo: "Agenda",
     descricao: "Eventos em andamento e eventos futuros, ordenados do mais próximo para o mais distante.",
     total: eventos.length,
-    conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos)),
+    conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos), "relatorio-table--agenda"),
   });
 }
 
@@ -3961,7 +3962,7 @@ function renderRelatorioHistoricoAgenda() {
     titulo: "Histórico de Agenda",
     descricao: "Eventos encerrados, ordenados do mais recente para o mais antigo.",
     total: eventos.length,
-    conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos)),
+    conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos), "relatorio-table--agenda"),
   });
 }
 
