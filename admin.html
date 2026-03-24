@@ -85,6 +85,19 @@
     .admin-header-spacer { flex: 1; }
     .admin-header a { font-size: 0.82rem; color: #a8c8b8; display: flex; align-items: center; gap: 6px; }
     .admin-header a:hover { color: #fff; }
+    .admin-status {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 999px;
+      font-size: 0.76rem; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08); color: #dce8d9;
+    }
+    .admin-status.is-ok { color: #d8f3dc; background: rgba(45,106,79,.35); border-color: rgba(144,238,144,.18); }
+    .admin-status.is-warn { color: #fff3cd; background: rgba(122,79,0,.28); border-color: rgba(255,243,205,.16); }
+    .admin-status.is-offline { color: #ffd7d1; background: rgba(192,57,43,.22); border-color: rgba(255,215,209,.16); }
+    .admin-status-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+    }
 
     .admin-logout-btn {
       background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
@@ -425,6 +438,11 @@
       <div class="admin-header-sub">Painel de Gerenciamento de Dados</div>
     </div>
     <div class="admin-header-spacer"></div>
+    <div class="admin-status" id="admin-db-status" title="Status da persistência">
+      <span class="admin-status-dot"></span>
+      <span id="admin-db-status-text">Verificando banco...</span>
+    </div>
+    &nbsp;
     <a href="index.html">Acessar Sistema</a>
     &nbsp;&nbsp;
     <button class="btn btn-export btn-sm" onclick="DB.exportarDadosJS()">
@@ -535,22 +553,18 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;max-width:480px">
           <div class="form-group">
+            <label>Status do banco</label>
+            <p id="config-db-status" style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
+              Verificando conexão com o Supabase...
+            </p>
+          </div>
+          <div class="form-group">
             <label>Exportar dados.js</label>
             <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
               Gera o arquivo <code>dados.js</code> com todos os dados atuais (incluindo edições do localStorage). Substitua o arquivo original pelo exportado para tornar as alterações permanentes.
             </p>
             <button class="btn btn-export" onclick="DB.exportarDadosJS()">
               <i class="ph-bold ph-download-simple"></i> Exportar dados.js
-            </button>
-          </div>
-          <hr style="border:none;border-top:1px solid var(--border)">
-          <div class="form-group">
-            <label style="color:var(--danger)">Resetar para dados padrão</label>
-            <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
-              Remove todas as alterações do localStorage e volta aos dados originais de <code>dados.js</code>. <strong>Esta ação não pode ser desfeita.</strong>
-            </p>
-            <button class="btn btn-danger" onclick="confirmarReset()">
-              <i class="ph-bold ph-arrow-counter-clockwise"></i> Resetar dados
             </button>
           </div>
         </div>

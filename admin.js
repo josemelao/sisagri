@@ -32,6 +32,8 @@ function fazerLogout() {
 // Verifica se já estava logado (sessão ativa)
 document.addEventListener('DOMContentLoaded', () => {
   dbInit().then(() => {
+    atualizarStatusBanco();
+    window.addEventListener('db:status-changed', handleDbStatusChanged);
     if (DB.isAdminLoggedIn()) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-app').style.display = 'block';
@@ -44,8 +46,69 @@ document.addEventListener('DOMContentLoaded', () => {
    INICIALIZAÇÃO DO ADMIN
    ============================================================ */
 function initAdmin() {
+  atualizarStatusBanco();
   initNav();
   renderOverview();
+}
+
+let ultimoStatusBanco = null;
+
+function getDbStatusMessage(status) {
+  if (status.provider === 'supabase' && status.writesReachSupabase) {
+    return 'Supabase conectado. Leituras e gravações ativas.';
+  }
+  if (status.supabaseConfigured) {
+    return `Fallback local ativo. Alterações podem não ir para o Supabase.${status.lastError ? ` Motivo: ${status.lastError}` : ''}`;
+  }
+  return 'Modo local ativo. Supabase não configurado.';
+}
+
+function atualizarStatusBanco() {
+  const status = DB.getStatus ? DB.getStatus() : null;
+  if (!status) return;
+
+  const header = document.getElementById('admin-db-status');
+  const headerText = document.getElementById('admin-db-status-text');
+  const config = document.getElementById('config-db-status');
+  const message = getDbStatusMessage(status);
+
+  if (header && headerText) {
+    header.classList.remove('is-ok', 'is-warn', 'is-offline');
+    if (status.provider === 'supabase' && status.writesReachSupabase) {
+      header.classList.add('is-ok');
+      headerText.textContent = 'Supabase online';
+    } else if (status.supabaseConfigured) {
+      header.classList.add('is-offline');
+      headerText.textContent = 'Fallback local';
+    } else {
+      header.classList.add('is-warn');
+      headerText.textContent = 'Modo local';
+    }
+    header.title = message;
+  }
+
+  if (config) {
+    config.textContent = message;
+  }
+
+  ultimoStatusBanco = status;
+}
+
+function handleDbStatusChanged() {
+  const anterior = ultimoStatusBanco;
+  atualizarStatusBanco();
+  const atual = DB.getStatus ? DB.getStatus() : null;
+  if (!atual) return;
+
+  const caiuParaFallback =
+    anterior &&
+    anterior.provider === 'supabase' &&
+    atual.provider !== 'supabase' &&
+    atual.supabaseConfigured;
+
+  if (caiuParaFallback) {
+    toast('Supabase indisponível. O admin entrou em fallback local; novas alterações podem não persistir no banco.', 'error');
+  }
 }
 
 /* ============================================================
@@ -162,28 +225,6 @@ function executarDelecao(colecao, id) {
   fecharModal();
   toast('Registro excluído com sucesso.');
   renderSection(colecao);
-  renderOverview();
-}
-
-function confirmarReset() {
-  abrirModal(`
-    <h2 class="modal-title" style="color:var(--danger)">Resetar dados</h2>
-    <div class="confirm-box">
-      <p class="confirm-msg">Isso irá remover <strong>todas as alterações</strong> feitas pelo painel Admin e restaurar os dados originais de <code>dados.js</code>. Continuar?</p>
-      <div class="confirm-actions">
-        <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-        <button class="btn btn-danger" onclick="executarReset()">
-          <i class="ph-bold ph-arrow-counter-clockwise"></i> Resetar tudo
-        </button>
-      </div>
-    </div>
-  `);
-}
-
-function executarReset() {
-  DB.resetToDefaults();
-  fecharModal();
-  toast('Dados restaurados para o padrão.');
   renderOverview();
 }
 

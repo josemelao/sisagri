@@ -32,9 +32,25 @@ const DB_CONFIG = {
    ============================================================ */
 let _db = null; // cache em memória
 let _sb = null; // cliente Supabase
+let _dbStatus = {
+  provider: 'local',
+  supabaseConfigured: false,
+  supabaseConnected: false,
+  writesReachSupabase: false,
+  lastError: '',
+};
 
 function _notifyCollectionUpdated(colecao) {
   window.dispatchEvent(new CustomEvent('db:collection-updated', { detail: { colecao } }));
+}
+
+function _emitStatusChanged() {
+  window.dispatchEvent(new CustomEvent('db:status-changed', { detail: DB.getStatus() }));
+}
+
+function _setDbStatus(patch) {
+  _dbStatus = { ..._dbStatus, ...patch };
+  _emitStatusChanged();
 }
 
 const SUPABASE_TABLES = {
@@ -342,6 +358,13 @@ async function _loadSupabaseCollection(colecao, options = {}) {
   _db[colecao] = (data || []).map(row => _normalizeSupabaseRow(colecao, row));
 }
 
+async function _refreshSupabaseCollectionsForExport() {
+  if (!_sb) return;
+  await Promise.all(Object.keys(SUPABASE_TABLES).map(colecao => _loadSupabaseCollection(colecao)));
+  _persistLocal();
+  _notifyCollectionUpdated('arquivos');
+}
+
 /**
  * Inicializa o banco.
  * Retorna uma Promise que resolve quando os dados estão prontos.
@@ -394,8 +417,21 @@ function _initLocal() {
 
 async function _initSupabase() {
   _sb = _createSupabaseClient();
+  _setDbStatus({
+    provider: 'local',
+    supabaseConfigured: !!(DB_CONFIG.SUPABASE_URL && DB_CONFIG.SUPABASE_KEY),
+    supabaseConnected: false,
+    writesReachSupabase: false,
+    lastError: '',
+  });
   if (!_sb) {
     console.warn('[DB] Cliente Supabase indisponível. Usando localStorage como fallback.');
+    _setDbStatus({
+      provider: 'local',
+      supabaseConnected: false,
+      writesReachSupabase: false,
+      lastError: 'Cliente Supabase indisponível.',
+    });
     return _initLocal();
   }
 
@@ -406,6 +442,12 @@ async function _initSupabase() {
     await Promise.all(colecoes.filter(c => c !== 'arquivos').map(_loadSupabaseCollection));
     await _loadSupabaseCollection('arquivos', { metadataOnly: true });
     _persistLocal();
+    _setDbStatus({
+      provider: 'supabase',
+      supabaseConnected: true,
+      writesReachSupabase: true,
+      lastError: '',
+    });
     console.info('[DB] Dados carregados do Supabase.');
 
     _loadSupabaseCollection('arquivos')
@@ -421,6 +463,12 @@ async function _initSupabase() {
     return Promise.resolve();
   } catch (e) {
     console.warn('[DB] Falha ao carregar do Supabase. Usando fallback local.', e);
+    _setDbStatus({
+      provider: 'local',
+      supabaseConnected: false,
+      writesReachSupabase: false,
+      lastError: e?.message || 'Falha ao carregar dados do Supabase.',
+    });
     return _initLocal();
   }
 }
@@ -452,7 +500,22 @@ const DB = {
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).insert(_toSupabasePayload(colecao, novoRegistro)).then(({ error }) => {
-        if (error) console.error(`[DB] Falha ao inserir em ${SUPABASE_TABLES[colecao]}:`, error);
+        if (error) {
+          _setDbStatus({
+            provider: 'local',
+            supabaseConnected: false,
+            writesReachSupabase: false,
+            lastError: error.message || `Falha ao inserir em ${SUPABASE_TABLES[colecao]}.`,
+          });
+          console.error(`[DB] Falha ao inserir em ${SUPABASE_TABLES[colecao]}:`, error);
+          return;
+        }
+        _setDbStatus({
+          provider: 'supabase',
+          supabaseConnected: true,
+          writesReachSupabase: true,
+          lastError: '',
+        });
       });
     }
     return novoRegistro;
@@ -467,7 +530,22 @@ const DB = {
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).update(_toSupabasePayload(colecao, _db[colecao][idx])).eq('id', id).then(({ error }) => {
-        if (error) console.error(`[DB] Falha ao atualizar ${SUPABASE_TABLES[colecao]}:${id}`, error);
+        if (error) {
+          _setDbStatus({
+            provider: 'local',
+            supabaseConnected: false,
+            writesReachSupabase: false,
+            lastError: error.message || `Falha ao atualizar ${SUPABASE_TABLES[colecao]}:${id}.`,
+          });
+          console.error(`[DB] Falha ao atualizar ${SUPABASE_TABLES[colecao]}:${id}`, error);
+          return;
+        }
+        _setDbStatus({
+          provider: 'supabase',
+          supabaseConnected: true,
+          writesReachSupabase: true,
+          lastError: '',
+        });
       });
     }
     return _db[colecao][idx];
@@ -481,7 +559,22 @@ const DB = {
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).delete().eq('id', id).then(({ error }) => {
-        if (error) console.error(`[DB] Falha ao excluir de ${SUPABASE_TABLES[colecao]}:${id}`, error);
+        if (error) {
+          _setDbStatus({
+            provider: 'local',
+            supabaseConnected: false,
+            writesReachSupabase: false,
+            lastError: error.message || `Falha ao excluir de ${SUPABASE_TABLES[colecao]}:${id}.`,
+          });
+          console.error(`[DB] Falha ao excluir de ${SUPABASE_TABLES[colecao]}:${id}`, error);
+          return;
+        }
+        _setDbStatus({
+          provider: 'supabase',
+          supabaseConnected: true,
+          writesReachSupabase: true,
+          lastError: '',
+        });
       });
     }
     return _db[colecao].length < antes;
@@ -511,6 +604,11 @@ const DB = {
     return JSON.parse(JSON.stringify(_db));
   },
 
+  /** Retorna o status atual da conexão/persistência */
+  getStatus() {
+    return JSON.parse(JSON.stringify(_dbStatus));
+  },
+
   /** Importa um banco completo (substitui tudo, usado no admin) */
   importAll(dados) {
     _db = JSON.parse(JSON.stringify(dados));
@@ -520,14 +618,6 @@ const DB = {
         DB.replaceCollection(colecao, _db[colecao] || []);
       });
     }
-  },
-
-  /** Reseta para os dados iniciais de dados.js */
-  resetToDefaults() {
-    localStorage.removeItem(DB_CONFIG.LS_KEY);
-    localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
-    _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS));
-    _persistLocal();
   },
 
   /* ---- Autenticação admin (simples, localStorage) ---- */
@@ -551,7 +641,18 @@ const DB = {
   },
 
   /** Gera o conteúdo do dados.js atualizado para download */
-  exportarDadosJS() {
+  async exportarDadosJS() {
+    try {
+      if (_sb) {
+        await _refreshSupabaseCollectionsForExport();
+      }
+    } catch (e) {
+      console.error('[DB] Falha ao atualizar dados do Supabase antes da exportacao.', e);
+      if (!confirm('Falha ao atualizar os dados direto do Supabase antes da exportacao. Deseja exportar mesmo assim com os dados em memoria?')) {
+        return;
+      }
+    }
+
     const dados = DB.exportAll();
     const conteudo = `/**\n * SMADER — dados.js (exportado em ${new Date().toLocaleString('pt-BR')})\n * Gerado automaticamente pelo painel Admin. Substitua o dados.js original por este arquivo.\n */\n\nwindow.DADOS_INICIAIS = ${JSON.stringify(dados, null, 2)};\n`;
     const blob = new Blob([conteudo], { type: 'text/javascript' });
