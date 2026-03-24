@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMADER — Sistema Interno</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Ícones leves via Phosphor Icons (CDN) -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js" defer></script>
+  <!-- Tipografia via Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="logo-icon"><i class="ph-bold ph-leaf"></i></span>
+        <div class="logo-text">
+          <span class="logo-title">SisAgri</span>
+          <span class="logo-sub">Secretaria de Agricultura</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-label">Menu principal</span>
+      <ul>
+        <li>
+          <a href="#" class="nav-item active" data-page="dashboard">
+            <i class="ph-bold ph-squares-four"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="funcionarios">
+            <i class="ph-bold ph-users"></i>
+            <span>Funcionários</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="manuais">
+            <i class="ph-bold ph-book-open"></i>
+            <span>Manuais</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="processos">
+            <i class="ph-bold ph-flow-arrow"></i>
+            <span>Processos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="arquivos">
+            <i class="ph-bold ph-folder-open"></i>
+            <span>Arquivos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="informacoes">
+            <i class="ph-bold ph-info"></i>
+            <span>Informações</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="veiculos">
+            <i class="ph-bold ph-truck"></i>
+            <span>Veículos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="sistemas">
+            <i class="ph-bold ph-monitor"></i>
+            <span>Sistemas</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="servicos">
+            <i class="ph-bold ph-wrench"></i>
+            <span>Serviços</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="agenda">
+            <i class="ph-bold ph-bell-ringing"></i>
+            <span>Avisos / Agenda</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" data-page="relatorios">
+            <i class="ph-bold ph-printer"></i>
+            <span>Relatórios</span>
+          </a>
+        </li>
+        <li>
+          <a href="admin.html" class="nav-item">
+            <i class="ph-bold ph-gear-six"></i>
+            <span>Painel Admin</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>v1.0 · Uso interno</span>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN CONTENT ===================== -->
+  <main class="main-content" id="main-content">
+
+    <!-- Botão hamburger (mobile) -->
+    <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+      <i class="ph-bold ph-list"></i>
+    </button>
+
+    <!-- ===== PÁGINA: DASHBOARD ===== -->
+    <section class="page active" id="page-dashboard">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Bom dia, equipe 🌿</h1>
+          <p class="page-subtitle">Central de informações da Secretaria de Agricultura</p>
+        </div>
+        <div class="header-date" id="header-date"></div>
+      </header>
+
+      <!-- Layout de duas colunas -->
+      <div class="dashboard-layout">
+
+        <!-- COLUNA ESQUERDA: busca + módulos -->
+        <div class="dashboard-main">
+
+          <!-- Barra de busca -->
+          <div class="search-wrapper">
+            <div class="search-bar">
+              <i class="ph-bold ph-magnifying-glass search-icon"></i>
+              <input type="text" id="global-search" placeholder="Buscar funcionários, manuais, processos..." autocomplete="off" />
+            </div>
+            <div class="search-results" id="search-results"></div>
+          </div>
+
+          <!-- Cards de módulos -->
+          <div class="cards-grid">
+            <div class="card card-nav" data-nav="funcionarios">
+              <div class="card-icon" style="--c: #3d7a5e"><i class="ph-bold ph-users"></i></div>
+              <div class="card-info"><h3>Funcionários</h3><p>Equipe, contatos e substituições</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="manuais">
+              <div class="card-icon" style="--c: #5c7a3d"><i class="ph-bold ph-book-open"></i></div>
+              <div class="card-info"><h3>Manuais</h3><p>Procedimentos e orientações</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="processos">
+              <div class="card-icon" style="--c: #7a5c3d"><i class="ph-bold ph-flow-arrow"></i></div>
+              <div class="card-info"><h3>Processos</h3><p>Fluxos e etapas de trabalho</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="arquivos">
+              <div class="card-icon" style="--c: #3d5c7a"><i class="ph-bold ph-folder-open"></i></div>
+              <div class="card-info"><h3>Arquivos</h3><p>Documentos e formulários</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="informacoes">
+              <div class="card-icon" style="--c: #6b3d7a"><i class="ph-bold ph-info"></i></div>
+              <div class="card-info"><h3>Informações</h3><p>Dados jurídicos e institucionais</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="veiculos">
+              <div class="card-icon" style="--c: #7a3d3d"><i class="ph-bold ph-truck"></i></div>
+              <div class="card-info"><h3>Veículos</h3><p>Frota e patrimônio da secretaria</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="sistemas">
+              <div class="card-icon" style="--c: #3d6a7a"><i class="ph-bold ph-monitor"></i></div>
+              <div class="card-info"><h3>Sistemas</h3><p>Acesso aos sistemas externos</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="servicos">
+              <div class="card-icon" style="--c: #7a6b3d"><i class="ph-bold ph-wrench"></i></div>
+              <div class="card-info"><h3>Serviços</h3><p>Serviços prestados à população</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+            <div class="card card-nav" data-nav="agenda">
+              <div class="card-icon" style="--c: #7a3d5c"><i class="ph-bold ph-bell-ringing"></i></div>
+              <div class="card-info"><h3>Avisos / Agenda</h3><p>Comunicados e eventos da secretaria</p></div>
+              <i class="ph-bold ph-arrow-right card-arrow"></i>
+            </div>
+          </div>
+
+          <!-- LINHA DE BLOCOS: Escala de Férias + Acesso Rápido -->
+          <div class="dash-bottom-row">
+
+            <!-- ESCALA DE FÉRIAS -->
+            <div class="card dash-ferias">
+              <div class="dash-block-header">
+                <i class="ph-bold ph-umbrella"></i>
+                <span>Escala de Férias</span>
+                <a href="#" class="dash-block-link" onclick="navigateTo('funcionarios');return false;">Ver funcionários</a>
+              </div>
+              <div class="ferias-list" id="ferias-list"></div>
+            </div>
+
+            <!-- ACESSO RÁPIDO -->
+            <div class="card dash-acesso">
+              <div class="dash-block-header">
+                <i class="ph-bold ph-lightning"></i>
+                <span>Acesso Rápido</span>
+              </div>
+              <div class="acesso-grid" id="acesso-grid"></div>
+            </div>
+
+          </div><!-- /dash-bottom-row -->
+
+        </div><!-- /dashboard-main -->
+
+        <!-- COLUNA DIREITA: agenda + instagram -->
+        <aside class="dashboard-side">
+
+          <!-- AVISOS PERMANENTES (padrão: aberto) -->
+          <div class="side-widget" data-widget="avisos" data-open="true">
+            <div class="side-widget-header">
+              <button class="widget-toggle-btn" data-target="avisos" aria-expanded="true">
+                <i class="ph-bold ph-megaphone"></i>
+                <span>Avisos</span>
+                <i class="ph-bold ph-caret-down widget-chevron"></i>
+              </button>
+              <a href="#" class="side-widget-link" data-nav="agenda">Ver todos</a>
+            </div>
+            <div class="side-widget-body" id="body-avisos">
+              <div class="eventos-list" id="dash-avisos-list"></div>
+            </div>
+          </div>
+
+          <!-- CALENDÁRIO (padrão: aberto) -->
+          <div class="side-widget" data-widget="calendario" data-open="true">
+            <div class="side-widget-header">
+              <button class="widget-toggle-btn" data-target="calendario" aria-expanded="true">
+                <i class="ph-bold ph-calendar-blank"></i>
+                <span id="cal-month-label"></span>
+                <i class="ph-bold ph-caret-down widget-chevron"></i>
+              </button>
+              <div class="cal-nav">
+                <button id="cal-prev" aria-label="Mês anterior"><i class="ph-bold ph-caret-left"></i></button>
+                <button id="cal-next" aria-label="Próximo mês"><i class="ph-bold ph-caret-right"></i></button>
+              </div>
+            </div>
+            <div class="side-widget-body" id="body-calendario">
+              <div class="cal-grid" id="cal-grid"></div>
+            </div>
+          </div>
+
+          <!-- EVENTOS COM DATA (padrão: fechado) -->
+          <div class="side-widget" data-widget="eventos" data-open="false">
+            <div class="side-widget-header">
+              <button class="widget-toggle-btn" data-target="eventos" aria-expanded="false">
+                <i class="ph-bold ph-calendar-check"></i>
+                <span>Próximos Eventos</span>
+                <i class="ph-bold ph-caret-down widget-chevron"></i>
+              </button>
+              <a href="#" class="side-widget-link" data-nav="agenda">Ver todos</a>
+            </div>
+            <div class="side-widget-body" id="body-eventos" hidden>
+              <div class="eventos-list" id="dash-eventos-list"></div>
+            </div>
+          </div>
+
+          <!-- INSTAGRAM (padrão: fechado) -->
+          <div class="side-widget" data-widget="instagram" data-open="false">
+            <div class="side-widget-header">
+              <button class="widget-toggle-btn" data-target="instagram" aria-expanded="false">
+                <i class="ph-bold ph-instagram-logo"></i>
+                <span>Instagram</span>
+                <i class="ph-bold ph-caret-down widget-chevron"></i>
+              </button>
+          <a href="https://instagram.com/smader_luziania" target="_blank" rel="noopener" class="ig-follow-btn">
+                <i class="ph-bold ph-arrow-square-out"></i> Ver perfil
+              </a>
+            </div>
+            <div class="side-widget-body" id="body-instagram" hidden>
+              <div class="ig-info-box">
+                <i class="ph-bold ph-lock-key"></i>
+                <div>
+                  <strong>Integração via API do Instagram</strong>
+                  <p>Para exibir postagens automáticas, configure o token de acesso do Instagram Basic Display API no campo abaixo e recarregue a página.</p>
+                  <div class="ig-token-row">
+                    <input type="text" id="ig-token-input" placeholder="Cole seu Access Token aqui..." />
+                    <button id="ig-token-save">Salvar</button>
+                  </div>
+                </div>
+              </div>
+              <div class="ig-grid" id="ig-grid"></div>
+            </div>
+          </div>
+
+        </aside><!-- /dashboard-side -->
+
+      </div><!-- /dashboard-layout -->
+
+    </section>
+
+    <!-- ===== PÁGINA: FUNCIONÁRIOS ===== -->
+    <section class="page" id="page-funcionarios">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Funcionários</h1>
+          <p class="page-subtitle">Equipe da Secretaria de Agricultura</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="func-search" placeholder="Buscar por nome ou cargo..." autocomplete="off" />
+      </div>
+
+      <!-- Lista de funcionários (preenchida via JS) -->
+      <div class="list-grid" id="func-list"></div>
+
+      <!-- Detalhe do funcionário (modal) -->
+      <div class="detail-overlay" id="func-detail-overlay">
+        <div class="detail-panel" id="func-detail-panel">
+          <button class="detail-close" id="func-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="func-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: MANUAIS ===== -->
+    <section class="page" id="page-manuais">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Manuais</h1>
+          <p class="page-subtitle">Procedimentos e orientações operacionais</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="manuais-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+      </div>
+
+      <div class="list-grid" id="manuais-list"></div>
+
+      <!-- Detalhe do manual (modal) -->
+      <div class="detail-overlay" id="manual-detail-overlay">
+        <div class="detail-panel" id="manual-detail-panel">
+          <button class="detail-close" id="manual-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="manual-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: PROCESSOS ===== -->
+    <section class="page" id="page-processos">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Processos</h1>
+          <p class="page-subtitle">Fluxos de trabalho do departamento</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="processos-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+      </div>
+
+      <div class="list-grid" id="processos-list"></div>
+
+      <!-- Detalhe do processo (modal) -->
+      <div class="detail-overlay" id="processo-detail-overlay">
+        <div class="detail-panel" id="processo-detail-panel">
+          <button class="detail-close" id="processo-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="processo-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: ARQUIVOS ===== -->
+    <section class="page" id="page-arquivos">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Arquivos</h1>
+          <p class="page-subtitle">Documentos e formulários do departamento</p>
+        </div>
+        <span class="arquivos-contador-badge" id="arquivos-contador"></span>
+      </header>
+
+      <!-- Filtro por tags -->
+      <div class="tag-filter-section">
+        <div class="tag-filter-label">
+          <i class="ph-bold ph-funnel"></i>
+          Filtrar por tag
+        </div>
+        <div class="tag-filter-bar" id="arquivos-tags"></div>
+      </div>
+
+      <div class="tag-filter-section">
+        <div class="tag-filter-label">
+          <i class="ph-bold ph-file"></i>
+          Filtrar por extensão
+        </div>
+        <div class="tag-filter-bar" id="arquivos-extensoes"></div>
+      </div>
+
+      <!-- Busca por texto -->
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="arquivo-search" placeholder="Buscar por nome do arquivo..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="limparFiltros()">
+          <i class="ph-bold ph-x-circle"></i> Limpar filtros
+        </button>
+      </div>
+
+      <div class="list-grid" id="arquivos-list"></div>
+      <div class="arquivos-pagination" id="arquivos-pagination"></div>
+
+      <!-- Detalhe do arquivo -->
+      <div class="detail-overlay" id="arquivo-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="arquivo-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="arquivo-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: INFORMAÇÕES ===== -->
+    <section class="page" id="page-informacoes">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Informações</h1>
+          <p class="page-subtitle">Dados institucionais, municipais e contatos de referência</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="info-search" placeholder="Buscar em todas as seções..." autocomplete="off" />
+      </div>
+
+      <!-- SEÇÃO 1: Secretaria -->
+      <div class="info-section-header">
+        <div class="info-section-icon" style="--ic: #2d6a4f"><i class="ph-bold ph-leaf"></i></div>
+        <div>
+          <h2 class="info-section-title">Nossa Secretaria</h2>
+          <p class="info-section-sub">Dados institucionais, contatos e gestão da SMADER</p>
+        </div>
+      </div>
+      <div class="list-grid" id="juridico-list"></div>
+
+      <!-- SEÇÃO 2: Município e Prefeitura -->
+      <div class="info-section-header" style="margin-top: 40px">
+        <div class="info-section-icon" style="--ic: #3d5c7a"><i class="ph-bold ph-buildings"></i></div>
+        <div>
+          <h2 class="info-section-title">Município e Prefeitura</h2>
+          <p class="info-section-sub">Contatos internos, dados jurídicos da prefeitura e informações do município</p>
+        </div>
+      </div>
+      <div class="list-grid" id="municipio-list"></div>
+
+      <!-- SEÇÃO 3: Órgãos Externos -->
+      <div class="info-section-header" style="margin-top: 40px">
+        <div class="info-section-icon" style="--ic: #7a5c3d"><i class="ph-bold ph-globe"></i></div>
+        <div>
+          <h2 class="info-section-title">Órgãos e Entidades Externas</h2>
+          <p class="info-section-sub">Contatos de referência: EMATER, SEAPA, SMADER estadual, SENAR e outros</p>
+        </div>
+      </div>
+      <div class="list-grid" id="orgaos-list"></div>
+
+      <!-- Overlays de detalhe compartilhados pelo módulo -->
+      <div class="detail-overlay" id="juridico-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="juridico-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="juridico-detail-content"></div>
+        </div>
+      </div>
+
+      <div class="detail-overlay" id="municipio-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="municipio-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="municipio-detail-content"></div>
+        </div>
+      </div>
+
+      <div class="detail-overlay" id="orgaos-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="orgaos-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="orgaos-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: VEÍCULOS ===== -->
+    <section class="page" id="page-veiculos">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Veículos</h1>
+          <p class="page-subtitle">Frota e patrimônio oficial da secretaria</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="veiculos-search" placeholder="Buscar por nome, modelo ou placa..." autocomplete="off" />
+      </div>
+
+      <div class="list-grid" id="veiculos-list"></div>
+
+      <div class="detail-overlay" id="veiculo-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="veiculo-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="veiculo-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: SISTEMAS ===== -->
+    <section class="page" id="page-sistemas">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Sistemas</h1>
+          <p class="page-subtitle">Acesso rápido aos sistemas externos utilizados pela secretaria</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="sistemas-search" placeholder="Buscar por nome ou órgão..." autocomplete="off" />
+      </div>
+
+      <div class="list-grid" id="sistemas-list"></div>
+
+      <div class="detail-overlay" id="sistema-detail-overlay">
+        <div class="detail-panel" id="sistema-detail-panel">
+          <button class="detail-close" id="sistema-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="sistema-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: SERVIÇOS ===== -->
+    <section class="page" id="page-servicos">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Serviços</h1>
+          <p class="page-subtitle">Serviços prestados pela Secretaria de Agricultura à população</p>
+        </div>
+      </header>
+
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="servicos-search" placeholder="Buscar por nome ou categoria..." autocomplete="off" />
+      </div>
+
+      <div class="list-grid" id="servicos-list"></div>
+
+      <!-- Detalhe do serviço -->
+      <div class="detail-overlay" id="servico-detail-overlay">
+        <div class="detail-panel" id="servico-detail-panel">
+          <button class="detail-close" id="servico-detail-close">
+            <i class="ph-bold ph-x"></i>
+          </button>
+          <div id="servico-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: AVISOS / AGENDA ===== -->
+    <section class="page" id="page-agenda">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Avisos / Agenda</h1>
+          <p class="page-subtitle">Comunicados permanentes e eventos com data da secretaria</p>
+        </div>
+      </header>
+
+      <!-- Busca única filtra ambas as seções -->
+      <div class="search-bar module-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input type="text" id="agenda-search" placeholder="Buscar em avisos e eventos..." autocomplete="off" />
+      </div>
+
+      <!-- SEÇÃO: AVISOS -->
+      <div class="info-section-header">
+        <div class="info-section-icon" style="--ic: #7a3d5c"><i class="ph-bold ph-megaphone"></i></div>
+        <div>
+          <h2 class="info-section-title">Avisos</h2>
+          <p class="info-section-sub">Comunicados permanentes — ficam visíveis no dashboard enquanto ativos</p>
+        </div>
+      </div>
+      <div class="agenda-grid" id="avisos-list"></div>
+
+      <!-- SEÇÃO: EVENTOS -->
+      <div class="info-section-header" style="margin-top:36px">
+        <div class="info-section-icon" style="--ic: #3d5c7a"><i class="ph-bold ph-calendar-check"></i></div>
+        <div>
+          <h2 class="info-section-title">Agenda de Eventos</h2>
+          <p class="info-section-sub">Eventos com data definida — aparecem no dashboard até o término</p>
+        </div>
+      </div>
+      <div class="agenda-grid" id="agenda-eventos-list"></div>
+
+      <!-- SEÇÃO: HISTÓRICO -->
+      <div class="info-section-header historico-header" style="margin-top:36px">
+        <div class="info-section-icon" style="--ic: #8a9482"><i class="ph-bold ph-clock-counter-clockwise"></i></div>
+        <div style="flex:1">
+          <h2 class="info-section-title" style="color:var(--text-secondary)">Histórico de Eventos</h2>
+          <p class="info-section-sub">Eventos encerrados — do mais recente ao mais antigo</p>
+        </div>
+        <button class="historico-toggle-btn" id="historico-toggle" onclick="toggleHistorico()">
+          <i class="ph-bold ph-caret-down" id="historico-chevron"></i>
+          <span id="historico-toggle-label">Mostrar</span>
+        </button>
+      </div>
+      <div id="historico-eventos-wrap" hidden>
+        <div class="agenda-grid" id="agenda-historico-list"></div>
+      </div>
+
+      <!-- Detail: Aviso -->
+      <div class="detail-overlay" id="aviso-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="aviso-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="aviso-detail-content"></div>
+        </div>
+      </div>
+
+      <!-- Detail: Evento -->
+      <div class="detail-overlay" id="evento-detail-overlay">
+        <div class="detail-panel">
+          <button class="detail-close" id="evento-detail-close"><i class="ph-bold ph-x"></i></button>
+          <div id="evento-detail-content"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== PÁGINA: RELATÓRIOS ===== -->
+    <section class="page" id="page-relatorios">
+
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Relatórios</h1>
+          <p class="page-subtitle">Listagens prontas para consulta rápida e impressão</p>
+        </div>
+      </header>
+
+      <div class="relatorios-shell">
+        <div class="relatorios-grid" id="relatorios-grid">
+          <button class="relatorio-card" data-relatorio="funcionarios">
+            <span class="relatorio-card-icon" style="--rc:#3d7a5e"><i class="ph-bold ph-users"></i></span>
+            <span class="relatorio-card-title">Funcionários</span>
+            <span class="relatorio-card-desc">Relação completa dos funcionários cadastrados.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="veiculos">
+            <span class="relatorio-card-icon" style="--rc:#3d5c7a"><i class="ph-bold ph-truck"></i></span>
+            <span class="relatorio-card-title">Veículos</span>
+            <span class="relatorio-card-desc">Listagem textual da frota e patrimônio.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="secretaria">
+            <span class="relatorio-card-icon" style="--rc:#7a6b3d"><i class="ph-bold ph-buildings"></i></span>
+            <span class="relatorio-card-title">Dados da Secretaria</span>
+            <span class="relatorio-card-desc">Contatos, endereços e dados institucionais.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="municipio">
+            <span class="relatorio-card-icon" style="--rc:#5d6f8c"><i class="ph-bold ph-bank"></i></span>
+            <span class="relatorio-card-title">Município e Prefeitura</span>
+            <span class="relatorio-card-desc">Dados administrativos e contatos do município.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="orgaos">
+            <span class="relatorio-card-icon" style="--rc:#8a5c3d"><i class="ph-bold ph-handshake"></i></span>
+            <span class="relatorio-card-title">Órgãos Parceiros</span>
+            <span class="relatorio-card-desc">Relação de órgãos externos e seus contatos.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="servicos">
+            <span class="relatorio-card-icon" style="--rc:#3b6b59"><i class="ph-bold ph-wrench"></i></span>
+            <span class="relatorio-card-title">Serviços</span>
+            <span class="relatorio-card-desc">Serviços cadastrados com descrição e solicitação.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="agenda">
+            <span class="relatorio-card-icon" style="--rc:#3d5c7a"><i class="ph-bold ph-calendar-check"></i></span>
+            <span class="relatorio-card-title">Agenda</span>
+            <span class="relatorio-card-desc">Eventos em andamento e futuros, em ordem de proximidade.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="historico-agenda">
+            <span class="relatorio-card-icon" style="--rc:#6b5a45"><i class="ph-bold ph-clock-counter-clockwise"></i></span>
+            <span class="relatorio-card-title">Histórico de Agenda</span>
+            <span class="relatorio-card-desc">Eventos encerrados, do mais recente para o mais antigo.</span>
+          </button>
+          <button class="relatorio-card" data-relatorio="ferias">
+            <span class="relatorio-card-icon" style="--rc:#2d6a4f"><i class="ph-bold ph-umbrella"></i></span>
+            <span class="relatorio-card-title">Escala de Férias</span>
+            <span class="relatorio-card-desc">Períodos cadastrados com status calculado.</span>
+          </button>
+        </div>
+
+        <div class="relatorio-view" id="relatorio-view" hidden>
+          <div class="relatorio-toolbar">
+            <button class="relatorio-toolbar-btn" id="relatorio-back-btn" type="button">
+              <i class="ph-bold ph-arrow-left"></i> Voltar
+            </button>
+            <button class="relatorio-toolbar-btn relatorio-toolbar-btn--primary" id="relatorio-print-btn" type="button">
+              <i class="ph-bold ph-printer"></i> Imprimir
+            </button>
+          </div>
+          <div class="relatorio-print-area" id="relatorio-print-area"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Dados e camada de abstração (carregar antes do script.js) -->
+  <script src="dados.js"></script>
+  <script src="db.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
