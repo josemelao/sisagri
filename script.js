@@ -2082,15 +2082,20 @@ function openArquivo(id) {
 function initSearch() {
   const input     = document.getElementById("global-search");
   const resultsBox = document.getElementById("search-results");
+  let searchDebounceTimer = null;
   if (!input || !resultsBox) return;
 
   scheduleGlobalSearchIndexBuild();
 
   input.addEventListener("input", () => {
     const q = input.value.trim();
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
     if (q.length < 2) { resultsBox.classList.remove("visible"); resultsBox.innerHTML = ""; return; }
-    const results = buildGlobalIndex(q);
-    renderGlobalResults(results, resultsBox, input);
+
+    searchDebounceTimer = setTimeout(() => {
+      const results = buildGlobalIndex(q);
+      renderGlobalResults(results, resultsBox, input);
+    }, 300);
   });
 
   // Navegar com teclado (↑ ↓ Enter)
@@ -2427,7 +2432,7 @@ function renderGlobalResults(results, resultsBox, input) {
   resultsBox.innerHTML = shown.map((r, i) => {
     const contexto = buildContexto(r);
     return `
-      <div class="search-result-item" data-index="${i}">
+      <div class="search-result-item search-result-item--enter" data-index="${i}" style="--search-enter-delay:${Math.min(i, 5) * 26}ms">
         <div class="result-linha-1">
           <span class="result-modulo">${escapeHtml(r.modulo)}</span>
           <span class="result-item-nome">${highlightMatch(r.itemNome, q)}</span>
