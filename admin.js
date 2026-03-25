@@ -700,6 +700,72 @@ function mudarPaginaAcesso(delta) {
   ACESSO_LIST_STATE.page += delta;
   renderAcessoRapido();
 }
+const INFO_SIMPLES_LIST_STATE = {};
+
+function getInfoSimplesListState(colecao) {
+  if (!INFO_SIMPLES_LIST_STATE[colecao]) {
+    INFO_SIMPLES_LIST_STATE[colecao] = { query: '', page: 1, pageSize: 12 };
+  }
+  return INFO_SIMPLES_LIST_STATE[colecao];
+}
+
+function filtrarInfoSimplesLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.titulo || ''} ${(item.campos||[]).map(c => `${c.label || ''} ${c.valor || ''}`).join(' ')}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaInfoSimples(colecao, inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
+  const state = getInfoSimplesListState(colecao);
+  state.query = String(value || '');
+  state.page = 1;
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
+  const nextInput = document.getElementById(`infosimples-search-${colecao}`);
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+}
+
+function mudarPaginaInfoSimples(colecao, delta) {
+  const state = getInfoSimplesListState(colecao);
+  state.page += delta;
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
+}
+
+const INFO_ORGAOS_LIST_STATE = { query: '', page: 1, pageSize: 12 };
+
+function filtrarInfoOrgaosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.titulo || ''} ${item.nome_completo || ''} ${(item.campos||[]).map(c => `${c.label || ''} ${c.valor || ''}`).join(' ')}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaInfoOrgaos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
+  INFO_ORGAOS_LIST_STATE.query = String(value || '');
+  INFO_ORGAOS_LIST_STATE.page = 1;
+  renderInfoOrgaos();
+  const nextInput = document.getElementById('orgaos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+}
+
+function mudarPaginaInfoOrgaos(delta) {
+  INFO_ORGAOS_LIST_STATE.page += delta;
+  renderInfoOrgaos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || 'â€”';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -2941,15 +3007,27 @@ function salvarAcesso(id) {
 
 function renderInfoSimples(colecao, titulo, heading) {
   const lista = DB.get(colecao);
+  const state = getInfoSimplesListState(colecao);
+  const listaFiltrada = filtrarInfoSimplesLista(lista, state.query);
+  const paginacao = paginarLista(listaFiltrada, state.page, state.pageSize);
+  state.page = paginacao.page;
+
   document.getElementById('section-' + colecao).innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">${heading}</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="infosimples-search-${colecao}" value="${escHtml(state.query)}" oninput="atualizarBuscaInfoSimples('${colecao}', this)" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoSimples('${colecao}', -1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoSimples('${colecao}', 1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoInfoSimples('${colecao}')"><i class="ph-bold ph-plus"></i> Novo bloco</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>TÃ­tulo</th><th>Campos</th><th>AÃ§Ãµes</th></tr></thead>
-      <tbody>${lista.map(item => `
+      <thead><tr><th>T&#237;tulo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(item => `
         <tr>
           <td><strong>${escHtml(item.titulo)}</strong></td>
           <td>${(item.campos||[]).length} campos</td>
@@ -2958,11 +3036,11 @@ function renderInfoSimples(colecao, titulo, heading) {
             <button class="btn btn-ghost btn-sm" onclick="editarInfoSimples('${colecao}',${item.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('${colecao}',${item.id},'${escHtml(item.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr><td colspan="3" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum bloco encontrado para o filtro informado.</td></tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formInfoSimples(colecao, item = {}) {
   const camposHTML = (item.campos || []).map((c, i) => `
     <div class="dyn-item" style="gap:6px">
@@ -3036,15 +3114,26 @@ function salvarInfoSimples(colecao, id) {
    ============================================================ */
 function renderInfoOrgaos() {
   const lista = DB.get('infoOrgaos');
+  const listaFiltrada = filtrarInfoOrgaosLista(lista, INFO_ORGAOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, INFO_ORGAOS_LIST_STATE.page, INFO_ORGAOS_LIST_STATE.pageSize);
+  INFO_ORGAOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-infoOrgaos').innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Ã“rgÃ£os Externos</h1>
+      <h1 class="admin-section-title">&#211;rg&#227;os Externos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="orgaos-search" value="${escHtml(INFO_ORGAOS_LIST_STATE.query)}" oninput="atualizarBuscaInfoOrgaos(this)" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoOrgaos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoOrgaos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoOrgao()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>TÃ­tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>AÃ§Ãµes</th></tr></thead>
-      <tbody>${lista.map(o => `
+      <thead><tr><th>T&#237;tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(o => `
         <tr>
           <td><strong>${escHtml(o.titulo)}</strong></td>
           <td class="td-truncate">${escHtml(o.nome_completo)}</td>
@@ -3054,11 +3143,11 @@ function renderInfoOrgaos() {
             <button class="btn btn-ghost btn-sm" onclick="editarOrgao(${o.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('infoOrgaos',${o.id},'${escHtml(o.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum orgao encontrado para o filtro informado.</td></tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formOrgao(o = {}) {
   const camposHTML = (o.campos || []).map((c, i) => `
     <div class="dyn-item" style="gap:6px">
