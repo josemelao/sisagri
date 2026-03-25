@@ -1,0 +1,179 @@
+PLANO DE IMPLEMENTACOES - QOL ADMIN (FILTRO + PAGINACAO)
+
+Repositorio: C:\Users\Usuario\Desktop\SisAgri - Stable
+Branch de trabalho: codex/homologacao-admin
+Data de abertura: 2026-03-25
+Status geral: em andamento
+
+Objetivo
+- Implementar duas features de qualidade de vida no painel admin: FILTRO e PAGINACAO.
+- Fazer isso de forma gradual e modular, com foco maximo em nao quebrar o codigo existente.
+- Comecar pela pagina "Arquivos" (maior volume esperado). Depois replicar para as demais paginas de listagem.
+
+Escopo (alvo)
+- Paginas do admin que listam registros.
+- Excecoes (nao entram no escopo): "Visao geral" e "Configuracoes".
+- Primeira pagina: "Arquivos".
+
+Regra mestra (operacao segura)
+- Mudanca minima, no menor numero de arquivos possivel.
+- Patch local em admin (sem refactor estrutural).
+- Nao renomear IDs/classes/chaves existentes.
+- Nao alterar contratos de DB.* sem necessidade explicita.
+- Nao mudar fluxo de login, boot e inicializacao (dbInit e checks atuais).
+- Nao expor rascunhos no app principal.
+
+Economia maxima de token (para agentes)
+- Trabalhar somente nos arquivos necessarios da etapa atual.
+- Antes de mexer: localizar o ponto exato do render/handlers da pagina alvo.
+- Evitar reler arquivos longos sem motivo. Se precisar, abrir so a secao relevante.
+- Evitar "melhorias opportunisticas" fora do escopo (sem embelezar).
+
+Definicao de pronto (DoD) por pagina
+- Filtro:
+  - Campo de busca filtra registros em tempo real (ou ao confirmar) sem quebrar o render.
+  - Deve resetar a pagina para 1 ao mudar o filtro (para evitar pagina vazia).
+  - Deve mostrar contagem (ex.: "X de Y") se isso ja existir de forma simples; se nao existir, nao inventar UI grande.
+- Paginacao:
+  - Controles para navegar (prev/next) e indicacao de pagina atual.
+  - pageSize fixo por enquanto (ex.: 20/30), sem seletor inicialmente (menos risco).
+  - Deve lidar com 0 registros sem erro.
+- Compatibilidade:
+  - CRUD existente segue funcionando (criar/editar/apagar).
+  - Nada muda em DB.* e nenhuma chave persistida antiga e removida.
+
+Design de implementacao (modular e reutilizavel)
+- Objetivo tecnico: criar uma "camada" pequena e isolada para filtro/paginacao e reaproveitar nas paginas.
+- Regra: SEM criar arquivo novo. Tudo em admin.js, em funcoes pequenas, com nomes novos (nao renomear existentes).
+- Modelo recomendado (minimo):
+  - Estado por pagina: { query, page, pageSize }.
+  - Funcoes puras (sem depender do DOM):
+    - normalizarTexto(s): string (lowercase + remover acentos se ja houver util no projeto; se nao houver, manter simples).
+    - aplicarFiltro(items, query, getTextoDoItem): itemsFiltrados
+    - paginar(items, page, pageSize): { pageItems, page, totalPages, totalItems }
+  - Ligacao DOM por pagina (pequena):
+    - ler inputs, atualizar estado, chamar render existente com a lista paginada.
+    - handlers: oninput (filtro), onclick (prev/next).
+- Persistencia de estado (opcional, depois de validado):
+  - So adicionar localStorage se o admin ja usa padrao similar. Se nao, deixar em memoria para reduzir risco.
+
+Padrao de UI (minimo, sem quebrar layout)
+- Inserir um bloco pequeno acima da lista:
+  - input de filtro (placeholder "Filtrar...").
+  - texto curto de pagina ("Pagina X de Y") e botoes "Anterior/Proxima".
+- IDs novos e especificos por pagina (nao colidir com IDs existentes).
+- Nao mexer em CSS global a principio. So adicionar CSS se realmente necessario (e localizado).
+
+Protocolo de validacao por etapa (obrigatorio)
+- Ao finalizar cada etapa:
+  - Rodar checklist manual descrito na etapa.
+  - Entregar os comandos de commit.
+  - Aguardar confirmacao explicita do usuario antes de marcar etapa como concluida e antes de atualizar historico.
+
+ETAPAS (granulares e seguras)
+
+Etapa 0 - Preparacao (mapa do admin)
+Status: pendente
+Arquivos: admin.js (leitura), admin.html (leitura)
+Objetivo:
+- Identificar exatamente:
+  - Onde a pagina "Arquivos" monta/atualiza a lista.
+  - Qual funcao renderiza os itens.
+  - Quais eventos disparam refresh (ex.: depois de CRUD, load inicial).
+Saida:
+- Nota curta (no historico) com os nomes das funcoes/pontos de integracao encontrados.
+Validacao:
+- Nenhuma mudanca funcional ainda (somente mapear e confirmar pontos).
+
+Etapa 1 - Infra minima (helper de lista) em admin.js
+Status: pendente
+Arquivos: admin.js
+Objetivo:
+- Adicionar funcoes pequenas e puras para:
+  - aplicarFiltro
+  - paginar
+- Adicionar estado por pagina (apenas para Arquivos neste momento).
+Regra:
+- Nao alterar funcoes existentes (somente adicionar e integrar em 1 ponto).
+Validacao:
+- Admin carrega normalmente, sem console errors.
+- Nada muda visualmente ainda (idealmente) ou muda de forma neutra.
+Commit (quando validado):
+- git add admin.js
+- git commit -m "admin: base de filtro e paginacao (infra minima)"
+
+Etapa 2 - Aplicar em "Arquivos" (integracao com render existente)
+Status: pendente
+Arquivos: admin.js (principal), admin.html (se precisar inserir UI)
+Objetivo:
+- Conectar o helper ao fluxo da pagina "Arquivos":
+  - obter lista original
+  - filtrar por query
+  - paginar e renderizar somente pageItems
+Regra:
+- Se o render atual ja recebe uma lista, usar isso. Se nao, criar adaptacao minima.
+Validacao (manual):
+- Lista de arquivos aparece igual quando query vazia e page=1.
+- Prev/next nao quebra quando so tem 1 pagina.
+- Mudancas de filtro resetam page para 1.
+Commit (quando validado):
+- git add admin.js admin.html
+- git commit -m "admin: aplica filtro e paginacao em Arquivos"
+
+Etapa 3 - UI minima (Arquivos)
+Status: pendente
+Arquivos: admin.html e/ou admin.js e (somente se inevitavel) style.css
+Objetivo:
+- Adicionar input de filtro + controles prev/next com IDs novos.
+- Conectar eventos ao estado e refresh da lista.
+Regra:
+- UI pequena; nao redesenhar pagina.
+- Evitar CSS global; se precisar, CSS localizado (classe/ID especifico).
+Validacao (manual):
+- Digitar no filtro reduz a lista conforme esperado.
+- Navegar paginas funciona com e sem filtro.
+- CRUD (se existir na pagina) ainda atualiza a lista corretamente e respeita filtro/pagina (com regra simples: apos criar/editar/apagar, manter filtro e voltar para page 1 ou manter page atual; definir e documentar a decisao).
+Commit (quando validado):
+- git add admin.html admin.js style.css
+- git commit -m "admin: UI de filtro e paginacao (Arquivos)"
+
+Etapa 4 - Replicar para as demais paginas (uma por vez)
+Status: pendente
+Arquivos: admin.js e admin.html (somente o necessario por pagina)
+Objetivo:
+- Aplicar o mesmo modulo para cada pagina de listagem.
+Metodo:
+- Uma pagina por PR/commit (ou por etapa), com validacao completa por pagina.
+Validacao por pagina (manual):
+- Render ok com query vazia.
+- Filtro resetando pagina.
+- Prev/next e pagina X/Y coerentes.
+- CRUD da pagina nao quebra.
+Commit (por pagina, quando validado):
+- git add admin.js admin.html style.css
+- git commit -m "admin: filtro e paginacao em <NOME_DA_PAGINA>"
+
+Etapa 5 - Ajustes finais e consolidacao
+Status: pendente
+Arquivos: admin.js/admin.html/style.css (somente se necessario)
+Objetivo:
+- Remover duplicacao acidental (se tiver surgido) sem refactor grande.
+- Padronizar pageSize por pagina (se houver necessidade real).
+- Revisar comportamento de estado apos CRUD e load inicial (documentar).
+Validacao:
+- Checklist final abaixo aprovado.
+Commit (quando validado):
+- git add admin.js admin.html style.css
+- git commit -m "admin: consolida filtro e paginacao (ajustes finais)"
+
+Checklist final (antes de encerrar a trilha)
+- Boot e inicializacao do admin continuam intactos.
+- Login/logout continuam intactos.
+- Nenhum contrato DB.* foi alterado.
+- Paginas de listagem (exceto Visao geral/Configuracoes) possuem filtro + paginacao.
+- Nao ha exposicao indevida de rascunhos no app principal.
+- Nenhum erro no console ao navegar entre paginas.
+
+Historico (nao editar sem confirmacao do usuario)
+- 2026-03-25: branch codex/homologacao-admin criada.
+- 2026-03-25: plano detalhado para filtro + paginacao (inicio por Arquivos) registrado.
