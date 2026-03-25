@@ -520,6 +520,44 @@ function mudarPaginaSistemas(delta) {
   SISTEMAS_LIST_STATE.page += delta;
   renderSistemas();
 }
+const SERVICOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarServicosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.nome || ''} ${item.categoria || ''} ${item.publico || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaServicos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  SERVICOS_LIST_STATE.query = String(value || '');
+  SERVICOS_LIST_STATE.page = 1;
+  renderServicos();
+
+  const nextInput = document.getElementById('servicos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaServicos(delta) {
+  SERVICOS_LIST_STATE.page += delta;
+  renderServicos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1990,15 +2028,32 @@ function salvarSistema(id) {
    ============================================================ */
 function renderServicos() {
   const lista = DB.get('servicos');
+  const listaFiltrada = filtrarServicosLista(lista, SERVICOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, SERVICOS_LIST_STATE.page, SERVICOS_LIST_STATE.pageSize);
+  SERVICOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-servicos').innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Serviços</h1>
+      <h1 class="admin-section-title">Servi&#231;os</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="servicos-search"
+          value="${escHtml(SERVICOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaServicos(this)"
+          placeholder="Buscar por nome, categoria ou publico..."
+          style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaServicos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaServicos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoServico()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Categoria</th><th>Público</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(s => `
+      <thead><tr><th>Nome</th><th>Categoria</th><th>P&#250;blico</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(s => `
         <tr>
           <td><strong class="td-truncate">${escHtml(s.nome)}</strong></td>
           <td><span class="badge">${escHtml(s.categoria)}</span></td>
@@ -2008,11 +2063,13 @@ function renderServicos() {
             <button class="btn btn-ghost btn-sm" onclick="editarServico(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('servicos',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum servico encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formServico(s = {}) {
   const cats = ['Trator','Arborização','Capacitação','Insumos','Outro'];
   return `
