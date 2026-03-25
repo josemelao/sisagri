@@ -1,196 +1,235 @@
-PLANO DE IMPLEMENTACOES - QOL ADMIN (FILTRO + PAGINACAO)
+PLANO DE HOMOLOGACAO ADMIN - QOL LISTAGENS (BUSCA, PAGINACAO, ORDENACAO)
 
-Repositorio: C:\Users\Usuario\Desktop\SisAgri - Stable
+Status geral: EM ANDAMENTO
 Branch de trabalho: codex/homologacao-admin
-Data de abertura: 2026-03-25
-Status geral: em andamento
+Escopo deste documento: handoff operacional entre agentes com foco em seguranca, mudanca minima e continuidade.
 
-Objetivo
-- Implementar duas features de qualidade de vida no painel admin: FILTRO e PAGINACAO.
-- Fazer isso de forma gradual e modular, com foco maximo em nao quebrar o codigo existente.
-- Comecar pela pagina "Arquivos" (maior volume esperado). Depois replicar para as demais paginas de listagem.
+================================================================
+1) OBJETIVO DO CICLO
+================================================================
+- Padronizar qualidade de vida nas telas de listagem do admin.
+- Aplicar busca + paginacao de forma gradual e validada por etapa.
+- Consolidar historico do que foi feito, como foi feito, e o que ainda falta.
+- Planejar proximas entregas: ordenacao configuravel (id/nome) e persistencia de configuracoes no Supabase com fallback local.
 
-Escopo (alvo)
-- Paginas do admin que listam registros.
-- Excecoes (nao entram no escopo): "Visao geral" e "Configuracoes".
-- Primeira pagina: "Arquivos".
+Fora de escopo imediato:
+- Refactor estrutural amplo.
+- Mudanca de arquitetura do DB.
+- Reescrita total do admin.js.
 
-Regra mestra (operacao segura)
-- Mudanca minima, no menor numero de arquivos possivel.
-- Patch local em admin (sem refactor estrutural).
-- Nao renomear IDs/classes/chaves existentes.
-- Nao alterar contratos de DB.* sem necessidade explicita.
-- Nao mudar fluxo de login, boot e inicializacao (dbInit e checks atuais).
-- Nao expor rascunhos no app principal.
+================================================================
+2) ESTADO ATUAL CONSOLIDADO
+================================================================
+2.1 Concluido e validado pelo usuario (confirmacoes "comitado" no chat)
+- Busca (search bar) + paginacao foram implantadas gradualmente nas telas de listagem do admin, seguindo validacao por etapas.
+- Correcao de foco da busca (bug de perder foco a cada caractere) realizada e validada.
+- Correcao de texto/encoding em labels que estavam quebrados (ex.: "Titulo", "Categoria", "Passos", "Acoes") realizada e validada.
+- Alinhamento da coluna de acoes para a direita nas tabelas (`admin-table-wrap`) realizado e validado.
 
-Economia maxima de token (para agentes)
-- Trabalhar somente nos arquivos necessarios da etapa atual.
-- Antes de mexer: localizar o ponto exato do render/handlers da pagina alvo.
-- Evitar reler arquivos longos sem motivo. Se precisar, abrir so a secao relevante.
-- Evitar "melhorias opportunisticas" fora do escopo (sem embelezar).
+2.2 Implementado recentemente e pendente de registro final neste plano
+- Ordenacao default por NOME (ordem alfabetica) solicitada para reduzir confusao em listas antes ordenadas por criacao/ID.
+- Necessidade futura ja identificada: ordenacao clicavel por cabecalho (nao implementada neste ciclo documental).
 
-Definicao de pronto (DoD) por pagina
-- Filtro:
-  - Campo de busca filtra registros em tempo real (ou ao confirmar) sem quebrar o render.
-  - Deve resetar a pagina para 1 ao mudar o filtro (para evitar pagina vazia).
-  - Deve mostrar contagem (ex.: "X de Y") se isso ja existir de forma simples; se nao existir, nao inventar UI grande.
-- Paginacao:
-  - Controles para navegar (prev/next) e indicacao de pagina atual.
-  - pageSize fixo por enquanto (ex.: 20/30), sem seletor inicialmente (menos risco).
-  - Deve lidar com 0 registros sem erro.
-- Compatibilidade:
-  - CRUD existente segue funcionando (criar/editar/apagar).
-  - Nada muda em DB.* e nenhuma chave persistida antiga e removida.
+2.3 Pendencias estrategicas (ainda nao implementadas no fluxo final)
+- Expor em Configuracoes do admin a opcao de ordenacao default (ID ou NOME).
+- Persistir configuracoes em tabela propria no Supabase (com fallback local para indisponibilidade).
+- Formalizar migracao segura por etapas para essa configuracao, com validacao por etapa e log de auditoria no plano.
 
-Design de implementacao (modular e reutilizavel)
-- Objetivo tecnico: criar uma "camada" pequena e isolada para filtro/paginacao e reaproveitar nas paginas.
-- Regra: SEM criar arquivo novo. Tudo em admin.js, em funcoes pequenas, com nomes novos (nao renomear existentes).
-- Modelo recomendado (minimo):
-  - Estado por pagina: { query, page, pageSize }.
-  - Funcoes puras (sem depender do DOM):
-    - normalizarTexto(s): string (lowercase + remover acentos se ja houver util no projeto; se nao houver, manter simples).
-    - aplicarFiltro(items, query, getTextoDoItem): itemsFiltrados
-    - paginar(items, page, pageSize): { pageItems, page, totalPages, totalItems }
-  - Ligacao DOM por pagina (pequena):
-    - ler inputs, atualizar estado, chamar render existente com a lista paginada.
-    - handlers: oninput (filtro), onclick (prev/next).
-- Persistencia de estado (opcional, depois de validado):
-  - So adicionar localStorage se o admin ja usa padrao similar. Se nao, deixar em memoria para reduzir risco.
+================================================================
+3) HISTORICO OPERACIONAL (LOG)
+================================================================
+Regra de leitura:
+- "Validado": confirmacao explicita do usuario no chat.
+- "Commit": quando usuario afirmou "comitado/comitei".
+- "Ressalvas": observacoes levantadas pelo usuario.
 
-Padrao de UI (minimo, sem quebrar layout)
-- Inserir um bloco pequeno acima da lista:
-  - input de filtro (placeholder "Filtrar...").
-  - texto curto de pagina ("Pagina X de Y") e botoes "Anterior/Proxima".
-- IDs novos e especificos por pagina (nao colidir com IDs existentes).
-- Nao mexer em CSS global a principio. So adicionar CSS se realmente necessario (e localizado).
+H-01 | Planejamento inicial QOL admin
+- O que: definicao de estrategia gradual para busca + paginacao.
+- Como: rollout por tela, iniciando em "Arquivos", com validacao antes de expandir.
+- Validado: SIM (usuario aprovou abordagem gradual).
+- Commit: SIM (documentacao inicial comitada).
+- Ressalvas: usuario pediu plano mais detalhado para outros agentes.
 
-Protocolo de validacao por etapa (obrigatorio)
-- Ao finalizar cada etapa:
-  - Rodar checklist manual descrito na etapa.
-  - Entregar os comandos de commit.
-  - Aguardar confirmacao explicita do usuario antes de marcar etapa como concluida e antes de atualizar historico.
+H-02 | Implementacao inicial em Arquivos
+- O que: busca + paginacao na tela de Arquivos.
+- Como: patch local em fluxo existente, sem refactor estrutural.
+- Validado: SIM (funcionamento OK reportado).
+- Commit: SIM.
+- Ressalvas: bug de foco na barra de busca detectado apos primeira entrega.
 
-ETAPAS (granulares e seguras)
+H-03 | Correcao de bug de foco na busca
+- O que: campo de busca perdia foco apos 1 caractere.
+- Como: ajuste pontual para evitar re-render destrutivo no input ativo.
+- Validado: SIM (usuario confirmou busca e paginacao funcionando).
+- Commit: SIM.
+- Ressalvas: nenhuma apos correcao.
 
-Etapa 0 - Preparacao (mapa do admin)
-Status: pendente
-Arquivos: admin.js (leitura), admin.html (leitura)
+H-04 | Correcao de encoding/textos quebrados
+- O que: labels com caracteres quebrados (ex.: "T?tulo", "A??es").
+- Como: normalizacao textual e ajuste de encoding nos pontos afetados.
+- Validado: SIM.
+- Commit: SIM.
+- Ressalvas: manter padrao ASCII quando possivel para reduzir risco de regressao de encoding.
+
+H-05 | Expansao gradual para demais paginas de listagem
+- O que: rollout progressivo da mesma base de busca + paginacao nas demais telas de listagem.
+- Como: repeticao modular, validacao por etapa, sem alterar visao geral/configuracoes.
+- Validado: SIM (multiplos "comitado" por etapa).
+- Commit: SIM (por etapas).
+- Ressalvas: priorizar velocidade sem abrir mao de seguranca.
+
+H-06 | Ajuste de UX de tabela
+- O que: alinhar coluna de acoes a direita em `admin-table-wrap`.
+- Como: ajuste de estilo/estrutura local sem alterar contratos.
+- Validado: SIM.
+- Commit: SIM.
+- Ressalvas: nenhuma.
+
+H-07 | Ordenacao default por nome (etapa tecnica recente)
+- O que: mudar ordenacao default para NOME nas listagens relevantes.
+- Como: ordenacao alfabetica aplicada por padrao para reduzir ambiguidade visual.
+- Validado: A CONFIRMAR NESTE CICLO DE PLANO (historico indica implementacao recente).
+- Commit: A CONFIRMAR (depende do fluxo manual do usuario).
+- Ressalvas: usuario quer controle explicito em Configuracoes (ID/NOME) no futuro.
+
+================================================================
+4) STATUS FUNCIONAL (CHECKLIST DE COBERTURA)
+================================================================
+- Busca nas listagens admin: CONCLUIDO (validado por etapas).
+- Paginacao nas listagens admin: CONCLUIDO (validado por etapas).
+- Fix de foco da busca: CONCLUIDO.
+- Fix de encoding/texto quebrado: CONCLUIDO.
+- Coluna "Acoes" alinhada a direita: CONCLUIDO.
+- Ordenacao default por nome no codigo: IMPLEMENTADO RECENTE (validacao/commit final: conferir no git local).
+- Ordenacao configuravel via Configuracoes (ID/NOME): PENDENTE.
+- Persistencia de configuracoes no Supabase + fallback local: PENDENTE.
+- Ordenacao por clique em cabecalhos: PENDENTE (futuro, nao bloqueante).
+
+================================================================
+5) PLANO FUTURO DETALHADO (SEGURO E MODULAR)
+================================================================
+Fase F1 - Preparacao e especificacao de configuracoes
 Objetivo:
-- Identificar exatamente:
-  - Onde a pagina "Arquivos" monta/atualiza a lista.
-  - Qual funcao renderiza os itens.
-  - Quais eventos disparam refresh (ex.: depois de CRUD, load inicial).
-Saida:
-- Nota curta (no historico) com os nomes das funcoes/pontos de integracao encontrados.
-Validacao:
-- Nenhuma mudanca funcional ainda (somente mapear e confirmar pontos).
+- Definir contrato unico para preferencias do admin, com chave de ordenacao default por modulo/lista.
 
-Etapa 1 - Infra minima (helper de lista) em admin.js
-Status: pendente
-Arquivos: admin.js
-Objetivo:
-- Adicionar funcoes pequenas e puras para:
-  - aplicarFiltro
-  - paginar
-- Adicionar estado por pagina (apenas para Arquivos neste momento).
-Regra:
-- Nao alterar funcoes existentes (somente adicionar e integrar em 1 ponto).
-Validacao:
-- Admin carrega normalmente, sem console errors.
-- Nada muda visualmente ainda (idealmente) ou muda de forma neutra.
-Commit (quando validado):
-- git add admin.js
-- git commit -m "admin: base de filtro e paginacao (infra minima)"
+Entregaveis:
+- Especificacao de chave de configuracao:
+  - `default_sort_mode`: "id" | "nome"
+  - (opcional futuro) `default_sort_field_por_modulo`: mapa por secao
+- Regras de fallback:
+  1. valor salvo no Supabase
+  2. valor salvo localmente
+  3. padrao seguro (nome, se usuario assim mantiver)
 
-Etapa 2 - Aplicar em "Arquivos" (integracao com render existente)
-Status: pendente
-Arquivos: admin.js (principal), admin.html (se precisar inserir UI)
-Objetivo:
-- Conectar o helper ao fluxo da pagina "Arquivos":
-  - obter lista original
-  - filtrar por query
-  - paginar e renderizar somente pageItems
-Regra:
-- Se o render atual ja recebe uma lista, usar isso. Se nao, criar adaptacao minima.
-Validacao (manual):
-- Lista de arquivos aparece igual quando query vazia e page=1.
-- Prev/next nao quebra quando so tem 1 pagina.
-- Mudancas de filtro resetam page para 1.
-Commit (quando validado):
-- git add admin.js admin.html
-- git commit -m "admin: aplica filtro e paginacao em Arquivos"
+Validacao da fase:
+- Documento atualizado com contrato e valores aceitos.
+- Sem alteracao de comportamento em producao nesta fase.
 
-Etapa 3 - UI minima (Arquivos)
-Status: pendente
-Arquivos: admin.html e/ou admin.js e (somente se inevitavel) style.css
+Fase F2 - Persistencia de configuracoes (infra)
 Objetivo:
-- Adicionar input de filtro + controles prev/next com IDs novos.
-- Conectar eventos ao estado e refresh da lista.
-Regra:
-- UI pequena; nao redesenhar pagina.
-- Evitar CSS global; se precisar, CSS localizado (classe/ID especifico).
-Validacao (manual):
-- Digitar no filtro reduz a lista conforme esperado.
-- Navegar paginas funciona com e sem filtro.
-- CRUD (se existir na pagina) ainda atualiza a lista corretamente e respeita filtro/pagina (com regra simples: apos criar/editar/apagar, manter filtro e voltar para page 1 ou manter page atual; definir e documentar a decisao).
-Commit (quando validado):
-- git add admin.html admin.js style.css
-- git commit -m "admin: UI de filtro e paginacao (Arquivos)"
+- Criar tabela de configuracoes no Supabase sem quebrar fallback local.
 
-Etapa 4 - Replicar para as demais paginas (uma por vez)
-Status: pendente
-Arquivos: admin.js e admin.html (somente o necessario por pagina)
-Objetivo:
-- Aplicar o mesmo modulo para cada pagina de listagem.
-Metodo:
-- Uma pagina por PR/commit (ou por etapa), com validacao completa por pagina.
-Validacao por pagina (manual):
-- Render ok com query vazia.
-- Filtro resetando pagina.
-- Prev/next e pagina X/Y coerentes.
-- CRUD da pagina nao quebra.
-Commit (por pagina, quando validado):
-- git add admin.js admin.html style.css
-- git commit -m "admin: filtro e paginacao em <NOME_DA_PAGINA>"
+Tabela proposta (sugestao conservadora):
+- Nome: `admin_settings`
+- Colunas minimas:
+  - `id` (uuid/pk)
+  - `scope` (text) -> ex.: "global"
+  - `default_sort_mode` (text, valores: "id" | "nome")
+  - `updated_at` (timestamp)
+  - `updated_by` (text opcional, auditoria simples)
 
-Etapa 5 - Ajustes finais e consolidacao
-Status: pendente
-Arquivos: admin.js/admin.html/style.css (somente se necessario)
-Objetivo:
-- Remover duplicacao acidental (se tiver surgido) sem refactor grande.
-- Padronizar pageSize por pagina (se houver necessidade real).
-- Revisar comportamento de estado apos CRUD e load inicial (documentar).
-- Manter ordenacao alfabetica padrao por nome/titulo nas listagens.
-Validacao:
-- Checklist final abaixo aprovado.
-Commit (quando validado):
-- git add admin.js admin.html style.css
-- git commit -m "admin: consolida filtro e paginacao (ajustes finais)"
+Regras de seguranca:
+- Ler/escrever com anon key + politicas RLS adequadas ao fluxo admin existente.
+- Nao usar service_role no frontend.
+- Se Supabase falhar, manter operacao com storage local sem travar UI.
 
-Backlog futuro - Ordenacao por cabecalhos
-Status: pendente
-Arquivos alvo: admin.js e admin.html
+Validacao da fase:
+- Teste de leitura da configuracao com fallback.
+- Teste de escrita e reaplicacao apos reload.
+- Teste de indisponibilidade do Supabase (graceful fallback).
+
+Fase F3 - UI em Configuracoes do admin
 Objetivo:
-- Permitir ordenar clicando no cabecalho de cada coluna relevante.
-- Preservar ordenacao padrao inicial por nome/titulo quando a pagina carrega.
+- Exibir opcao de ordenacao default de forma clara em Configuracoes.
+
+Entregaveis de UI:
+- Controle unico: "Ordenacao padrao das listas" com opcoes:
+  - Nome (alfabetica)
+  - ID (criacao)
+- Acao salvar + feedback visual de sucesso/erro.
+- Estado inicial da UI refletindo preferencia carregada.
+
+Validacao da fase:
+- Alterar para ID, salvar, recarregar, confirmar persistencia.
+- Alterar para NOME, salvar, recarregar, confirmar persistencia.
+- Simular erro remoto e confirmar fallback local.
+
+Fase F4 - Integracao com render das listagens
+Objetivo:
+- Aplicar a configuracao salva no ponto central de ordenacao default das tabelas admin.
+
 Regras:
-- Implementacao incremental por pagina (uma por vez).
-- Sem quebrar filtros, paginacao e CRUD existentes.
-- Manter fallback seguro para colunas sem valor.
-Validacao esperada:
-- Clique no cabecalho alterna asc/desc.
-- Indicador visual de direcao de ordenacao.
-- Estado de ordenacao nao quebra a navegacao/paginacao.
+- Mudanca minima: apenas ponto de ordenacao default.
+- Nao quebrar busca, paginacao, filtros existentes.
+- Nao alterar contratos de CRUD.
 
-Checklist final (antes de encerrar a trilha)
-- Boot e inicializacao do admin continuam intactos.
-- Login/logout continuam intactos.
-- Nenhum contrato DB.* foi alterado.
-- Paginas de listagem (exceto Visao geral/Configuracoes) possuem filtro + paginacao.
-- Nao ha exposicao indevida de rascunhos no app principal.
-- Nenhum erro no console ao navegar entre paginas.
+Validacao da fase:
+- Smoke test em telas principais de listagem.
+- Confirmar que busca e paginacao continuam estaveis.
+- Confirmar que ordenacao default troca entre ID/NOME conforme configuracao.
 
-Historico (nao editar sem confirmacao do usuario)
-- 2026-03-25: branch codex/homologacao-admin criada.
-- 2026-03-25: plano detalhado para filtro + paginacao (inicio por Arquivos) registrado.
-- 2026-03-25: ordenacao alfabetica padrao por nome/titulo aplicada nas listagens; ordenacao por cabecalho registrada como backlog futuro.
+Fase F5 - Futuro (nao bloqueante): ordenacao por cabecalho
+Objetivo:
+- Permitir clique nos cabecalhos para ordenar por coluna.
+
+Diretrizes:
+- Entrega posterior, separada, para reduzir risco.
+- Reaproveitar o estado de ordenacao default como fallback inicial.
+- Garantir acessibilidade minima (indicador visual de direcao ASC/DESC).
+
+Validacao da fase:
+- Clique em cabecalho ordena e alterna direcao.
+- Integracao com busca + paginacao sem regressao.
+
+================================================================
+6) CRITERIOS DE SEGURANCA PARA OUTROS AGENTES
+================================================================
+Antes de codar:
+1. Ler este plano inteiro.
+2. Confirmar branch atual.
+3. Alterar o menor numero de arquivos possivel.
+4. Evitar refactor fora do escopo.
+
+Durante:
+1. Implementar por fase.
+2. Parar em cada fase para validacao do usuario.
+3. Fornecer comandos de commit e aguardar confirmacao.
+4. Atualizar este plano com status real (validado/nao validado, commit/pendente).
+
+Nunca:
+- Assumir commit sem usuario confirmar.
+- Marcar como concluido sem validacao explicita.
+- Quebrar fallback local por dependencia de Supabase.
+
+================================================================
+7) LOG PADRAO PARA PROXIMAS ENTRADAS
+================================================================
+Modelo (copiar e preencher):
+- H-XX | Nome da etapa
+- O que:
+- Como:
+- Arquivos:
+- Validado pelo usuario: SIM/NAO
+- Commit confirmado pelo usuario: SIM/NAO
+- Ressalvas do usuario:
+- Proximo passo recomendado:
+
+================================================================
+8) PROXIMO PASSO RECOMENDADO (A PARTIR DE AGORA)
+================================================================
+1. Fechar status de H-07 (confirmar validacao/commit da ordenacao default por nome no codigo atual).
+2. Iniciar F1 (contrato de configuracao ID/NOME) e registrar como H-08.
+3. Seguir F2 (tabela `admin_settings` + fallback) apenas apos validacao de F1.
+4. So depois avancar para F3/F4.
+
+Fim do plano.
