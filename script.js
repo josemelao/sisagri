@@ -2161,7 +2161,7 @@ function resetDetailPanels(overlayId) {
   });
 }
 
-const DETAIL_CLOSE_TRANSITION_MS = 280;
+const DETAIL_CLOSE_TRANSITION_MS = 200;
 
 function getInstagramWidgetHTML() {
   return `
