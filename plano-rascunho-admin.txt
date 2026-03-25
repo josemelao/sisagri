@@ -789,3 +789,15 @@ ETAPA:
 - Commit previsto: feat: blinda relacionamentos e detalhes contra rascunhos
 - Commit confirmado pelo usuario: SIM
 - Observacoes: Esta etapa reforca a protecao no frontend publico apos o filtro central. A validacao pratica agora deve focar em itens vinculados entre modulos e aberturas de detalhe.
+
+ETAPA:
+- Nome: Sincronizacao entre paginas e rerenderizacao do dashboard
+- Fase: Correcao incremental apos validacao
+- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\db.js; C:\Users\Usuario\Desktop\SisAgri - Stable\script.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Adicionado listener de storage no db.js para sincronizar alteracoes entre abas/paginas e incluído rerender dos widgets vivos do dashboard no script.js apos db:collection-updated.
+- Commit previsto: fix: sincroniza dashboard com alteracoes salvas no admin
+- Commit confirmado pelo usuario: NAO
+- Observacoes: Esta correcao mira especialmente o caso da escala de ferias no dashboard nao refletir atualizacoes feitas no admin sem recarregar a pagina.

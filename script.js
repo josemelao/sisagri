@@ -142,8 +142,17 @@ function carregarDados() {
   acessoRapido  = filterPublished(DB.get('acessoRapido'));
 }
 
+function refreshLiveSections() {
+  renderFerias();
+  renderAcessoRapido();
+  renderDashAvisos();
+  renderDashEventos();
+  renderCalendar();
+}
+
 window.addEventListener('db:collection-updated', () => {
   carregarDados();
+  refreshLiveSections();
   invalidateGlobalSearchIndex();
   scheduleGlobalSearchIndexBuild();
 });

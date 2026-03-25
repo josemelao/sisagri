@@ -796,6 +796,30 @@ function _persistLocal() {
   }
 }
 
+window.addEventListener('storage', (event) => {
+  if (event.key === DB_CONFIG.LS_KEY && event.newValue) {
+    try {
+      _db = JSON.parse(event.newValue);
+      _ensureAppConfig();
+      _normalizeDbCollections();
+      _applyLocalAppConfig();
+      _notifyCollectionUpdated('sync');
+    } catch (e) {
+      console.warn('[DB] Falha ao sincronizar dados via storage event:', e);
+    }
+    return;
+  }
+
+  if (event.key === DB_CONFIG.CONFIG_LS_KEY) {
+    try {
+      _applyLocalAppConfig();
+      _notifyCollectionUpdated('layoutConfig');
+    } catch (e) {
+      console.warn('[DB] Falha ao sincronizar layoutConfig via storage event:', e);
+    }
+  }
+});
+
 /* Expõe globalmente */
 window.DB     = DB;
 window.dbInit = dbInit;
