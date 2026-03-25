@@ -2136,8 +2136,16 @@ function renderGlobalResults(results, resultsBox, input) {
    HELPERS — Overlay de detalhe
    ============================================================ */
 function openDetail(overlayId) {
-  document.getElementById(overlayId).classList.add("open");
-  document.body.style.overflow = "hidden"; // previne scroll do fundo
+  const overlay = document.getElementById(overlayId);
+  if (!overlay) return;
+
+  overlay.hidden = false;
+  overlay.classList.remove("is-closing");
+
+  requestAnimationFrame(() => {
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden"; // previne scroll do fundo
+  });
 }
 
 function resetDetailPanels(overlayId) {
@@ -2152,6 +2160,8 @@ function resetDetailPanels(overlayId) {
     if (panel) panel.remove();
   });
 }
+
+const DETAIL_CLOSE_TRANSITION_MS = 280;
 
 function getInstagramWidgetHTML() {
   return `
@@ -2198,9 +2208,32 @@ function renderDashboardInstagramWidget() {
 }
 
 function closeDetail(overlayId) {
-  resetDetailPanels(overlayId);
-  document.getElementById(overlayId).classList.remove("open");
-  document.body.style.overflow = "";
+  const overlay = document.getElementById(overlayId);
+  if (!overlay) return;
+  if (overlay.classList.contains("is-closing")) return;
+
+  const panelMap = {
+    "processo-detail-overlay": ["manual-filho-panel"],
+    "sistema-detail-overlay": ["sistema-filho-panel", "sistema-neto-panel"],
+    "servico-detail-overlay": ["servico-filho-panel", "servico-neto-panel"],
+  };
+
+  (panelMap[overlayId] || []).forEach((panelId) => {
+    const panel = document.getElementById(panelId);
+    if (panel) panel.classList.remove("open");
+  });
+
+  overlay.classList.add("is-closing");
+
+  window.setTimeout(() => {
+    overlay.hidden = true;
+    resetDetailPanels(overlayId);
+    document.body.style.overflow = "";
+
+    requestAnimationFrame(() => {
+      overlay.classList.remove("open", "is-closing");
+    });
+  }, DETAIL_CLOSE_TRANSITION_MS);
 }
 
 const CHILD_PANEL_IDS = ['manual-filho-panel', 'sistema-filho-panel', 'servico-filho-panel', 'sistema-neto-panel', 'servico-neto-panel'];

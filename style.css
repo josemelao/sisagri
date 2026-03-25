@@ -1015,6 +1015,11 @@ input { font-family: inherit; }
   pointer-events: all;
 }
 
+.detail-overlay.is-closing {
+  opacity: 1;
+  pointer-events: none;
+}
+
 .detail-panel {
   width: 520px;
   max-width: 95vw;
@@ -1024,12 +1029,16 @@ input { font-family: inherit; }
   padding: 36px 36px 60px;
   position: relative;
   box-shadow: var(--shadow-lg);
-  transform: translateX(40px);
+  transform: translateX(100%);
   transition: transform var(--transition);
 }
 
 .detail-overlay.open .detail-panel {
   transform: translateX(0);
+}
+
+.detail-overlay.is-closing .detail-panel {
+  transform: translateX(100%);
 }
 
 .detail-close {
