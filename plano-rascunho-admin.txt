@@ -279,6 +279,17 @@ Melhoria recomendada no admin:
 8. Adicionar badge/coluna de status nas tabelas do admin para mostrar:
    - Publicado
    - Rascunho
+9. Em campos de relacionamento do admin (selects, listas e vinculos por ID), manter itens draft visiveis, mas sinalizados com sufixo "(Rascunho)".
+10. Aplicar a sinalizacao especialmente em relacionamentos cujo item draft pode impedir exibicao indireta no publico, como:
+   - escalaFerias -> funcionario_id
+   - processos -> etapas[].manuais_ids
+   - sistemas -> manuais_ids e processos_ids
+   - servicos -> processos_ids
+   - manuais -> documentos[].arquivo_id
+11. Objetivo da sinalizacao:
+   - nao alterar a regra de publicacao
+   - nao ocultar a opcao no admin
+   - informar claramente ao administrador quando um vinculo com item draft pode impedir exibicao publica
 
 Criterio de aceite:
 - Todo modal exibe o switch.
@@ -572,6 +583,7 @@ CHECKLIST OPERACIONAL DE IMPLEMENTACAO
 [ ] Revisar renderRelatorioHistoricoAgenda()
 [ ] Revisar renderRelatorioFerias()
 [ ] Adicionar badge/coluna de status nas tabelas do admin (recomendado)
+[ ] Sinalizar "(Rascunho)" em relacionamentos do admin que apontem para itens draft (recomendado)
 [ ] Revisar compatibilidade com localStorage legado
 [ ] Revisar compatibilidade com dados.js
 [ ] Revisar exportacao, se aplicavel
@@ -801,3 +813,27 @@ ETAPA:
 - Commit previsto: fix: sincroniza dashboard com alteracoes salvas no admin
 - Commit confirmado pelo usuario: NAO
 - Observacoes: Esta correcao mira especialmente o caso da escala de ferias no dashboard nao refletir atualizacoes feitas no admin sem recarregar a pagina.
+
+ETAPA:
+- Nome: Confirmacao de commit da sincronizacao entre paginas e dashboard
+- Fase: Correcao incremental apos validacao
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Registro complementar para indicar que a etapa de sincronizacao entre paginas e rerenderizacao do dashboard foi validada em teste e comitada manualmente pelo usuario.
+- Commit previsto: fix: sincroniza dashboard com alteracoes salvas no admin
+- Commit confirmado pelo usuario: SIM
+- Observacoes: A investigacao posterior confirmou que o caso de ferias envolvia tambem a regra de relacionamento com funcionario em draft.
+
+ETAPA:
+- Nome: Planejamento de sinalizacao visual para relacionamentos com itens draft no admin
+- Fase: Melhoria complementar de UX no admin
+- Situacao: EM_ANDAMENTO
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Registrada proposta de manter itens draft visiveis nos campos de relacionamento do admin, com sufixo "(Rascunho)", para avisar quando um vinculo pode impedir exibicao publica indireta.
+- Commit previsto:
+- Commit confirmado pelo usuario: NAO
+- Observacoes: Ideia validada conceitualmente pelo usuario como melhoria segura, sem alterar a logica de publicacao nem ocultar opcoes do admin.
