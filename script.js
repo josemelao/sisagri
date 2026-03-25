@@ -357,26 +357,54 @@ const tipoEvento = {
 
 function parseEventoDateTime(data, hora = null, usarFimDoDia = false) {
   if (!data) return null;
-  const time = hora || (usarFimDoDia ? "23:59:59" : "00:00:00");
-  return new Date(`${data}T${time}`);
+
+  const raw = String(data).trim();
+  if (!raw) return null;
+
+  const normalizeHora = (valor, fallback) => {
+    if (!valor) return fallback;
+    const horaLimpa = String(valor).trim();
+    if (/^\d{2}:\d{2}$/.test(horaLimpa)) return `${horaLimpa}:00`;
+    if (/^\d{2}:\d{2}:\d{2}$/.test(horaLimpa)) return horaLimpa;
+    return fallback;
+  };
+
+  const fallbackHora = usarFimDoDia ? "23:59:59" : "00:00:00";
+  const time = normalizeHora(hora, fallbackHora);
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+    const [dia, mes, ano] = raw.split("/");
+    return new Date(`${ano}-${mes}-${dia}T${time}`);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return new Date(`${raw}T${time}`);
+  }
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function getEventoTiming(e) {
-  const isPrazo = e.tipo === 'prazo' && !e.data && !!e.data_fim;
-  const inicio = isPrazo ? null : parseEventoDateTime(e.data, e.hora, false);
+  const isPrazo = e.tipo === 'prazo';
+  const inicioBase = e.data || e.data_fim;
+  const inicio = isPrazo
+    ? parseEventoDateTime(inicioBase, e.hora, false)
+    : parseEventoDateTime(e.data, e.hora, false);
   const fimData = e.data_fim || e.data;
-  const fim = parseEventoDateTime(fimData, e.hora_fim, true);
+  const fim = parseEventoDateTime(fimData, e.hora_fim || (isPrazo ? e.hora : null), true);
   const agora = new Date();
+  const referenciaFim = fim || inicio;
 
-  const ativo = !!fim && agora <= fim;
+  const ativo = !!referenciaFim && agora <= referenciaFim;
   const emAndamento = isPrazo
     ? ativo
-    : (!!inicio && !!fim && agora >= inicio && agora <= fim);
-  const encerrado = !!fim && agora > fim;
-  const dataBadge = isPrazo ? e.data_fim : e.data;
-  const sortDate = isPrazo ? fim : (inicio || fim);
+    : (!!inicio && !!referenciaFim && agora >= inicio && agora <= referenciaFim);
+  const encerrado = !!referenciaFim && agora > referenciaFim;
+  const dataBadge = isPrazo ? (e.data_fim || e.data) : e.data;
+  const sortDate = isPrazo ? (referenciaFim || inicio) : (inicio || referenciaFim);
 
-  return { isPrazo, inicio, fim, ativo, emAndamento, encerrado, dataBadge, sortDate };
+  return { isPrazo, inicio, fim: referenciaFim, ativo, emAndamento, encerrado, dataBadge, sortDate };
 }
 
 function formatEventoPeriodo(e) {
@@ -1194,9 +1222,7 @@ function renderManualFilho(m, modo, passoAtivo) {
 }
 
 function fecharManualFilho() {
-  const filho = document.getElementById('manual-filho-panel');
-  if (!filho) return;
-  filho.classList.remove('open');
+  closeChildPanel('manual-filho-panel');
 }
 
 
@@ -2072,7 +2098,21 @@ function openDetail(overlayId) {
   document.body.style.overflow = "hidden"; // previne scroll do fundo
 }
 
+function resetDetailPanels(overlayId) {
+  const panelMap = {
+    "processo-detail-overlay": ["manual-filho-panel"],
+    "sistema-detail-overlay": ["sistema-filho-panel", "sistema-neto-panel"],
+    "servico-detail-overlay": ["servico-filho-panel", "servico-neto-panel"],
+  };
+
+  (panelMap[overlayId] || []).forEach((panelId) => {
+    const panel = document.getElementById(panelId);
+    if (panel) panel.remove();
+  });
+}
+
 function closeDetail(overlayId) {
+  resetDetailPanels(overlayId);
   document.getElementById(overlayId).classList.remove("open");
   document.body.style.overflow = "";
 }
@@ -2093,6 +2133,21 @@ function animateChildPanelSwap(panel, renderFn) {
   setTimeout(() => {
     renderFn();
     requestAnimationFrame(() => panel.classList.add('open'));
+  }, CHILD_PANEL_TRANSITION_MS);
+}
+
+function closeChildPanel(panelId, nestedPanelIds = []) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  nestedPanelIds.forEach((nestedId) => {
+    const nested = document.getElementById(nestedId);
+    if (nested) nested.remove();
+  });
+
+  panel.classList.remove('open');
+  setTimeout(() => {
+    if (panel.isConnected) panel.remove();
   }, CHILD_PANEL_TRANSITION_MS);
 }
 
@@ -2752,14 +2807,15 @@ const catCores = {
 
 function initServicos() {
   renderServicos(servicos);
+  const closeServicoDetail = () => closeDetail("servico-detail-overlay");
 
   // Fechar overlay
   document.getElementById("servico-detail-close")
-    .addEventListener("click", closeDetail.bind(null, "servico-detail-overlay"));
+    .addEventListener("click", closeServicoDetail);
   document.getElementById("servico-detail-overlay")
     .addEventListener("click", (e) => {
       if (e.target === document.getElementById("servico-detail-overlay"))
-        closeDetail("servico-detail-overlay");
+        closeServicoDetail();
     });
 
   document.getElementById("servicos-search").addEventListener("input", (e) => {
@@ -3172,8 +3228,7 @@ function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
 }
 
 function fecharSistemaNetoFilho() {
-  const neto = document.getElementById('sistema-neto-panel');
-  if (neto) neto.classList.remove('open');
+  closeChildPanel('sistema-neto-panel');
 }
 
 function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
@@ -3274,8 +3329,11 @@ function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
 }
 
 function fecharServicoNetoFilho() {
-  const neto = document.getElementById('servico-neto-panel');
-  if (neto) neto.classList.remove('open');
+  closeChildPanel('servico-neto-panel');
+}
+
+function fecharServicoFilho() {
+  closeChildPanel('servico-filho-panel', ['servico-neto-panel']);
 }
 
 function eventoItemHTML(e, mostrarData = true) {
