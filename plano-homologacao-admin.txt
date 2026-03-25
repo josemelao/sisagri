@@ -160,11 +160,27 @@ Objetivo:
 - Remover duplicacao acidental (se tiver surgido) sem refactor grande.
 - Padronizar pageSize por pagina (se houver necessidade real).
 - Revisar comportamento de estado apos CRUD e load inicial (documentar).
+- Manter ordenacao alfabetica padrao por nome/titulo nas listagens.
 Validacao:
 - Checklist final abaixo aprovado.
 Commit (quando validado):
 - git add admin.js admin.html style.css
 - git commit -m "admin: consolida filtro e paginacao (ajustes finais)"
+
+Backlog futuro - Ordenacao por cabecalhos
+Status: pendente
+Arquivos alvo: admin.js e admin.html
+Objetivo:
+- Permitir ordenar clicando no cabecalho de cada coluna relevante.
+- Preservar ordenacao padrao inicial por nome/titulo quando a pagina carrega.
+Regras:
+- Implementacao incremental por pagina (uma por vez).
+- Sem quebrar filtros, paginacao e CRUD existentes.
+- Manter fallback seguro para colunas sem valor.
+Validacao esperada:
+- Clique no cabecalho alterna asc/desc.
+- Indicador visual de direcao de ordenacao.
+- Estado de ordenacao nao quebra a navegacao/paginacao.
 
 Checklist final (antes de encerrar a trilha)
 - Boot e inicializacao do admin continuam intactos.
@@ -177,3 +193,4 @@ Checklist final (antes de encerrar a trilha)
 Historico (nao editar sem confirmacao do usuario)
 - 2026-03-25: branch codex/homologacao-admin criada.
 - 2026-03-25: plano detalhado para filtro + paginacao (inicio por Arquivos) registrado.
+- 2026-03-25: ordenacao alfabetica padrao por nome/titulo aplicada nas listagens; ordenacao por cabecalho registrada como backlog futuro.

@@ -292,13 +292,24 @@ function filtrarArquivosLista(items, query) {
   });
 }
 
+function getAdminItemSortLabel(item = {}) {
+  const label = item.nome ?? item.titulo ?? item.nome_completo ?? item.sigla ?? '';
+  return normalizeSearchText(label);
+}
+
+function ordenarListaAdminPorNome(items) {
+  if (!Array.isArray(items)) return [];
+  return [...items].sort((a, b) => getAdminItemSortLabel(a).localeCompare(getAdminItemSortLabel(b), 'pt-BR'));
+}
+
 function paginarLista(items, page, pageSize) {
-  const totalItems = items.length;
+  const sortedItems = ordenarListaAdminPorNome(items);
+  const totalItems = sortedItems.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * pageSize;
   return {
-    pageItems: items.slice(start, start + pageSize),
+    pageItems: sortedItems.slice(start, start + pageSize),
     totalItems,
     totalPages,
     page: safePage,
@@ -3210,5 +3221,7 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
+
+
 
 
