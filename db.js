@@ -445,6 +445,13 @@ async function _refreshSupabaseCollectionsForExport() {
   _notifyCollectionUpdated('arquivos');
 }
 
+async function _refreshSupabaseCollection(colecao) {
+  if (!_sb || !_isSupabaseCollection(colecao)) return;
+  await _loadSupabaseCollection(colecao);
+  _persistLocal();
+  _notifyCollectionUpdated(colecao);
+}
+
 /**
  * Inicializa o banco.
  * Retorna uma Promise que resolve quando os dados estão prontos.
@@ -590,6 +597,7 @@ const DB = {
     const novoRegistro = _normalizeCollectionRecord(colecao, { ...registro, id: novoId });
     _db[colecao].push(novoRegistro);
     _persistLocal();
+    _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).insert(_toSupabasePayload(colecao, novoRegistro)).then(({ error }) => {
         if (error) {
@@ -608,6 +616,9 @@ const DB = {
           writesReachSupabase: true,
           lastError: '',
         });
+        _refreshSupabaseCollection(colecao).catch((refreshError) => {
+          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos insert:`, refreshError);
+        });
       });
     }
     return novoRegistro;
@@ -620,6 +631,7 @@ const DB = {
     if (idx === -1) return null;
     _db[colecao][idx] = _normalizeCollectionRecord(colecao, { ..._db[colecao][idx], ...dados, id });
     _persistLocal();
+    _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).update(_toSupabasePayload(colecao, _db[colecao][idx])).eq('id', id).then(({ error }) => {
         if (error) {
@@ -638,6 +650,9 @@ const DB = {
           writesReachSupabase: true,
           lastError: '',
         });
+        _refreshSupabaseCollection(colecao).catch((refreshError) => {
+          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos update:`, refreshError);
+        });
       });
     }
     return _db[colecao][idx];
@@ -649,6 +664,7 @@ const DB = {
     const antes = _db[colecao].length;
     _db[colecao] = _db[colecao].filter(r => r.id !== id);
     _persistLocal();
+    _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).delete().eq('id', id).then(({ error }) => {
         if (error) {
@@ -666,6 +682,9 @@ const DB = {
           supabaseConnected: true,
           writesReachSupabase: true,
           lastError: '',
+        });
+        _refreshSupabaseCollection(colecao).catch((refreshError) => {
+          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos delete:`, refreshError);
         });
       });
     }
@@ -713,6 +732,12 @@ const DB = {
   /** Retorna o status atual da conexão/persistência */
   getStatus() {
     return JSON.parse(JSON.stringify(_dbStatus));
+  },
+
+  async refreshCollection(colecao) {
+    if (!_isSupabaseCollection(colecao) || !_sb) return DB.get(colecao);
+    await _refreshSupabaseCollection(colecao);
+    return DB.get(colecao);
   },
 
   /** Importa um banco completo (substitui tudo, usado no admin) */

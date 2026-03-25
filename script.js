@@ -43,7 +43,8 @@ function filterPublished(list) {
 
 function findPublishedById(list, id) {
   if (!Array.isArray(list)) return null;
-  return list.find(item => item.id === id && isPublished(item)) || null;
+  const targetId = String(id);
+  return list.find(item => String(item?.id) === targetId && isPublished(item)) || null;
 }
 
 function getPublishedFuncionarioById(id) {
@@ -156,6 +157,16 @@ window.addEventListener('db:collection-updated', () => {
   invalidateGlobalSearchIndex();
   scheduleGlobalSearchIndexBuild();
 });
+
+function syncFeriasWhenPageBecomesActive() {
+  if (document.visibilityState === 'hidden' || !window.DB?.refreshCollection) return;
+  DB.refreshCollection('escalaFerias').catch((error) => {
+    console.warn('[App] Falha ao sincronizar escalaFerias ao reativar a pagina.', error);
+  });
+}
+
+window.addEventListener('focus', syncFeriasWhenPageBecomesActive);
+document.addEventListener('visibilitychange', syncFeriasWhenPageBecomesActive);
 
 function invalidateGlobalSearchIndex() {
   globalSearchIndex = [];
