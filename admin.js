@@ -482,6 +482,44 @@ function mudarPaginaVeiculos(delta) {
   VEICULOS_LIST_STATE.page += delta;
   renderVeiculos();
 }
+const SISTEMAS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarSistemasLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.nome || ''} ${item.nome_completo || ''} ${item.orgao || ''} ${item.url || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaSistemas(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  SISTEMAS_LIST_STATE.query = String(value || '');
+  SISTEMAS_LIST_STATE.page = 1;
+  renderSistemas();
+
+  const nextInput = document.getElementById('sistemas-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaSistemas(delta) {
+  SISTEMAS_LIST_STATE.page += delta;
+  renderSistemas();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1742,15 +1780,32 @@ function salvarVeiculo(id) {
    ============================================================ */
 function renderSistemas() {
   const lista = DB.get('sistemas');
+  const listaFiltrada = filtrarSistemasLista(lista, SISTEMAS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, SISTEMAS_LIST_STATE.page, SISTEMAS_LIST_STATE.pageSize);
+  SISTEMAS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-sistemas').innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Sistemas</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="sistemas-search"
+          value="${escHtml(SISTEMAS_LIST_STATE.query)}"
+          oninput="atualizarBuscaSistemas(this)"
+          placeholder="Buscar por nome, orgao ou url..."
+          style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaSistemas(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaSistemas(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoSistema()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Órgão</th><th>URL</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(s => `
+      <thead><tr><th>Nome</th><th>&#211;rg&#227;o</th><th>URL</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(s => `
         <tr>
           <td><strong>${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
@@ -1760,11 +1815,13 @@ function renderSistemas() {
             <button class="btn btn-ghost btn-sm" onclick="editarSistema(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('sistemas',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum sistema encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function getSistemaLinksOptions(colecao, selectedIds = []) {
   const lista = DB.get(colecao);
   if (!lista.length) return `<option value="" disabled>Nenhum ${colecao === 'manuais' ? 'manual' : 'processo'} cadastrado</option>`;
