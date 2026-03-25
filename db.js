@@ -47,6 +47,9 @@ function _ensureAppConfig() {
   if (!_db.layoutConfig.instagramPosition) {
     _db.layoutConfig.instagramPosition = 'belowQuickAccess';
   }
+  if (_db.layoutConfig.defaultSortMode !== 'id' && _db.layoutConfig.defaultSortMode !== 'nome') {
+    _db.layoutConfig.defaultSortMode = 'nome';
+  }
 }
 
 function _loadLocalAppConfig() {

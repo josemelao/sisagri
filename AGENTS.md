@@ -8,9 +8,9 @@ Aplicação **SisAgri / SMADER** em **frontend vanilla** (HTML + CSS + JavaScrip
 - **Camada de persistência / integração** em `db.js`
 - **Supabase JS v2 via CDN** (carregado no browser)
 - **Fallback local** (há evidências de uso de dados locais + persistência local)
-- Documento operacional de handoff em `plano-rascunho-admin.txt`
+- Documento operacional de handoff atual em `plano-rascunho-admin.txt` (caso não exista, ignorar)
 
-**Objetivo deste AGENT:** executar mudanças pequenas, seguras, econômicas em tokens e com máxima compatibilidade.
+**Objetivo deste AGENT:** executar mudanças pequenas, seguras, **econômicas** em tokens e com máxima compatibilidade.
 
 ---
 
@@ -29,10 +29,9 @@ Ordem de prioridade:
 ## Protocolo obrigatório antes de qualquer mudança
 Antes de implementar, o agente deve responder exatamente nesta ordem:
 
-1. **Diagnóstico** (máx. 3 linhas)
-2. **Arquivos que pretende abrir/alterar**
-3. **Plano curto** (máx. 4 passos)
-4. **Risco de regressão**: baixo / médio / alto
+1. **Demanda** (máx. 3 linhas-/ entender o o problema/pergunta/sugestão do usuario)
+2. **Arquivos que pretende abrir/alterar** (quando aplicavel)
+3. **Plano curto** (máx. 4 passos - proposta de solução quando aplicavel, em caso de pergunta, apenas responder)
 
 Se a tarefa for sensível (admin, persistência, publicação/rascunho, Supabase), usar **modo conservador**:
 - patch local
@@ -44,10 +43,10 @@ Se a tarefa for sensível (admin, persistência, publicação/rascunho, Supabase
 
 ## Regras de economia de tokens (obrigatórias)
 1. **Não escanear o projeto inteiro sem necessidade.**
-2. Trabalhar **somente** nos arquivos citados pelo usuário.
+2. Trabalhar **somente** nos arquivos citados pelo usuário. 
 3. Se precisar abrir arquivos extras, listar primeiro **quais** e **por quê**.
 4. Não reler arquivos longos já analisados sem motivo.
-5. Se a solução puder ser feita em 1 arquivo, **não expandir para 3**.
+5. Se a solução puder ser feita em 1 arquivo, **não expandir para 3** (a menos que sejam competencias diferentes, exemplo: estilos no arquivo css, scripts no arquivo js, etc).
 6. Não propor refactor amplo como primeira opção.
 7. Não gerar diff gigante se o problema for localizado.
 8. Em tarefas novas:
@@ -67,6 +66,8 @@ Se a tarefa for sensível (admin, persistência, publicação/rascunho, Supabase
 - `admin.js`
 - `dados.js`
 - `db.js`
+
+### Arquivos secundários (usar conforme orientação do usuario)
 - `plano-rascunho-admin.txt`
 
 ### Observações detectadas
@@ -451,10 +452,9 @@ Ao concluir:
 1. **Resumo curto** (máx. 5 linhas)
 2. **Arquivos alterados**
 3. **O que mudou**
-4. **Risco de regressão** (baixo/médio/alto)
-5. **Comandos de commit prontos** (se a tarefa for etapa validada)
-6. **Aguardar confirmação do usuário antes de assumir commit**
-7. Se a tarefa fizer parte do plano:
+4. **Comandos de commit prontos** (se a tarefa for etapa validada)
+5. **Aguardar confirmação do usuário antes de assumir commit**
+6. Se a tarefa fizer parte do plano:
    - só então atualizar `plano-rascunho-admin.txt`
 
 ---

@@ -195,18 +195,54 @@ function renderSection(key) {
   }
 }
 
-function carregarConfigDashboard() {
-  const select = document.getElementById('config-instagram-position');
-  if (!select) return;
-  const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
-  select.value = config.instagramPosition || 'belowQuickAccess';
+function garantirCampoOrdenacaoConfig() {
+  if (document.getElementById('config-default-sort-mode')) return;
+  const instagramSelect = document.getElementById('config-instagram-position');
+  if (!instagramSelect) return;
+  const formGroup = instagramSelect.closest('.form-group');
+  if (!formGroup || !formGroup.parentElement) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'form-group';
+  wrapper.innerHTML = `
+    <label>Ordenacao padrao das listas</label>
+    <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
+      Define se as listagens do admin abrem ordenadas por nome ou por ID.
+    </p>
+    <select id="config-default-sort-mode">
+      <option value="nome">Nome (alfabetica)</option>
+      <option value="id">ID (criacao)</option>
+    </select>
+    <div style="margin-top:10px">
+      <button class="btn btn-primary" onclick="salvarConfigDashboard()">
+        <i class="ph-bold ph-floppy-disk"></i> Salvar ordenacao
+      </button>
+    </div>
+  `;
+  formGroup.parentElement.insertBefore(wrapper, formGroup.nextSibling);
 }
 
+function carregarConfigDashboard() {
+  garantirCampoOrdenacaoConfig();
+  const select = document.getElementById('config-instagram-position');
+  const sortSelect = document.getElementById('config-default-sort-mode');
+  const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
+  if (select) {
+    select.value = config.instagramPosition || 'belowQuickAccess';
+  }
+  if (sortSelect) {
+    sortSelect.value = config.defaultSortMode === 'id' ? 'id' : 'nome';
+  }
+}
 function salvarConfigDashboard() {
   const select = document.getElementById('config-instagram-position');
-  if (!select || !DB.updateLayoutConfig) return;
-  DB.updateLayoutConfig({ instagramPosition: select.value });
-  toast('Configuração do dashboard salva.');
+  const sortSelect = document.getElementById('config-default-sort-mode');
+  if (!DB.updateLayoutConfig) return;
+  DB.updateLayoutConfig({
+    instagramPosition: select ? select.value : 'belowQuickAccess',
+    defaultSortMode: sortSelect && sortSelect.value === 'id' ? 'id' : 'nome',
+  });
+  toast('Configuracoes salvas.');
 }
 
 /* ============================================================
@@ -296,14 +332,22 @@ function getAdminItemSortLabel(item = {}) {
   const label = item.nome ?? item.titulo ?? item.nome_completo ?? item.sigla ?? '';
   return normalizeSearchText(label);
 }
-
+function getAdminDefaultSortMode() {
+  const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
+  return config.defaultSortMode === 'id' ? 'id' : 'nome';
+}
 function ordenarListaAdminPorNome(items) {
   if (!Array.isArray(items)) return [];
   return [...items].sort((a, b) => getAdminItemSortLabel(a).localeCompare(getAdminItemSortLabel(b), 'pt-BR'));
 }
-
+function ordenarListaAdminPorId(items) {
+  if (!Array.isArray(items)) return [];
+  return [...items].sort((a, b) => Number(a?.id || 0) - Number(b?.id || 0));
+}
 function paginarLista(items, page, pageSize) {
-  const sortedItems = ordenarListaAdminPorNome(items);
+  const sortedItems = getAdminDefaultSortMode() === 'id'
+    ? ordenarListaAdminPorId(items)
+    : ordenarListaAdminPorNome(items);
   const totalItems = sortedItems.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
