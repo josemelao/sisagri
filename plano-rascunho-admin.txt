@@ -781,11 +781,11 @@ ETAPA:
 ETAPA:
 - Nome: Blindagem de relacionamentos e detalhes contra rascunhos
 - Fase: Fase 5 - Relacionamentos entre modulos / detalhes publicos
-- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Situacao: CONCLUIDA
 - Data: 2026-03-25
 - Responsavel: agente atual
 - Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\script.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
 - Resumo: Criados helpers de busca segura por itens publicados e aplicadas validacoes em detalhes, chips relacionados, arquivos vinculados, veiculos, ferias e navegacao interna para evitar vazamento indireto de registros em draft.
 - Commit previsto: feat: blinda relacionamentos e detalhes contra rascunhos
-- Commit confirmado pelo usuario: NAO
+- Commit confirmado pelo usuario: SIM
 - Observacoes: Esta etapa reforca a protecao no frontend publico apos o filtro central. A validacao pratica agora deve focar em itens vinculados entre modulos e aberturas de detalhe.
