@@ -693,7 +693,7 @@ const DB = {
 
   /** Substitui uma coleção inteira (usado pelo admin ao importar) */
   replaceCollection(colecao, lista) {
-    _db[colecao] = JSON.parse(JSON.stringify(lista)).map(item => _normalizeSupabaseRow(colecao, item));
+    _db[colecao] = _normalizeCollectionData(colecao, JSON.parse(JSON.stringify(lista)));
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
       const tabela = SUPABASE_TABLES[colecao];
@@ -744,6 +744,7 @@ const DB = {
   importAll(dados) {
     _db = JSON.parse(JSON.stringify(dados));
     _ensureAppConfig();
+    _normalizeDbCollections();
     _persistLocal();
     if (_sb) {
       Object.keys(SUPABASE_TABLES).forEach(colecao => {
