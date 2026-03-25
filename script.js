@@ -313,23 +313,68 @@ function initDashboardSide() {
 }
 
 /* ---------- COLLAPSE dos widgets ---------- */
+const WIDGET_COLLAPSE_DURATION_MS = 280;
+
+function setWidgetBodyState(widget, body, isOpen, immediate = false) {
+  if (!widget || !body) return;
+
+  const shouldAnimate = !immediate;
+
+  body.hidden = false;
+  body.style.overflow = 'hidden';
+
+  if (!shouldAnimate) {
+    body.style.transition = '';
+    body.style.height = isOpen ? 'auto' : '0px';
+    body.style.opacity = isOpen ? '1' : '0';
+    body.hidden = !isOpen;
+    widget.dataset.open = isOpen ? "true" : "false";
+    const btn = widget.querySelector(".widget-toggle-btn");
+    if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    return;
+  }
+
+  const currentHeight = body.getBoundingClientRect().height;
+  const targetHeight = isOpen ? body.scrollHeight : 0;
+
+  body.style.transition = 'none';
+  body.style.height = `${currentHeight}px`;
+  body.style.opacity = currentHeight > 0 ? '1' : '0';
+
+  requestAnimationFrame(() => {
+    body.style.transition = `height ${WIDGET_COLLAPSE_DURATION_MS}ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease`;
+    body.style.height = `${targetHeight}px`;
+    body.style.opacity = isOpen ? '1' : '0';
+    widget.dataset.open = isOpen ? "true" : "false";
+    const btn = widget.querySelector(".widget-toggle-btn");
+    if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+
+  window.setTimeout(() => {
+    if (isOpen) {
+      body.style.height = 'auto';
+      body.style.overflow = '';
+    } else {
+      body.hidden = true;
+      body.style.overflow = '';
+    }
+  }, WIDGET_COLLAPSE_DURATION_MS);
+}
+
 function initWidgetCollapse() {
+  document.querySelectorAll(".side-widget").forEach(widget => {
+    const body = widget.querySelector(".side-widget-body");
+    const isOpen = widget.dataset.open === "true";
+    setWidgetBodyState(widget, body, isOpen, true);
+  });
+
   document.querySelectorAll(".widget-toggle-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const widget = btn.closest(".side-widget");
       const target = btn.dataset.target;
       const body   = document.getElementById("body-" + target);
       const isOpen = widget.dataset.open === "true";
-
-      if (isOpen) {
-        body.hidden = true;
-        widget.dataset.open = "false";
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        body.hidden = false;
-        widget.dataset.open = "true";
-        btn.setAttribute("aria-expanded", "true");
-      }
+      setWidgetBodyState(widget, body, !isOpen);
     });
   });
 
