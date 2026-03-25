@@ -2005,15 +2005,20 @@ input { font-family: inherit; }
 /* Tags inline dentro do card do arquivo */
 .arquivo-tags-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   margin-top: 4px;
   justify-content: flex-end;
+  align-content: flex-start;
+  overflow: hidden;
+  min-height: 24px;
 }
 
 .arquivo-card {
   transform-origin: center top;
   will-change: transform, opacity;
+  min-height: 122px;
+  justify-content: space-between;
 }
 
 .list-card[data-reflow-id],
@@ -2031,6 +2036,7 @@ input { font-family: inherit; }
   color: var(--text-muted);
   border: 1px solid var(--border);
   transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
 }
 
 /* Tag destacada quando está no filtro ativo */
@@ -2038,6 +2044,11 @@ input { font-family: inherit; }
   background: var(--accent-light);
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.arquivo-tag-more {
+  background: color-mix(in srgb, var(--text-secondary) 10%, var(--surface));
+  color: var(--text-secondary);
 }
 
 /* Estado vazio quando nenhum arquivo bate com o filtro */

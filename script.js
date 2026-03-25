@@ -1796,6 +1796,22 @@ function animateArquivosGrid(container, renderFn) {
   animateGridReflow(container, renderFn, ".arquivo-card[data-reflow-id]");
 }
 
+function buildArquivoCardTagsHTML(tags = []) {
+  const normalizedTags = Array.isArray(tags) ? tags.filter(Boolean) : [];
+  const visibleTags = normalizedTags.slice(0, 2);
+  const hiddenCount = Math.max(0, normalizedTags.length - visibleTags.length);
+
+  const visibleHTML = visibleTags.map((tag) =>
+    `<span class="arquivo-tag ${tagsAtivas.has(tag) ? 'highlight' : ''}">${tag}</span>`
+  ).join("");
+
+  const moreHTML = hiddenCount > 0
+    ? `<span class="arquivo-tag arquivo-tag-more">+${hiddenCount}</span>`
+    : "";
+
+  return visibleHTML + moreHTML;
+}
+
 function getManualPaginationWindow(total, passoAtivo) {
   const visible = window.innerWidth < 640 ? 7 : 9;
   const centro = Math.floor(visible / 2);
@@ -1959,9 +1975,7 @@ function renderArquivos() {
     const icone = tipoIcone[a.tipo] || "ph-file";
     const temArquivo = a.arquivo_data || a.arquivo_nome || a.url;
     const extensaoGrupo = getArquivoExtensaoGrupo(getArquivoExtensaoReal(a) || getArquivoExtensaoFallbackPorTipo(a.tipo));
-    const tagsHTML = (a.tags || []).map(t =>
-      `<span class="arquivo-tag ${tagsAtivas.has(t) ? 'highlight' : ''}">${t}</span>`
-    ).join("");
+    const tagsHTML = buildArquivoCardTagsHTML(a.tags);
 
     return `
       <div class="list-card arquivo-card" data-reflow-id="arquivo-${a.id}" onclick="openArquivo(${a.id})">
