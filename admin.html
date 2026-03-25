@@ -184,8 +184,31 @@
     .td-actions { display: flex; gap: 6px; }
     .td-actions--with-status { align-items: center; flex-wrap: wrap; gap: 8px; }
     .td-truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .td-truncate--arquivo-nome { display: inline-block; max-width: 260px; vertical-align: bottom; }
     .badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+    .admin-table-arquivos { table-layout: fixed; }
+    .admin-table-arquivos th:nth-child(1),
+    .admin-table-arquivos td:nth-child(1) { width: 38%; }
+    .admin-table-arquivos th:nth-child(2),
+    .admin-table-arquivos td:nth-child(2) { width: 10%; }
+    .admin-table-arquivos th:nth-child(3),
+    .admin-table-arquivos td:nth-child(3) { width: 18%; }
+    .admin-table-arquivos th:nth-child(4),
+    .admin-table-arquivos td:nth-child(4) { width: 34%; }
+    .arquivo-nome-wrap {
+      display: block;
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .admin-col-arquivo-tags {
+      white-space: normal;
+      line-height: 1.5;
+    }
+    .admin-col-arquivo-tags .badge {
+      margin: 2px 4px 2px 0;
+    }
     .inline-publish-toggle {
       display: inline-flex;
       align-items: center;

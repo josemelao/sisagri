@@ -1131,14 +1131,13 @@ function renderArquivos() {
       <div class="admin-section-header-spacer"></div>
       <button class="btn btn-primary" onclick="novoArquivo()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
-    <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>URL/Link</th><th>Ações</th></tr></thead>
+    <div class="admin-table-wrap"><table class="admin-table-arquivos">
+      <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>Ações</th></tr></thead>
       <tbody>${lista.map(a => `
         <tr>
-          <td><strong class="td-truncate td-truncate--arquivo-nome" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
+          <td class="admin-col-arquivo-nome"><strong class="arquivo-nome-wrap" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
-          <td>${(a.tags||[]).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
-          <td class="td-truncate">${a.url ? `<a href="${escHtml(a.url)}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="admin-col-arquivo-tags">${(a.tags||[]).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('arquivos', a)}
                 <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
