@@ -406,6 +406,44 @@ function mudarPaginaProcessos(delta) {
   PROCESSOS_LIST_STATE.page += delta;
   renderProcessos();
 }
+const FUNCIONARIOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarFuncionariosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.nome || ''} ${item.cargo || ''} ${item.lotacao || item.setor || ''} ${item.departamento || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaFuncionarios(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  FUNCIONARIOS_LIST_STATE.query = String(value || '');
+  FUNCIONARIOS_LIST_STATE.page = 1;
+  renderFuncionarios();
+
+  const nextInput = document.getElementById('funcionarios-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaFuncionarios(delta) {
+  FUNCIONARIOS_LIST_STATE.page += delta;
+  renderFuncionarios();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -741,18 +779,35 @@ function getIconeCorValues(fieldId) {
    ============================================================ */
 function renderFuncionarios() {
   const lista = DB.get('funcionarios');
+  const listaFiltrada = filtrarFuncionariosLista(lista, FUNCIONARIOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, FUNCIONARIOS_LIST_STATE.page, FUNCIONARIOS_LIST_STATE.pageSize);
+  FUNCIONARIOS_LIST_STATE.page = paginacao.page;
+
   const sec = document.getElementById('section-funcionarios');
   sec.innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Funcionários</h1>
+      <h1 class="admin-section-title">Funcion&#225;rios</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="funcionarios-search"
+          value="${escHtml(FUNCIONARIOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaFuncionarios(this)"
+          placeholder="Buscar por nome, cargo ou lotacao..."
+          style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaFuncionarios(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaFuncionarios(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoFuncionario()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>Cargo</th><th>Lotação</th><th>Departamento</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Lota&#231;&#227;o</th><th>Departamento</th><th>A&#231;&#245;es</th></tr></thead>
         <tbody>
-          ${lista.map(f => `
+          ${paginacao.pageItems.length ? paginacao.pageItems.map(f => `
             <tr>
               <td><strong>${escHtml(f.nome)}</strong></td>
               <td>${escHtml(f.cargo)}</td>
@@ -764,13 +819,15 @@ function renderFuncionarios() {
                 <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('funcionarios',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
-          `).join('')}
+          `).join('') : `
+            <tr>
+              <td colspan="5" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum funcionario encontrado para o filtro informado.</td>
+            </tr>`}
         </tbody>
       </table>
     </div>
   `;
 }
-
 function formFuncionario(f = {}) {
   const fotoPreview = f.foto
     ? `<img src="${escHtml(f.foto)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:8px" />`
