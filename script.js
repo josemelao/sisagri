@@ -4735,6 +4735,60 @@ function renderRelatorioFerias() {
   });
 }
 
+function renderRelatorioVeiculos() {
+  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
+  const linhas = veiculos.map(v => {
+    const motoristasPublicados = Array.isArray(v.motorista_ids) && v.motorista_ids.length
+      ? v.motorista_ids
+          .map(mid => getPublishedFuncionarioById(mid))
+          .filter(Boolean)
+          .map(f => f.nome)
+          .join(", ")
+      : "";
+
+    return [
+      v.nome || "â€”",
+      v.tipo || "â€”",
+      v.marca || "â€”",
+      v.modelo || "â€”",
+      v.ano || "â€”",
+      v.placa || "â€”",
+      v.patrimonio || "â€”",
+      v.chassi || "â€”",
+      v.renavam || "â€”",
+      v.combustivel || "â€”",
+      motoristasPublicados || v.motorista || "â€”",
+    ];
+  });
+
+  return relatorioLayoutHTML({
+    titulo: "RelaÃ§Ã£o de VeÃ­culos",
+    descricao: "Listagem da frota e dos principais dados patrimoniais cadastrados.",
+    total: linhas.length,
+    conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--veiculos"),
+  });
+}
+
+function renderRelatorioFerias() {
+  const colunas = ["FuncionÃ¡rio", "Cargo", "InÃ­cio", "Fim", "Status"];
+  const linhas = escalaFerias
+    .filter(f => !f.funcionario_id || getPublishedFuncionarioById(f.funcionario_id))
+    .map(f => [
+      f.nome || "â€”",
+      f.cargo || "â€”",
+      formatDateBR(f.periodo_inicio),
+      formatDateBR(f.periodo_fim),
+      getFeriasStatus(f.periodo_inicio, f.periodo_fim),
+    ]);
+
+  return relatorioLayoutHTML({
+    titulo: "Escala de FÃ©rias",
+    descricao: "RelaÃ§Ã£o dos perÃ­odos de fÃ©rias cadastrados com status calculado automaticamente.",
+    total: linhas.length,
+    conteudo: relatorioTabelaHTML(colunas, linhas),
+  });
+}
+
 function initMobile() {
   const hamburger = document.getElementById("hamburger");
   const sidebar = document.getElementById("sidebar");
