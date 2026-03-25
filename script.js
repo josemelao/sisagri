@@ -2236,7 +2236,6 @@ function closeDetail(overlayId) {
   }, DETAIL_CLOSE_TRANSITION_MS);
 }
 
-const CHILD_PANEL_IDS = ['manual-filho-panel', 'sistema-filho-panel', 'servico-filho-panel', 'sistema-neto-panel', 'servico-neto-panel'];
 const CHILD_PANEL_TRANSITION_MS = 280;
 
 function animateChildPanelSwap(panel, renderFn) {
@@ -2297,30 +2296,12 @@ function closeNestedPanel({ panelId, nestedPanelIds = [] }) {
 
 // Fechar qualquer detalhe com Escape
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    document.querySelectorAll(".detail-overlay.open").forEach(o => {
-      closeDetail(o.id);
-    });
-    document.body.style.overflow = "";
-    return;
-    // Se há um painel filho aberto (processo ou sistema), fecha só ele
-    const filhos = CHILD_PANEL_IDS
-      .map(id => document.getElementById(id))
-      .filter(el => el && el.classList.contains('open'));
-    if (filhos.length) {
-      filhos[filhos.length - 1].classList.remove('open');
-      return;
-    }
-    // Caso contrário fecha todos os overlays e remove filhos residuais
-    document.querySelectorAll(".detail-overlay.open").forEach(o => {
-      o.classList.remove("open");
-      document.body.style.overflow = "";
-    });
-    CHILD_PANEL_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.remove();
-    });
-  }
+  if (e.key !== "Escape") return;
+
+  document.querySelectorAll(".detail-overlay.open").forEach((overlay) => {
+    closeDetail(overlay.id);
+  });
+  document.body.style.overflow = "";
 });
 
 
