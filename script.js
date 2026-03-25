@@ -2139,27 +2139,46 @@ function buildGlobalIndex(query) {
   const resultados = [];
 
   for (const item of globalSearchIndex) {
-    // Encontra o tier com maior score que bate com a query
-    let melhorScore = 0;
-    let melhorContextoLabel = "";
-    let melhorContextoValor = "";
+    // Encontra o tier com maior score que bate com a query.
+    // Se o melhor match for o próprio título, tenta mostrar um único
+    // contexto complementar do mesmo item sem alterar o ranking.
+    const camposComMatch = item.campos.filter(campo => campo.searchText.includes(q));
+    if (camposComMatch.length === 0) continue;
 
-    for (const campo of item.campos) {
-      if (!campo.searchText.includes(q)) continue;
+    let melhorScore = 0;
+    let melhorCampo = null;
+
+    for (const campo of camposComMatch) {
       if (campo.tier > melhorScore) {
         melhorScore = campo.tier;
-        melhorContextoLabel = campo.label;
-        melhorContextoValor = campo.valor;
+        melhorCampo = campo;
       }
     }
 
     if (melhorScore === 0) continue;
 
+    const nomeNormalizado = item.itemNome.toLowerCase();
+    let campoDeContexto = melhorCampo;
+
+    if (melhorCampo && melhorCampo.valor.toLowerCase() === nomeNormalizado) {
+      campoDeContexto =
+        camposComMatch.find(campo =>
+          campo !== melhorCampo &&
+          campo.tier === melhorScore &&
+          campo.valor.toLowerCase() !== nomeNormalizado
+        ) ||
+        camposComMatch.find(campo =>
+          campo !== melhorCampo &&
+          campo.valor.toLowerCase() !== nomeNormalizado
+        ) ||
+        melhorCampo;
+    }
+
     resultados.push({
       modulo:        item.modulo,
       itemNome:      item.itemNome,
-      contextoLabel: melhorContextoLabel,
-      contextoValor: melhorContextoValor,
+      contextoLabel: campoDeContexto?.label || "",
+      contextoValor: campoDeContexto?.valor || "",
       score:         melhorScore,
       action:        item.action,
     });
