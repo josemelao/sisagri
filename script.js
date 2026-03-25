@@ -1244,7 +1244,7 @@ function renderManualFilho(m, modo, passoAtivo) {
       <button class="manual-filho-back" onclick="fecharManualFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharManualFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharProcessoCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -1261,6 +1261,10 @@ function renderManualFilho(m, modo, passoAtivo) {
 
 function fecharManualFilho() {
   closeNestedPanel({ panelId: 'manual-filho-panel' });
+}
+
+function fecharProcessoCompleto() {
+  closeDetail('processo-detail-overlay');
 }
 
 
@@ -2804,7 +2808,7 @@ function renderSistemaFilhoManual(m, modo, passoAtivo) {
       <button class="manual-filho-back" onclick="fecharSistemaFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao sistema
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -2853,7 +2857,7 @@ function renderSistemaFilhoProcesso(p) {
       <button class="manual-filho-back" onclick="fecharSistemaFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao sistema
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -2885,6 +2889,10 @@ function abrirManualNoSistemaFilho(manualId, processoId) {
 
 function fecharSistemaFilho() {
   closeNestedPanel({ panelId: 'sistema-filho-panel', nestedPanelIds: ['sistema-neto-panel'] });
+}
+
+function fecharSistemaCompleto() {
+  closeDetail('sistema-detail-overlay');
 }
 
 
@@ -3089,7 +3097,7 @@ function renderServicoFilhoProcesso(p) {
       <button class="manual-filho-back" onclick="fecharServicoFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao serviço
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3185,7 +3193,7 @@ function renderServicoFilhoManual(m, modo, passoAtivo) {
       <button class="manual-filho-back" onclick="fecharServicoFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao serviço
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3300,7 +3308,7 @@ function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
       <button class="manual-filho-back" onclick="fecharSistemaNetoFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaNetoFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3401,7 +3409,7 @@ function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
       <button class="manual-filho-back" onclick="fecharServicoNetoFilho()">
         <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoNetoFilho()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3422,6 +3430,10 @@ function fecharServicoNetoFilho() {
 
 function fecharServicoFilho() {
   closeNestedPanel({ panelId: 'servico-filho-panel', nestedPanelIds: ['servico-neto-panel'] });
+}
+
+function fecharServicoCompleto() {
+  closeDetail('servico-detail-overlay');
 }
 
 function eventoItemHTML(e, mostrarData = true) {
