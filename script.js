@@ -2265,6 +2265,11 @@ function closeNestedPanel({ panelId, nestedPanelIds = [] }) {
 // Fechar qualquer detalhe com Escape
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    document.querySelectorAll(".detail-overlay.open").forEach(o => {
+      closeDetail(o.id);
+    });
+    document.body.style.overflow = "";
+    return;
     // Se há um painel filho aberto (processo ou sistema), fecha só ele
     const filhos = CHILD_PANEL_IDS
       .map(id => document.getElementById(id))
