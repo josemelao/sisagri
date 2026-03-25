@@ -49,6 +49,7 @@ async function fazerLogout() {
 // Verifica se já estava logado (sessão ativa)
 document.addEventListener('DOMContentLoaded', () => {
   dbInit().then(async () => {
+    instalarFeedbackAcoesAdmin();
     atualizarStatusBanco();
     window.addEventListener('db:status-changed', handleDbStatusChanged);
     if (await DB.isAdminLoggedIn()) {
@@ -70,7 +71,68 @@ function initAdmin() {
 }
 
 let ultimoStatusBanco = null;
+let adminActionTimer = null;
 
+function atualizarIndicadorAcaoAdmin(detail = {}) {
+  const indicator = document.getElementById('admin-action-indicator');
+  const text = document.getElementById('admin-action-text');
+  if (!indicator || !text) return;
+
+  const phase = detail.phase || 'idle';
+  clearTimeout(adminActionTimer);
+
+  if (phase !== 'pending') {
+    indicator.classList.remove('show');
+    return;
+  }
+
+  text.textContent = detail.message || 'Processando...';
+  indicator.classList.add('show');
+}
+
+
+function iniciarAcaoAdmin(mensagem = 'Salvando alteracoes...') {
+  atualizarIndicadorAcaoAdmin({ phase: 'pending', message: mensagem });
+}
+
+function concluirAcaoAdmin() {
+  atualizarIndicadorAcaoAdmin({ phase: 'idle' });
+}
+
+function instalarFeedbackAcoesAdmin() {
+  if (!window.DB || DB.__adminFeedbackWrapped) return;
+  DB.__adminFeedbackWrapped = true;
+
+  const wrapMap = {
+    insert: { pending: 'Salvando alteracao...', success: 'Alteracao salva.' },
+    update: { pending: 'Salvando alteracao...', success: 'Alteracao salva.' },
+    delete: { pending: 'Excluindo registro...', success: 'Registro excluido.' },
+    updateLayoutConfig: { pending: 'Salvando configuracao...', success: 'Configuracao salva.' },
+  };
+
+  Object.entries(wrapMap).forEach(([methodName, messages]) => {
+    if (typeof DB[methodName] !== 'function') return;
+    const original = DB[methodName].bind(DB);
+    DB[methodName] = (...args) => {
+      iniciarAcaoAdmin(messages.pending);
+      try {
+        const result = original(...args);
+        setTimeout(() => {
+          const status = DB.getStatus ? DB.getStatus() : null;
+          if (status && status.supabaseConfigured && status.provider !== 'supabase' && status.lastError) {
+            concluirAcaoAdmin();
+            return;
+          }
+          concluirAcaoAdmin();
+        }, 220);
+        return result;
+      } catch (error) {
+        concluirAcaoAdmin();
+        throw error;
+      }
+    };
+  });
+}
 function getDbStatusMessage(status) {
   if (status.provider === 'supabase' && status.writesReachSupabase) {
     return 'Supabase conectado. Leituras e gravações ativas.';
