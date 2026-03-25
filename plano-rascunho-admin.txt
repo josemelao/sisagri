@@ -584,6 +584,7 @@ CHECKLIST OPERACIONAL DE IMPLEMENTACAO
 [ ] Revisar renderRelatorioFerias()
 [ ] Adicionar badge/coluna de status nas tabelas do admin (recomendado)
 [ ] Sinalizar "(Rascunho)" em relacionamentos do admin que apontem para itens draft (recomendado)
+[ ] Adicionar toggle inline de publicado/rascunho nas tabelas do admin (recomendado)
 [ ] Revisar compatibilidade com localStorage legado
 [ ] Revisar compatibilidade com dados.js
 [ ] Revisar exportacao, se aplicavel
@@ -909,3 +910,15 @@ ETAPA:
 - Commit previsto: chore: registra encerramento do plano draft published
 - Commit confirmado pelo usuario: SIM
 - Observacoes: Permanecem como follow-up apenas validacoes manuais finais e eventuais refinamentos incrementais de UX, sem bloqueio funcional conhecido no fluxo principal.
+
+ETAPA:
+- Nome: Toggle inline de publicado/rascunho nas tabelas do admin
+- Fase: Melhoria complementar de UX no admin
+- Situacao: EM_ANDAMENTO
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\admin.js; C:\Users\Usuario\Desktop\SisAgri - Stable\admin.html; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Implementacao em andamento de um switch compacto em td-actions para visualizacao e alteracao rapida de publish_status diretamente nas tabelas do admin.
+- Commit previsto: feat: adiciona toggle inline de publicacao nas tabelas do admin
+- Commit confirmado pelo usuario: NAO
+- Observacoes: Mudanca proposta como atalho de UX, preservando a logica existente dos modais e reutilizando DB.update para alternancia de status.
