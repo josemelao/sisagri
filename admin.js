@@ -195,35 +195,7 @@ function renderSection(key) {
   }
 }
 
-function garantirCampoOrdenacaoConfig() {
-  if (document.getElementById('config-default-sort-mode')) return;
-  const instagramSelect = document.getElementById('config-instagram-position');
-  if (!instagramSelect) return;
-  const formGroup = instagramSelect.closest('.form-group');
-  if (!formGroup || !formGroup.parentElement) return;
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'form-group';
-  wrapper.innerHTML = `
-    <label>Ordenacao padrao das listas</label>
-    <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
-      Define se as listagens do admin abrem ordenadas por nome ou por ID.
-    </p>
-    <select id="config-default-sort-mode">
-      <option value="nome">Nome (alfabetica)</option>
-      <option value="id">ID (criacao)</option>
-    </select>
-    <div style="margin-top:10px">
-      <button class="btn btn-primary" onclick="salvarConfigDashboard()">
-        <i class="ph-bold ph-floppy-disk"></i> Salvar ordenacao
-      </button>
-    </div>
-  `;
-  formGroup.parentElement.insertBefore(wrapper, formGroup.nextSibling);
-}
-
 function carregarConfigDashboard() {
-  garantirCampoOrdenacaoConfig();
   const select = document.getElementById('config-instagram-position');
   const sortSelect = document.getElementById('config-default-sort-mode');
   const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
