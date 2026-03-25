@@ -861,3 +861,39 @@ ETAPA:
 - Commit previsto: fix: blinda relatorios contra relacionamentos com rascunhos
 - Commit confirmado pelo usuario: SIM
 - Observacoes: Etapa registrada apos confirmacao de commit manual pelo usuario, mantendo coerencia com as regras de exibicao ja aplicadas no dashboard e nos detalhes publicos.
+
+ETAPA:
+- Nome: Confirmacao de commit do historico da blindagem de relatorios
+- Fase: Documentacao de handoff
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Registro complementar para indicar que a atualizacao do historico da blindagem de relatorios foi comitada manualmente pelo usuario.
+- Commit previsto: docs: atualiza historico da blindagem de relatorios
+- Commit confirmado pelo usuario: SIM
+- Observacoes: Fluxo de handoff mantido conforme combinacao de atualizar o TXT apos confirmacao de commit e seguir direto para a proxima fase.
+
+ETAPA:
+- Nome: Normalizacao de publish_status em importacao e replaceCollection
+- Fase: Fase 10 - Migracao de dados locais
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\db.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Ajustados importAll() e replaceCollection() para aplicar a mesma normalizacao de publish_status usada nas leituras normais, preservando compatibilidade com importacao/exportacao e dados legados.
+- Commit previsto: fix: normaliza publish_status em importacao e replaceCollection
+- Commit confirmado pelo usuario: SIM
+- Observacoes: Etapa concluida com foco na compatibilidade local e na consistencia de publish_status fora do carregamento inicial.
+
+ETAPA:
+- Nome: Hardening de leitura publica e remocao de escrita anonima em ferias
+- Fase: Fase 11 - Seguranca e hardening no Supabase
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\supabase-hardening-public-read.sql; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Aplicado hardening no Supabase para leitura publica apenas de registros published em tabelas de conteudo e removidas policies anonimas de escrita em escala_ferias.
+- Commit previsto: chore: adiciona hardening de leitura publica no supabase
+- Commit confirmado pelo usuario: SIM
+- Observacoes: O frontend publico passa a depender tambem da camada de banco para nao receber drafts no payload, enquanto o admin autenticado preserva leitura e escrita.
