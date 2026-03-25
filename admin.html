@@ -592,6 +592,21 @@
               <i class="ph-bold ph-download-simple"></i> Exportar dados.js
             </button>
           </div>
+          <div class="form-group">
+            <label>Posição do Instagram no dashboard</label>
+            <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
+              Escolha se o widget do Instagram fica abaixo de <code>Acesso Rápido</code> ou na coluna lateral do dashboard.
+            </p>
+            <select id="config-instagram-position">
+              <option value="belowQuickAccess">Abaixo do Acesso Rápido</option>
+              <option value="sidebar">Coluna lateral</option>
+            </select>
+            <div style="margin-top:10px">
+              <button class="btn btn-primary" onclick="salvarConfigDashboard()">
+                <i class="ph-bold ph-floppy-disk"></i> Salvar posição
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

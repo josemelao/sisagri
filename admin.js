@@ -191,8 +191,22 @@ function renderSection(key) {
     case 'infoJuridico':   renderInfoSimples('infoJuridico', 'Secretaria', 'Informações da Secretaria'); break;
     case 'infoMunicipio':  renderInfoSimples('infoMunicipio', 'Município e Prefeitura', 'Informações do Município'); break;
     case 'infoOrgaos':     renderInfoOrgaos(); break;
-    case 'configuracoes':  break;
+    case 'configuracoes':  carregarConfigDashboard(); break;
   }
+}
+
+function carregarConfigDashboard() {
+  const select = document.getElementById('config-instagram-position');
+  if (!select) return;
+  const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
+  select.value = config.instagramPosition || 'belowQuickAccess';
+}
+
+function salvarConfigDashboard() {
+  const select = document.getElementById('config-instagram-position');
+  if (!select || !DB.updateLayoutConfig) return;
+  DB.updateLayoutConfig({ instagramPosition: select.value });
+  toast('Configuração do dashboard salva.');
 }
 
 /* ============================================================

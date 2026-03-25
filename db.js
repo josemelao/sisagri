@@ -23,6 +23,7 @@ const DB_CONFIG = {
   SUPABASE_KEY:    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpdWp4ZW1wb2RpbWVnZG9leHFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjY2MzEsImV4cCI6MjA4OTk0MjYzMX0.D4cFcM50yJoxGohOfKQ4P7BoJVF60EVZUFMjjPsQZ8o',              // anon public key
   LS_KEY:          'smader_db_v1', // chave principal do localStorage
   LEGACY_LS_KEY:   'seagri_db_v1', // chave antiga para migração segura
+  CONFIG_LS_KEY:   'smader_layout_config_v1',
 };
 
 /* ============================================================
@@ -37,6 +38,46 @@ let _dbStatus = {
   writesReachSupabase: false,
   lastError: '',
 };
+
+function _ensureAppConfig() {
+  if (!_db || typeof _db !== 'object') _db = {};
+  if (!_db.layoutConfig || typeof _db.layoutConfig !== 'object' || Array.isArray(_db.layoutConfig)) {
+    _db.layoutConfig = {};
+  }
+  if (!_db.layoutConfig.instagramPosition) {
+    _db.layoutConfig.instagramPosition = 'belowQuickAccess';
+  }
+}
+
+function _loadLocalAppConfig() {
+  try {
+    const saved = localStorage.getItem(DB_CONFIG.CONFIG_LS_KEY);
+    if (!saved) return {};
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    console.warn('[DB] Falha ao ler layoutConfig do localStorage:', e);
+    return {};
+  }
+}
+
+function _applyLocalAppConfig() {
+  _ensureAppConfig();
+  _db.layoutConfig = {
+    ..._db.layoutConfig,
+    ..._loadLocalAppConfig(),
+  };
+  _ensureAppConfig();
+}
+
+function _persistLocalAppConfig() {
+  try {
+    _ensureAppConfig();
+    localStorage.setItem(DB_CONFIG.CONFIG_LS_KEY, JSON.stringify(_db.layoutConfig));
+  } catch (e) {
+    console.error('[DB] Falha ao salvar layoutConfig no localStorage:', e);
+  }
+}
 
 function _notifyCollectionUpdated(colecao) {
   window.dispatchEvent(new CustomEvent('db:collection-updated', { detail: { colecao } }));
@@ -374,6 +415,8 @@ function _initLocal() {
   if (saved) {
     try {
       _db = JSON.parse(saved);
+      _ensureAppConfig();
+      _applyLocalAppConfig();
       console.info('[DB] Dados carregados do localStorage (SMADER).');
       return Promise.resolve();
     } catch (e) {
@@ -386,6 +429,8 @@ function _initLocal() {
   if (legacySaved) {
     try {
       _db = JSON.parse(legacySaved);
+      _ensureAppConfig();
+      _applyLocalAppConfig();
       _persistLocal();
       localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
       console.info('[DB] Dados migrados de seagri_db_v1 para smader_db_v1.');
@@ -402,6 +447,8 @@ function _initLocal() {
     return Promise.resolve();
   }
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
+  _ensureAppConfig();
+  _applyLocalAppConfig();
   console.info('[DB] Dados carregados de dados.js (padrão).');
   return Promise.resolve();
 }
@@ -427,6 +474,8 @@ async function _initSupabase() {
   }
 
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS || {}));
+  _ensureAppConfig();
+  _applyLocalAppConfig();
 
   try {
     const colecoes = Object.keys(SUPABASE_TABLES);
@@ -595,6 +644,20 @@ const DB = {
     return JSON.parse(JSON.stringify(_db));
   },
 
+  getLayoutConfig() {
+    _ensureAppConfig();
+    return JSON.parse(JSON.stringify(_db.layoutConfig));
+  },
+
+  updateLayoutConfig(patch = {}) {
+    _ensureAppConfig();
+    _db.layoutConfig = { ..._db.layoutConfig, ...patch };
+    _persistLocalAppConfig();
+    _persistLocal();
+    _notifyCollectionUpdated('layoutConfig');
+    return DB.getLayoutConfig();
+  },
+
   /** Retorna o status atual da conexão/persistência */
   getStatus() {
     return JSON.parse(JSON.stringify(_dbStatus));
@@ -603,6 +666,7 @@ const DB = {
   /** Importa um banco completo (substitui tudo, usado no admin) */
   importAll(dados) {
     _db = JSON.parse(JSON.stringify(dados));
+    _ensureAppConfig();
     _persistLocal();
     if (_sb) {
       Object.keys(SUPABASE_TABLES).forEach(colecao => {
@@ -673,6 +737,7 @@ const DB = {
    ============================================================ */
 function _persistLocal() {
   try {
+    _persistLocalAppConfig();
     localStorage.setItem(DB_CONFIG.LS_KEY, JSON.stringify(_db));
   } catch (e) {
     console.error('[DB] Falha ao salvar no localStorage:', e);

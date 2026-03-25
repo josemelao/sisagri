@@ -1606,6 +1606,17 @@ input { font-family: inherit; }
   min-width: 0;
 }
 
+.dash-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dash-instagram-widget {
+  box-shadow: var(--shadow-sm);
+}
+
 /* Cabeçalho compartilhado dos blocos */
 .dash-block-header {
   display: flex;
@@ -2226,6 +2237,13 @@ input { font-family: inherit; }
 .side-widget-body {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   overflow: hidden;
+  will-change: height, opacity;
+  transform: translateZ(0);
+  opacity: 1;
+}
+
+.side-widget[data-open="false"] .side-widget-body {
+  opacity: 0;
 }
 
 /* Tooltip flutuante do calendário */

@@ -296,6 +296,10 @@ window.DADOS_INICIAIS = {
     { id: 4, titulo: "PRODATA",              url: "https://prodata.luziania.go.gov.br",    icone: "ph-database",        cor: "#6b3d7a", coringa: false },
     { id: 5, titulo: "—",                   url: "#",                                      icone: "ph-placeholder",     cor: "#8a9482", coringa: true  },
     { id: 6, titulo: "—",                   url: "#",                                      icone: "ph-placeholder",     cor: "#8a9482", coringa: true  }
-  ]
+  ],
+
+  layoutConfig: {
+    instagramPosition: "belowQuickAccess"
+  }
 
 }; // fim window.DADOS_INICIAIS

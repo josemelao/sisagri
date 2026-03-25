@@ -294,6 +294,7 @@ function initDashboardSide() {
   calYear  = hoje.getFullYear();
   calMonth = hoje.getMonth();
 
+  renderDashboardInstagramWidget();
   renderCalendar();
   renderDashAvisos();
   renderDashEventos();
@@ -2154,6 +2155,50 @@ function resetDetailPanels(overlayId) {
     const panel = document.getElementById(panelId);
     if (panel) panel.remove();
   });
+}
+
+function getInstagramWidgetHTML() {
+  return `
+    <div class="side-widget dash-instagram-widget" data-widget="instagram" data-open="true">
+      <div class="side-widget-header">
+        <button class="widget-toggle-btn" data-target="instagram" aria-expanded="true">
+          <i class="ph-bold ph-instagram-logo"></i>
+          <span>Instagram</span>
+          <i class="ph-bold ph-caret-down widget-chevron"></i>
+        </button>
+        <a href="https://instagram.com/smader_luziania" target="_blank" rel="noopener" class="ig-follow-btn">
+          <i class="ph-bold ph-arrow-square-out"></i> Ver perfil
+        </a>
+      </div>
+      <div class="side-widget-body" id="body-instagram">
+        <div class="ig-info-box">
+          <i class="ph-bold ph-lock-key"></i>
+          <div>
+            <strong>Integração via API do Instagram</strong>
+            <p>Para exibir postagens automáticas, configure o token de acesso do Instagram Basic Display API no campo abaixo e recarregue a página.</p>
+            <div class="ig-token-row">
+              <input type="text" id="ig-token-input" placeholder="Cole seu Access Token aqui..." />
+              <button id="ig-token-save">Salvar</button>
+            </div>
+          </div>
+        </div>
+        <div class="ig-grid" id="ig-grid"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDashboardInstagramWidget() {
+  const belowSlot = document.getElementById('instagram-below-slot');
+  const sidebarSlot = document.getElementById('instagram-sidebar-slot');
+  if (!belowSlot || !sidebarSlot) return;
+
+  belowSlot.innerHTML = '';
+  sidebarSlot.innerHTML = '';
+
+  const config = DB.getLayoutConfig ? DB.getLayoutConfig() : {};
+  const targetSlot = config.instagramPosition === 'sidebar' ? sidebarSlot : belowSlot;
+  targetSlot.innerHTML = getInstagramWidgetHTML();
 }
 
 function closeDetail(overlayId) {
