@@ -425,14 +425,12 @@ input { font-family: inherit; }
 
 .search-result-item {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 9px 16px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: background var(--transition);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-  row-gap: 2px;
 }
 
 .search-result-item:last-child { border-bottom: none; }
@@ -442,9 +440,17 @@ input { font-family: inherit; }
   background: var(--accent-light);
 }
 
+/* Linha 1: módulo + nome do item */
+.result-linha-1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 /* Módulo — tag colorida */
 .result-modulo {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 600;
   background: var(--accent);
   color: white;
@@ -454,45 +460,42 @@ input { font-family: inherit; }
   flex-shrink: 0;
 }
 
-/* Separador › */
-.result-sep {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-/* Nome do item */
+/* Nome do item — destaque principal */
 .result-item-nome {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Nome do campo */
-.result-campo {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* Valor encontrado — com highlight */
-.result-valor {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.result-valor mark {
+.result-item-nome mark {
+  background: #fff0b3;
+  color: #7a5000;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: 700;
+}
+
+/* Linha 2: label do campo + trecho de contexto */
+.result-linha-2 {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
+}
+
+.result-ctx-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.result-linha-2 mark {
   background: #fff0b3;
   color: #7a5000;
   border-radius: 2px;

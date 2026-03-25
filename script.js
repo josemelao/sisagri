@@ -2122,152 +2122,243 @@ function initSearch() {
 }
 
 /**
- * Constrói o índice completo e retorna resultados para a query.
- * Cada resultado tem: modulo, item (nome), campo, valor, action
+ * Busca global rankeada — retorna um resultado por item, ordenado por score.
+ *
+ * Score por tier:
+ *   Tier 1 (nome/título principal): 100
+ *   Tier 2 (campos secundários identificadores): 50
+ *   Tier 3 (texto livre — descrição, observações, passos): 10
+ *
+ * Dentro do mesmo score, a ordem de inserção no índice é preservada
+ * (módulos mais relevantes primeiro: Funcionários, Manuais, etc.).
  */
 function buildGlobalIndex(query) {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
   if (!globalSearchIndexReady) rebuildGlobalSearchIndex();
-  return globalSearchIndex.filter(item => item.searchText.includes(q));
+
+  const resultados = [];
+
+  for (const item of globalSearchIndex) {
+    // Encontra o tier com maior score que bate com a query
+    let melhorScore = 0;
+    let melhorContextoLabel = "";
+    let melhorContextoValor = "";
+
+    for (const campo of item.campos) {
+      if (!campo.searchText.includes(q)) continue;
+      if (campo.tier > melhorScore) {
+        melhorScore = campo.tier;
+        melhorContextoLabel = campo.label;
+        melhorContextoValor = campo.valor;
+      }
+    }
+
+    if (melhorScore === 0) continue;
+
+    resultados.push({
+      modulo:        item.modulo,
+      itemNome:      item.itemNome,
+      contextoLabel: melhorContextoLabel,
+      contextoValor: melhorContextoValor,
+      score:         melhorScore,
+      action:        item.action,
+    });
+  }
+
+  // Ordena: maior score primeiro; empate mantém ordem de inserção
+  resultados.sort((a, b) => b.score - a.score);
+  return resultados;
 }
 
 function rebuildGlobalSearchIndex() {
   const entries = [];
 
-  function add(modulo, itemNome, campo, valor, action) {
-    if (valor === undefined || valor === null || valor === "") return;
-    entries.push({
-      modulo,
-      itemNome,
-      campo,
-      valor: String(valor),
-      action,
-      searchText: String(valor).toLowerCase()
-    });
+  /**
+   * Registra um item no índice.
+   * @param {string}   modulo   - Nome do módulo
+   * @param {string}   itemNome - Nome/título principal do item
+   * @param {Array}    campos   - [{tier, label, valor}] — campos com seus pesos
+   * @param {Function} action   - O que fazer ao clicar no resultado
+   */
+  function addItem(modulo, itemNome, campos, action) {
+    const camposValidos = campos
+      .filter(c => c.valor !== undefined && c.valor !== null && String(c.valor).trim() !== "")
+      .map(c => ({
+        tier:       c.tier,
+        label:      c.label,
+        valor:      String(c.valor),
+        searchText: String(c.valor).toLowerCase(),
+      }));
+
+    if (camposValidos.length === 0) return;
+
+    entries.push({ modulo, itemNome, campos: camposValidos, action });
   }
+
+  // Atalhos de tier para clareza
+  const T1 = 100; // nome/título principal
+  const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
+  const T3 = 10;  // texto livre (descrição, observações, passos, campos de contato)
 
   funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };
-    add("Funcionarios", f.nome, "Nome", f.nome, ir);
-    add("Funcionarios", f.nome, "Cargo", f.cargo, ir);
-    add("Funcionarios", f.nome, "Setor", f.setor, ir);
-    add("Funcionarios", f.nome, "Telefone", f.telefone, ir);
-    add("Funcionarios", f.nome, "E-mail", f.email, ir);
-    add("Funcionarios", f.nome, "Descricao", f.descricao, ir);
+    addItem("Funcionários", f.nome, [
+      { tier: T1, label: "Nome",        valor: f.nome },
+      { tier: T2, label: "Cargo",       valor: f.cargo },
+      { tier: T2, label: "Lotação",     valor: f.lotacao || f.setor },
+      { tier: T2, label: "Matrícula",   valor: f.matricula },
+      { tier: T2, label: "E-mail",      valor: f.email },
+      { tier: T2, label: "Telefone",    valor: f.telefone },
+      { tier: T2, label: "CPF",         valor: f.cpf },
+      { tier: T3, label: "Descrição",   valor: f.descricao },
+    ], ir);
   });
 
   manuais.forEach(m => {
     const ir = () => { navigateTo("manuais"); setTimeout(() => openManual(m.id), 120); };
-    add("Manuais", m.titulo, "Titulo", m.titulo, ir);
-    add("Manuais", m.titulo, "Categoria", m.categoria, ir);
-    add("Manuais", m.titulo, "Observacoes", m.observacoes, ir);
-    (m.passos || []).forEach((p, i) => add("Manuais", m.titulo, `Passo ${i + 1}`, typeof p === "object" ? (p.texto || p.descricao || "") : p, ir));
-    (m.documentos || []).forEach(d => add("Manuais", m.titulo, "Documento necessario", d, ir));
+    const passosCampos = (m.passos || []).map((p, i) => ({
+      tier: T3,
+      label: `Passo ${i + 1}`,
+      valor: typeof p === "object" ? (p.texto || p.descricao || "") : p,
+    }));
+    const docsCampos = (m.documentos || []).map(d => ({
+      tier: T3,
+      label: "Documento necessário",
+      valor: typeof d === "object" ? d.nome : d,
+    }));
+    addItem("Manuais", m.titulo, [
+      { tier: T1, label: "Título",       valor: m.titulo },
+      { tier: T2, label: "Categoria",    valor: m.categoria },
+      { tier: T3, label: "Observações",  valor: m.observacoes },
+      ...passosCampos,
+      ...docsCampos,
+    ], ir);
   });
 
   processos.forEach(p => {
     const ir = () => { navigateTo("processos"); setTimeout(() => openProcesso(p.id), 120); };
-    add("Processos", p.titulo, "Titulo", p.titulo, ir);
-    add("Processos", p.titulo, "Categoria", p.categoria, ir);
-    (p.etapas || []).forEach(e => add("Processos", p.titulo, `Etapa: ${e.titulo}`, e.descricao, ir));
+    const etapasCampos = (p.etapas || []).flatMap(e => [
+      { tier: T2, label: "Etapa",      valor: e.titulo },
+      { tier: T3, label: "Descrição",  valor: e.descricao },
+    ]);
+    addItem("Processos", p.titulo, [
+      { tier: T1, label: "Título",    valor: p.titulo },
+      { tier: T2, label: "Categoria", valor: p.categoria },
+      ...etapasCampos,
+    ], ir);
   });
 
   arquivos.forEach(a => {
-    const ir = () => navigateTo("arquivos");
-    add("Arquivos", a.nome, "Nome", a.nome, ir);
-    add("Arquivos", a.nome, "Tipo", a.tipo, ir);
-    (a.tags || []).forEach(t => add("Arquivos", a.nome, "Tag", t, ir));
+    const ir = () => { navigateTo("arquivos"); setTimeout(() => openArquivo(a.id), 120); };
+    const tagsCampos = (a.tags || []).map(t => ({ tier: T2, label: "Tag", valor: t }));
+    addItem("Arquivos", a.nome, [
+      { tier: T1, label: "Nome", valor: a.nome },
+      { tier: T2, label: "Tipo", valor: a.tipo },
+      ...tagsCampos,
+    ], ir);
   });
 
   infoJuridico.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openJuridico(item.id), 120); };
-    add("Informacoes", item.titulo, "Titulo", item.titulo, ir);
-    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
+    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    addItem("Secretaria", item.titulo, [
+      { tier: T1, label: "Bloco",  valor: item.titulo },
+      { tier: T2, label: "Badge", valor: item.badge || item.tag },
+      ...camposCampos,
+    ], ir);
   });
 
   infoMunicipio.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openMunicipio(item.id), 120); };
-    add("Informacoes", item.titulo, "Titulo", item.titulo, ir);
-    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
+    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    addItem("Município", item.titulo, [
+      { tier: T1, label: "Bloco", valor: item.titulo },
+      { tier: T2, label: "Tag",   valor: item.tag || item.badge },
+      ...camposCampos,
+    ], ir);
   });
 
   infoOrgaos.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openOrgao(item.id), 120); };
-    add("Informacoes", item.titulo, "Nome", item.titulo, ir);
-    add("Informacoes", item.titulo, "Nome completo", item.nome_completo, ir);
-    add("Informacoes", item.titulo, "Atribuicao", item.atribuicao, ir);
-    (item.campos || []).forEach(c => add("Informacoes", item.titulo, c.label, c.valor, ir));
+    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    addItem("Órgãos", item.titulo, [
+      { tier: T1, label: "Sigla",        valor: item.titulo },
+      { tier: T1, label: "Nome",         valor: item.nome_completo },
+      { tier: T3, label: "Atribuição",   valor: item.atribuicao },
+      ...camposCampos,
+    ], ir);
   });
 
   veiculos.forEach(v => {
     const ir = () => { navigateTo("veiculos"); setTimeout(() => openVeiculo(v.id), 120); };
-    add("Veiculos", v.nome, "Nome", v.nome, ir);
-    add("Veiculos", v.nome, "Tipo", v.tipo, ir);
-    add("Veiculos", v.nome, "Marca", v.marca, ir);
-    add("Veiculos", v.nome, "Modelo", v.modelo, ir);
-    add("Veiculos", v.nome, "Ano", v.ano, ir);
-    add("Veiculos", v.nome, "Cor", v.cor_veiculo, ir);
-    add("Veiculos", v.nome, "Placa", v.placa, ir);
-    add("Veiculos", v.nome, "N Patrimonio", v.patrimonio, ir);
-    add("Veiculos", v.nome, "Chassi", v.chassi, ir);
-    add("Veiculos", v.nome, "RENAVAM", v.renavam, ir);
-    add("Veiculos", v.nome, "Combustivel", v.combustivel, ir);
-    add("Veiculos", v.nome, "Situacao", v.situacao, ir);
-    add("Veiculos", v.nome, "Motorista", v.motorista, ir);
-    add("Veiculos", v.nome, "Localizacao", v.localizacao, ir);
-    add("Veiculos", v.nome, "Observacoes", v.obs, ir);
+    addItem("Veículos", v.nome, [
+      { tier: T1, label: "Nome",        valor: v.nome },
+      { tier: T2, label: "Placa",       valor: v.placa },
+      { tier: T2, label: "Modelo",      valor: `${v.marca} ${v.modelo}`.trim() },
+      { tier: T2, label: "Tipo",        valor: v.tipo },
+      { tier: T2, label: "Situação",    valor: v.situacao },
+      { tier: T2, label: "Patrimônio",  valor: v.patrimonio },
+      { tier: T2, label: "Motorista",   valor: v.motorista },
+      { tier: T3, label: "Chassi",      valor: v.chassi },
+      { tier: T3, label: "RENAVAM",     valor: v.renavam },
+      { tier: T3, label: "Localização", valor: v.localizacao },
+      { tier: T3, label: "Observações", valor: v.obs },
+    ], ir);
   });
 
   sistemas.forEach(s => {
-    const ir = () => navigateTo("sistemas");
-    add("Sistemas", s.nome, "Nome", s.nome, ir);
-    add("Sistemas", s.nome, "Nome completo", s.nome_completo, ir);
-    add("Sistemas", s.nome, "Descricao", s.descricao, ir);
-    add("Sistemas", s.nome, "Orgao", s.orgao, ir);
-    add("Sistemas", s.nome, "URL", s.url, ir);
-    add("Sistemas", s.nome, "Acesso", s.acesso, ir);
+    const ir = () => { navigateTo("sistemas"); setTimeout(() => openSistema(s.id), 120); };
+    addItem("Sistemas", s.nome, [
+      { tier: T1, label: "Nome",        valor: s.nome },
+      { tier: T1, label: "Nome completo", valor: s.nome_completo },
+      { tier: T2, label: "Órgão",       valor: s.orgao },
+      { tier: T2, label: "Acesso",      valor: s.acesso },
+      { tier: T3, label: "Descrição",   valor: s.descricao },
+      { tier: T3, label: "URL",         valor: s.url },
+    ], ir);
   });
 
   servicos.forEach(s => {
     const ir = () => { navigateTo("servicos"); setTimeout(() => openServico(s.id), 120); };
-    add("Servicos", s.nome, "Nome", s.nome, ir);
-    add("Servicos", s.nome, "Categoria", s.categoria, ir);
-    add("Servicos", s.nome, "Descricao", s.descricao, ir);
-    add("Servicos", s.nome, "Publico-alvo", s.publico, ir);
-    add("Servicos", s.nome, "Como solicitar", s.como_solicitar, ir);
-    add("Servicos", s.nome, "Prazo", s.prazo, ir);
-    add("Servicos", s.nome, "Observacoes", s.obs, ir);
-    (s.documentos || []).forEach(d => add("Servicos", s.nome, "Documento necessario", d, ir));
+    const docsCampos = (s.documentos || []).map(d => ({
+      tier: T3,
+      label: "Documento",
+      valor: typeof d === "object" ? d.nome : d,
+    }));
+    addItem("Serviços", s.nome, [
+      { tier: T1, label: "Nome",           valor: s.nome },
+      { tier: T2, label: "Categoria",      valor: s.categoria },
+      { tier: T2, label: "Público-alvo",   valor: s.publico },
+      { tier: T3, label: "Descrição",      valor: s.descricao },
+      { tier: T3, label: "Como solicitar", valor: s.como_solicitar },
+      { tier: T3, label: "Prazo",          valor: s.prazo },
+      { tier: T3, label: "Observações",    valor: s.obs },
+      ...docsCampos,
+    ], ir);
   });
 
   avisos.forEach(a => {
-    const ir = () => navigateTo("agenda");
-    const tipo = tipoAviso[a.tipo]?.label || a.tipo;
-    add("Avisos", a.titulo, "Titulo", a.titulo, ir);
-    add("Avisos", a.titulo, "Tipo", tipo, ir);
-    add("Avisos", a.titulo, "Local", a.local, ir);
-    add("Avisos", a.titulo, "Descricao", a.desc, ir);
+    const ir = () => { navigateTo("agenda"); setTimeout(() => openAviso(a.id), 120); };
+    addItem("Avisos", a.titulo, [
+      { tier: T1, label: "Título",    valor: a.titulo },
+      { tier: T2, label: "Tipo",      valor: tipoAviso[a.tipo]?.label || a.tipo },
+      { tier: T2, label: "Local",     valor: a.local },
+      { tier: T3, label: "Descrição", valor: a.desc },
+    ], ir);
   });
 
   agendaEventos.forEach(e => {
-    const ir = () => navigateTo("agenda");
-    const tipo = tipoEvento[e.tipo]?.label || e.tipo;
-    add("Agenda", e.titulo, "Titulo", e.titulo, ir);
-    add("Agenda", e.titulo, "Tipo", tipo, ir);
-    add("Agenda", e.titulo, "Data", formatDateBR(e.data), ir);
-    add("Agenda", e.titulo, "Data fim", e.data_fim ? formatDateBR(e.data_fim) : "", ir);
-    add("Agenda", e.titulo, "Horario", e.hora, ir);
-    add("Agenda", e.titulo, "Local", e.local, ir);
-    add("Agenda", e.titulo, "Descricao", e.desc, ir);
+    const ir = () => { navigateTo("agenda"); setTimeout(() => openEvento(e.id), 120); };
+    addItem("Agenda", e.titulo, [
+      { tier: T1, label: "Título",    valor: e.titulo },
+      { tier: T2, label: "Tipo",      valor: tipoEvento[e.tipo]?.label || e.tipo },
+      { tier: T2, label: "Local",     valor: e.local },
+      { tier: T2, label: "Data",      valor: formatDateBR(e.data) },
+      { tier: T3, label: "Descrição", valor: e.desc },
+    ], ir);
   });
 
-  const seen = new Set();
-  globalSearchIndex = entries.filter(entry => {
-    const key = `${entry.modulo}|${entry.itemNome}|${entry.campo}|${entry.valor}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  globalSearchIndex = entries;
   globalSearchIndexReady = true;
   globalSearchIndexBuilding = false;
 }
@@ -2299,22 +2390,34 @@ function renderGlobalResults(results, resultsBox, input) {
     return;
   }
 
-  // Limita a 12 resultados para não sobrecarregar
-  const shown   = results.slice(0, 12);
-  const hasMore = results.length > 12;
+  const shown   = results.slice(0, 10);
+  const hasMore = results.length > 10;
 
-  resultsBox.innerHTML = shown.map((r, i) => `
-    <div class="search-result-item" data-index="${i}">
-      <span class="result-modulo">${escapeHtml(r.modulo)}</span>
-      <i class="ph-bold ph-caret-right result-sep"></i>
-      <span class="result-item-nome">${escapeHtml(r.itemNome)}</span>
-      <i class="ph-bold ph-caret-right result-sep"></i>
-      <span class="result-campo">${escapeHtml(r.campo)}</span>
-      <i class="ph-bold ph-caret-right result-sep"></i>
-      <span class="result-valor">${highlightMatch(r.valor, q)}</span>
-    </div>
-  `).join("") + (hasMore ? `
-    <div class="search-more">+${results.length - 12} resultados — refine a busca</div>
+  // Contexto: se o valor é o próprio nome do item, não repete — mostra o label do campo
+  function buildContexto(r) {
+    const valorIgualNome = r.contextoValor.toLowerCase() === r.itemNome.toLowerCase();
+    if (valorIgualNome) {
+      // O match foi no próprio título — contexto fica vazio (nome já aparece acima)
+      return "";
+    }
+    const labelHTML = `<span class="result-ctx-label">${escapeHtml(r.contextoLabel)}:</span>`;
+    const valorHTML = highlightMatch(truncarContexto(r.contextoValor, q, 60), q);
+    return `${labelHTML} ${valorHTML}`;
+  }
+
+  resultsBox.innerHTML = shown.map((r, i) => {
+    const contexto = buildContexto(r);
+    return `
+      <div class="search-result-item" data-index="${i}">
+        <div class="result-linha-1">
+          <span class="result-modulo">${escapeHtml(r.modulo)}</span>
+          <span class="result-item-nome">${highlightMatch(r.itemNome, q)}</span>
+        </div>
+        ${contexto ? `<div class="result-linha-2">${contexto}</div>` : ""}
+      </div>
+    `;
+  }).join("") + (hasMore ? `
+    <div class="search-more">+${results.length - 10} resultados — refine a busca</div>
   ` : "");
 
   resultsBox.querySelectorAll(".search-result-item").forEach((el, i) => {
@@ -2327,6 +2430,22 @@ function renderGlobalResults(results, resultsBox, input) {
   });
 
   resultsBox.classList.add("visible");
+}
+
+/**
+ * Recorta o valor ao redor da query para mostrar contexto relevante.
+ * Ex: "...assistência técnica e extensão rural..." ao buscar "extensão"
+ */
+function truncarContexto(texto, query, maxLen = 60) {
+  const idx = texto.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return texto.slice(0, maxLen) + (texto.length > maxLen ? "…" : "");
+
+  const meio = Math.floor(maxLen / 2);
+  const inicio = Math.max(0, idx - meio);
+  const fim = Math.min(texto.length, inicio + maxLen);
+  const trecho = texto.slice(inicio, fim);
+
+  return (inicio > 0 ? "…" : "") + trecho + (fim < texto.length ? "…" : "");
 }
 
 
