@@ -2426,6 +2426,7 @@ input { font-family: inherit; }
   gap: 12px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
   transition: background var(--transition);
 }
 

@@ -462,7 +462,7 @@ function positionTooltip(tip, cell) {
 function avisoItemHTML(a) {
   const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
   return `
-    <div class="aviso-item aviso-item--${a.tipo}" onclick="navigateTo('agenda')">
+    <div class="aviso-item aviso-item--${a.tipo}" onclick="navigateTo('agenda'); setTimeout(() => openAviso(${a.id}), 120)">
       <div class="aviso-icon" style="color:${tipo.cor}">
         <i class="ph-bold ${tipo.icone}"></i>
       </div>
@@ -3353,7 +3353,7 @@ function eventoItemHTML(e, mostrarData = true) {
       : "";
 
   return `
-    <div class="evento-item" onclick="navigateTo('agenda')">
+    <div class="evento-item" onclick="navigateTo('agenda'); setTimeout(() => openEvento(${e.id}), 120)">
       ${mostrarData ? `
       <div class="evento-date-badge" style="color:${tipo.cor};background:color-mix(in srgb,${tipo.cor} 10%,transparent)">
         <span class="evento-dia">${dia}</span>
