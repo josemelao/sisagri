@@ -275,6 +275,42 @@ function formatDateBR(value) {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
+function renderPublishStatusActions(saveAction, item = {}) {
+  const publishStatus = item.publish_status === 'draft' ? 'draft' : 'published';
+  const isPublished = publishStatus === 'published';
+  return `
+    <div class="modal-actions-row">
+      <div class="publish-status-control">
+        <span class="publish-status-text" id="publish-status-label">${isPublished ? 'Publicado' : 'Rascunho'}</span>
+        <label class="publish-status-switch" title="Alternar entre rascunho e publicado">
+          <input
+            type="checkbox"
+            id="publish-status-toggle"
+            ${isPublished ? 'checked' : ''}
+            onchange="handlePublishStatusToggle(this)"
+          />
+          <span class="publish-status-slider"></span>
+        </label>
+      </div>
+      <div class="modal-actions-buttons">
+        <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="${saveAction}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
+      </div>
+    </div>`;
+}
+
+function handlePublishStatusToggle(input) {
+  const label = document.getElementById('publish-status-label');
+  if (label) {
+    label.textContent = input.checked ? 'Publicado' : 'Rascunho';
+  }
+}
+
+function getModalPublishStatus() {
+  const input = document.getElementById('publish-status-toggle');
+  return input && !input.checked ? 'draft' : 'published';
+}
+
 // Gera campo de lista dinâmica (passos, documentos, etc.)
 function dynListHTML(items, fieldName, placeholder = 'Item...', isTextarea = false) {
   const tag = isTextarea ? 'textarea' : 'input';
@@ -585,10 +621,7 @@ function formFuncionario(f = {}) {
       <div class="form-group"><label>Departamento</label><input id="f-departamento" value="${escHtml(f.departamento||'')}" /></div>
       <div class="form-group full"><label>Descrição (o que essa pessoa faz)</label><textarea id="f-descricao">${escHtml(f.descricao||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarFuncionario(${f.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>
+    ${renderPublishStatusActions(`salvarFuncionario(${f.id||0})`, f)}
   `;
 }
 
@@ -635,6 +668,7 @@ function salvarFuncionario(id) {
     departamento:  document.getElementById('f-departamento').value.trim(),
     foto:          document.getElementById('f-foto').value,
     descricao:     document.getElementById('f-descricao').value.trim(),
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('funcionarios', id, dados) : DB.insert('funcionarios', dados);
@@ -752,10 +786,7 @@ function formManual(m = {}) {
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="m-observacoes">${escHtml(m.observacoes||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarManual(${m.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>
+    ${renderPublishStatusActions(`salvarManual(${m.id||0})`, m)}
   `;
   return html;
 }
@@ -895,6 +926,7 @@ function salvarManual(id) {
     documentos:  documentos,
     observacoes: document.getElementById('m-observacoes').value.trim(),
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('manuais', id, dados) : DB.insert('manuais', dados);
@@ -974,10 +1006,7 @@ function formProcesso(p = {}) {
         <button type="button" class="dyn-add" onclick="addEtapa()"><i class="ph-bold ph-plus"></i> Adicionar etapa</button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarProcesso(${p.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarProcesso(${p.id||0})`, p)}`;
 }
 
 function addEtapa() {
@@ -1011,6 +1040,7 @@ function salvarProcesso(id) {
     categoria: document.getElementById('p-categoria').value.trim(),
     etapas,
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('processos', id, dados) : DB.insert('processos', dados);
@@ -1114,10 +1144,7 @@ function formArquivo(a = {}) {
         ${tagsInputHTML(a.tags||[], 'arquivo')}
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarArquivo(${a.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarArquivo(${a.id||0})`, a)}`;
   return html;
 }
 
@@ -1189,6 +1216,7 @@ function salvarArquivo(id) {
     tags:          getTagsValues('arquivo'),
     arquivo_data:  finalArquivoData,   // base64 do arquivo (se upload local)
     arquivo_nome:  finalArquivoNome,   // nome original do arquivo
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('arquivos', id, dados) : DB.insert('arquivos', dados);
@@ -1283,10 +1311,7 @@ function formVeiculo(v = {}) {
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarVeiculo(${v.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarVeiculo(${v.id||0})`, v)}`;
 }
 
 function novoVeiculo()     { abrirModal(formVeiculo()); }
@@ -1326,6 +1351,7 @@ function salvarVeiculo(id) {
     localizacao:   document.getElementById('v-localizacao').value.trim(),
     obs:           document.getElementById('v-obs').value.trim(),
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('veiculos', id, dados) : DB.insert('veiculos', dados);
@@ -1486,10 +1512,7 @@ function formSistema(s = {}) {
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarSistema(${s.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarSistema(${s.id||0})`, s)}`;
 }
 
 function novoSistema()     { abrirModal(formSistema()); }
@@ -1509,6 +1532,7 @@ function salvarSistema(id) {
     manuais_ids:   manuaisIds,
     processos_ids: processosIds,
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('sistemas', id, dados) : DB.insert('sistemas', dados);
@@ -1573,10 +1597,7 @@ function formServico(s = {}) {
       <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
       <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarServico(${s.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarServico(${s.id||0})`, s)}`;
 }
 
 function novoServico()     { abrirModal(formServico()); }
@@ -1616,6 +1637,7 @@ function salvarServico(id) {
     prazo:          document.getElementById('sv-prazo').value.trim(),
     obs:            document.getElementById('sv-obs').value.trim(),
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('servicos', id, dados) : DB.insert('servicos', dados);
@@ -1661,10 +1683,7 @@ function formServico(s = {}) {
       <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
       <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarServico(${s.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarServico(${s.id||0})`, s)}`;
 }
 
 function salvarServico(id) {
@@ -1707,6 +1726,7 @@ function salvarServico(id) {
     prazo:          document.getElementById('sv-prazo').value.trim(),
     obs:            document.getElementById('sv-obs').value.trim(),
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   if (!dados.categoria) { toast('Categoria é obrigatória.','error'); return; }
@@ -1752,10 +1772,7 @@ function formAviso(a = {}) {
       <div class="form-group"><label>Local</label><input id="av-local" value="${escHtml(a.local||'')}" /></div>
       <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarAviso(${a.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarAviso(${a.id||0})`, a)}`;
 }
 
 function novoAviso()     { abrirModal(formAviso()); }
@@ -1767,6 +1784,7 @@ function salvarAviso(id) {
     tipo:   document.getElementById('av-tipo').value,
     local:  document.getElementById('av-local').value.trim(),
     desc:   document.getElementById('av-desc').value.trim(),
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('avisos', id, dados) : DB.insert('avisos', dados);
@@ -1817,10 +1835,7 @@ function formEvento(e = {}) {
       <div class="form-group"><label>Local</label><input id="ev-local" value="${escHtml(e.local||'')}" /></div>
       <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||'')}</textarea></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarEvento(${e.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarEvento(${e.id||0})`, e)}`;
 }
 
 function novoEvento()     { abrirModal(formEvento()); }
@@ -1836,6 +1851,7 @@ function salvarEvento(id) {
     hora:     document.getElementById('ev-hora').value || null,
     local:    document.getElementById('ev-local').value.trim(),
     desc:     document.getElementById('ev-desc').value.trim(),
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo || !dados.data) { toast('Título e data são obrigatórios.','error'); return; }
   id ? DB.update('agendaEventos', id, dados) : DB.insert('agendaEventos', dados);
@@ -1895,10 +1911,7 @@ function formEvento(e = {}) {
         <p class="form-hint">Para o tipo prazo, use apenas data final e hora final. O evento ficará "em andamento" até esse momento e depois passará para "encerrado".</p>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarEvento(${e.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarEvento(${e.id||0})`, e)}`;
 }
 
 function toggleEventoTipoFields() {
@@ -1947,6 +1960,7 @@ function salvarEvento(id) {
     hora_fim: document.getElementById('ev-hora-fim').value || null,
     local:    document.getElementById('ev-local').value.trim(),
     desc:     document.getElementById('ev-desc').value.trim(),
+    publish_status: getModalPublishStatus(),
   };
 
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
@@ -2009,10 +2023,7 @@ function formFerias(f = {}) {
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarFerias(${f.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarFerias(${f.id||0})`, f)}`;
 }
 
 function preencherDadosFunc() {
@@ -2035,6 +2046,7 @@ function salvarFerias(id) {
     periodo_inicio:  document.getElementById('fer-inicio').value,
     periodo_fim:     document.getElementById('fer-fim').value,
     status:          document.getElementById('fer-status').value,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.funcionario_id || !dados.periodo_inicio || !dados.periodo_fim) { toast('Preencha todos os campos obrigatórios.','error'); return; }
   id ? DB.update('escalaFerias', id, dados) : DB.insert('escalaFerias', dados);
@@ -2107,10 +2119,7 @@ function formFerias(f = {}) {
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarFerias(${f.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarFerias(${f.id||0})`, f)}`;
 }
 
 function salvarFerias(id) {
@@ -2126,6 +2135,7 @@ function salvarFerias(id) {
     periodo_inicio:  periodoInicio,
     periodo_fim:     periodoFim,
     status:          getFeriasStatus(periodoInicio, periodoFim),
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.funcionario_id || !dados.periodo_inicio || !dados.periodo_fim) { toast('Preencha todos os campos obrigatórios.','error'); return; }
   if (dados.periodo_fim < dados.periodo_inicio) { toast('A data final não pode ser anterior à data inicial.','error'); return; }
@@ -2167,10 +2177,7 @@ function formAcesso(a = {}) {
       <div class="form-group"><label>Ícone Phosphor</label><input id="ac-icone" value="${escHtml(a.icone||'ph-link')}" placeholder="Ex: ph-globe" /><span class="form-hint">Veja ícones em: phosphoricons.com</span></div>
       <div class="form-group"><label>Cor (hex)</label><input type="color" id="ac-cor" value="${a.cor||'#2d6a4f'}" style="height:38px;padding:2px" /></div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarAcesso(${a.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarAcesso(${a.id||0})`, a)}`;
 }
 
 function novoAcesso()     { abrirModal(formAcesso()); }
@@ -2183,6 +2190,7 @@ function salvarAcesso(id) {
     icone:   document.getElementById('ac-icone').value.trim(),
     cor:     document.getElementById('ac-cor').value,
     coringa: false,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('acessoRapido', id, dados) : DB.insert('acessoRapido', dados);
@@ -2203,10 +2211,7 @@ function formAcesso(a = {}) {
         ${iconPickerHTML(a.icone, a.cor, 'acesso')}
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarAcesso(${a.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarAcesso(${a.id||0})`, a)}`;
 }
 
 function salvarAcesso(id) {
@@ -2217,6 +2222,7 @@ function salvarAcesso(id) {
     icone,
     cor,
     coringa: false,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('acessoRapido', id, dados) : DB.insert('acessoRapido', dados);
@@ -2273,10 +2279,7 @@ function formInfoSimples(colecao, item = {}) {
         <button type="button" class="dyn-add" onclick="addCampo()"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarInfoSimples('${colecao}',${item.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarInfoSimples('${colecao}',${item.id||0})`, item)}`;
 }
 
 function addCampo() {
@@ -2309,6 +2312,7 @@ function salvarInfoSimples(colecao, id) {
     campos,
     badge,
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update(colecao, id, dados) : DB.insert(colecao, dados);
@@ -2367,10 +2371,7 @@ function formOrgao(o = {}) {
         <button type="button" class="dyn-add" onclick="addOrgCampo()"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarOrgao(${o.id||0})"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
-    </div>`;
+    ${renderPublishStatusActions(`salvarOrgao(${o.id||0})`, o)}`;
 }
 
 function addOrgCampo() {
@@ -2402,6 +2403,7 @@ function salvarOrgao(id) {
     atribuicao:    document.getElementById('org-atribuicao').value.trim(),
     campos,
     icone, cor,
+    publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
