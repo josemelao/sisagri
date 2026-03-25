@@ -1280,6 +1280,7 @@ let extensoesAtivas = new Set();
 let arquivoQuery = "";  // texto da busca por string
 let arquivosPaginaAtual = 1;
 const ARQUIVOS_POR_PAGINA = 20;
+const ARQUIVOS_UI_STATE_KEY = "smader_arquivos_ui_state_v1";
 const ORDEM_EXTENSOES_ARQUIVO = [
   ".pdf",
   ".doc/.docx",
@@ -1290,7 +1291,59 @@ const ORDEM_EXTENSOES_ARQUIVO = [
   ".txt"
 ];
 
+function loadArquivosUIState() {
+  try {
+    const saved = localStorage.getItem(ARQUIVOS_UI_STATE_KEY);
+    if (!saved) return;
+
+    const parsed = JSON.parse(saved);
+    if (!parsed || typeof parsed !== "object") return;
+
+    arquivoQuery = typeof parsed.query === "string" ? parsed.query : "";
+    arquivosPaginaAtual = Number.isInteger(parsed.page) && parsed.page > 0 ? parsed.page : 1;
+    tagsAtivas = new Set(Array.isArray(parsed.tags) ? parsed.tags.filter(Boolean) : []);
+    extensoesAtivas = new Set(Array.isArray(parsed.extensoes) ? parsed.extensoes.filter(Boolean) : []);
+  } catch (error) {
+    console.warn("[Arquivos] Falha ao restaurar estado da interface:", error);
+  }
+}
+
+function persistArquivosUIState() {
+  try {
+    localStorage.setItem(ARQUIVOS_UI_STATE_KEY, JSON.stringify({
+      query: arquivoQuery,
+      page: arquivosPaginaAtual,
+      tags: Array.from(tagsAtivas),
+      extensoes: Array.from(extensoesAtivas),
+    }));
+  } catch (error) {
+    console.warn("[Arquivos] Falha ao salvar estado da interface:", error);
+  }
+}
+
+function syncArquivosSearchInput() {
+  const input = document.getElementById("arquivo-search");
+  if (input) input.value = arquivoQuery;
+}
+
+function sanitizeArquivosFilters() {
+  const tagsDisponiveis = new Set(
+    arquivos.flatMap((arquivo) => Array.isArray(arquivo.tags) ? arquivo.tags : [])
+  );
+  tagsAtivas = new Set(Array.from(tagsAtivas).filter((tag) => tagsDisponiveis.has(tag)));
+
+  const extensoesDisponiveis = new Set(
+    arquivos.map((arquivo) => getArquivoExtensaoGrupo(
+      getArquivoExtensaoReal(arquivo) || getArquivoExtensaoFallbackPorTipo(arquivo.tipo)
+    ))
+  );
+  extensoesAtivas = new Set(Array.from(extensoesAtivas).filter((grupo) => extensoesDisponiveis.has(grupo)));
+}
+
 function initArquivos() {
+  loadArquivosUIState();
+  sanitizeArquivosFilters();
+  syncArquivosSearchInput();
   renderTagFilter();
   renderExtensaoFilter();
   renderArquivos();
@@ -1304,6 +1357,7 @@ function initArquivos() {
   // Busca por texto — filtra em tempo real
   const input = document.getElementById("arquivo-search");
   if (input) {
+    input.value = arquivoQuery;
     input.addEventListener("input", () => {
       arquivoQuery = input.value.toLowerCase().trim();
       arquivosPaginaAtual = 1;
@@ -1515,6 +1569,9 @@ function renderArquivosPagination(totalItens) {
   const itens = getArquivosPaginationItems(totalPaginas, arquivosPaginaAtual);
   container.hidden = false;
   container.innerHTML = `
+    <div class="arquivos-pagination-summary">
+      Página ${arquivosPaginaAtual} de ${totalPaginas} · ${totalItens} resultado${totalItens === 1 ? "" : "s"}
+    </div>
     <button class="arquivos-page-btn" ${arquivosPaginaAtual === 1 ? "disabled" : ""}
       onclick="goToArquivosPage(${arquivosPaginaAtual - 1})">
       <i class="ph-bold ph-caret-left"></i>
@@ -1747,6 +1804,7 @@ function renderArquivos() {
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / ARQUIVOS_POR_PAGINA));
   arquivosPaginaAtual = Math.min(arquivosPaginaAtual, totalPaginas);
+  persistArquivosUIState();
 
   const inicio = (arquivosPaginaAtual - 1) * ARQUIVOS_POR_PAGINA;
   const fim = inicio + ARQUIVOS_POR_PAGINA;
@@ -1757,19 +1815,21 @@ function renderArquivos() {
     const inicioLabel = filtrados.length === 0 ? 0 : inicio + 1;
     const fimLabel = Math.min(fim, filtrados.length);
     contador.textContent = filtroAtivo
-      ? `${inicioLabel}-${fimLabel} de ${filtrados.length} resultados`
-      : `${inicioLabel}-${fimLabel} de ${arquivos.length} arquivos`;
+      ? `${inicioLabel}-${fimLabel} de ${filtrados.length} resultados · pág. ${arquivosPaginaAtual}/${totalPaginas}`
+      : `${inicioLabel}-${fimLabel} de ${arquivos.length} arquivos · pág. ${arquivosPaginaAtual}/${totalPaginas}`;
   }
 
   const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
   const tipoCor   = { PDF: "#7a3d3d", XLSX: "#3d7a5e", DOCX: "#3d5c7a" };
 
   if (filtrados.length === 0) {
+    const filtroAtivo = tagsAtivas.size > 0 || extensoesAtivas.size > 0 || arquivoQuery !== "";
     container.innerHTML = `
       <div class="arquivos-vazio">
-        <i class="ph-bold ph-funnel-x"></i>
-        <p>Nenhum arquivo encontrado.</p>
-        <button onclick="limparFiltros()">Limpar filtros</button>
+        <i class="ph-bold ${filtroAtivo ? "ph-funnel-x" : "ph-folder-open"}"></i>
+        <p>${filtroAtivo ? "Nenhum arquivo encontrado com os filtros atuais." : "Nenhum arquivo cadastrado no momento."}</p>
+        <span>${filtroAtivo ? "Tente ajustar a busca ou limpar os filtros para voltar à listagem completa." : "Quando novos arquivos forem cadastrados, eles aparecerão aqui."}</span>
+        ${filtroAtivo ? `<button onclick="limparFiltros()">Limpar filtros</button>` : ""}
       </div>`;
     if (paginacao) {
       paginacao.innerHTML = "";

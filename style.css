@@ -2054,6 +2054,11 @@ input { font-family: inherit; }
 
 .arquivos-vazio i { font-size: 2.5rem; opacity: 0.4; }
 .arquivos-vazio p { font-size: 0.88rem; }
+.arquivos-vazio span {
+  max-width: 420px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
 
 .arquivos-vazio button {
   font-family: var(--font-sans);
@@ -2088,6 +2093,12 @@ input { font-family: inherit; }
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
+}
+
+.arquivos-pagination-summary {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .arquivos-page-numbers {
@@ -2152,6 +2163,11 @@ input { font-family: inherit; }
 @media (max-width: 640px) {
   .arquivos-pagination {
     justify-content: center;
+  }
+
+  .arquivos-pagination-summary {
+    width: 100%;
+    text-align: center;
   }
 
   .arquivos-page-numbers {
