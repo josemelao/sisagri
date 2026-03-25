@@ -920,7 +920,7 @@ function getDynValues(fieldName) {
 const TAGS_ARQUIVO = [
   'contrato', 'decreto', 'documentação', 'financeiro', 'formulário',
   'manual', 'modelo', 'ofício', 'planilha',
-  'portaria', 'rh', 'relatório', 'veículos'
+  'portaria', 'rh', 'relatório', 've\u00EDculos'
 ];
 
 // Renderiza checkboxes de tags fixas (substitui o input livre)
@@ -1906,8 +1906,8 @@ function getMotoristaOptions(selectedIds = []) {
 }
 
 function getArquivosVeiculoOptions(selectedIds = []) {
-  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('veículos'));
-  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "veículos" cadastrado</option>';
+  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('ve\u00EDculos'));
+  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "ve\u00EDculos" cadastrado</option>';
   return lista.map(a =>
     `<option value="${a.id}" ${selectedIds.includes(a.id) ? 'selected' : ''}>${escHtml(a.nome)} (${a.tipo})</option>`
   ).join('');
@@ -1916,14 +1916,14 @@ function getArquivosVeiculoOptions(selectedIds = []) {
 function getMotoristaOptions(selectedIds = []) {
   const lista = DB.get('funcionarios');
   return lista.map(f => {
-    const label = withDraftSuffix(`${f.nome} â€” ${f.cargo}`, f);
+    const label = withDraftSuffix(`${f.nome} \u2014 ${f.cargo}`, f);
     return `<option value="${f.id}" ${isSelectedOptionValue(selectedIds, f.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
   }).join('');
 }
 
 function getArquivosVeiculoOptions(selectedIds = []) {
-  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('veÃ­culos'));
-  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "veÃ­culos" cadastrado</option>';
+  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('ve\u00EDculos'));
+  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "ve\u00EDculos" cadastrado</option>';
   return lista.map(a => {
     const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
     return `<option value="${a.id}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
@@ -1966,11 +1966,11 @@ function formVeiculo(v = {}) {
       </div>
       <div class="form-group full"><label>Localização atual</label><input id="v-localizacao" value="${escHtml(v.localizacao||'')}" /></div>
       <div class="form-group full">
-        <label>Documentos vinculados <span style="font-weight:400;color:var(--text-muted)">(arquivos com tag "veículos")</span></label>
+        <label>Documentos vinculados <span style="font-weight:400;color:var(--text-muted)">(arquivos com tag "ve\u00EDculos")</span></label>
         <select id="v-arquivo-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
           ${getArquivosVeiculoOptions(v.arquivo_ids || [])}
         </select>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "veículos" na seção Arquivos.</p>
+        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||'')}</textarea></div>
     </div>
@@ -3210,4 +3210,5 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
+
 
