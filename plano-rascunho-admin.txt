@@ -897,3 +897,15 @@ ETAPA:
 - Commit previsto: chore: adiciona hardening de leitura publica no supabase
 - Commit confirmado pelo usuario: SIM
 - Observacoes: O frontend publico passa a depender tambem da camada de banco para nao receber drafts no payload, enquanto o admin autenticado preserva leitura e escrita.
+
+ETAPA:
+- Nome: Encerramento da implementacao do fluxo draft/published
+- Fase: Fechamento geral do plano
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Plano encerrado em nivel de implementacao, com persistencia, UI do admin, filtros publicos, blindagem de relacionamentos, relatorios, compatibilidade local e hardening principal do Supabase entregues.
+- Commit previsto: chore: registra encerramento do plano draft published
+- Commit confirmado pelo usuario: SIM
+- Observacoes: Permanecem como follow-up apenas validacoes manuais finais e eventuais refinamentos incrementais de UX, sem bloqueio funcional conhecido no fluxo principal.
