@@ -268,6 +268,66 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+const ARQUIVOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function filtrarArquivosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const tags = Array.isArray(item.tags) ? item.tags.join(' ') : '';
+    const searchable = `${item.nome || ''} ${item.tipo || ''} ${tags}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function paginarLista(items, page, pageSize) {
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    pageItems: items.slice(start, start + pageSize),
+    totalItems,
+    totalPages,
+    page: safePage,
+  };
+}
+
+function atualizarBuscaArquivos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  ARQUIVOS_LIST_STATE.query = String(value || '');
+  ARQUIVOS_LIST_STATE.page = 1;
+  renderArquivos();
+
+  const nextInput = document.getElementById('arquivos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaArquivos(delta) {
+  ARQUIVOS_LIST_STATE.page += delta;
+  renderArquivos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1125,15 +1185,32 @@ function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
    ============================================================ */
 function renderArquivos() {
   const lista = DB.get('arquivos');
+  const listaFiltrada = filtrarArquivosLista(lista, ARQUIVOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, ARQUIVOS_LIST_STATE.page, ARQUIVOS_LIST_STATE.pageSize);
+  ARQUIVOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-arquivos').innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Arquivos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="arquivos-search"
+          value="${escHtml(ARQUIVOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaArquivos(this)"
+          placeholder="Buscar por nome, tipo ou tag..."
+          style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaArquivos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaArquivos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoArquivo()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table class="admin-table-arquivos">
       <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(a => `
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(a => `
         <tr>
           <td class="admin-col-arquivo-nome"><strong class="arquivo-nome-wrap" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
@@ -1143,11 +1220,13 @@ function renderArquivos() {
                 <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('arquivos',${a.id},'${escHtml(a.nome)}')"><i class="ph-bold ph-trash"></i></button>
               </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum arquivo encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formArquivo(a = {}) {
   // Detectar se é base64 (upload local) ou URL externa
   const isBase64 = (a.arquivo_data || '').startsWith('data:');
@@ -2496,3 +2575,5 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
+
+
