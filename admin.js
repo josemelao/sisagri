@@ -367,6 +367,45 @@ function mudarPaginaManuais(delta) {
   MANUAIS_LIST_STATE.page += delta;
   renderManuais();
 }
+const PROCESSOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarProcessosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const etapasCount = Array.isArray(item.etapas) ? String(item.etapas.length) : '0';
+    const searchable = `${item.titulo || ''} ${item.categoria || ''} ${etapasCount}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaProcessos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  PROCESSOS_LIST_STATE.query = String(value || '');
+  PROCESSOS_LIST_STATE.page = 1;
+  renderProcessos();
+
+  const nextInput = document.getElementById('processos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaProcessos(delta) {
+  PROCESSOS_LIST_STATE.page += delta;
+  renderProcessos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1106,15 +1145,32 @@ function salvarManual(id) {
    ============================================================ */
 function renderProcessos() {
   const lista = DB.get('processos');
+  const listaFiltrada = filtrarProcessosLista(lista, PROCESSOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, PROCESSOS_LIST_STATE.page, PROCESSOS_LIST_STATE.pageSize);
+  PROCESSOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-processos').innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Processos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="processos-search"
+          value="${escHtml(PROCESSOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaProcessos(this)"
+          placeholder="Buscar por titulo ou categoria..."
+          style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaProcessos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaProcessos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoProcesso()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Título</th><th>Categoria</th><th>Etapas</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(p => `
+      <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Etapas</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(p => `
         <tr>
           <td><strong class="td-truncate">${escHtml(p.titulo)}</strong></td>
           <td><span class="badge">${escHtml(p.categoria)}</span></td>
@@ -1124,11 +1180,13 @@ function renderProcessos() {
                 <button class="btn btn-ghost btn-sm" onclick="editarProcesso(${p.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('processos',${p.id},'${escHtml(p.titulo)}')"><i class="ph-bold ph-trash"></i></button>
               </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum processo encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function getManuaisOptions(selectedIds = []) {
   const lista = DB.get('manuais');
   if (!lista.length) return '<option value="" disabled>Nenhum manual cadastrado</option>';
@@ -2633,5 +2691,4 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
-
 
