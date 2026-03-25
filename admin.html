@@ -180,8 +180,12 @@
     thead tr { background: var(--surface-2); }
     th { padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-secondary); font-size: 0.73rem; text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border); }
     td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .admin-table-wrap table th:last-child,
+    .admin-table-wrap table td:last-child { text-align: right; }
     tr:hover td { background: var(--bg); }
     .td-actions { display: flex; gap: 6px; }
+    .admin-table-wrap table td:last-child .td-actions,
+    .admin-table-wrap table td:last-child .td-actions--with-status { justify-content: flex-end; }
     .td-actions--with-status { align-items: center; flex-wrap: wrap; gap: 8px; }
     .td-truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
