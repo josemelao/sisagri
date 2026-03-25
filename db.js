@@ -82,6 +82,84 @@ function _persistLocalAppConfig() {
   }
 }
 
+function _normalizeRemoteLayoutConfig(payload = {}) {
+  const normalized = {};
+  if (payload.default_sort_mode === 'id' || payload.default_sort_mode === 'nome') {
+    normalized.defaultSortMode = payload.default_sort_mode;
+  }
+  return normalized;
+}
+
+async function _loadSupabaseLayoutConfig() {
+  if (!_sb) return {};
+  try {
+    const { data, error } = await _sb
+      .from('admin_settings')
+      .select('default_sort_mode')
+      .eq('scope', 'global')
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return _normalizeRemoteLayoutConfig(data || {});
+  } catch (e) {
+    console.warn('[DB] Falha ao carregar admin_settings do Supabase. Mantendo fallback local.', e);
+    return {};
+  }
+}
+
+function _persistSupabaseLayoutConfig() {
+  if (!_sb) return;
+  _ensureAppConfig();
+  const payload = {
+    scope: 'global',
+    default_sort_mode: _db.layoutConfig.defaultSortMode === 'id' ? 'id' : 'nome',
+    updated_at: new Date().toISOString(),
+  };
+
+  _sb
+    .from('admin_settings')
+    .update({
+      default_sort_mode: payload.default_sort_mode,
+      updated_at: payload.updated_at,
+    })
+    .eq('scope', payload.scope)
+    .select('scope')
+    .then(({ data, error }) => {
+      if (error) throw error;
+      if (Array.isArray(data) && data.length > 0) {
+        _setDbStatus({
+          provider: 'supabase',
+          supabaseConnected: true,
+          writesReachSupabase: true,
+          lastError: '',
+        });
+        return;
+      }
+
+      return _sb
+        .from('admin_settings')
+        .insert(payload)
+        .select('scope')
+        .then(({ error: insertError }) => {
+          if (insertError) throw insertError;
+          _setDbStatus({
+            provider: 'supabase',
+            supabaseConnected: true,
+            writesReachSupabase: true,
+            lastError: '',
+          });
+        });
+    })
+    .catch((e) => {
+      _setDbStatus({
+        provider: 'local',
+        supabaseConnected: false,
+        writesReachSupabase: false,
+        lastError: e?.message || 'Falha ao salvar admin_settings no Supabase.',
+      });
+      console.warn('[DB] Falha ao sincronizar admin_settings no Supabase. Mantendo fallback local.', e);
+    });
+}
 function _notifyCollectionUpdated(colecao) {
   window.dispatchEvent(new CustomEvent('db:collection-updated', { detail: { colecao } }));
 }
@@ -543,6 +621,12 @@ async function _initSupabase() {
     const colecoes = Object.keys(SUPABASE_TABLES);
     await Promise.all(colecoes.filter(c => c !== 'arquivos').map(_loadSupabaseCollection));
     await _loadSupabaseCollection('arquivos', { metadataOnly: true });
+    const remoteLayoutConfig = await _loadSupabaseLayoutConfig();
+    if (Object.keys(remoteLayoutConfig).length) {
+      _db.layoutConfig = { ..._db.layoutConfig, ...remoteLayoutConfig };
+      _ensureAppConfig();
+      _persistLocalAppConfig();
+    }
     _persistLocal();
     _setDbStatus({
       provider: 'supabase',
@@ -726,8 +810,10 @@ const DB = {
   updateLayoutConfig(patch = {}) {
     _ensureAppConfig();
     _db.layoutConfig = { ..._db.layoutConfig, ...patch };
+    _ensureAppConfig();
     _persistLocalAppConfig();
     _persistLocal();
+    _persistSupabaseLayoutConfig();
     _notifyCollectionUpdated('layoutConfig');
     return DB.getLayoutConfig();
   },
