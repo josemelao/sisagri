@@ -1060,11 +1060,7 @@ window.switchManualPasso = function(id, passoIdx) {
 function initProcessos() {
   renderProcessos(processos);
 
-  const closeProcesso = () => {
-    const filho = document.getElementById('manual-filho-panel');
-    if (filho) filho.remove();
-    closeDetail("processo-detail-overlay");
-  };
+  const closeProcesso = () => closeDetail("processo-detail-overlay");
 
   document.getElementById("processo-detail-close").addEventListener("click", closeProcesso);
   document.getElementById("processo-detail-overlay").addEventListener("click", (e) => {
@@ -1159,15 +1155,11 @@ function openManualFilho(id) {
   const m = manuais.find(x => x.id === id);
   if (!m) return;
 
-  let filho = document.getElementById('manual-filho-panel');
-  if (!filho) {
-    filho = document.createElement('div');
-    filho.id = 'manual-filho-panel';
-    filho.className = 'manual-filho-panel';
-    document.getElementById('processo-detail-panel').appendChild(filho);
-  }
-
-  animateChildPanelSwap(filho, () => renderManualFilho(m, 'resumido', 0));
+  openNestedPanel({
+    parentPanelId: 'processo-detail-panel',
+    panelId: 'manual-filho-panel',
+    renderFn: () => renderManualFilho(m, 'resumido', 0),
+  });
 }
 
 function renderManualFilho(m, modo, passoAtivo) {
@@ -1268,7 +1260,7 @@ function renderManualFilho(m, modo, passoAtivo) {
 }
 
 function fecharManualFilho() {
-  closeChildPanel('manual-filho-panel');
+  closeNestedPanel({ panelId: 'manual-filho-panel' });
 }
 
 
