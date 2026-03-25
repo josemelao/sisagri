@@ -765,3 +765,27 @@ ETAPA:
 - Commit previsto: feat: filtra registros publicados no carregamento do frontend
 - Commit confirmado pelo usuario: NAO
 - Observacoes: Esta etapa reduz a exposicao de drafts nas listagens publicas, dashboard, busca e relatorios alimentados por carregarDados(), mas ainda nao cobre validacoes especificas de relacionamentos indiretos e acessos por referencia.
+
+ETAPA:
+- Nome: SQL de migration do publish_status para o Supabase
+- Fase: Fase 2 - Banco / Supabase
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\supabase-publish-status.sql; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Criado arquivo SQL para adicionar publish_status em todas as tabelas de conteudo, com default published, backfill e constraints de valores permitidos.
+- Commit previsto: chore: adiciona migration sql de publish_status para o supabase
+- Commit confirmado pelo usuario: SIM
+- Observacoes: SQL aplicado com sucesso no Supabase pelo usuario. A partir deste ponto o frontend publico pode ser validado de forma real contra publish_status.
+
+ETAPA:
+- Nome: Blindagem de relacionamentos e detalhes contra rascunhos
+- Fase: Fase 5 - Relacionamentos entre modulos / detalhes publicos
+- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\script.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Criados helpers de busca segura por itens publicados e aplicadas validacoes em detalhes, chips relacionados, arquivos vinculados, veiculos, ferias e navegacao interna para evitar vazamento indireto de registros em draft.
+- Commit previsto: feat: blinda relacionamentos e detalhes contra rascunhos
+- Commit confirmado pelo usuario: NAO
+- Observacoes: Esta etapa reforca a protecao no frontend publico apos o filtro central. A validacao pratica agora deve focar em itens vinculados entre modulos e aberturas de detalhe.

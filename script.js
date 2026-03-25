@@ -41,6 +41,47 @@ function filterPublished(list) {
   return list.filter(isPublished);
 }
 
+function findPublishedById(list, id) {
+  if (!Array.isArray(list)) return null;
+  return list.find(item => item.id === id && isPublished(item)) || null;
+}
+
+function getPublishedFuncionarioById(id) {
+  return findPublishedById(funcionarios, id);
+}
+
+function getPublishedManualById(id) {
+  return findPublishedById(manuais, id);
+}
+
+function getPublishedProcessoById(id) {
+  return findPublishedById(processos, id);
+}
+
+function getPublishedArquivoById(id) {
+  return findPublishedById(arquivos, id);
+}
+
+function getPublishedVeiculoById(id) {
+  return findPublishedById(veiculos, id);
+}
+
+function getPublishedSistemaById(id) {
+  return findPublishedById(sistemas, id);
+}
+
+function getPublishedServicoById(id) {
+  return findPublishedById(servicos, id);
+}
+
+function getPublishedAvisoById(id) {
+  return findPublishedById(avisos, id);
+}
+
+function getPublishedEventoById(id) {
+  return findPublishedById(agendaEventos, id);
+}
+
 const bootState = {
   screen: null,
   title: null,
@@ -203,6 +244,7 @@ function renderFerias() {
   // Ordena por data de início, exclui concluídos já passados
   const lista = escalaFerias
     .filter(f => {
+      if (f.funcionario_id && !getPublishedFuncionarioById(f.funcionario_id)) return false;
       const fim = new Date(f.periodo_fim + "T00:00:00");
       return fim >= hoje || getFeriasStatus(f.periodo_inicio, f.periodo_fim) === "em_curso";
     })
@@ -240,7 +282,7 @@ function renderFerias() {
     return `
       <div class="ferias-item${emCurso ? " ferias-item--ativo" : ""}">
         ${(() => {
-          const func = funcionarios.find(fn => fn.id === f.funcionario_id);
+          const func = getPublishedFuncionarioById(f.funcionario_id);
           return func && func.foto
             ? `<img src="${func.foto}" class="ferias-avatar ferias-avatar--foto" alt="${f.nome}" />`
             : `<div class="ferias-avatar">${getInitials(f.nome)}</div>`;
@@ -739,7 +781,7 @@ function renderFuncionarios(lista) {
 
 /** Abre o painel de detalhe de um funcionário */
 function openFuncionario(id) {
-  const f = funcionarios.find(x => x.id === id);
+  const f = getPublishedFuncionarioById(id);
   if (!f) return;
 
   const avatarHTML = f.foto
@@ -819,7 +861,7 @@ function renderFuncionarios(lista) {
 }
 
 function openFuncionario(id) {
-  const f = funcionarios.find(x => x.id === id);
+  const f = getPublishedFuncionarioById(id);
   if (!f) return;
 
   const avatarHTML = f.foto
@@ -985,7 +1027,7 @@ function renderManuais(lista) {
 
 /** Abre o painel de detalhe de um manual */
 function openManual(id) {
-  const m = manuais.find(x => x.id === id);
+  const m = getPublishedManualById(id);
   if (!m) return;
 
   renderManualDetail(m, "resumido");
@@ -1075,7 +1117,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     
     if (arquivoId) {
       // Buscar o arquivo para verificar se tem dados
-      const arquivo = arquivos.find(a => a.id === arquivoId);
+      const arquivo = getPublishedArquivoById(arquivoId);
       if (arquivo && (arquivo.arquivo_data || arquivo.url)) {
         const downloadUrl = arquivo.arquivo_data || arquivo.url;
         const nomeArquivo = arquivo.arquivo_nome || arquivo.nome || 'arquivo';
@@ -1113,13 +1155,13 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
 
 /** Troca o modo de visualização do manual */
 window.switchManualMode = function(id, modo) {
-  const m = manuais.find(x => x.id === id);
+  const m = getPublishedManualById(id);
   if (m) renderManualDetail(m, modo);
 };
 
 /** Navega entre os passos no modo completo */
 window.switchManualPasso = function(id, passoIdx) {
-  const m = manuais.find(x => x.id === id);
+  const m = getPublishedManualById(id);
   if (m) renderManualDetail(m, "completo", passoIdx);
 };
 
@@ -1189,7 +1231,7 @@ function renderProcessos(lista) {
 
 /** Abre o painel de detalhe de um processo com chips de manuais vinculados */
 function openProcesso(id) {
-  const p = processos.find(x => x.id === id);
+  const p = getPublishedProcessoById(id);
   if (!p) return;
 
   // Remove filho residual de sessão anterior
@@ -1198,7 +1240,7 @@ function openProcesso(id) {
 
   const timelineHTML = p.etapas.map(e => {
     const chips = (e.manuais_ids || []).map(mid => {
-      const m = manuais.find(x => x.id === mid);
+      const m = getPublishedManualById(mid);
       if (!m) return '';
       return `<button class="etapa-manual-chip" onclick="openManualFilho(${m.id})" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${m.titulo}
@@ -1233,7 +1275,7 @@ function openProcesso(id) {
 
 /** Abre painel filho de manual por cima do painel de processo */
 function openManualFilho(id) {
-  const m = manuais.find(x => x.id === id);
+  const m = getPublishedManualById(id);
   if (!m) return;
 
   openNestedPanel({
@@ -1308,7 +1350,7 @@ function renderManualFilho(m, modo, passoAtivo) {
     const nome = isObj ? d.nome : d;
     const aid  = isObj ? d.arquivo_id : null;
     if (aid) {
-      const a = arquivos.find(x => x.id === aid);
+      const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
         const href = a.arquivo_data || a.url;
         const dl   = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
@@ -2017,7 +2059,7 @@ function renderArquivos() {
 
 /** Abre o detail-panel de um arquivo com informações completas e botão de download */
 function openArquivo(id) {
-  const a = arquivos.find(x => x.id === id);
+  const a = getPublishedArquivoById(id);
   if (!a) return;
 
   const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
@@ -2758,7 +2800,7 @@ function renderJuridico(lista = infoJuridico) {
 }
 
 function openJuridico(id) {
-  const item = infoJuridico.find(x => x.id === id);
+  const item = findPublishedById(infoJuridico, id);
   if (!item) return;
   openInfoCard({ overlayId: "juridico-detail-overlay", contentId: "juridico-detail-content", item, badgeLabel: item.badge || item.tag || "SMADER" });
 }
@@ -2788,7 +2830,7 @@ function renderMunicipio(lista = infoMunicipio) {
 }
 
 function openMunicipio(id) {
-  const item = infoMunicipio.find(x => x.id === id);
+  const item = findPublishedById(infoMunicipio, id);
   if (!item) return;
   openInfoCard({ overlayId: "municipio-detail-overlay", contentId: "municipio-detail-content", item, badgeLabel: item.badge || item.tag || "Município" });
 }
@@ -2818,7 +2860,7 @@ function renderOrgaos(lista = infoOrgaos) {
 }
 
 function openOrgao(id) {
-  const item = infoOrgaos.find(x => x.id === id);
+  const item = findPublishedById(infoOrgaos, id);
   if (!item) return;
   openInfoCard({ overlayId: "orgaos-detail-overlay", contentId: "orgaos-detail-content", item, badgeLabel: item.badge || "Órgão Externo" });
 }
@@ -2893,7 +2935,7 @@ function renderVeiculos(lista = veiculos) {
 
 /** Abre detalhe de um veículo */
 function openVeiculo(id) {
-  const v = veiculos.find(x => x.id === id);
+  const v = getPublishedVeiculoById(id);
   if (!v) return;
 
   const situacaoStyle = v.situacao === "Em operação"
@@ -2904,12 +2946,12 @@ function openVeiculo(id) {
   let motoristasHTML = '';
   if (Array.isArray(v.motorista_ids) && v.motorista_ids.length) {
     const itens = v.motorista_ids.map(mid => {
-      const f = funcionarios.find(x => x.id === mid);
+      const f = getPublishedFuncionarioById(mid);
       return f
         ? `<span style="display:flex;align-items:center;gap:6px"><i class="ph-bold ph-user"></i>${f.nome} <small style="color:var(--text-muted)">${f.cargo}</small></span>`
         : '';
     }).filter(Boolean).join('');
-    motoristasHTML = itens || (v.motorista || '—');
+    motoristasHTML = itens || '—';
   } else {
     motoristasHTML = v.motorista || '—';
   }
@@ -2917,7 +2959,7 @@ function openVeiculo(id) {
   // Arquivos vinculados
   const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
   const arquivosLinks = (v.arquivo_ids || []).map(aid => {
-    const a = arquivos.find(x => x.id === aid);
+    const a = getPublishedArquivoById(aid);
     if (!a) return '';
     const icone = tipoIcone[a.tipo] || "ph-file";
     if (a.arquivo_data) {
@@ -3045,7 +3087,7 @@ function renderSistemas(lista = sistemas) {
 }
 
 function openSistema(id) {
-  const s = sistemas.find(x => x.id === id);
+  const s = getPublishedSistemaById(id);
   if (!s) return;
 
   // Limpa filho residual de sessão anterior
@@ -3056,7 +3098,7 @@ function openSistema(id) {
 
   // Chips de manuais vinculados
   const manuaisChips = (s.manuais_ids || []).map(mid => {
-    const m = manuais.find(x => x.id === mid);
+    const m = getPublishedManualById(mid);
     if (!m) return '';
     return `<button class="etapa-manual-chip" onclick="openSistemaFilho('manual',${m.id})">
       <i class="ph-bold ph-book-open"></i>${m.titulo}
@@ -3066,7 +3108,7 @@ function openSistema(id) {
 
   // Chips de processos vinculados
   const processosChips = (s.processos_ids || []).map(pid => {
-    const p = processos.find(x => x.id === pid);
+    const p = getPublishedProcessoById(pid);
     if (!p) return '';
     return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openSistemaFilho('processo',${p.id})">
       <i class="ph-bold ph-flow-arrow"></i>${p.titulo}
@@ -3116,10 +3158,10 @@ function openSistemaFilho(tipo, id) {
     panelId: 'sistema-filho-panel',
     renderFn: () => {
       if (tipo === 'manual') {
-        const m = manuais.find(x => x.id === id);
+        const m = getPublishedManualById(id);
         if (m) renderSistemaFilhoManual(m, 'resumido', 0);
       } else {
-        const p = processos.find(x => x.id === id);
+        const p = getPublishedProcessoById(id);
         if (p) renderSistemaFilhoProcesso(p);
       }
     },
@@ -3192,7 +3234,7 @@ function renderSistemaFilhoManual(m, modo, passoAtivo) {
     const nome  = isObj ? d.nome : d;
     const aid   = isObj ? d.arquivo_id : null;
     if (aid) {
-      const a = arquivos.find(x => x.id === aid);
+      const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
         const href = a.arquivo_data || a.url;
         const dl   = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
@@ -3231,7 +3273,7 @@ function renderSistemaFilhoProcesso(p) {
   // Timeline com chips de manuais vinculados por etapa — igual ao openProcesso
   const timeline = p.etapas.map(e => {
     const chips = (e.manuais_ids || []).map(mid => {
-      const m = manuais.find(x => x.id === mid);
+      const m = getPublishedManualById(mid);
       if (!m) return '';
       return `<button class="etapa-manual-chip" onclick="abrirManualNoSistemaFilho(${m.id},${p.id})" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${m.titulo}
@@ -3275,7 +3317,7 @@ function renderSistemaFilhoProcesso(p) {
  * dentro de um processo. Guarda o processo pai para o botão "Voltar".
  */
 function abrirManualNoSistemaFilho(manualId, processoId) {
-  const m = manuais.find(x => x.id === manualId);
+  const m = getPublishedManualById(manualId);
   if (!m) return;
 
   const filho = document.getElementById('sistema-filho-panel');
@@ -3378,7 +3420,7 @@ function renderServicos(lista = servicos) {
 
 /** Abre o painel lateral com todos os detalhes do serviço */
 function openServico(id) {
-  const s = servicos.find(x => x.id === id);
+  const s = getPublishedServicoById(id);
   if (!s) return;
 
   const filhoAnterior = document.getElementById('servico-filho-panel');
@@ -3393,7 +3435,7 @@ function openServico(id) {
     const arquivoId = isObj ? d.arquivo_id : null;
 
     if (arquivoId) {
-      const arquivo = arquivos.find(a => a.id === arquivoId);
+      const arquivo = getPublishedArquivoById(arquivoId);
       if (arquivo && (arquivo.arquivo_data || arquivo.url)) {
         const href = arquivo.arquivo_data || arquivo.url;
         const attrs = arquivo.arquivo_data
@@ -3408,7 +3450,7 @@ function openServico(id) {
   }).join("");
 
   const processosChips = (s.processos_ids || []).map(pid => {
-    const p = processos.find(x => x.id === pid);
+    const p = getPublishedProcessoById(pid);
     if (!p) return '';
     return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openServicoFilho('processo',${p.id})">
       <i class="ph-bold ph-flow-arrow"></i>${p.titulo}
@@ -3465,10 +3507,10 @@ function openServicoFilho(tipo, id) {
     panelId: 'servico-filho-panel',
     renderFn: () => {
       if (tipo === 'processo') {
-        const p = processos.find(x => x.id === id);
+        const p = getPublishedProcessoById(id);
         if (p) renderServicoFilhoProcesso(p);
       } else {
-        const m = manuais.find(x => x.id === id);
+        const m = getPublishedManualById(id);
         if (m) renderServicoFilhoManual(m, 'resumido', 0);
       }
     },
@@ -3481,7 +3523,7 @@ function renderServicoFilhoProcesso(p) {
 
   const timeline = p.etapas.map(e => {
     const chips = (e.manuais_ids || []).map(mid => {
-      const m = manuais.find(x => x.id === mid);
+      const m = getPublishedManualById(mid);
       if (!m) return '';
       return `<button class="etapa-manual-chip" onclick="abrirManualNoServicoFilho(${m.id},${p.id})" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${m.titulo}
@@ -3587,7 +3629,7 @@ function renderServicoFilhoManual(m, modo, passoAtivo) {
     const nome = isObj ? d.nome : d;
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
-      const a = arquivos.find(x => x.id === aid);
+      const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
         const href = a.arquivo_data || a.url;
         const attrs = a.arquivo_data
@@ -3620,7 +3662,7 @@ function renderServicoFilhoManual(m, modo, passoAtivo) {
 }
 
 function abrirManualNoServicoFilho(manualId, processoId) {
-  const m = manuais.find(x => x.id === manualId);
+  const m = getPublishedManualById(manualId);
   if (!m) return;
 
   const filho = document.getElementById('servico-filho-panel');
@@ -3703,7 +3745,7 @@ function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
     const nome = isObj ? d.nome : d;
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
-      const a = arquivos.find(x => x.id === aid);
+      const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
         const href = a.arquivo_data || a.url;
         const dl = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
@@ -3804,7 +3846,7 @@ function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
     const nome = isObj ? d.nome : d;
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
-      const a = arquivos.find(x => x.id === aid);
+      const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
         const href = a.arquivo_data || a.url;
         const attrs = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
@@ -4152,7 +4194,7 @@ function renderAvisos(lista = avisos) {
 }
 
 function openAviso(id) {
-  const a = avisos.find(x => x.id === id);
+  const a = getPublishedAvisoById(id);
   if (!a) return;
 
   const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
@@ -4294,7 +4336,7 @@ function _agendaEventoCardHTML(e, isHistorico = false) {
 }
 
 function openEvento(id) {
-  const e = agendaEventos.find(x => x.id === id);
+  const e = getPublishedEventoById(id);
   if (!e) return;
 
   const tipo  = tipoEvento[e.tipo] || tipoEvento.evento;
