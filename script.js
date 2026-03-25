@@ -1283,7 +1283,7 @@ let tagsAtivas = new Set();
 let extensoesAtivas = new Set();
 let arquivoQuery = "";  // texto da busca por string
 let arquivosPaginaAtual = 1;
-const ARQUIVOS_POR_PAGINA = 16;
+const ARQUIVOS_POR_PAGINA = 20;
 const ORDEM_EXTENSOES_ARQUIVO = [
   ".pdf",
   ".doc/.docx",
