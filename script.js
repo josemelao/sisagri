@@ -29,6 +29,7 @@ let globalSearchIndex = [];
 let globalSearchIndexReady = false;
 let globalSearchIndexBuilding = false;
 let bootHideTimer = null;
+const MODULE_SEARCH_STATE_KEY = "smader_module_search_state_v1";
 
 const bootState = {
   screen: null,
@@ -848,18 +849,66 @@ function openFuncionario(id) {
   openDetail("func-detail-overlay");
 }
 
-function initFuncSearch() {
+function applyFuncionariosSearch(query = getModuleSearchValue("funcionarios")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? funcionarios.filter(f =>
+        String(f.nome || "").toLowerCase().includes(q) ||
+        String(f.cargo || "").toLowerCase().includes(q) ||
+        String(f.lotacao || f.setor || "").toLowerCase().includes(q) ||
+        String(f.departamento || "").toLowerCase().includes(q) ||
+        String(f.orgao || "").toLowerCase().includes(q) ||
+        String(f.matricula || "").toLowerCase().includes(q)
+      )
+    : funcionarios;
+  renderFuncionarios(filtrados);
+}
+
+function limparBuscaFuncionarios() {
+  setModuleSearchValue("funcionarios", "");
   const input = document.getElementById("func-search");
+  if (input) input.value = "";
+  applyFuncionariosSearch("");
+}
+
+function initFuncSearch() {
+  const input = restoreModuleSearchInput("funcionarios", "func-search");
   if (!input) return;
+  applyFuncionariosSearch(input.value);
   input.addEventListener("input", () => {
-    const q = input.value.toLowerCase().trim();
-    const filtrados = funcionarios.filter(f =>
-      f.nome.toLowerCase().includes(q) ||
-      f.cargo.toLowerCase().includes(q) ||
-      (f.lotacao || f.setor || "").toLowerCase().includes(q) ||
-      (f.departamento || "").toLowerCase().includes(q)
-    );
-    renderFuncionarios(filtrados);
+    setModuleSearchValue("funcionarios", input.value);
+    applyFuncionariosSearch(input.value);
+  });
+}
+
+function renderFuncionarios(lista) {
+  const container = document.getElementById("func-list");
+  if (!container) return;
+
+  if (lista.length === 0) {
+    container.innerHTML = `<p class="modulo-vazio">Nenhum funcionário encontrado.</p>`;
+    return;
+  }
+
+  animateGridReflow(container, () => {
+    container.innerHTML = lista.map(f => {
+      const avatarHTML = f.foto
+        ? `<img src="${f.foto}" class="list-card-avatar func-foto" alt="${f.nome}" />`
+        : `<div class="list-card-avatar">${getInitials(f.nome)}</div>`;
+      const lotacao = f.lotacao || f.setor || f.departamento || "";
+      return `
+        <div class="list-card" data-id="${f.id}" data-reflow-id="func-${f.id}" onclick="openFuncionario(${f.id})">
+          <div class="list-card-header">
+            ${avatarHTML}
+            <div>
+              <div class="list-card-title">${f.nome}</div>
+              <div class="list-card-sub">${f.cargo}</div>
+            </div>
+          </div>
+          <span class="list-card-tag">${lotacao}</span>
+        </div>
+      `;
+    }).join("");
   });
 }
 
@@ -875,14 +924,25 @@ function initManuais() {
     if (e.target === document.getElementById("manual-detail-overlay")) closeDetail("manual-detail-overlay");
   });
 
-  document.getElementById("manuais-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtrados = manuais.filter(m =>
-      m.titulo.toLowerCase().includes(q) ||
-      m.categoria.toLowerCase().includes(q)
-    );
-    renderManuais(filtrados);
-  });
+  const input = restoreModuleSearchInput("manuais", "manuais-search");
+  if (input) {
+    applyManuaisSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("manuais", e.target.value);
+      applyManuaisSearch(e.target.value);
+    });
+  }
+}
+
+function applyManuaisSearch(query = getModuleSearchValue("manuais")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? manuais.filter(m =>
+        m.titulo.toLowerCase().includes(q) ||
+        m.categoria.toLowerCase().includes(q)
+      )
+    : manuais;
+  renderManuais(filtrados);
 }
 
 function renderManuais(lista) {
@@ -1067,15 +1127,26 @@ function initProcessos() {
     if (e.target === document.getElementById("processo-detail-overlay")) closeProcesso();
   });
 
-  document.getElementById("processos-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtrados = processos.filter(p =>
-      p.titulo.toLowerCase().includes(q) ||
-      p.categoria.toLowerCase().includes(q) ||
-      p.etapas.some(et => et.titulo.toLowerCase().includes(q))
-    );
-    renderProcessos(filtrados);
-  });
+  const input = restoreModuleSearchInput("processos", "processos-search");
+  if (input) {
+    applyProcessosSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("processos", e.target.value);
+      applyProcessosSearch(e.target.value);
+    });
+  }
+}
+
+function applyProcessosSearch(query = getModuleSearchValue("processos")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? processos.filter(p =>
+        p.titulo.toLowerCase().includes(q) ||
+        p.categoria.toLowerCase().includes(q) ||
+        p.etapas.some(et => et.titulo.toLowerCase().includes(q))
+      )
+    : processos;
+  renderProcessos(filtrados);
 }
 
 function renderProcessos(lista) {
@@ -1305,6 +1376,50 @@ function loadArquivosUIState() {
     extensoesAtivas = new Set(Array.isArray(parsed.extensoes) ? parsed.extensoes.filter(Boolean) : []);
   } catch (error) {
     console.warn("[Arquivos] Falha ao restaurar estado da interface:", error);
+  }
+}
+
+function loadModuleSearchState() {
+  try {
+    const saved = localStorage.getItem(MODULE_SEARCH_STATE_KEY);
+    const parsed = saved ? JSON.parse(saved) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    console.warn("[Busca] Falha ao restaurar estado de busca dos módulos:", error);
+    return {};
+  }
+}
+
+let moduleSearchState = loadModuleSearchState();
+
+function getModuleSearchValue(moduleId) {
+  return typeof moduleSearchState[moduleId] === "string" ? moduleSearchState[moduleId] : "";
+}
+
+function setModuleSearchValue(moduleId, value) {
+  moduleSearchState[moduleId] = String(value || "");
+  try {
+    localStorage.setItem(MODULE_SEARCH_STATE_KEY, JSON.stringify(moduleSearchState));
+  } catch (error) {
+    console.warn("[Busca] Falha ao salvar estado de busca dos módulos:", error);
+  }
+}
+
+function restoreModuleSearchInput(moduleId, inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return null;
+  input.value = getModuleSearchValue(moduleId);
+  return input;
+}
+
+function clearModuleSearch(moduleId, inputId, applyFnName) {
+  setModuleSearchValue(moduleId, "");
+  const input = document.getElementById(inputId);
+  if (input) input.value = "";
+
+  const applyFn = window[applyFnName];
+  if (typeof applyFn === "function") {
+    applyFn("");
   }
 }
 
@@ -2387,18 +2502,27 @@ function initInformacoes() {
   });
 
   // Busca global que filtra as três seções simultaneamente
-  document.getElementById("info-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const matchItem = item =>
-      item.titulo.toLowerCase().includes(q) ||
-      (item.tag || "").toLowerCase().includes(q) ||
-      (item.nome_completo || "").toLowerCase().includes(q) ||
-      item.campos.some(c => c.label.toLowerCase().includes(q) || c.valor.toLowerCase().includes(q));
+  const input = restoreModuleSearchInput("informacoes", "info-search");
+  if (input) {
+    applyInformacoesSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("informacoes", e.target.value);
+      applyInformacoesSearch(e.target.value);
+    });
+  }
+}
 
-    renderJuridico(q ? infoJuridico.filter(matchItem) : infoJuridico);
-    renderMunicipio(q ? infoMunicipio.filter(matchItem) : infoMunicipio);
-    renderOrgaos(q ? infoOrgaos.filter(matchItem) : infoOrgaos);
-  });
+function applyInformacoesSearch(query = getModuleSearchValue("informacoes")) {
+  const q = String(query || "").toLowerCase().trim();
+  const matchItem = item =>
+    item.titulo.toLowerCase().includes(q) ||
+    (item.tag || "").toLowerCase().includes(q) ||
+    (item.nome_completo || "").toLowerCase().includes(q) ||
+    item.campos.some(c => c.label.toLowerCase().includes(q) || c.valor.toLowerCase().includes(q));
+
+  renderJuridico(q ? infoJuridico.filter(matchItem) : infoJuridico);
+  renderMunicipio(q ? infoMunicipio.filter(matchItem) : infoMunicipio);
+  renderOrgaos(q ? infoOrgaos.filter(matchItem) : infoOrgaos);
 }
 
 /* ---------- helpers compartilhados ---------- */
@@ -2535,18 +2659,29 @@ function initVeiculos() {
     if (e.target === document.getElementById("veiculo-detail-overlay")) closeDetail("veiculo-detail-overlay");
   });
 
-  document.getElementById("veiculos-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtrados = veiculos.filter(v =>
-      v.nome.toLowerCase().includes(q) ||
-      v.marca.toLowerCase().includes(q) ||
-      v.modelo.toLowerCase().includes(q) ||
-      v.placa.toLowerCase().includes(q) ||
-      v.tipo.toLowerCase().includes(q) ||
-      v.situacao.toLowerCase().includes(q)
-    );
-    renderVeiculos(filtrados);
-  });
+  const input = restoreModuleSearchInput("veiculos", "veiculos-search");
+  if (input) {
+    applyVeiculosSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("veiculos", e.target.value);
+      applyVeiculosSearch(e.target.value);
+    });
+  }
+}
+
+function applyVeiculosSearch(query = getModuleSearchValue("veiculos")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? veiculos.filter(v =>
+        v.nome.toLowerCase().includes(q) ||
+        v.marca.toLowerCase().includes(q) ||
+        v.modelo.toLowerCase().includes(q) ||
+        v.placa.toLowerCase().includes(q) ||
+        v.tipo.toLowerCase().includes(q) ||
+        v.situacao.toLowerCase().includes(q)
+      )
+    : veiculos;
+  renderVeiculos(filtrados);
 }
 
 /** Renderiza cards de veículos */
@@ -2679,16 +2814,27 @@ function initSistemas() {
     if (e.target === document.getElementById("sistema-detail-overlay")) closeSistema();
   });
 
-  document.getElementById("sistemas-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtrados = sistemas.filter(s =>
-      s.nome.toLowerCase().includes(q) ||
-      s.nome_completo.toLowerCase().includes(q) ||
-      s.descricao.toLowerCase().includes(q) ||
-      s.orgao.toLowerCase().includes(q)
-    );
-    renderSistemas(filtrados);
-  });
+  const input = restoreModuleSearchInput("sistemas", "sistemas-search");
+  if (input) {
+    applySistemasSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("sistemas", e.target.value);
+      applySistemasSearch(e.target.value);
+    });
+  }
+}
+
+function applySistemasSearch(query = getModuleSearchValue("sistemas")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? sistemas.filter(s =>
+        s.nome.toLowerCase().includes(q) ||
+        s.nome_completo.toLowerCase().includes(q) ||
+        s.descricao.toLowerCase().includes(q) ||
+        s.orgao.toLowerCase().includes(q)
+      )
+    : sistemas;
+  renderSistemas(filtrados);
 }
 
 function renderSistemas(lista = sistemas) {
@@ -3001,16 +3147,27 @@ function initServicos() {
         closeServicoDetail();
     });
 
-  document.getElementById("servicos-search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    const filtrados = servicos.filter(s =>
-      s.nome.toLowerCase().includes(q) ||
-      s.categoria.toLowerCase().includes(q) ||
-      s.descricao.toLowerCase().includes(q) ||
-      s.publico.toLowerCase().includes(q)
-    );
-    renderServicos(filtrados);
-  });
+  const input = restoreModuleSearchInput("servicos", "servicos-search");
+  if (input) {
+    applyServicosSearch(input.value);
+    input.addEventListener("input", (e) => {
+      setModuleSearchValue("servicos", e.target.value);
+      applyServicosSearch(e.target.value);
+    });
+  }
+}
+
+function applyServicosSearch(query = getModuleSearchValue("servicos")) {
+  const q = String(query || "").toLowerCase().trim();
+  const filtrados = q
+    ? servicos.filter(s =>
+        s.nome.toLowerCase().includes(q) ||
+        s.categoria.toLowerCase().includes(q) ||
+        s.descricao.toLowerCase().includes(q) ||
+        s.publico.toLowerCase().includes(q)
+      )
+    : servicos;
+  renderServicos(filtrados);
 }
 
 function renderServicos(lista = servicos) {
@@ -3685,32 +3842,12 @@ function initAgenda() {
   renderAgendaEventos(agendaEventos);
   renderAgendaHistorico(agendaEventos);
 
-  const agendaSearch = document.getElementById("agenda-search");
+  const agendaSearch = restoreModuleSearchInput("agenda", "agenda-search");
   if (agendaSearch) {
+    applyAgendaSearch(agendaSearch.value);
     agendaSearch.addEventListener("input", (e) => {
-      const q = e.target.value.toLowerCase().trim();
-
-      const avisosFiltrados = q
-        ? avisos.filter(a =>
-            a.titulo.toLowerCase().includes(q) ||
-            (a.desc || "").toLowerCase().includes(q) ||
-            (a.local || "").toLowerCase().includes(q) ||
-            (a.tipo || "").toLowerCase().includes(q)
-          )
-        : avisos;
-
-      const eventosFiltrados = q
-        ? agendaEventos.filter(ev =>
-            ev.titulo.toLowerCase().includes(q) ||
-            (ev.desc || "").toLowerCase().includes(q) ||
-            (ev.local || "").toLowerCase().includes(q) ||
-            (ev.tipo || "").toLowerCase().includes(q)
-          )
-        : agendaEventos;
-
-      renderAvisos(avisosFiltrados);
-      renderAgendaEventos(eventosFiltrados);
-      renderAgendaHistorico(eventosFiltrados);
+      setModuleSearchValue("agenda", e.target.value);
+      applyAgendaSearch(e.target.value);
     });
   }
 
@@ -3727,6 +3864,32 @@ function initAgenda() {
       if (e.target === overlay) closeDetail(overlayId);
     });
   });
+}
+
+function applyAgendaSearch(query = getModuleSearchValue("agenda")) {
+  const q = String(query || "").toLowerCase().trim();
+
+  const avisosFiltrados = q
+    ? avisos.filter(a =>
+        a.titulo.toLowerCase().includes(q) ||
+        (a.desc || "").toLowerCase().includes(q) ||
+        (a.local || "").toLowerCase().includes(q) ||
+        (a.tipo || "").toLowerCase().includes(q)
+      )
+    : avisos;
+
+  const eventosFiltrados = q
+    ? agendaEventos.filter(ev =>
+        ev.titulo.toLowerCase().includes(q) ||
+        (ev.desc || "").toLowerCase().includes(q) ||
+        (ev.local || "").toLowerCase().includes(q) ||
+        (ev.tipo || "").toLowerCase().includes(q)
+      )
+    : agendaEventos;
+
+  renderAvisos(avisosFiltrados);
+  renderAgendaEventos(eventosFiltrados);
+  renderAgendaHistorico(eventosFiltrados);
 }
 
 function renderAvisos(lista = avisos) {

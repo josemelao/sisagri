@@ -306,9 +306,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="func-search" placeholder="Buscar por nome ou cargo..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="func-search" placeholder="Buscar por nome ou cargo..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="limparBuscaFuncionarios()">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <!-- Lista de funcionários (preenchida via JS) -->
@@ -336,9 +341,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="manuais-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="manuais-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('manuais', 'manuais-search', 'applyManuaisSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <div class="list-grid" id="manuais-list"></div>
@@ -365,9 +375,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="processos-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="processos-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('processos', 'processos-search', 'applyProcessosSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <div class="list-grid" id="processos-list"></div>
@@ -448,9 +463,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="info-search" placeholder="Buscar em todas as seções..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="info-search" placeholder="Buscar em todas as seções..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('informacoes', 'info-search', 'applyInformacoesSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <!-- SEÇÃO 1: Secretaria -->
@@ -517,9 +537,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="veiculos-search" placeholder="Buscar por nome, modelo ou placa..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="veiculos-search" placeholder="Buscar por nome, modelo ou placa..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('veiculos', 'veiculos-search', 'applyVeiculosSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <div class="list-grid" id="veiculos-list"></div>
@@ -545,9 +570,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="sistemas-search" placeholder="Buscar por nome ou órgão..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="sistemas-search" placeholder="Buscar por nome ou órgão..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('sistemas', 'sistemas-search', 'applySistemasSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <div class="list-grid" id="sistemas-list"></div>
@@ -571,9 +601,14 @@
         </div>
       </header>
 
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="servicos-search" placeholder="Buscar por nome ou categoria..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="servicos-search" placeholder="Buscar por nome ou categoria..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('servicos', 'servicos-search', 'applyServicosSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <div class="list-grid" id="servicos-list"></div>
@@ -601,9 +636,14 @@
       </header>
 
       <!-- Busca única filtra ambas as seções -->
-      <div class="search-bar module-search">
-        <i class="ph-bold ph-magnifying-glass search-icon"></i>
-        <input type="text" id="agenda-search" placeholder="Buscar em avisos e eventos..." autocomplete="off" />
+      <div class="arquivos-search-row">
+        <div class="search-bar module-search">
+          <i class="ph-bold ph-magnifying-glass search-icon"></i>
+          <input type="text" id="agenda-search" placeholder="Buscar em avisos e eventos..." autocomplete="off" />
+        </div>
+        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('agenda', 'agenda-search', 'applyAgendaSearch')">
+          <i class="ph-bold ph-x-circle"></i> Limpar busca
+        </button>
       </div>
 
       <!-- SEÇÃO: AVISOS -->
