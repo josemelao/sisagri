@@ -119,6 +119,41 @@ function _createSupabaseClient() {
   return factory(DB_CONFIG.SUPABASE_URL, DB_CONFIG.SUPABASE_KEY);
 }
 
+const PUBLISH_STATUS = {
+  PUBLISHED: 'published',
+  DRAFT: 'draft',
+};
+
+function _normalizePublishStatus(value) {
+  return value === PUBLISH_STATUS.DRAFT
+    ? PUBLISH_STATUS.DRAFT
+    : PUBLISH_STATUS.PUBLISHED;
+}
+
+function _withPublishStatus(registro) {
+  if (!registro || typeof registro !== 'object' || Array.isArray(registro)) return registro;
+  return {
+    ...registro,
+    publish_status: _normalizePublishStatus(registro.publish_status),
+  };
+}
+
+function _normalizeCollectionRecord(colecao, row) {
+  return _normalizeSupabaseRow(colecao, _withPublishStatus(row));
+}
+
+function _normalizeCollectionData(colecao, lista) {
+  if (!Array.isArray(lista)) return [];
+  return lista.map(item => _normalizeCollectionRecord(colecao, item));
+}
+
+function _normalizeDbCollections() {
+  if (!_db || typeof _db !== 'object') return;
+  Object.keys(SUPABASE_TABLES).forEach((colecao) => {
+    _db[colecao] = _normalizeCollectionData(colecao, _db[colecao]);
+  });
+}
+
 function _normalizeSupabaseRow(colecao, row) {
   if (!row) return row;
   switch (colecao) {
@@ -231,6 +266,7 @@ function _toSupabasePayload(colecao, registro) {
         departamento: registro.departamento || null,
         descricao: registro.descricao || null,
         foto: registro.foto || null,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'veiculos':
       return {
@@ -254,6 +290,7 @@ function _toSupabasePayload(colecao, registro) {
         motorista_ids: Array.isArray(registro.motorista_ids) ? registro.motorista_ids : [],
         observacoes: registro.observacoes || registro.obs || null,
         arquivo_ids: Array.isArray(registro.arquivo_ids) ? registro.arquivo_ids : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'escalaFerias':
       return {
@@ -264,6 +301,7 @@ function _toSupabasePayload(colecao, registro) {
         periodo_inicio: registro.periodo_inicio || null,
         periodo_fim: registro.periodo_fim || null,
         status: registro.status || null,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'agendaEventos':
       return {
@@ -276,6 +314,7 @@ function _toSupabasePayload(colecao, registro) {
         tipo: registro.tipo || null,
         local: registro.local || null,
         descricao: registro.descricao || registro.desc || null,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'infoJuridico':
     case 'infoMunicipio':
@@ -287,6 +326,7 @@ function _toSupabasePayload(colecao, registro) {
         badge: registro.badge || null,
         tag: registro.tag || null,
         campos: Array.isArray(registro.campos) ? registro.campos : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'infoOrgaos':
       return {
@@ -297,6 +337,7 @@ function _toSupabasePayload(colecao, registro) {
         icone: registro.icone || null,
         cor: registro.cor || null,
         campos: Array.isArray(registro.campos) ? registro.campos : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'servicos':
       return {
@@ -313,6 +354,7 @@ function _toSupabasePayload(colecao, registro) {
         obs: registro.obs || null,
         documentos: Array.isArray(registro.documentos) ? registro.documentos : [],
         processos_ids: Array.isArray(registro.processos_ids) ? registro.processos_ids : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'sistemas':
       return {
@@ -327,6 +369,7 @@ function _toSupabasePayload(colecao, registro) {
         orgao: registro.orgao || null,
         manuais_ids: Array.isArray(registro.manuais_ids) ? registro.manuais_ids : [],
         processos_ids: Array.isArray(registro.processos_ids) ? registro.processos_ids : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'avisos':
       return {
@@ -335,6 +378,7 @@ function _toSupabasePayload(colecao, registro) {
         tipo: registro.tipo || null,
         local: registro.local || null,
         descricao: registro.descricao || registro.desc || null,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'acessoRapido':
       return {
@@ -345,6 +389,7 @@ function _toSupabasePayload(colecao, registro) {
         icone: registro.icone || null,
         cor: registro.cor || null,
         coringa: !!registro.coringa,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'arquivos':
       return {
@@ -355,6 +400,7 @@ function _toSupabasePayload(colecao, registro) {
         url: registro.url || null,
         arquivo_data: registro.arquivo_data || null,
         arquivo_nome: registro.arquivo_nome || null,
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'manuais':
       return {
@@ -365,6 +411,7 @@ function _toSupabasePayload(colecao, registro) {
         observacoes: registro.observacoes || null,
         passos: Array.isArray(registro.passos) ? registro.passos : [],
         documentos: Array.isArray(registro.documentos) ? registro.documentos : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'processos':
       return {
@@ -373,9 +420,10 @@ function _toSupabasePayload(colecao, registro) {
         categoria: registro.categoria || null,
         descricao: registro.descricao || null,
         etapas: Array.isArray(registro.etapas) ? registro.etapas : [],
+        publish_status: _normalizePublishStatus(registro.publish_status),
       };
     default:
-      return { ...registro };
+      return _withPublishStatus(registro);
   }
 }
 
@@ -387,7 +435,7 @@ async function _loadSupabaseCollection(colecao, options = {}) {
     : '*';
   const { data, error } = await _sb.from(tabela).select(columns).order('id', { ascending: true });
   if (error) throw error;
-  _db[colecao] = (data || []).map(row => _normalizeSupabaseRow(colecao, row));
+  _db[colecao] = _normalizeCollectionData(colecao, data || []);
 }
 
 async function _refreshSupabaseCollectionsForExport() {
@@ -416,6 +464,7 @@ function _initLocal() {
     try {
       _db = JSON.parse(saved);
       _ensureAppConfig();
+      _normalizeDbCollections();
       _applyLocalAppConfig();
       console.info('[DB] Dados carregados do localStorage (SMADER).');
       return Promise.resolve();
@@ -430,6 +479,7 @@ function _initLocal() {
     try {
       _db = JSON.parse(legacySaved);
       _ensureAppConfig();
+      _normalizeDbCollections();
       _applyLocalAppConfig();
       _persistLocal();
       localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
@@ -448,6 +498,7 @@ function _initLocal() {
   }
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
   _ensureAppConfig();
+  _normalizeDbCollections();
   _applyLocalAppConfig();
   console.info('[DB] Dados carregados de dados.js (padrão).');
   return Promise.resolve();
@@ -475,6 +526,7 @@ async function _initSupabase() {
 
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS || {}));
   _ensureAppConfig();
+  _normalizeDbCollections();
   _applyLocalAppConfig();
 
   try {
@@ -521,7 +573,7 @@ const DB = {
   /** Retorna uma cópia de uma coleção */
   get(colecao) {
     if (!_db || !_db[colecao]) return [];
-    return JSON.parse(JSON.stringify(_db[colecao]));
+    return JSON.parse(JSON.stringify(_normalizeCollectionData(colecao, _db[colecao])));
   },
 
   /** Retorna um registro pelo id */
@@ -535,7 +587,7 @@ const DB = {
     if (!_db[colecao]) _db[colecao] = [];
     const ids = _db[colecao].map(r => r.id || 0);
     const novoId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
-    const novoRegistro = _normalizeSupabaseRow(colecao, { ...registro, id: novoId });
+    const novoRegistro = _normalizeCollectionRecord(colecao, { ...registro, id: novoId });
     _db[colecao].push(novoRegistro);
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
@@ -566,7 +618,7 @@ const DB = {
     if (!_db[colecao]) return null;
     const idx = _db[colecao].findIndex(r => r.id === id);
     if (idx === -1) return null;
-    _db[colecao][idx] = _normalizeSupabaseRow(colecao, { ..._db[colecao][idx], ...dados, id });
+    _db[colecao][idx] = _normalizeCollectionRecord(colecao, { ..._db[colecao][idx], ...dados, id });
     _persistLocal();
     if (_sb && _isSupabaseCollection(colecao)) {
       _sb.from(SUPABASE_TABLES[colecao]).update(_toSupabasePayload(colecao, _db[colecao][idx])).eq('id', id).then(({ error }) => {

@@ -714,6 +714,30 @@ ETAPA:
 - Responsavel: agente atual
 - Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
 - Resumo: Plano completo, checklist operacional, protocolo de commit manual e orientacoes de continuidade registrados.
+- Commit previsto: docs: registra plano e protocolo de execucao do rascunho admin
+- Commit confirmado pelo usuario: SIM
+- Observacoes: Documentacao inicial confirmada como comitada pelo usuario.
+
+ETAPA:
+- Nome: Validacao inicial de ambiente e branch
+- Fase: Fase 0 - Preparacao e validacao do ambiente
+- Situacao: CONCLUIDA
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Ambiente confirmado no repositorio correto, branch local confirmada e arvore git limpa antes do inicio da implementacao.
 - Commit previsto:
 - Commit confirmado pelo usuario: NAO
-- Observacoes: Ainda nao houve implementacao funcional do recurso; apenas documentacao e planejamento.
+- Observacoes: Pasta confirmada como C:\Users\Usuario\Desktop\SisAgri - Stable e branch local confirmada como codex/homologacao-rascunho-admin, alinhada a origin/codex/homologacao-rascunho-admin.
+
+ETAPA:
+- Nome: Base de persistencia do publish_status no db.js
+- Fase: Fase 1 - Modelo de dados no codigo
+- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\db.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Criados helpers centrais de normalizacao do publish_status, aplicado default published para dados antigos, ajustadas leituras locais/Supabase e payloads de persistencia de todas as colecoes.
+- Commit previsto: feat: adiciona base de publish_status na camada de dados
+- Commit confirmado pelo usuario: NAO
+- Observacoes: Esta etapa ainda nao inclui UI do admin nem filtros publicos; ela prepara a fundacao da feature.
