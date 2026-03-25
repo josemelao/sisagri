@@ -635,6 +635,71 @@ function mudarPaginaAgenda(delta) {
   AGENDA_LIST_STATE.page += delta;
   renderAgendaEventos();
 }
+const ESCALA_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarEscalaLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.nome || ''} ${item.cargo || ''} ${item.periodo_inicio || ''} ${item.periodo_fim || ''} ${item.status || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaEscala(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
+  ESCALA_LIST_STATE.query = String(value || '');
+  ESCALA_LIST_STATE.page = 1;
+  renderEscalaFerias();
+  const nextInput = document.getElementById('escala-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+}
+
+function mudarPaginaEscala(delta) {
+  ESCALA_LIST_STATE.page += delta;
+  renderEscalaFerias();
+}
+
+const ACESSO_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarAcessoLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.titulo || ''} ${item.url || ''} ${item.icone || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaAcesso(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
+  ACESSO_LIST_STATE.query = String(value || '');
+  ACESSO_LIST_STATE.page = 1;
+  renderAcessoRapido();
+  const nextInput = document.getElementById('acesso-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+}
+
+function mudarPaginaAcesso(delta) {
+  ACESSO_LIST_STATE.page += delta;
+  renderAcessoRapido();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -2692,15 +2757,26 @@ function getFeriasStatus(periodoInicio, periodoFim) {
 
 function renderEscalaFerias() {
   const lista = DB.get('escalaFerias');
+  const listaFiltrada = filtrarEscalaLista(lista, ESCALA_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, ESCALA_LIST_STATE.page, ESCALA_LIST_STATE.pageSize);
+  ESCALA_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-escalaFerias').innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Escala de Férias</h1>
+      <h1 class="admin-section-title">Escala de F&#233;rias</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="escala-search" value="${escHtml(ESCALA_LIST_STATE.query)}" oninput="atualizarBuscaEscala(this)" placeholder="Buscar por funcionario, cargo..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaEscala(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaEscala(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novaFerias()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Funcionário</th><th>Cargo</th><th>Início</th><th>Fim</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(f => {
+      <thead><tr><th>Funcion&#225;rio</th><th>Cargo</th><th>In&#237;cio</th><th>Fim</th><th>Status</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(f => {
         const status = getFeriasStatus(f.periodo_inicio, f.periodo_fim);
         return `
         <tr>
@@ -2714,11 +2790,11 @@ function renderEscalaFerias() {
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('escalaFerias',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
-      }).join('')}
+      }).join('') : `
+        <tr><td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum registro encontrado para o filtro informado.</td></tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formFerias(f = {}) {
   const funcionarios = DB.get('funcionarios');
   return `
@@ -2767,16 +2843,27 @@ function salvarFerias(id) {
 
 function renderAcessoRapido() {
   const lista = DB.get('acessoRapido');
+  const listaFiltrada = filtrarAcessoLista(lista, ACESSO_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, ACESSO_LIST_STATE.page, ACESSO_LIST_STATE.pageSize);
+  ACESSO_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-acessoRapido').innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Acesso Rápido</h1>
+      <h1 class="admin-section-title">Acesso R&#225;pido</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="acesso-search" value="${escHtml(ACESSO_LIST_STATE.query)}" oninput="atualizarBuscaAcesso(this)" placeholder="Buscar por titulo, url ou icone..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAcesso(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAcesso(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoAcesso()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
-    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">Configure os botões de acesso rápido do dashboard. Máximo recomendado: 6 botões.</p>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">Configure os bot&#245;es de acesso r&#225;pido do dashboard. M&#225;ximo recomendado: 6 bot&#245;es.</p>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Título</th><th>URL</th><th>Ícone</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(a => `
+      <thead><tr><th>T&#237;tulo</th><th>URL</th><th>&#205;cone</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(a => `
         <tr>
           <td><strong>${escHtml(a.titulo)}</strong></td>
           <td class="td-truncate"><a href="${escHtml(a.url)}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></td>
@@ -2786,11 +2873,11 @@ function renderAcessoRapido() {
             <button class="btn btn-ghost btn-sm" onclick="editarAcesso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('acessoRapido',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum atalho encontrado para o filtro informado.</td></tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formAcesso(a = {}) {
   return `
     <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Acesso Rápido</h2>
