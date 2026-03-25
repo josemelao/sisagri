@@ -2714,22 +2714,18 @@ function openSistema(id) {
 
 /** Abre painel filho (manual ou processo) dentro do detail do sistema */
 function openSistemaFilho(tipo, id) {
-  let filho = document.getElementById('sistema-filho-panel');
-  if (!filho) {
-    filho = document.createElement('div');
-    filho.id = 'sistema-filho-panel';
-    filho.className = 'manual-filho-panel';
-    document.getElementById('sistema-detail-panel').appendChild(filho);
-  }
-
-  animateChildPanelSwap(filho, () => {
-    if (tipo === 'manual') {
-      const m = manuais.find(x => x.id === id);
-      if (m) renderSistemaFilhoManual(m, 'resumido', 0);
-    } else {
-      const p = processos.find(x => x.id === id);
-      if (p) renderSistemaFilhoProcesso(p);
-    }
+  openNestedPanel({
+    parentPanelId: 'sistema-detail-panel',
+    panelId: 'sistema-filho-panel',
+    renderFn: () => {
+      if (tipo === 'manual') {
+        const m = manuais.find(x => x.id === id);
+        if (m) renderSistemaFilhoManual(m, 'resumido', 0);
+      } else {
+        const p = processos.find(x => x.id === id);
+        if (p) renderSistemaFilhoProcesso(p);
+      }
+    },
   });
 }
 
@@ -2888,22 +2884,15 @@ function abrirManualNoSistemaFilho(manualId, processoId) {
   const filho = document.getElementById('sistema-filho-panel');
   if (!filho) return;
 
-  let neto = document.getElementById('sistema-neto-panel');
-  if (!neto) {
-    neto = document.createElement('div');
-    neto.id = 'sistema-neto-panel';
-    neto.className = 'manual-filho-panel';
-    filho.appendChild(neto);
-  }
-
-  animateChildPanelSwap(neto, () => renderSistemaNetoManual(m, 'resumido', processoId, 0));
+  openNestedPanel({
+    parentPanelId: 'sistema-filho-panel',
+    panelId: 'sistema-neto-panel',
+    renderFn: () => renderSistemaNetoManual(m, 'resumido', processoId, 0),
+  });
 }
 
 function fecharSistemaFilho() {
-  const neto = document.getElementById('sistema-neto-panel');
-  if (neto) neto.remove();
-  const filho = document.getElementById('sistema-filho-panel');
-  if (filho) filho.classList.remove('open');
+  closeNestedPanel({ panelId: 'sistema-filho-panel', nestedPanelIds: ['sistema-neto-panel'] });
 }
 
 
