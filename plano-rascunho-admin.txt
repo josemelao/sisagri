@@ -745,11 +745,23 @@ ETAPA:
 ETAPA:
 - Nome: Controle de rascunho/publicado nos modais do admin
 - Fase: Fase 3 - UI do admin
-- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Situacao: CONCLUIDA
 - Data: 2026-03-25
 - Responsavel: agente atual
 - Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\admin.html; C:\Users\Usuario\Desktop\SisAgri - Stable\admin.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
 - Resumo: Criado helper reutilizavel para a faixa final do modal com switch Publicado/Rascunho, estilos adicionados ao admin e publish_status conectado ao salvamento de todos os modais efetivos, inclusive nas definicoes finais onde havia funcoes duplicadas.
 - Commit previsto: feat: adiciona controle de rascunho nos modais do admin
+- Commit confirmado pelo usuario: SIM
+- Observacoes: Validacao aceita pelo usuario para exibicao visual e salvamento local do status. Aviso de indisponibilidade do Supabase neste ponto e esperado, pois o campo publish_status ainda nao foi criado/vinculado na base.
+
+ETAPA:
+- Nome: Filtro central de publicados no frontend publico
+- Fase: Fase 4 - Filtro central do publico
+- Situacao: IMPLEMENTADA_AGUARDANDO_COMMIT
+- Data: 2026-03-25
+- Responsavel: agente atual
+- Arquivos alterados: C:\Users\Usuario\Desktop\SisAgri - Stable\script.js; C:\Users\Usuario\Desktop\SisAgri - Stable\plano-rascunho-admin.txt
+- Resumo: Criados helpers centrais isPublished/filterPublished e aplicado filtro de publish_status em carregarDados() para todas as colecoes publicas carregadas pelo frontend.
+- Commit previsto: feat: filtra registros publicados no carregamento do frontend
 - Commit confirmado pelo usuario: NAO
-- Observacoes: Esta etapa ainda nao filtra o frontend publico; apenas permite ao admin visualizar e salvar o status de publicacao.
+- Observacoes: Esta etapa reduz a exposicao de drafts nas listagens publicas, dashboard, busca e relatorios alimentados por carregarDados(), mas ainda nao cobre validacoes especificas de relacionamentos indiretos e acessos por referencia.

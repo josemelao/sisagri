@@ -31,6 +31,16 @@ let globalSearchIndexBuilding = false;
 let bootHideTimer = null;
 const MODULE_SEARCH_STATE_KEY = "smader_module_search_state_v1";
 
+function isPublished(item) {
+  if (!item || typeof item !== "object") return false;
+  return (item.publish_status || "published") === "published";
+}
+
+function filterPublished(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter(isPublished);
+}
+
 const bootState = {
   screen: null,
   title: null,
@@ -75,20 +85,20 @@ async function waitForInitialPaint() {
 
 /** Carrega todas as coleções do DB para as variáveis locais */
 function carregarDados() {
-  funcionarios  = DB.get('funcionarios');
-  manuais       = DB.get('manuais');
-  processos     = DB.get('processos');
-  arquivos      = DB.get('arquivos');
-  veiculos      = DB.get('veiculos');
-  sistemas      = DB.get('sistemas');
-  servicos      = DB.get('servicos');
-  infoJuridico  = DB.get('infoJuridico');
-  infoMunicipio = DB.get('infoMunicipio');
-  infoOrgaos    = DB.get('infoOrgaos');
-  avisos        = DB.get('avisos');
-  agendaEventos = DB.get('agendaEventos');
-  escalaFerias  = DB.get('escalaFerias');
-  acessoRapido  = DB.get('acessoRapido');
+  funcionarios  = filterPublished(DB.get('funcionarios'));
+  manuais       = filterPublished(DB.get('manuais'));
+  processos     = filterPublished(DB.get('processos'));
+  arquivos      = filterPublished(DB.get('arquivos'));
+  veiculos      = filterPublished(DB.get('veiculos'));
+  sistemas      = filterPublished(DB.get('sistemas'));
+  servicos      = filterPublished(DB.get('servicos'));
+  infoJuridico  = filterPublished(DB.get('infoJuridico'));
+  infoMunicipio = filterPublished(DB.get('infoMunicipio'));
+  infoOrgaos    = filterPublished(DB.get('infoOrgaos'));
+  avisos        = filterPublished(DB.get('avisos'));
+  agendaEventos = filterPublished(DB.get('agendaEventos'));
+  escalaFerias  = filterPublished(DB.get('escalaFerias'));
+  acessoRapido  = filterPublished(DB.get('acessoRapido'));
 }
 
 window.addEventListener('db:collection-updated', () => {
