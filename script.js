@@ -1348,7 +1348,8 @@ function fecharProcessoCompleto() {
 // Estado do filtro: conjunto de tags ativas (Set para facilitar toggle)
 let tagsAtivas = new Set();
 let extensoesAtivas = new Set();
-let arquivoQuery = "";  // texto da busca por string
+let arquivoQuery = "";        // texto da busca em lowercase (usado nos filtros)
+let arquivoQueryRaw = "";     // texto original digitado pelo usuário (usado no input)
 let arquivosPaginaAtual = 1;
 const ARQUIVOS_POR_PAGINA = 20;
 const ARQUIVOS_UI_STATE_KEY = "smader_arquivos_ui_state_v1";
@@ -1370,7 +1371,8 @@ function loadArquivosUIState() {
     const parsed = JSON.parse(saved);
     if (!parsed || typeof parsed !== "object") return;
 
-    arquivoQuery = typeof parsed.query === "string" ? parsed.query : "";
+    arquivoQueryRaw = typeof parsed.query === "string" ? parsed.query : "";
+    arquivoQuery = arquivoQueryRaw.toLowerCase().trim();
     arquivosPaginaAtual = Number.isInteger(parsed.page) && parsed.page > 0 ? parsed.page : 1;
     tagsAtivas = new Set(Array.isArray(parsed.tags) ? parsed.tags.filter(Boolean) : []);
     extensoesAtivas = new Set(Array.isArray(parsed.extensoes) ? parsed.extensoes.filter(Boolean) : []);
@@ -1426,7 +1428,7 @@ function clearModuleSearch(moduleId, inputId, applyFnName) {
 function persistArquivosUIState() {
   try {
     localStorage.setItem(ARQUIVOS_UI_STATE_KEY, JSON.stringify({
-      query: arquivoQuery,
+      query: arquivoQueryRaw,
       page: arquivosPaginaAtual,
       tags: Array.from(tagsAtivas),
       extensoes: Array.from(extensoesAtivas),
@@ -1438,7 +1440,7 @@ function persistArquivosUIState() {
 
 function syncArquivosSearchInput() {
   const input = document.getElementById("arquivo-search");
-  if (input) input.value = arquivoQuery;
+  if (input) input.value = arquivoQueryRaw;
 }
 
 function sanitizeArquivosFilters() {
@@ -1472,9 +1474,10 @@ function initArquivos() {
   // Busca por texto — filtra em tempo real
   const input = document.getElementById("arquivo-search");
   if (input) {
-    input.value = arquivoQuery;
+    input.value = arquivoQueryRaw;
     input.addEventListener("input", () => {
-      arquivoQuery = input.value.toLowerCase().trim();
+      arquivoQueryRaw = input.value;
+      arquivoQuery = arquivoQueryRaw.toLowerCase().trim();
       arquivosPaginaAtual = 1;
       renderArquivos();
     });
@@ -1641,11 +1644,13 @@ function limparFiltros() {
   tagsAtivas.clear();
   extensoesAtivas.clear();
   arquivoQuery = "";
+  arquivoQueryRaw = "";
   arquivosPaginaAtual = 1;
   const input = document.getElementById("arquivo-search");
   if (input) input.value = "";
   document.querySelectorAll("#arquivos-tags .tag-filter-btn").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll("#arquivos-extensoes .tag-filter-btn").forEach(btn => btn.classList.remove("active"));
+  persistArquivosUIState();
   renderArquivos();
 }
 
@@ -1943,11 +1948,15 @@ function renderArquivos() {
 
   if (contador) {
     const filtroAtivo = tagsAtivas.size > 0 || extensoesAtivas.size > 0 || arquivoQuery !== "";
-    const inicioLabel = filtrados.length === 0 ? 0 : inicio + 1;
-    const fimLabel = Math.min(fim, filtrados.length);
-    contador.textContent = filtroAtivo
-      ? `${inicioLabel}-${fimLabel} de ${filtrados.length} resultados · pág. ${arquivosPaginaAtual}/${totalPaginas}`
-      : `${inicioLabel}-${fimLabel} de ${arquivos.length} arquivos · pág. ${arquivosPaginaAtual}/${totalPaginas}`;
+    if (filtrados.length === 0) {
+      contador.textContent = filtroAtivo ? "0 resultados" : "0 arquivos";
+    } else {
+      const inicioLabel = inicio + 1;
+      const fimLabel = Math.min(fim, filtrados.length);
+      contador.textContent = filtroAtivo
+        ? `${inicioLabel}–${fimLabel} de ${filtrados.length} resultados · pág. ${arquivosPaginaAtual}/${totalPaginas}`
+        : `${inicioLabel}–${fimLabel} de ${arquivos.length} arquivos · pág. ${arquivosPaginaAtual}/${totalPaginas}`;
+    }
   }
 
   const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
@@ -3856,6 +3865,9 @@ function initAgenda() {
   renderAgendaEventos(agendaEventos);
   renderAgendaHistorico(agendaEventos);
 
+  // Restaura estado do toggle do histórico
+  _restoreAgendaHistoricoState();
+
   const agendaSearch = restoreModuleSearchInput("agenda", "agenda-search");
   if (agendaSearch) {
     applyAgendaSearch(agendaSearch.value);
@@ -3878,6 +3890,49 @@ function initAgenda() {
       if (e.target === overlay) closeDetail(overlayId);
     });
   });
+}
+
+const AGENDA_UI_STATE_KEY = "smader_agenda_ui_state_v1";
+
+function _loadAgendaUIState() {
+  try {
+    const saved = localStorage.getItem(AGENDA_UI_STATE_KEY);
+    if (!saved) return {};
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function _persistAgendaHistoricoState(aberto) {
+  try {
+    const state = _loadAgendaUIState();
+    state.historicoAberto = aberto;
+    localStorage.setItem(AGENDA_UI_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("[Agenda] Falha ao salvar estado do histórico:", error);
+  }
+}
+
+function _restoreAgendaHistoricoState() {
+  const state = _loadAgendaUIState();
+  const aberto = state.historicoAberto === true;
+  const wrap    = document.getElementById("historico-eventos-wrap");
+  const chevron = document.getElementById("historico-chevron");
+  const label   = document.getElementById("historico-toggle-label");
+
+  if (!wrap) return;
+
+  wrap.hidden = !aberto;
+  if (chevron) chevron.style.transform = aberto ? "rotate(180deg)" : "";
+
+  // Atualiza label com contagem — o container já foi preenchido por renderAgendaHistorico
+  if (label) {
+    const container = document.getElementById("agenda-historico-list");
+    const total = container ? container.querySelectorAll(".agenda-card").length : 0;
+    label.textContent = aberto ? `Ocultar (${total})` : `Mostrar (${total})`;
+  }
 }
 
 function applyAgendaSearch(query = getModuleSearchValue("agenda")) {
@@ -4038,6 +4093,9 @@ function toggleHistorico() {
   const container = document.getElementById("agenda-historico-list");
   const total = container ? container.querySelectorAll(".agenda-card").length : 0;
   if (label) label.textContent = abrindo ? `Ocultar (${total})` : `Mostrar (${total})`;
+
+  // Persiste o novo estado
+  _persistAgendaHistoricoState(abrindo);
 }
 
 /* ── HTML compartilhado de card de evento (ativo ou histórico) ── */
