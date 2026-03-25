@@ -558,6 +558,83 @@ function mudarPaginaServicos(delta) {
   SERVICOS_LIST_STATE.page += delta;
   renderServicos();
 }
+const AVISOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarAvisosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.titulo || ''} ${item.tipo || ''} ${item.local || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaAvisos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  AVISOS_LIST_STATE.query = String(value || '');
+  AVISOS_LIST_STATE.page = 1;
+  renderAvisos();
+
+  const nextInput = document.getElementById('avisos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaAvisos(delta) {
+  AVISOS_LIST_STATE.page += delta;
+  renderAvisos();
+}
+
+const AGENDA_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarAgendaLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.titulo || ''} ${item.tipo || ''} ${item.local || ''} ${item.data || ''} ${item.data_fim || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaAgenda(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  AGENDA_LIST_STATE.query = String(value || '');
+  AGENDA_LIST_STATE.page = 1;
+  renderAgendaEventos();
+
+  const nextInput = document.getElementById('agenda-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaAgenda(delta) {
+  AGENDA_LIST_STATE.page += delta;
+  renderAgendaEventos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -2240,29 +2317,48 @@ function salvarServico(id) {
 
 function renderAvisos() {
   const lista = DB.get('avisos');
+  const listaFiltrada = filtrarAvisosLista(lista, AVISOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, AVISOS_LIST_STATE.page, AVISOS_LIST_STATE.pageSize);
+  AVISOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-avisos').innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Avisos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="avisos-search"
+          value="${escHtml(AVISOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaAvisos(this)"
+          placeholder="Buscar por titulo, tipo ou local..."
+          style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAvisos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAvisos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoAviso()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Título</th><th>Tipo</th><th>Local</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(a => `
+      <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(a => `
         <tr>
           <td><strong class="td-truncate">${escHtml(a.titulo)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
-          <td>${escHtml(a.local||'—')}</td>
+          <td>${escHtml(a.local||'�')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('avisos',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum aviso encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formAviso(a = {}) {
   return `
     <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Aviso</h2>
@@ -2369,34 +2465,53 @@ function salvarEvento(id) {
    ============================================================ */
 function renderAgendaEventos() {
   const lista = DB.get('agendaEventos');
+  const listaFiltrada = filtrarAgendaLista(lista, AGENDA_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, AGENDA_LIST_STATE.page, AGENDA_LIST_STATE.pageSize);
+  AGENDA_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-agendaEventos').innerHTML = `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Eventos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="agenda-search"
+          value="${escHtml(AGENDA_LIST_STATE.query)}"
+          oninput="atualizarBuscaAgenda(this)"
+          placeholder="Buscar por titulo, tipo, local..."
+          style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAgenda(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAgenda(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoEvento()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Título</th><th>Tipo</th><th>Período</th><th>Local</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(e => {
+      <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(e => {
         const periodo = e.tipo === 'prazo' && !e.data
-          ? `${escHtml(formatDateBR(e.data_fim || '—'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
-          : `${escHtml(formatDateBR(e.data || '—'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` → ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
+          ? `${escHtml(formatDateBR(e.data_fim || '�'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
+          : `${escHtml(formatDateBR(e.data || '�'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
         return `
         <tr>
           <td><strong class="td-truncate">${escHtml(e.titulo)}</strong></td>
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${periodo}</td>
-          <td>${escHtml(e.local||'—')}</td>
+          <td>${escHtml(e.local||'�')}</td>
           <td><div class="td-actions">
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
-      }).join('')}
+      }).join('') : `
+        <tr>
+          <td colspan="5" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum evento encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function formEvento(e = {}) {
   const tipos = ['reuniao','evento','prazo','capacitacao','operacao'];
   return `
