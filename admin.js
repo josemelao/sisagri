@@ -275,6 +275,19 @@ function formatDateBR(value) {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
+function isDraftRecord(item) {
+  return !!(item && item.publish_status === 'draft');
+}
+
+function withDraftSuffix(label, item) {
+  return isDraftRecord(item) ? `${label} (Rascunho)` : label;
+}
+
+function isSelectedOptionValue(selectedValues, value) {
+  const target = String(value);
+  return Array.isArray(selectedValues) && selectedValues.some(item => String(item) === target);
+}
+
 function renderPublishStatusActions(saveAction, item = {}) {
   const publishStatus = item.publish_status === 'draft' ? 'draft' : 'published';
   const isPublished = publishStatus === 'published';
@@ -297,6 +310,38 @@ function renderPublishStatusActions(saveAction, item = {}) {
         <button class="btn btn-primary" onclick="${saveAction}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
       </div>
     </div>`;
+}
+
+function renderInlinePublishStatusControl(colecao, item = {}) {
+  const publishStatus = item.publish_status === 'draft' ? 'draft' : 'published';
+  const isPublished = publishStatus === 'published';
+  return `
+    <label class="inline-publish-toggle" title="${isPublished ? 'Publicado' : 'Rascunho'}">
+      <span class="inline-publish-toggle__label">${isPublished ? 'Publicado' : 'Rascunho'}</span>
+      <span class="inline-publish-toggle__switch">
+        <input
+          type="checkbox"
+          ${isPublished ? 'checked' : ''}
+          onchange="toggleInlinePublishStatus('${colecao}', ${item.id}, this.checked)"
+        />
+        <span class="inline-publish-toggle__slider"></span>
+      </span>
+    </label>`;
+}
+
+function toggleInlinePublishStatus(colecao, id, checked) {
+  const publishStatus = checked ? 'published' : 'draft';
+  const atualizado = DB.update(colecao, id, { publish_status: publishStatus });
+  if (!atualizado) {
+    toast('Nao foi possivel atualizar o status de publicacao.', 'error');
+    renderSection(colecao);
+    return;
+  }
+  setTimeout(() => {
+    renderSection(colecao);
+    renderOverview();
+  }, 220);
+  toast(checked ? 'Item publicado.' : 'Item movido para rascunho.');
 }
 
 function handlePublishStatusToggle(input) {
@@ -575,7 +620,8 @@ function renderFuncionarios() {
               <td>${escHtml(f.cargo)}</td>
               <td>${escHtml(f.lotacao || f.setor || '')}</td>
               <td>${escHtml(f.departamento || '')}</td>
-              <td><div class="td-actions">
+              <td><div class="td-actions td-actions--with-status">
+                ${renderInlinePublishStatusControl('funcionarios', f)}
                 <button class="btn btn-ghost btn-sm" onclick="editarFuncionario(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('funcionarios',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
               </div></td>
@@ -699,7 +745,8 @@ function renderManuais() {
               <td><strong class="td-truncate">${escHtml(m.titulo)}</strong></td>
               <td><span class="badge">${escHtml(m.categoria)}</span></td>
               <td>${(m.passos||[]).length}</td>
-              <td><div class="td-actions">
+              <td><div class="td-actions td-actions--with-status">
+                ${renderInlinePublishStatusControl('manuais', m)}
                 <button class="btn btn-ghost btn-sm" onclick="editarManual(${m.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('manuais',${m.id},'${escHtml(m.titulo)}')"><i class="ph-bold ph-trash"></i></button>
               </div></td>
@@ -796,7 +843,10 @@ function getArquivosOptions(selectedId) {
   const selectedIds = Array.isArray(selectedId)
     ? selectedId
     : (selectedId ? [selectedId] : []);
-  return arquivos.map(a => `<option value="${a.id}" ${selectedIds.includes(a.id) ? 'selected' : ''}>${escHtml(a.nome)} (${a.tipo})</option>`).join('');
+  return arquivos.map(a => {
+    const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
+    return `<option value="${a.id}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+  }).join('');
 }
 
 function addDocumento() {
@@ -951,10 +1001,11 @@ function renderProcessos() {
           <td><strong class="td-truncate">${escHtml(p.titulo)}</strong></td>
           <td><span class="badge">${escHtml(p.categoria)}</span></td>
           <td>${(p.etapas||[]).length}</td>
-          <td><div class="td-actions">
-            <button class="btn btn-ghost btn-sm" onclick="editarProcesso(${p.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('processos',${p.id},'${escHtml(p.titulo)}')"><i class="ph-bold ph-trash"></i></button>
-          </div></td>
+              <td><div class="td-actions td-actions--with-status">
+                ${renderInlinePublishStatusControl('processos', p)}
+                <button class="btn btn-ghost btn-sm" onclick="editarProcesso(${p.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('processos',${p.id},'${escHtml(p.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+              </div></td>
         </tr>`).join('')}
       </tbody>
     </table></div>`;
@@ -963,9 +1014,10 @@ function renderProcessos() {
 function getManuaisOptions(selectedIds = []) {
   const lista = DB.get('manuais');
   if (!lista.length) return '<option value="" disabled>Nenhum manual cadastrado</option>';
-  return lista.map(m =>
-    `<option value="${m.id}" ${selectedIds.includes(m.id) ? 'selected' : ''}>${escHtml(m.titulo)}</option>`
-  ).join('');
+  return lista.map(m => {
+    const label = withDraftSuffix(m.titulo, m);
+    return `<option value="${m.id}" ${isSelectedOptionValue(selectedIds, m.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+  }).join('');
 }
 
 function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
@@ -1083,14 +1135,15 @@ function renderArquivos() {
       <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>URL/Link</th><th>Ações</th></tr></thead>
       <tbody>${lista.map(a => `
         <tr>
-          <td><strong>${escHtml(a.nome)}</strong></td>
+          <td><strong class="td-truncate td-truncate--arquivo-nome" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
           <td>${(a.tags||[]).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
           <td class="td-truncate">${a.url ? `<a href="${escHtml(a.url)}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a>` : '<span style="color:var(--text-muted)">—</span>'}</td>
-          <td><div class="td-actions">
-            <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('arquivos',${a.id},'${escHtml(a.nome)}')"><i class="ph-bold ph-trash"></i></button>
-          </div></td>
+              <td><div class="td-actions td-actions--with-status">
+                ${renderInlinePublishStatusControl('arquivos', a)}
+                <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('arquivos',${a.id},'${escHtml(a.nome)}')"><i class="ph-bold ph-trash"></i></button>
+              </div></td>
         </tr>`).join('')}
       </tbody>
     </table></div>`;
@@ -1243,7 +1296,8 @@ function renderVeiculos() {
           <td>${escHtml(v.placa)}</td>
           <td>${escHtml(v.patrimonio)}</td>
           <td><span class="badge" style="${v.situacao==='Em operação'?'background:#e6f4ea;color:#2d6a4f':'background:#fff3e0;color:#7a4f00'}">${escHtml(v.situacao)}</span></td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('veiculos', v)}
             <button class="btn btn-ghost btn-sm" onclick="editarVeiculo(${v.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('veiculos',${v.id},'${escHtml(v.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -1265,6 +1319,23 @@ function getArquivosVeiculoOptions(selectedIds = []) {
   return lista.map(a =>
     `<option value="${a.id}" ${selectedIds.includes(a.id) ? 'selected' : ''}>${escHtml(a.nome)} (${a.tipo})</option>`
   ).join('');
+}
+
+function getMotoristaOptions(selectedIds = []) {
+  const lista = DB.get('funcionarios');
+  return lista.map(f => {
+    const label = withDraftSuffix(`${f.nome} â€” ${f.cargo}`, f);
+    return `<option value="${f.id}" ${isSelectedOptionValue(selectedIds, f.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+  }).join('');
+}
+
+function getArquivosVeiculoOptions(selectedIds = []) {
+  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('veÃ­culos'));
+  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "veÃ­culos" cadastrado</option>';
+  return lista.map(a => {
+    const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
+    return `<option value="${a.id}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+  }).join('');
 }
 
 function formVeiculo(v = {}) {
@@ -1376,7 +1447,8 @@ function renderSistemas() {
           <td><strong>${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
           <td class="td-truncate"><a href="${escHtml(s.url)}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('sistemas', s)}
             <button class="btn btn-ghost btn-sm" onclick="editarSistema(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('sistemas',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -1391,6 +1463,15 @@ function getSistemaLinksOptions(colecao, selectedIds = []) {
   return lista.map(item =>
     `<option value="${item.id}" ${selectedIds.includes(item.id) ? 'selected' : ''}>${escHtml(item.titulo)}</option>`
   ).join('');
+}
+
+function getSistemaLinksOptions(colecao, selectedIds = []) {
+  const lista = DB.get(colecao);
+  if (!lista.length) return `<option value="" disabled>Nenhum ${colecao === 'manuais' ? 'manual' : 'processo'} cadastrado</option>`;
+  return lista.map(item => {
+    const label = withDraftSuffix(item.titulo, item);
+    return `<option value="${item.id}" ${isSelectedOptionValue(selectedIds, item.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+  }).join('');
 }
 
 function renderServicoDocumentosFields(documentos = []) {
@@ -1557,7 +1638,8 @@ function renderServicos() {
           <td><strong class="td-truncate">${escHtml(s.nome)}</strong></td>
           <td><span class="badge">${escHtml(s.categoria)}</span></td>
           <td class="td-truncate">${escHtml(s.publico)}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('servicos', s)}
             <button class="btn btn-ghost btn-sm" onclick="editarServico(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('servicos',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -1749,7 +1831,8 @@ function renderAvisos() {
           <td><strong class="td-truncate">${escHtml(a.titulo)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
           <td>${escHtml(a.local||'—')}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('avisos', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('avisos',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -1810,7 +1893,8 @@ function renderAgendaEventos() {
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${escHtml(formatDateBR(e.data))}${e.data_fim?` → ${escHtml(formatDateBR(e.data_fim))}`:''}</td>
           <td>${escHtml(e.local||'—')}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('agendaEventos', e)}
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -1992,7 +2076,8 @@ function renderEscalaFerias() {
           <td>${escHtml(formatDateBR(f.periodo_inicio))}</td>
           <td>${escHtml(formatDateBR(f.periodo_fim))}</td>
           <td><span class="badge" style="${f.status==='em_curso'?'background:#e6f4ea;color:#2d6a4f':''}">${escHtml(f.status)}</span></td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('escalaFerias', f)}
             <button class="btn btn-ghost btn-sm" onclick="editarFerias(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('escalaFerias',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -2010,7 +2095,7 @@ function formFerias(f = {}) {
         <label>Funcionário</label>
         <select id="fer-func" onchange="preencherDadosFunc()">
           <option value="">— Selecione —</option>
-          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${f.funcionario_id===fn.id?'selected':''}>${escHtml(fn.nome)}</option>`).join('')}
+          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
         </select>
       </div>
       <div class="form-group full"><label>Cargo (preenchido automaticamente)</label><input id="fer-cargo" value="${escHtml(f.cargo||'')}" /></div>
@@ -2106,7 +2191,7 @@ function formFerias(f = {}) {
         <label>Funcionário</label>
         <select id="fer-func" onchange="preencherDadosFunc()">
           <option value="">— Selecione —</option>
-          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${f.funcionario_id===fn.id?'selected':''}>${escHtml(fn.nome)}</option>`).join('')}
+          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
         </select>
       </div>
       <div class="form-group full"><label>Cargo (preenchido automaticamente)</label><input id="fer-cargo" value="${escHtml(f.cargo||'')}" /></div>
@@ -2159,7 +2244,8 @@ function renderAcessoRapido() {
           <td><strong>${escHtml(a.titulo)}</strong></td>
           <td class="td-truncate"><a href="${escHtml(a.url)}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></td>
           <td>${escHtml(a.icone)}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('acessoRapido', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAcesso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('acessoRapido',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -2243,7 +2329,8 @@ function renderInfoSimples(colecao, titulo, heading) {
         <tr>
           <td><strong>${escHtml(item.titulo)}</strong></td>
           <td>${(item.campos||[]).length} campos</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl(colecao, item)}
             <button class="btn btn-ghost btn-sm" onclick="editarInfoSimples('${colecao}',${item.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('${colecao}',${item.id},'${escHtml(item.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -2338,7 +2425,8 @@ function renderInfoOrgaos() {
           <td><strong>${escHtml(o.titulo)}</strong></td>
           <td class="td-truncate">${escHtml(o.nome_completo)}</td>
           <td>${(o.campos||[]).length}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('infoOrgaos', o)}
             <button class="btn btn-ghost btn-sm" onclick="editarOrgao(${o.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('infoOrgaos',${o.id},'${escHtml(o.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
