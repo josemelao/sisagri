@@ -146,3 +146,198 @@ A Fase 1 pode ser considerada pronta quando:
 - estados vazios estiverem consistentes
 - Arquivos estiver estavel como modulo referencia
 - paginacao extra so tiver sido adicionada onde realmente necessaria
+
+CHECKLIST OPERACIONAL POR COMMIT
+Objetivo: permitir que outra IA ou outro dev execute a Fase 1 em passos pequenos, claros e com baixo risco.
+
+REGRAS DO CHECKLIST
+- cada item deve virar um commit pequeno e focado
+- nao misturar limpeza estrutural com mudanca visual e regra de busca no mesmo commit
+- sempre validar o modulo alterado antes de seguir
+- se houver duvida, preservar o comportamento atual e mexer so no necessario
+
+COMMIT 1
+Titulo sugerido:
+- Standardize empty state in manuals search
+
+Objetivo:
+- padronizar o estado vazio de Manuais com classe modulo-vazio
+- manter a logica de busca atual
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- buscar algo existente em Manuais
+- buscar algo inexistente
+- clicar em Limpar busca
+
+COMMIT 2
+Titulo sugerido:
+- Standardize empty state in processes search
+
+Objetivo:
+- padronizar o estado vazio de Processos com classe modulo-vazio
+- manter a logica de busca atual
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- buscar por titulo
+- buscar por categoria
+- buscar algo inexistente
+
+COMMIT 3
+Titulo sugerido:
+- Standardize empty state in vehicles search
+
+Objetivo:
+- padronizar o estado vazio de Veiculos
+- nao alterar layout do detail panel
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- buscar por nome
+- buscar por placa
+- limpar busca
+
+COMMIT 4
+Titulo sugerido:
+- Standardize empty state in systems and services search
+
+Objetivo:
+- padronizar estados vazios de Sistemas e Servicos
+- manter a mesma abordagem visual dos outros modulos
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- buscar algo existente em Sistemas
+- buscar algo inexistente em Sistemas
+- buscar algo existente em Servicos
+- buscar algo inexistente em Servicos
+
+COMMIT 5
+Titulo sugerido:
+- Improve empty state messaging in information and agenda modules
+
+Objetivo:
+- padronizar mensagens de vazio em Informacoes e Agenda
+- manter a busca unica desses modulos
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- Informacoes: busca sem resultado
+- Agenda: busca sem resultado em avisos e eventos
+- botao Limpar busca
+
+COMMIT 6
+Titulo sugerido:
+- Harden manual and process search fields
+
+Objetivo:
+- blindar buscas de Manuais e Processos contra campos vazios ou nulos
+- usar String(campo || "").toLowerCase() nos campos relevantes
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- busca funcionando com dados completos
+- busca funcionando mesmo se algum item vier com campo vazio
+
+COMMIT 7
+Titulo sugerido:
+- Harden vehicle, system and service search fields
+
+Objetivo:
+- aplicar a mesma blindagem de busca em Veiculos, Sistemas e Servicos
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- Veiculos: nome, placa, modelo
+- Sistemas: nome, orgao, descricao
+- Servicos: nome, categoria, publico
+
+COMMIT 8
+Titulo sugerido:
+- Harden information and agenda search fields
+
+Objetivo:
+- revisar Informacoes e Agenda para evitar falhas quando algum campo vier vazio
+- manter a regra de filtro atual
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- Informacoes: busca em titulo, tag, nome completo e campos
+- Agenda: busca em titulo, descricao, local e tipo
+
+COMMIT 9
+Titulo sugerido:
+- Validate and refine files module state restoration
+
+Objetivo:
+- revisar edge cases de Arquivos
+- confirmar estabilidade de busca, filtros, pagina e contador
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+- C:\Users\PICHAU\Desktop\SisAgri\style.css
+
+Validar:
+- recarregar pagina com filtro ativo
+- abrir detalhe e voltar
+- salvar pagina alta e reduzir resultados
+- validar estado vazio
+
+COMMIT 10
+Titulo sugerido:
+- Persist agenda history toggle state
+
+Objetivo:
+- expandir Agenda para lembrar mais do que a busca
+- salvar se o historico esta aberto ou fechado
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+
+Validar:
+- abrir historico
+- navegar para outro modulo
+- voltar para Agenda
+- recarregar pagina
+
+COMMIT 11
+Titulo sugerido:
+- Evaluate pagination needs in large list modules
+
+Objetivo:
+- medir se algum modulo alem de Arquivos ja precisa de paginacao
+- se nao precisar, nao implementar
+- se precisar, escolher apenas um modulo como piloto
+
+Arquivos provaveis:
+- C:\Users\PICHAU\Desktop\SisAgri\script.js
+- C:\Users\PICHAU\Desktop\SisAgri\index.html
+- C:\Users\PICHAU\Desktop\SisAgri\style.css
+
+Validar:
+- tamanho real das listas
+- usabilidade no scroll
+- impacto visual da paginacao
+
+OBSERVACOES PARA OUTRA IA
+- Funcionarios tem codigo legado duplicado em script.js; evitar refactor grande se o objetivo for apenas corrigir busca ou estado vazio
+- index.html possui trechos com encoding antigo; alterar com cuidado e preferir mudancas pequenas
+- o modulo Arquivos e a melhor referencia para persistencia de estado mais completa
+- nao tentar fazer Fase 2 junto com Fase 1
