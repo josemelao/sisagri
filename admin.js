@@ -444,6 +444,44 @@ function mudarPaginaFuncionarios(delta) {
   FUNCIONARIOS_LIST_STATE.page += delta;
   renderFuncionarios();
 }
+const VEICULOS_LIST_STATE = {
+  query: '',
+  page: 1,
+  pageSize: 12,
+};
+
+function filtrarVeiculosLista(items, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return items;
+  return items.filter(item => {
+    const searchable = `${item.nome || ''} ${item.marca || ''} ${item.modelo || ''} ${item.placa || ''} ${item.patrimonio || ''} ${item.situacao || ''}`;
+    return normalizeSearchText(searchable).includes(normalizedQuery);
+  });
+}
+
+function atualizarBuscaVeiculos(inputEl) {
+  const value = inputEl ? inputEl.value : '';
+  const caret = inputEl && typeof inputEl.selectionStart === 'number'
+    ? inputEl.selectionStart
+    : String(value).length;
+
+  VEICULOS_LIST_STATE.query = String(value || '');
+  VEICULOS_LIST_STATE.page = 1;
+  renderVeiculos();
+
+  const nextInput = document.getElementById('veiculos-search');
+  if (!nextInput) return;
+  nextInput.focus();
+  const safeCaret = Math.min(caret, nextInput.value.length);
+  if (typeof nextInput.setSelectionRange === 'function') {
+    nextInput.setSelectionRange(safeCaret, safeCaret);
+  }
+}
+
+function mudarPaginaVeiculos(delta) {
+  VEICULOS_LIST_STATE.page += delta;
+  renderVeiculos();
+}
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1532,15 +1570,32 @@ function salvarArquivo(id) {
    ============================================================ */
 function renderVeiculos() {
   const lista = DB.get('veiculos');
+  const listaFiltrada = filtrarVeiculosLista(lista, VEICULOS_LIST_STATE.query);
+  const paginacao = paginarLista(listaFiltrada, VEICULOS_LIST_STATE.page, VEICULOS_LIST_STATE.pageSize);
+  VEICULOS_LIST_STATE.page = paginacao.page;
+
   document.getElementById('section-veiculos').innerHTML = `
     <div class="admin-section-header">
-      <h1 class="admin-section-title">Veículos</h1>
+      <h1 class="admin-section-title">Ve&#237;culos</h1>
       <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input
+          id="veiculos-search"
+          value="${escHtml(VEICULOS_LIST_STATE.query)}"
+          oninput="atualizarBuscaVeiculos(this)"
+          placeholder="Buscar por nome, modelo, placa..."
+          style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
+        />
+        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaVeiculos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaVeiculos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+      </div>
       <button class="btn btn-primary" onclick="novoVeiculo()"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrimônio</th><th>Situação</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(v => `
+      <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrim&#244;nio</th><th>Situa&#231;&#227;o</th><th>A&#231;&#245;es</th></tr></thead>
+      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(v => `
         <tr>
           <td><strong>${escHtml(v.nome)}</strong></td>
           <td>${escHtml(v.marca)} ${escHtml(v.modelo)} (${escHtml(v.ano)})</td>
@@ -1552,11 +1607,13 @@ function renderVeiculos() {
             <button class="btn btn-ghost btn-sm" onclick="editarVeiculo(${v.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('veiculos',${v.id},'${escHtml(v.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
-        </tr>`).join('')}
+        </tr>`).join('') : `
+        <tr>
+          <td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum veiculo encontrado para o filtro informado.</td>
+        </tr>`}
       </tbody>
     </table></div>`;
 }
-
 function getMotoristaOptions(selectedIds = []) {
   const lista = DB.get('funcionarios');
   return lista.map(f =>
