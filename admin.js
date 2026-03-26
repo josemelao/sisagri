@@ -2575,7 +2575,7 @@ function formAviso(a = {}) {
         </select>
       </div>
       <div class="form-group"><label>Local</label><input id="av-local" value="${escHtml(a.local||'')}" /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||'')}</textarea></div>
+      <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||a.descricao||'')}</textarea></div>
     </div>
     ${renderPublishStatusActions(`salvarAviso(${a.id||0})`, a)}`;
 }
@@ -2584,11 +2584,13 @@ function novoAviso()     { abrirModal(formAviso()); }
 function editarAviso(id) { abrirModal(formAviso(DB.getById('avisos', id))); }
 
 function salvarAviso(id) {
+  const descricao = document.getElementById('av-desc').value.trim();
   const dados = {
     titulo: document.getElementById('av-titulo').value.trim(),
     tipo:   document.getElementById('av-tipo').value,
     local:  document.getElementById('av-local').value.trim(),
-    desc:   document.getElementById('av-desc').value.trim(),
+    desc:   descricao,
+    descricao,
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
@@ -2668,7 +2670,7 @@ function formEvento(e = {}) {
       <div class="form-group" id="ev-hora-group"><label>Hora inicial</label><input type="time" id="ev-hora" value="${escHtml(e.hora||'')}" /></div>
       <div class="form-group"><label id="ev-hora-fim-label">Hora final</label><input type="time" id="ev-hora-fim" value="${escHtml(e.hora_fim||'')}" /></div>
       <div class="form-group"><label>Local</label><input id="ev-local" value="${escHtml(e.local||'')}" /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||'')}</textarea></div>
+      <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||e.descricao||'')}</textarea></div>
       <div class="form-group full" id="ev-prazo-hint" style="display:none">
         <p class="form-hint">Para o tipo prazo, use apenas data final e hora final. O evento ficará "em andamento" até esse momento e depois passará para "encerrado".</p>
       </div>
@@ -2713,6 +2715,7 @@ function salvarEvento(id) {
   const tipo = document.getElementById('ev-tipo').value;
   const isPrazo = tipo === 'prazo';
   const dataFim = document.getElementById('ev-data-fim').value.trim();
+  const descricao = document.getElementById('ev-desc').value.trim();
   const dados = {
     titulo:   document.getElementById('ev-titulo').value.trim(),
     tipo,
@@ -2721,7 +2724,8 @@ function salvarEvento(id) {
     hora:     isPrazo ? null : (document.getElementById('ev-hora').value || null),
     hora_fim: document.getElementById('ev-hora-fim').value || null,
     local:    document.getElementById('ev-local').value.trim(),
-    desc:     document.getElementById('ev-desc').value.trim(),
+    desc:     descricao,
+    descricao,
     publish_status: getModalPublishStatus(),
   };
 
