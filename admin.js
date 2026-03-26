@@ -2078,7 +2078,7 @@ function formVeiculo(v = {}) {
       <div class="form-group"><label>Cor</label><input id="v-cor" value="${escHtml(v.cor_veiculo||'')}" /></div>
       <div class="form-group"><label>Placa</label><input id="v-placa" value="${escHtml(v.placa||'')}" /></div>
       <div class="form-group"><label>Nº Patrimônio</label><input id="v-patrimonio" value="${escHtml(v.patrimonio||'')}" /></div>
-      <div class="form-group"><label>Chassi</label><input id="v-chassi" value="${escHtml(v.chassi||'')}" /></div>
+      <div class="form-group"><label>Nº Série/Chassi</label><input id="v-chassi" value="${escHtml(v.chassi||'')}" /></div>
       <div class="form-group"><label>RENAVAM</label><input id="v-renavam" value="${escHtml(v.renavam||'')}" /></div>
       <div class="form-group"><label>Combustível</label><input id="v-combustivel" value="${escHtml(v.combustivel||'')}" /></div>
       <div class="form-group">
@@ -2098,6 +2098,7 @@ function formVeiculo(v = {}) {
         <select id="v-motorista-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
           ${getMotoristaOptions(v.motorista_ids || [])}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearVeiculoMultiSelect('v-motorista-ids')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos motoristas.</p>
       </div>
       <div class="form-group full"><label>Localização atual</label><input id="v-localizacao" value="${escHtml(v.localizacao||'')}" /></div>
@@ -2106,6 +2107,7 @@ function formVeiculo(v = {}) {
         <select id="v-arquivo-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
           ${getArquivosVeiculoOptions(v.arquivo_ids || [])}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearVeiculoMultiSelect('v-arquivo-ids')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||'')}</textarea></div>
@@ -2115,6 +2117,12 @@ function formVeiculo(v = {}) {
 
 function novoVeiculo()     { abrirModal(formVeiculo()); }
 function editarVeiculo(id) { abrirModal(formVeiculo(DB.getById('veiculos', id))); }
+
+function clearVeiculoMultiSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  Array.from(select.options).forEach(option => { option.selected = false; });
+}
 
 function salvarVeiculo(id) {
   const motoristaIds = Array.from(
@@ -3152,5 +3160,4 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
-
 

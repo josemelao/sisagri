@@ -2281,7 +2281,7 @@ function rebuildGlobalSearchIndex() {
       { tier: T2, label: "Situação",    valor: v.situacao },
       { tier: T2, label: "Patrimônio",  valor: v.patrimonio },
       { tier: T2, label: "Motorista",   valor: v.motorista },
-      { tier: T3, label: "Chassi",      valor: v.chassi },
+      { tier: T3, label: "Nº Série/Chassi", valor: v.chassi },
       { tier: T3, label: "RENAVAM",     valor: v.renavam },
       { tier: T3, label: "Localização", valor: v.localizacao },
       { tier: T3, label: "Observações", valor: v.obs },
@@ -2901,7 +2901,7 @@ function openVeiculo(id) {
     <div class="detail-info-grid">
       <div class="detail-info-item"><label>Placa</label><span>${v.placa}</span></div>
       <div class="detail-info-item"><label>Nº Patrimônio</label><span>${v.patrimonio}</span></div>
-      <div class="detail-info-item"><label>Chassi</label><span style="font-size:.78rem">${v.chassi}</span></div>
+      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${v.chassi}</span></div>
       <div class="detail-info-item"><label>RENAVAM</label><span>${v.renavam}</span></div>
       <div class="detail-info-item"><label>Cor</label><span>${v.cor_veiculo}</span></div>
       <div class="detail-info-item"><label>Combustível</label><span>${v.combustivel}</span></div>
@@ -4586,7 +4586,7 @@ function renderRelatorioHistoricoAgenda() {
 }
 
 function renderRelatorioVeiculos() {
-  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
+  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Nº Série/Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
   const linhas = veiculos.map(v => {
     const motoristasPublicados = Array.isArray(v.motorista_ids) && v.motorista_ids.length
       ? v.motorista_ids
