@@ -2581,70 +2581,6 @@ function salvarAviso(id) {
 /* ============================================================
    AGENDA / EVENTOS
    ============================================================ */
-function renderAgendaEventos() {
-  const lista = DB.get('agendaEventos');
-  renderAdminSectionWithTableAnimation(document.getElementById('section-agendaEventos'), `
-    <div class="admin-section-header">
-      <h1 class="admin-section-title">Eventos</h1>
-      <div class="admin-section-header-spacer"></div>
-      <button class="btn btn-primary" onclick="novoEvento()"><i class="ph-bold ph-plus"></i> Novo</button>
-    </div>
-    <div class="admin-table-wrap"><table>
-      <thead><tr><th>Título</th><th>Tipo</th><th>Data</th><th>Local</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(e => `
-        <tr>
-          <td><strong class="td-truncate">${escHtml(e.titulo)}</strong></td>
-          <td><span class="badge">${escHtml(e.tipo)}</span></td>
-          <td>${escHtml(formatDateBR(e.data))}${e.data_fim?` → ${escHtml(formatDateBR(e.data_fim))}`:''}</td>
-          <td>${escHtml(e.local||'—')}</td>
-          <td><div class="td-actions td-actions--with-status">
-            ${renderInlinePublishStatusControl('agendaEventos', e)}
-            <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
-          </div></td>
-        </tr>`).join('')}
-      </tbody>
-    </table></div>`);
-}
-
-function formEvento(e = {}) {
-  const tipos = ['reuniao','evento','prazo','capacitacao','operacao'];
-  return `
-    <h2 class="modal-title">${e.id ? 'Editar' : 'Novo'} Evento</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="ev-titulo" value="${escHtml(e.titulo||'')}" /></div>
-      <div class="form-group">
-        <label>Tipo</label>
-        <select id="ev-tipo">${tipos.map(t=>`<option ${(e.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label>Data início</label><input type="date" id="ev-data" value="${escHtml(e.data||'')}" /></div>
-      <div class="form-group"><label>Data fim (opcional)</label><input type="date" id="ev-data-fim" value="${escHtml(e.data_fim||'')}" /></div>
-      <div class="form-group"><label>Horário</label><input type="time" id="ev-hora" value="${escHtml(e.hora||'')}" /></div>
-      <div class="form-group"><label>Local</label><input id="ev-local" value="${escHtml(e.local||'')}" /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions(`salvarEvento(${e.id||0})`, e)}`;
-}
-
-function novoEvento()     { abrirModal(formEvento()); }
-function editarEvento(id) { abrirModal(formEvento(DB.getById('agendaEventos', id))); }
-
-function salvarEvento(id) {
-  const dataFim = document.getElementById('ev-data-fim').value.trim();
-  const dados = {
-    titulo:   document.getElementById('ev-titulo').value.trim(),
-    tipo:     document.getElementById('ev-tipo').value,
-    data:     document.getElementById('ev-data').value,
-    data_fim: dataFim || null,
-    hora:     document.getElementById('ev-hora').value || null,
-    local:    document.getElementById('ev-local').value.trim(),
-    desc:     document.getElementById('ev-desc').value.trim(),
-    publish_status: getModalPublishStatus(),
-  };
-  if (!dados.titulo || !dados.data) { toast('Título e data são obrigatórios.','error'); return; }
-  id ? DB.update('agendaEventos', id, dados) : DB.insert('agendaEventos', dados);
-  fecharModal(); toast('Evento salvo.'); renderAgendaEventos();
-}
 
 /* ============================================================
    ESCALA DE FÉRIAS
@@ -2686,7 +2622,8 @@ function renderAgendaEventos() {
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${periodo}</td>
           <td>${escHtml(e.local||'�')}</td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('agendaEventos', e)}
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -2782,57 +2719,6 @@ function salvarEvento(id) {
   fecharModal(); toast('Evento salvo.'); renderAgendaEventos();
 }
 
-function renderEscalaFerias() {
-  const lista = DB.get('escalaFerias');
-  renderAdminSectionWithTableAnimation(document.getElementById('section-escalaFerias'), `
-    <div class="admin-section-header">
-      <h1 class="admin-section-title">Escala de Férias</h1>
-      <div class="admin-section-header-spacer"></div>
-      <button class="btn btn-primary" onclick="novaFerias()"><i class="ph-bold ph-plus"></i> Novo</button>
-    </div>
-    <div class="admin-table-wrap"><table>
-      <thead><tr><th>Funcionário</th><th>Cargo</th><th>Início</th><th>Fim</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody>${lista.map(f => `
-        <tr>
-          <td><strong>${escHtml(f.nome)}</strong></td>
-          <td>${escHtml(f.cargo)}</td>
-          <td>${escHtml(formatDateBR(f.periodo_inicio))}</td>
-          <td>${escHtml(formatDateBR(f.periodo_fim))}</td>
-          <td><span class="badge" style="${f.status==='em_curso'?'background:#e6f4ea;color:#2d6a4f':''}">${escHtml(f.status)}</span></td>
-          <td><div class="td-actions td-actions--with-status">
-            ${renderInlinePublishStatusControl('escalaFerias', f)}
-            <button class="btn btn-ghost btn-sm" onclick="editarFerias(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('escalaFerias',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
-          </div></td>
-        </tr>`).join('')}
-      </tbody>
-    </table></div>`);
-}
-
-function formFerias(f = {}) {
-  const funcionarios = DB.get('funcionarios');
-  return `
-    <h2 class="modal-title">${f.id ? 'Editar' : 'Nova'} Entrada de Férias</h2>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label>Funcionário</label>
-        <select id="fer-func" onchange="preencherDadosFunc()">
-          <option value="">— Selecione —</option>
-          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group full"><label>Cargo (preenchido automaticamente)</label><input id="fer-cargo" value="${escHtml(f.cargo||'')}" /></div>
-      <div class="form-group"><label>Início das férias</label><input type="date" id="fer-inicio" value="${escHtml(f.periodo_inicio||'')}" /></div>
-      <div class="form-group"><label>Fim das férias</label><input type="date" id="fer-fim" value="${escHtml(f.periodo_fim||'')}" /></div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="fer-status">
-          ${['agendado','em_curso','concluido'].map(s=>`<option ${(f.status||'')=== s?'selected':''}>${s}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    ${renderPublishStatusActions(`salvarFerias(${f.id||0})`, f)}`;
-}
 
 function preencherDadosFunc() {
   const sel = document.getElementById('fer-func');
@@ -2843,23 +2729,6 @@ function preencherDadosFunc() {
 function novaFerias()     { abrirModal(formFerias()); }
 function editarFerias(id) { abrirModal(formFerias(DB.getById('escalaFerias', id))); }
 
-function salvarFerias(id) {
-  const sel = document.getElementById('fer-func');
-  const funcId = parseInt(sel.value);
-  const func = DB.getById('funcionarios', funcId);
-  const dados = {
-    funcionario_id:  funcId,
-    nome:            func ? func.nome : '',
-    cargo:           document.getElementById('fer-cargo').value.trim(),
-    periodo_inicio:  document.getElementById('fer-inicio').value,
-    periodo_fim:     document.getElementById('fer-fim').value,
-    status:          document.getElementById('fer-status').value,
-    publish_status: getModalPublishStatus(),
-  };
-  if (!dados.funcionario_id || !dados.periodo_inicio || !dados.periodo_fim) { toast('Preencha todos os campos obrigatórios.','error'); return; }
-  id ? DB.update('escalaFerias', id, dados) : DB.insert('escalaFerias', dados);
-  fecharModal(); toast('Escala de férias salva.'); renderEscalaFerias();
-}
 
 /* ============================================================
    ACESSO RÁPIDO
@@ -2906,7 +2775,8 @@ function renderEscalaFerias() {
           <td>${escHtml(formatDateBR(f.periodo_inicio))}</td>
           <td>${escHtml(formatDateBR(f.periodo_fim))}</td>
           <td><span class="badge" style="${status==='em_curso'?'background:#e6f4ea;color:#2d6a4f':''}">${escHtml(status)}</span></td>
-          <td><div class="td-actions">
+          <td><div class="td-actions td-actions--with-status">
+            ${renderInlinePublishStatusControl('escalaFerias', f)}
             <button class="btn btn-ghost btn-sm" onclick="editarFerias(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('escalaFerias',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
           </div></td>
@@ -2999,34 +2869,7 @@ function renderAcessoRapido() {
       </tbody>
     </table></div>`);
 }
-function formAcesso(a = {}) {
-  return `
-    <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Acesso Rápido</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="ac-titulo" value="${escHtml(a.titulo||'')}" /></div>
-      <div class="form-group full"><label>URL</label><input id="ac-url" value="${escHtml(a.url||'')}" placeholder="https://..." /></div>
-      <div class="form-group"><label>Ícone Phosphor</label><input id="ac-icone" value="${escHtml(a.icone||'ph-link')}" placeholder="Ex: ph-globe" /><span class="form-hint">Veja ícones em: phosphoricons.com</span></div>
-      <div class="form-group"><label>Cor (hex)</label><input type="color" id="ac-cor" value="${a.cor||'#2d6a4f'}" style="height:38px;padding:2px" /></div>
-    </div>
-    ${renderPublishStatusActions(`salvarAcesso(${a.id||0})`, a)}`;
-}
 
-function novoAcesso()     { abrirModal(formAcesso()); }
-function editarAcesso(id) { abrirModal(formAcesso(DB.getById('acessoRapido', id))); }
-
-function salvarAcesso(id) {
-  const dados = {
-    titulo:  document.getElementById('ac-titulo').value.trim(),
-    url:     document.getElementById('ac-url').value.trim(),
-    icone:   document.getElementById('ac-icone').value.trim(),
-    cor:     document.getElementById('ac-cor').value,
-    coringa: false,
-    publish_status: getModalPublishStatus(),
-  };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('acessoRapido', id, dados) : DB.insert('acessoRapido', dados);
-  fecharModal(); toast('Acesso rápido salvo.'); renderAcessoRapido();
-}
 
 /* ============================================================
    INFO SIMPLES (infoJuridico, infoMunicipio) — edição de campos
@@ -3044,6 +2887,9 @@ function formAcesso(a = {}) {
     </div>
     ${renderPublishStatusActions(`salvarAcesso(${a.id||0})`, a)}`;
 }
+
+function novoAcesso()     { abrirModal(formAcesso()); }
+function editarAcesso(id) { abrirModal(formAcesso(DB.getById('acessoRapido', id))); }
 
 function salvarAcesso(id) {
   const { icone, cor } = getIconeCorValues('acesso');
