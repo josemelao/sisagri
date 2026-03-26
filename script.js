@@ -765,120 +765,6 @@ function initFuncionarios() {
   });
 }
 
-/**
- * Renderiza cards de funcionários filtrados.
- * @param {Array} lista - Subconjunto de funcionarios[]
- */
-function renderFuncionarios(lista) {
-  const container = document.getElementById("func-list");
-  if (!container) return;
-
-  if (lista.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;">Nenhum funcionário encontrado.</p>`;
-    return;
-  }
-
-  animateGridReflow(container, () => {
-    container.innerHTML = lista.map(f => {
-      const avatarHTML = f.foto
-        ? `<img src="${f.foto}" class="list-card-avatar func-foto" alt="${f.nome}" />`
-        : `<div class="list-card-avatar">${getInitials(f.nome)}</div>`;
-      return `
-        <div class="list-card" data-id="${f.id}" data-reflow-id="func-${f.id}" onclick="openFuncionario(${f.id})">
-          <div class="list-card-header">
-            ${avatarHTML}
-            <div>
-              <div class="list-card-title">${f.nome}</div>
-              <div class="list-card-sub">${f.cargo}</div>
-            </div>
-          </div>
-          <span class="list-card-tag">${f.setor}</span>
-        </div>
-      `;
-    }).join("");
-  });
-}
-
-/** Abre o painel de detalhe de um funcionário */
-function openFuncionario(id) {
-  const f = getPublishedFuncionarioById(id);
-  if (!f) return;
-
-  const avatarHTML = f.foto
-    ? `<img src="${f.foto}" class="detail-avatar-large detail-avatar-foto" alt="${f.nome}" />`
-    : `<div class="detail-avatar-large">${getInitials(f.nome)}</div>`;
-
-  document.getElementById("func-detail-content").innerHTML = `
-    ${avatarHTML}
-    <div class="detail-name">${f.nome}</div>
-    <div class="detail-role">${f.cargo}</div>
-    <span class="detail-badge">${f.setor}</span>
-    <hr class="detail-divider">
-    <p class="detail-section-title">Informações de contato</p>
-    <div class="detail-info-grid">
-      <div class="detail-info-item">
-        <label>Telefone</label>
-        <span>${f.telefone}</span>
-      </div>
-      <div class="detail-info-item">
-        <label>E-mail institucional</label>
-        <span>${f.email}</span>
-      </div>
-    </div>
-    <hr class="detail-divider">
-    <p class="detail-section-title">O que essa pessoa faz</p>
-    <p class="detail-desc">${f.descricao}</p>
-  `;
-
-  openDetail("func-detail-overlay");
-}
-
-/** Busca no módulo de funcionários (filtra em tempo real) */
-function initFuncSearch() {
-  const input = document.getElementById("func-search");
-  if (!input) return;
-  input.addEventListener("input", () => {
-    const q = input.value.toLowerCase().trim();
-    const filtrados = funcionarios.filter(f =>
-      f.nome.toLowerCase().includes(q) ||
-      f.cargo.toLowerCase().includes(q) ||
-      f.setor.toLowerCase().includes(q)
-    );
-    renderFuncionarios(filtrados);
-  });
-}
-
-// Sobrescreve a implementação legada para suportar o novo modelo de funcionário.
-function renderFuncionarios(lista) {
-  const container = document.getElementById("func-list");
-  if (!container) return;
-
-  if (lista.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;">Nenhum funcionário encontrado.</p>`;
-    return;
-  }
-
-  animateGridReflow(container, () => {
-    container.innerHTML = lista.map(f => {
-      const avatarHTML = f.foto
-        ? `<img src="${f.foto}" class="list-card-avatar func-foto" alt="${f.nome}" />`
-        : `<div class="list-card-avatar">${getInitials(f.nome)}</div>`;
-      const lotacao = f.lotacao || f.setor || f.departamento || "";
-      return `
-        <div class="list-card" data-id="${f.id}" data-reflow-id="func-${f.id}" onclick="openFuncionario(${f.id})">
-          <div class="list-card-header">
-            ${avatarHTML}
-            <div>
-              <div class="list-card-title">${f.nome}</div>
-              <div class="list-card-sub">${f.cargo}</div>
-            </div>
-          </div>
-          <span class="list-card-tag">${lotacao}</span>
-        </div>
-      `;
-    }).join("");
-  });
-}
 
 function openFuncionario(id) {
   const f = getPublishedFuncionarioById(id);
@@ -4532,29 +4418,6 @@ function renderRelatorioFuncionarios() {
   });
 }
 
-function renderRelatorioVeiculos() {
-  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
-  const linhas = veiculos.map(v => [
-    v.nome || "—",
-    v.tipo || "—",
-    v.marca || "—",
-    v.modelo || "—",
-    v.ano || "—",
-    v.placa || "—",
-    v.patrimonio || "—",
-    v.chassi || "—",
-    v.renavam || "—",
-    v.combustivel || "—",
-    v.motorista || "—",
-  ]);
-
-  return relatorioLayoutHTML({
-    titulo: "Relação de Veículos",
-    descricao: "Listagem da frota e dos principais dados patrimoniais cadastrados.",
-    total: linhas.length,
-    conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--veiculos"),
-  });
-}
 
 function renderRelatorioSecretaria() {
   const blocos = infoJuridico.map(item => ({
@@ -4714,24 +4577,6 @@ function renderRelatorioHistoricoAgenda() {
     descricao: "Eventos encerrados, ordenados do mais recente para o mais antigo.",
     total: eventos.length,
     conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos), "relatorio-table--agenda"),
-  });
-}
-
-function renderRelatorioFerias() {
-  const colunas = ["Funcionário", "Cargo", "Início", "Fim", "Status"];
-  const linhas = escalaFerias.map(f => [
-    f.nome || "—",
-    f.cargo || "—",
-    formatDateBR(f.periodo_inicio),
-    formatDateBR(f.periodo_fim),
-    getFeriasStatus(f.periodo_inicio, f.periodo_fim),
-  ]);
-
-  return relatorioLayoutHTML({
-    titulo: "Escala de Férias",
-    descricao: "Relação dos períodos de férias cadastrados com status calculado automaticamente.",
-    total: linhas.length,
-    conteudo: relatorioTabelaHTML(colunas, linhas),
   });
 }
 
