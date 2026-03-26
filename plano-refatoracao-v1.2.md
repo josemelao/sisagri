@@ -1,7 +1,7 @@
 PLANO DE AÇÃO — REFATORAÇÃO SEGURA V1.2
 SisAgri / SMADER
 Data de abertura: 2026-03-25
-Status geral: PLANEJADO
+Status geral: EM EXECUÇÃO — Fase 1 parcialmente concluída (script.js ✓ | admin.js em andamento)
 
 ==================================================================
 0. OBJETIVO
@@ -344,31 +344,39 @@ Observações:
 14. ROTEIRO RECOMENDADO DE EXECUÇÃO
 ==================================================================
 ETAPA A — LEVANTAMENTO
-1. Mapear duplicidades críticas em `script.js`
-2. Mapear duplicidades críticas em `admin.js`
-3. Registrar tudo, sem editar
+1. [✓] Mapear duplicidades críticas em `script.js` — concluído 2026-03-25
+2. [✓] Mapear duplicidades críticas em `admin.js` — concluído 2026-03-25
+3. [✓] Registrar tudo, sem editar — ver LOG 01 (mapeamento formal)
 
-ETAPA B — PRIMEIROS BLOCOS
-4. Resolver a duplicidade crítica mais simples de `script.js`
-5. Validar
-6. Commitar
-7. Registrar log
+ETAPA B — PRIMEIROS BLOCOS (script.js)
+4. [✓] D-S01 renderFuncionarios (3 def.) — removidas v1 e v2
+5. [✓] D-S02 openFuncionario (2 def.) — removida v1
+6. [✓] D-S03 initFuncSearch (2 def.) — removida v1
+7. [✓] D-S04 renderRelatorioVeiculos (2 def.) — removida v1
+8. [✓] D-S05 renderRelatorioFerias (2 def.) — removida v1
+9. [✓] Validado e comitado — ver LOG 02
 
-ETAPA C — SEGUNDO CICLO
-8. Resolver a duplicidade crítica mais simples de `admin.js`
-9. Validar
-10. Commitar
-11. Registrar log
+ETAPA C — SEGUNDO CICLO (admin.js)
+10. [✓] D-A09 getMotoristaOptions (2 def.) — removida v1
+11. [✓] D-A10 getArquivosVeiculoOptions (2 def.) — removida v1
+12. [✓] D-A11 getSistemaLinksOptions (2 def.) — removida v1
+13. [✓] Validado e comitado — ver LOG 03
+14. [ ] D-A07/A08 formServico + salvarServico — pendente (Bloco B)
+15. [ ] D-A01/A02 renderAgendaEventos + formEvento — pendente (Bloco C)
+16. [ ] D-A03/A04 formFerias + salvarFerias — pendente (Bloco C)
+17. [ ] D-A05/A06 formAcesso + salvarAcesso — pendente (Bloco C)
+18. [ ] D-A12 renderEscalaFerias — pendente (Bloco C)
+19. [ ] D-A13 renderVeiculos — pendente (Bloco C)
 
 ETAPA D — DUPLICIDADES FUNCIONAIS
-12. Consolidar renderizadores muito parecidos
-13. Consolidar helpers repetidos de baixo risco
-14. Validar por bloco
+20. [ ] Consolidar renderizadores muito parecidos
+21. [ ] Consolidar helpers repetidos de baixo risco
+22. [ ] Validar por bloco
 
 ETAPA E — CAMADA SENSÍVEL
-15. Só então avaliar `db.js`
-16. Atacar apenas redundâncias realmente problemáticas
-17. Exigir validação extra de compatibilidade
+23. [ ] Só então avaliar `db.js`
+24. [ ] Atacar apenas redundâncias realmente problemáticas
+25. [ ] Exigir validação extra de compatibilidade
 
 ==================================================================
 15. CRITÉRIOS DE CONCLUSÃO DA V1.2
@@ -419,3 +427,74 @@ Validação executada: revisão estrutural do documento
 Resultado: plano operacional criado
 Commit: pendente de validação do usuário
 Observações: iniciar execução sempre pela fase de mapeamento
+
+==================================================================
+18. LOGS DE EXECUÇÃO
+==================================================================
+[LOG 01]
+Data: 2026-03-25
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`, `admin.js` (leitura apenas)
+Escopo: mapeamento formal de todas as duplicidades críticas — Fase 1
+Duplicidade identificada: 18 ocorrências em 2 arquivos (5 em script.js, 13 em admin.js)
+Classificação de risco: ver tabela completa no mapeamento formal da conversa
+Consumidores impactados: não aplicável (etapa de leitura)
+Estratégia adotada: varredura por grep + inspeção manual de cada bloco
+Arquivos alterados: nenhum
+Validação executada: revisão estrutural das ocorrências
+Resultado: mapeamento completo entregue — padrão universal identificado:
+  em todos os 18 casos a segunda definição é a correta, a primeira está morta
+Commit: não aplicável
+Observações: script.js tinha 3 definições de renderFuncionarios (caso único)
+
+------------------------------------------------------------------
+[LOG 02]
+Data: 2026-03-25
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Escopo: remoção das definições mortas D-S01, D-S02, D-S03, D-S04, D-S05
+Duplicidade identificada:
+  D-S01 renderFuncionarios — 3 definições (linhas 772, 852, 956 originais)
+  D-S02 openFuncionario — 2 definições (linhas 803, 883 originais)
+  D-S03 initFuncSearch — 2 definições (linhas 837, 946 originais)
+  D-S04 renderRelatorioVeiculos — 2 definições (linhas 4421, 4624 originais)
+  D-S05 renderRelatorioFerias — 2 definições (linhas 4606, 4658 originais)
+Classificação de risco: alto (D-S01, D-S02, D-S03, D-S05) / médio (D-S04)
+Consumidores impactados:
+  renderFuncionarios: chamada por initFuncionarios, applyFuncionariosSearch
+  openFuncionario: chamada por onclick nos cards e busca global
+  initFuncSearch: chamada por initFuncionarios
+  renderRelatorioVeiculos: chamada por openRelatorio
+  renderRelatorioFerias: chamada por openRelatorio
+Estratégia adotada: remoção das versões mortas (v1 e v2 de renderFuncionarios,
+  v1 de openFuncionario, v1 de initFuncSearch, v1 de renderRelatorioVeiculos,
+  v1 de renderRelatorioFerias)
+Arquivos alterados: `script.js` — 155 linhas removidas (4878 → 4723)
+Validação executada: node --check OK + validação manual pelo usuário
+Resultado: CONCLUÍDO — todas as funções com definição única
+Commit: confirmado pelo usuário
+Observações: openFuncionario v2 estava dentro do bloco removido na primeira
+  tentativa; backup restaurado e corte recalculado com precisão
+
+------------------------------------------------------------------
+[LOG 03]
+Data: 2026-03-25
+Agente: Claude Sonnet 4.6
+Arquivo: `admin.js`
+Escopo: remoção das definições mortas D-A09, D-A10, D-A11
+Duplicidade identificada:
+  D-A09 getMotoristaOptions — 2 definições (linhas 2050, 2065 originais)
+  D-A10 getArquivosVeiculoOptions — 2 definições (linhas 2057, 2073 originais)
+  D-A11 getSistemaLinksOptions — 2 definições (linhas 2220, 2228 originais)
+Classificação de risco: baixo (apenas label visual, sem impacto em dados)
+Consumidores impactados:
+  getMotoristaOptions: formVeiculo
+  getArquivosVeiculoOptions: formVeiculo
+  getSistemaLinksOptions: formSistema, formServico
+Estratégia adotada: remoção das v1 (sem withDraftSuffix, sem isSelectedOptionValue)
+Arquivos alterados: `admin.js` — 20 linhas removidas (3365 → 3345)
+Validação executada: node --check OK + validação manual pelo usuário
+Resultado: CONCLUÍDO — todas as funções com definição única
+Commit: confirmado pelo usuário
+Observações: corte feito do fim para o início do arquivo para evitar
+  deslocamento de índices entre os três blocos removidos
