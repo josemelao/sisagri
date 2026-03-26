@@ -2945,8 +2945,10 @@ function renderInfoSimples(colecao, titulo, heading) {
 function formInfoSimples(colecao, item = {}) {
   const camposHTML = (item.campos || []).map((c, i) => `
     <div class="dyn-item" style="gap:6px">
-      <input name="campo_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-      <input name="campo_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <input class="js-campo-label" name="campo_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <input class="js-campo-valor js-valor-input" name="campo_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? 'display:none;' : ''}flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <textarea class="js-campo-valor-multi js-valor-textarea" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? '' : 'display:none;'}flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(c.valor)}</textarea>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" onchange="toggleDynValorInput(this)" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
       <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
@@ -2979,10 +2981,29 @@ function addCampo() {
   div.className = 'dyn-item';
   div.style.gap = '6px';
   div.innerHTML = `
-    <input name="campo_label_${i}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-    <input name="campo_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <input class="js-campo-label" name="campo_label_${i}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <input class="js-campo-valor js-valor-input" name="campo_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <textarea class="js-campo-valor-multi js-valor-textarea" placeholder="Valor..." style="display:none;flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical"></textarea>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" onchange="toggleDynValorInput(this)" /> Linha inteira</label>
     <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
   list.appendChild(div);
+}
+
+function toggleDynValorInput(checkboxEl) {
+  const row = checkboxEl?.closest('.dyn-item');
+  if (!row) return;
+  const input = row.querySelector('.js-valor-input');
+  const textarea = row.querySelector('.js-valor-textarea');
+  if (!input || !textarea) return;
+  if (checkboxEl.checked) {
+    textarea.value = input.value || textarea.value || '';
+    input.style.display = 'none';
+    textarea.style.display = '';
+  } else {
+    input.value = textarea.value || input.value || '';
+    textarea.style.display = 'none';
+    input.style.display = '';
+  }
 }
 
 function novoInfoSimples(colecao)    { abrirModal(formInfoSimples(colecao)); }
@@ -2991,9 +3012,17 @@ function editarInfoSimples(col, id)  { abrirModal(formInfoSimples(col, DB.getByI
 function salvarInfoSimples(colecao, id) {
   const list = document.getElementById('dyn-campos');
   const campos = Array.from(list.children).map(div => {
-    const inputs = div.querySelectorAll('input');
-    return { label: inputs[0]?.value.trim(), valor: inputs[1]?.value.trim() };
-  }).filter(c => c.label);
+    const label = div.querySelector('.js-campo-label')?.value.trim() || '';
+    const fullWidth = !!div.querySelector('.js-campo-full')?.checked;
+    const valor = fullWidth
+      ? (div.querySelector('.js-campo-valor-multi')?.value.trim() || '')
+      : (div.querySelector('.js-campo-valor')?.value.trim() || '');
+    return {
+      label,
+      valor,
+      ...(fullWidth ? { full_width: true } : {}),
+    };
+  }).filter(c => c.label || c.valor);
 
   const badge = document.getElementById('info-badge').value.trim();
   const { icone, cor } = getIconeCorValues('info');
@@ -3052,8 +3081,10 @@ function renderInfoOrgaos() {
 function formOrgao(o = {}) {
   const camposHTML = (o.campos || []).map((c, i) => `
     <div class="dyn-item" style="gap:6px">
-      <input name="oc_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-      <input name="oc_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <input class="js-org-label" name="oc_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <input class="js-org-valor js-valor-input" name="oc_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? 'display:none;' : ''}flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+      <textarea class="js-org-valor-multi js-valor-textarea" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? '' : 'display:none;'}flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(c.valor)}</textarea>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" onchange="toggleDynValorInput(this)" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
       <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
@@ -3082,8 +3113,10 @@ function addOrgCampo() {
   const div = document.createElement('div');
   div.className = 'dyn-item'; div.style.gap = '6px';
   div.innerHTML = `
-    <input name="oc_label_${i}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-    <input name="oc_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <input class="js-org-label" name="oc_label_${i}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <input class="js-org-valor js-valor-input" name="oc_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
+    <textarea class="js-org-valor-multi js-valor-textarea" placeholder="Valor..." style="display:none;flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical"></textarea>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" onchange="toggleDynValorInput(this)" /> Linha inteira</label>
     <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
   list.appendChild(div);
 }
@@ -3094,9 +3127,17 @@ function editarOrgao(id) { abrirModal(formOrgao(DB.getById('infoOrgaos', id))); 
 function salvarOrgao(id) {
   const list = document.getElementById('dyn-orgcampos');
   const campos = Array.from(list.children).map(div => {
-    const inputs = div.querySelectorAll('input');
-    return { label: inputs[0]?.value.trim(), valor: inputs[1]?.value.trim() };
-  }).filter(c => c.label);
+    const label = div.querySelector('.js-org-label')?.value.trim() || '';
+    const fullWidth = !!div.querySelector('.js-org-full')?.checked;
+    const valor = fullWidth
+      ? (div.querySelector('.js-org-valor-multi')?.value.trim() || '')
+      : (div.querySelector('.js-org-valor')?.value.trim() || '');
+    return {
+      label,
+      valor,
+      ...(fullWidth ? { full_width: true } : {}),
+    };
+  }).filter(c => c.label || c.valor);
 
   const { icone, cor } = getIconeCorValues('orgao');
   const dados = {
@@ -3111,7 +3152,5 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
-
-
 
 

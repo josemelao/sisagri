@@ -2642,7 +2642,7 @@ function applyInformacoesSearch(query = getModuleSearchValue("informacoes")) {
     item.titulo.toLowerCase().includes(q) ||
     (item.tag || "").toLowerCase().includes(q) ||
     (item.nome_completo || "").toLowerCase().includes(q) ||
-    item.campos.some(c => c.label.toLowerCase().includes(q) || c.valor.toLowerCase().includes(q));
+    item.campos.some(c => (c.label || "").toLowerCase().includes(q) || (c.valor || "").toLowerCase().includes(q));
 
   renderJuridico(q ? infoJuridico.filter(matchItem) : infoJuridico);
   renderMunicipio(q ? infoMunicipio.filter(matchItem) : infoMunicipio);
@@ -2653,12 +2653,18 @@ function applyInformacoesSearch(query = getModuleSearchValue("informacoes")) {
 
 /** Monta o HTML de uma grade de campos (label + valor) */
 function camposGridHTML(campos) {
-  return campos.map(c => `
-    <div class="detail-info-item">
-      <label>${c.label}</label>
-      <span>${c.valor}</span>
-    </div>
-  `).join("");
+  return (campos || []).map(c => {
+    const isFullWidth = !!(c && (c.full_width || c.fullWidth || c.linha_inteira || c.texto_longo || c.bloco_texto));
+    const fullWidthStyle = isFullWidth ? ' style="grid-column:1/-1"' : "";
+    const spanStyle = isFullWidth ? ' style="white-space:pre-wrap"' : "";
+    const labelHTML = c?.label ? `<label>${c.label}</label>` : "";
+    return `
+      <div class="detail-info-item"${fullWidthStyle}>
+        ${labelHTML}
+        <span${spanStyle}>${c?.valor || ""}</span>
+      </div>
+    `;
+  }).join("");
 }
 
 /** Abre um overlay genérico de informações (campos simples) */
@@ -2675,7 +2681,6 @@ function openInfoCard({ overlayId, contentId, item, badgeLabel }) {
       <p class="detail-section-title">Atribuição / O que fazem</p>
       <p class="detail-desc">${item.atribuicao}</p>` : ""}
     <hr class="detail-divider">
-    <p class="detail-section-title">Dados e contatos</p>
     <div class="detail-info-grid">${camposGridHTML(item.campos)}</div>
   `;
   openDetail(overlayId);
