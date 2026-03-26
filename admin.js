@@ -133,6 +133,66 @@ function instalarFeedbackAcoesAdmin() {
     };
   });
 }
+function animateAdminTableReflow(section, renderFn) {
+  if (!section) {
+    renderFn();
+    return;
+  }
+
+  const previousRows = Array.from(section.querySelectorAll('.admin-table-wrap tbody tr'));
+  const previousCounts = new Map();
+  const previousMap = new Map();
+
+  previousRows.forEach((row) => {
+    const baseKey = normalizeSearchText(Array.from(row.children || []).slice(0, 4).map(cell => (cell.textContent || '').trim()).join('|'));
+    const occurrence = previousCounts.get(baseKey) || 0;
+    previousCounts.set(baseKey, occurrence + 1);
+    previousMap.set(baseKey + '::' + occurrence, row.getBoundingClientRect());
+  });
+
+  renderFn();
+
+  const nextRows = Array.from(section.querySelectorAll('.admin-table-wrap tbody tr'));
+  const nextCounts = new Map();
+  nextRows.forEach((row, index) => {
+    const baseKey = normalizeSearchText(Array.from(row.children || []).slice(0, 4).map(cell => (cell.textContent || '').trim()).join('|'));
+    const occurrence = nextCounts.get(baseKey) || 0;
+    nextCounts.set(baseKey, occurrence + 1);
+    const prevRect = previousMap.get(baseKey + '::' + occurrence);
+
+    if (prevRect) {
+      const nextRect = row.getBoundingClientRect();
+      const dx = prevRect.left - nextRect.left;
+      const dy = prevRect.top - nextRect.top;
+      if (dx || dy) {
+        row.animate([
+          { transform: 'translate(' + dx + 'px, ' + dy + 'px)' },
+          { transform: 'translate(0, 0)' }
+        ], {
+          duration: 260,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        });
+      }
+      return;
+    }
+
+    row.animate([
+      { opacity: 0, transform: 'translateY(8px) scale(0.995)' },
+      { opacity: 1, transform: 'translateY(0) scale(1)' }
+    ], {
+      duration: 220,
+      delay: Math.min(index * 16, 80),
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'both'
+    });
+  });
+}
+
+function renderAdminSectionWithTableAnimation(section, html) {
+  animateAdminTableReflow(section, () => {
+    section.innerHTML = html;
+  });
+}
 function getDbStatusMessage(status) {
   if (status.provider === 'supabase' && status.writesReachSupabase) {
     return 'Supabase conectado. Leituras e gravações ativas.';
@@ -1195,7 +1255,7 @@ function renderFuncionarios() {
   FUNCIONARIOS_LIST_STATE.page = paginacao.page;
 
   const sec = document.getElementById('section-funcionarios');
-  sec.innerHTML = `
+  renderAdminSectionWithTableAnimation(sec, `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Funcion&#225;rios</h1>
       <div class="admin-section-header-spacer"></div>
@@ -1237,7 +1297,7 @@ function renderFuncionarios() {
         </tbody>
       </table>
     </div>
-  `;
+  `);
 }
 function formFuncionario(f = {}) {
   const fotoPreview = f.foto
@@ -1340,7 +1400,7 @@ function renderManuais() {
   MANUAIS_LIST_STATE.page = paginacao.page;
 
   const sec = document.getElementById('section-manuais');
-  sec.innerHTML = `
+  renderAdminSectionWithTableAnimation(sec, `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Manuais</h1>
       <div class="admin-section-header-spacer"></div>
@@ -1381,7 +1441,7 @@ function renderManuais() {
         </tbody>
       </table>
     </div>
-  `;
+  `);
 }
 function formManual(m = {}) {
   const passosHTML = (m.passos || []).map((p, i) => {
@@ -1617,7 +1677,7 @@ function renderProcessos() {
   const paginacao = paginarLista(listaFiltrada, PROCESSOS_LIST_STATE.page, PROCESSOS_LIST_STATE.pageSize);
   PROCESSOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-processos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-processos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Processos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -1653,7 +1713,7 @@ function renderProcessos() {
           <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum processo encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function getManuaisOptions(selectedIds = []) {
   const lista = DB.get('manuais');
@@ -1773,7 +1833,7 @@ function renderArquivos() {
   const paginacao = paginarLista(listaFiltrada, ARQUIVOS_LIST_STATE.page, ARQUIVOS_LIST_STATE.pageSize);
   ARQUIVOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-arquivos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-arquivos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Arquivos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -1809,7 +1869,7 @@ function renderArquivos() {
           <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum arquivo encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formArquivo(a = {}) {
   // Detectar se é base64 (upload local) ou URL externa
@@ -1947,7 +2007,7 @@ function renderVeiculos() {
   const paginacao = paginarLista(listaFiltrada, VEICULOS_LIST_STATE.page, VEICULOS_LIST_STATE.pageSize);
   VEICULOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-veiculos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-veiculos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Ve&#237;culos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -1985,7 +2045,7 @@ function renderVeiculos() {
           <td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum veiculo encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function getMotoristaOptions(selectedIds = []) {
   const lista = DB.get('funcionarios');
@@ -2119,7 +2179,7 @@ function renderSistemas() {
   const paginacao = paginarLista(listaFiltrada, SISTEMAS_LIST_STATE.page, SISTEMAS_LIST_STATE.pageSize);
   SISTEMAS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-sistemas').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-sistemas'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Sistemas</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2155,7 +2215,7 @@ function renderSistemas() {
           <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum sistema encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function getSistemaLinksOptions(colecao, selectedIds = []) {
   const lista = DB.get(colecao);
@@ -2329,7 +2389,7 @@ function renderServicos() {
   const paginacao = paginarLista(listaFiltrada, SERVICOS_LIST_STATE.page, SERVICOS_LIST_STATE.pageSize);
   SERVICOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-servicos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-servicos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Servi&#231;os</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2365,7 +2425,7 @@ function renderServicos() {
           <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum servico encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formServico(s = {}) {
   const cats = ['Trator','Arborização','Capacitação','Insumos','Outro'];
@@ -2541,7 +2601,7 @@ function renderAvisos() {
   const paginacao = paginarLista(listaFiltrada, AVISOS_LIST_STATE.page, AVISOS_LIST_STATE.pageSize);
   AVISOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-avisos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-avisos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Avisos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2577,7 +2637,7 @@ function renderAvisos() {
           <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum aviso encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formAviso(a = {}) {
   return `
@@ -2617,7 +2677,7 @@ function salvarAviso(id) {
    ============================================================ */
 function renderAgendaEventos() {
   const lista = DB.get('agendaEventos');
-  document.getElementById('section-agendaEventos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-agendaEventos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Eventos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2638,7 +2698,7 @@ function renderAgendaEventos() {
           </div></td>
         </tr>`).join('')}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 
 function formEvento(e = {}) {
@@ -2689,7 +2749,7 @@ function renderAgendaEventos() {
   const paginacao = paginarLista(listaFiltrada, AGENDA_LIST_STATE.page, AGENDA_LIST_STATE.pageSize);
   AGENDA_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-agendaEventos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-agendaEventos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Eventos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2730,7 +2790,7 @@ function renderAgendaEventos() {
           <td colspan="5" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum evento encontrado para o filtro informado.</td>
         </tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formEvento(e = {}) {
   const tipos = ['reuniao','evento','prazo','capacitacao','operacao'];
@@ -2818,7 +2878,7 @@ function salvarEvento(id) {
 
 function renderEscalaFerias() {
   const lista = DB.get('escalaFerias');
-  document.getElementById('section-escalaFerias').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-escalaFerias'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Escala de Férias</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2840,7 +2900,7 @@ function renderEscalaFerias() {
           </div></td>
         </tr>`).join('')}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 
 function formFerias(f = {}) {
@@ -2916,7 +2976,7 @@ function renderEscalaFerias() {
   const paginacao = paginarLista(listaFiltrada, ESCALA_LIST_STATE.page, ESCALA_LIST_STATE.pageSize);
   ESCALA_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-escalaFerias').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-escalaFerias'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Escala de F&#233;rias</h1>
       <div class="admin-section-header-spacer"></div>
@@ -2948,7 +3008,7 @@ function renderEscalaFerias() {
       }).join('') : `
         <tr><td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum registro encontrado para o filtro informado.</td></tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formFerias(f = {}) {
   const funcionarios = DB.get('funcionarios');
@@ -3002,7 +3062,7 @@ function renderAcessoRapido() {
   const paginacao = paginarLista(listaFiltrada, ACESSO_LIST_STATE.page, ACESSO_LIST_STATE.pageSize);
   ACESSO_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-acessoRapido').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-acessoRapido'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Acesso R&#225;pido</h1>
       <div class="admin-section-header-spacer"></div>
@@ -3031,7 +3091,7 @@ function renderAcessoRapido() {
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum atalho encontrado para o filtro informado.</td></tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formAcesso(a = {}) {
   return `
@@ -3101,7 +3161,7 @@ function renderInfoSimples(colecao, titulo, heading) {
   const paginacao = paginarLista(listaFiltrada, state.page, state.pageSize);
   state.page = paginacao.page;
 
-  document.getElementById('section-' + colecao).innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-' + colecao), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">${heading}</h1>
       <div class="admin-section-header-spacer"></div>
@@ -3128,7 +3188,7 @@ function renderInfoSimples(colecao, titulo, heading) {
         </tr>`).join('') : `
         <tr><td colspan="3" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum bloco encontrado para o filtro informado.</td></tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formInfoSimples(colecao, item = {}) {
   const camposHTML = (item.campos || []).map((c, i) => `
@@ -3207,7 +3267,7 @@ function renderInfoOrgaos() {
   const paginacao = paginarLista(listaFiltrada, INFO_ORGAOS_LIST_STATE.page, INFO_ORGAOS_LIST_STATE.pageSize);
   INFO_ORGAOS_LIST_STATE.page = paginacao.page;
 
-  document.getElementById('section-infoOrgaos').innerHTML = `
+  renderAdminSectionWithTableAnimation(document.getElementById('section-infoOrgaos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">&#211;rg&#227;os Externos</h1>
       <div class="admin-section-header-spacer"></div>
@@ -3235,7 +3295,7 @@ function renderInfoOrgaos() {
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum orgao encontrado para o filtro informado.</td></tr>`}
       </tbody>
-    </table></div>`;
+    </table></div>`);
 }
 function formOrgao(o = {}) {
   const camposHTML = (o.campos || []).map((c, i) => `

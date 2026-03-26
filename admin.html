@@ -183,6 +183,14 @@
     .admin-table-wrap table th:last-child,
     .admin-table-wrap table td:last-child { text-align: right; }
     tr:hover td { background: var(--bg); }
+    .admin-row-enter td {
+      animation: admin-row-enter .24s cubic-bezier(0.22, 1, 0.36, 1);
+      animation-fill-mode: both;
+    }
+    @keyframes admin-row-enter {
+      from { opacity: 0; transform: translateY(8px) scale(0.995); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .td-actions { display: flex; gap: 6px; }
     .admin-table-wrap table td:last-child .td-actions,
     .admin-table-wrap table td:last-child .td-actions--with-status { justify-content: flex-end; }
