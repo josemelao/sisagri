@@ -3168,6 +3168,15 @@ input { font-family: inherit; }
 }
 
 @media (max-width: 900px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-side {
+    position: static;
+    width: 100%;
+  }
+
   .relatorio-print-header {
     flex-direction: column;
   }
