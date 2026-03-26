@@ -4593,8 +4593,8 @@ function renderRelatorioVeiculos() {
           .map(mid => getPublishedFuncionarioById(mid))
           .filter(Boolean)
           .map(f => f.nome)
-          .join(", ")
-      : "";
+          .join(",\n")
+      : String(v.motorista || "").replace(/\s*,\s*/g, ",\n");
 
     return [
       v.nome || "â€”",
