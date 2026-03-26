@@ -1,7 +1,7 @@
 PLANO DE AÇÃO — REFATORAÇÃO SEGURA V1.2
 SisAgri / SMADER
 Data de abertura: 2026-03-25
-Status geral: EM EXECUÇÃO — Fase 1 parcialmente concluída (script.js ✓ | admin.js em andamento)
+Status geral: EM EXECUÇÃO — Fase 1 concluída (script.js ✓ | admin.js ✓) | Fase 2 pendente de mapeamento
 
 ==================================================================
 0. OBJETIVO
@@ -132,6 +132,9 @@ PASSO 2 — Levantar duplicidades
    - renderizadores quase idênticos
 2. Registrar cada ocorrência no log do plano.
 3. Não alterar nada ainda nesta etapa.
+4. OBRIGATÓRIO: antes de definir o corte, inspecionar se há funções
+   únicas intercaladas dentro do bloco morto (ex: novoX, editarX,
+   helpers de UI). Se houver, listá-las explicitamente como "preservar".
 
 PASSO 3 — Classificar risco
 Para cada ocorrência encontrada, marcar:
@@ -361,22 +364,29 @@ ETAPA C — SEGUNDO CICLO (admin.js)
 11. [✓] D-A10 getArquivosVeiculoOptions (2 def.) — removida v1
 12. [✓] D-A11 getSistemaLinksOptions (2 def.) — removida v1
 13. [✓] Validado e comitado — ver LOG 03
-14. [ ] D-A07/A08 formServico + salvarServico — pendente (Bloco B)
-15. [ ] D-A01/A02 renderAgendaEventos + formEvento — pendente (Bloco C)
-16. [ ] D-A03/A04 formFerias + salvarFerias — pendente (Bloco C)
-17. [ ] D-A05/A06 formAcesso + salvarAcesso — pendente (Bloco C)
-18. [ ] D-A12 renderEscalaFerias — pendente (Bloco C)
-19. [ ] D-A13 renderVeiculos — pendente (Bloco C)
+14. [✓] D-A07/A08 formServico + salvarServico — removidas v1 — ver LOG 04
+15. [✓] D-A01/A02 renderAgendaEventos + formEvento — removidas v1 — ver LOG 05
+16. [✓] D-A03/A04 formFerias + salvarFerias — removidas v1 — ver LOG 05
+17. [✓] D-A05/A06 formAcesso + salvarAcesso — removidas v1 — ver LOG 05
+18. [✓] D-A12 renderEscalaFerias — removida v1 — ver LOG 05
+19. [~] D-A13 renderVeiculos — já estava com 1 definição (falso positivo no mapeamento)
+
+CORREÇÕES PÓS-REMOÇÃO (Bloco C)
+20. [✓] novoAcesso + editarAcesso reinseridas (estavam só na v1 removida) — ver LOG 06
+21. [✓] renderInlinePublishStatusControl adicionado em renderAgendaEventos (ausente na v2) — ver LOG 06
+22. [✓] renderInlinePublishStatusControl adicionado em renderEscalaFerias (ausente na v2) — ver LOG 06
+23. [✓] Validado e comitado
 
 ETAPA D — DUPLICIDADES FUNCIONAIS
-20. [ ] Consolidar renderizadores muito parecidos
-21. [ ] Consolidar helpers repetidos de baixo risco
-22. [ ] Validar por bloco
+24. [ ] Mapear duplicidades funcionais em script.js e admin.js
+25. [ ] Consolidar renderizadores muito parecidos
+26. [ ] Consolidar helpers repetidos de baixo risco
+27. [ ] Validar por bloco
 
 ETAPA E — CAMADA SENSÍVEL
-23. [ ] Só então avaliar `db.js`
-24. [ ] Atacar apenas redundâncias realmente problemáticas
-25. [ ] Exigir validação extra de compatibilidade
+28. [ ] Só então avaliar `db.js`
+29. [ ] Atacar apenas redundâncias realmente problemáticas
+30. [ ] Exigir validação extra de compatibilidade
 
 ==================================================================
 15. CRITÉRIOS DE CONCLUSÃO DA V1.2
@@ -498,3 +508,80 @@ Resultado: CONCLUÍDO — todas as funções com definição única
 Commit: confirmado pelo usuário
 Observações: corte feito do fim para o início do arquivo para evitar
   deslocamento de índices entre os três blocos removidos
+
+------------------------------------------------------------------
+[LOG 04]
+Data: 2026-03-26
+Agente: Claude Sonnet 4.6
+Arquivo: `admin.js`
+Escopo: remoção das definições mortas D-A07, D-A08 (Bloco B)
+Duplicidade identificada:
+  D-A07 formServico — 2 definições (linhas 2430, 2512 pós-LOG03)
+  D-A08 salvarServico — 2 definições (linhas 2467, 2550 pós-LOG03)
+Classificação de risco: alto
+  v1 sem suporte a categoria personalizada ("Outro")
+  v1 de salvarServico salvaria "Outro" como categoria literal
+Consumidores impactados:
+  formServico: novoServico, editarServico
+  salvarServico: chamado via onclick no modal
+Estratégia adotada: remoção de formServico v1 e salvarServico v1
+  comentário '// Sobrescreve...' também removido
+Arquivos alterados: `admin.js` — 74 linhas removidas (3345 → 3271)
+Validação executada: node --check OK + validação manual pelo usuário
+Resultado: CONCLUÍDO
+Commit: confirmado pelo usuário
+Observações: novoServico e editarServico sobreviveram (estavam entre v1 e v2)
+
+------------------------------------------------------------------
+[LOG 05]
+Data: 2026-03-26
+Agente: Claude Sonnet 4.6
+Arquivo: `admin.js`
+Escopo: remoção das definições mortas D-A01, D-A02, D-A03, D-A04,
+  D-A05, D-A06, D-A12 (Bloco C)
+Duplicidade identificada:
+  D-A01 renderAgendaEventos — 2 def. (sem paginação vs com paginação)
+  D-A02 formEvento — 2 def. (sem toggleEventoTipoFields vs com)
+  D-A03 formFerias — 2 def. (select status manual vs cálculo automático)
+  D-A04 salvarFerias — 2 def. (lê fer-status inexistente vs getFeriasStatus)
+  D-A05 formAcesso — 2 def. (inputs manuais vs iconPickerHTML)
+  D-A06 salvarAcesso — 2 def. (lê ac-icone/ac-cor vs getIconeCorValues)
+  D-A12 renderEscalaFerias — 2 def. (sem paginação vs com paginação)
+  D-A13 renderVeiculos — FALSO POSITIVO (já tinha 1 definição)
+Classificação de risco: alto (D-A01 a D-A04, D-A12) / baixo (D-A05, D-A06)
+Consumidores impactados: todos via renderSection e onclick nos modais
+Estratégia adotada: cortes cirúrgicos separados por função, do fim para
+  o início para não deslocar índices. Funções únicas intercaladas
+  (preencherDadosFunc, novaFerias, editarFerias, getFeriasStatus,
+  toggleEventoTipoFields, novoEvento, editarEvento) preservadas.
+Arquivos alterados: `admin.js` — 159 linhas removidas (3271 → 3112)
+Validação executada: node --check OK + validação parcial pelo usuário
+Resultado: CONCLUÍDO COM REGRESSÕES — ver LOG 06
+Commit: não aplicável (regressões detectadas antes do commit)
+Observações: novoAcesso/editarAcesso eram únicas e estavam só na v1 removida.
+  renderInlinePublishStatusControl ausente nas v2 de agenda e férias.
+
+------------------------------------------------------------------
+[LOG 06]
+Data: 2026-03-26
+Agente: Claude Sonnet 4.6
+Arquivo: `admin.js`
+Escopo: correção de regressões introduzidas no LOG 05
+Regressão 1: novoAcesso + editarAcesso removidas junto com formAcesso v1
+  Causa: eram únicas e estavam definidas dentro do bloco da v1
+  Correção: reinseridas após formAcesso v2, antes de salvarAcesso
+Regressão 2: switch inline de publish_status ausente em renderAgendaEventos
+  Causa: v2 vencedora não tinha renderInlinePublishStatusControl
+  Correção: adicionado renderInlinePublishStatusControl('agendaEventos', e)
+    + classe td-actions--with-status na célula de ações
+Regressão 3: switch inline de publish_status ausente em renderEscalaFerias
+  Causa: v2 vencedora não tinha renderInlinePublishStatusControl
+  Correção: adicionado renderInlinePublishStatusControl('escalaFerias', f)
+    + classe td-actions--with-status na célula de ações
+Arquivos alterados: `admin.js` — 3 linhas inseridas (3112 → 3115)
+Validação executada: node --check OK + validação manual pelo usuário
+Resultado: CONCLUÍDO — todas as regressões corrigidas
+Commit: confirmado pelo usuário
+Observações: lição aprendida — ao remover bloco v1, verificar se contém
+  funções únicas intercaladas antes de cortar. Adicionar este passo
+  ao protocolo de análise (seção 5, Passo 2).
