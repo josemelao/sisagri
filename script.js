@@ -4762,7 +4762,7 @@ function renderRelatorioVeiculos() {
   });
 
   return relatorioLayoutHTML({
-    titulo: "RelaÃ§Ã£o de VeÃ­culos",
+    titulo: "Rela\u00e7\u00e3o de Ve\u00edculos",
     descricao: "Listagem da frota e dos principais dados patrimoniais cadastrados.",
     total: linhas.length,
     conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--veiculos"),
@@ -4770,20 +4770,20 @@ function renderRelatorioVeiculos() {
 }
 
 function renderRelatorioFerias() {
-  const colunas = ["FuncionÃ¡rio", "Cargo", "InÃ­cio", "Fim", "Status"];
+  const colunas = ["Funcion\u00e1rio", "Cargo", "In\u00edcio", "Fim", "Status"];
   const linhas = escalaFerias
     .filter(f => !f.funcionario_id || getPublishedFuncionarioById(f.funcionario_id))
     .map(f => [
-      f.nome || "â€”",
-      f.cargo || "â€”",
+      f.nome || "\u2014",
+      f.cargo || "\u2014",
       formatDateBR(f.periodo_inicio),
       formatDateBR(f.periodo_fim),
       getFeriasStatus(f.periodo_inicio, f.periodo_fim),
     ]);
 
   return relatorioLayoutHTML({
-    titulo: "Escala de FÃ©rias",
-    descricao: "RelaÃ§Ã£o dos perÃ­odos de fÃ©rias cadastrados com status calculado automaticamente.",
+    titulo: "Escala de F\u00e9rias",
+    descricao: "Rela\u00e7\u00e3o dos per\u00edodos de f\u00e9rias cadastrados com status calculado automaticamente.",
     total: linhas.length,
     conteudo: relatorioTabelaHTML(colunas, linhas),
   });
