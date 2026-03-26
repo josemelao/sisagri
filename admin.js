@@ -873,7 +873,7 @@ function atualizarBuscaInfoSimples(colecao, inputEl) {
   const state = getInfoSimplesListState(colecao);
   state.query = String(value || '');
   state.page = 1;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
   const nextInput = document.getElementById(`infosimples-search-${colecao}`);
   if (!nextInput) return;
   nextInput.focus();
@@ -884,7 +884,7 @@ function atualizarBuscaInfoSimples(colecao, inputEl) {
 function mudarPaginaInfoSimples(colecao, delta) {
   const state = getInfoSimplesListState(colecao);
   state.page += delta;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
 }
 
 const INFO_ORGAOS_LIST_STATE = { query: '', page: 1, pageSize: 12 };
@@ -2047,20 +2047,7 @@ function renderVeiculos() {
       </tbody>
     </table></div>`);
 }
-function getMotoristaOptions(selectedIds = []) {
-  const lista = DB.get('funcionarios');
-  return lista.map(f =>
-    `<option value="${f.id}" ${selectedIds.includes(f.id) ? 'selected' : ''}>${escHtml(f.nome)} â€” ${escHtml(f.cargo)}</option>`
-  ).join('');
-}
 
-function getArquivosVeiculoOptions(selectedIds = []) {
-  const lista = DB.get('arquivos').filter(a => (a.tags || []).includes('ve\u00EDculos'));
-  if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "ve\u00EDculos" cadastrado</option>';
-  return lista.map(a =>
-    `<option value="${a.id}" ${selectedIds.includes(a.id) ? 'selected' : ''}>${escHtml(a.nome)} (${a.tipo})</option>`
-  ).join('');
-}
 
 function getMotoristaOptions(selectedIds = []) {
   const lista = DB.get('funcionarios');
@@ -2216,13 +2203,6 @@ function renderSistemas() {
         </tr>`}
       </tbody>
     </table></div>`);
-}
-function getSistemaLinksOptions(colecao, selectedIds = []) {
-  const lista = DB.get(colecao);
-  if (!lista.length) return `<option value="" disabled>Nenhum ${colecao === 'manuais' ? 'manual' : 'processo'} cadastrado</option>`;
-  return lista.map(item =>
-    `<option value="${item.id}" ${selectedIds.includes(item.id) ? 'selected' : ''}>${escHtml(item.titulo)}</option>`
-  ).join('');
 }
 
 function getSistemaLinksOptions(colecao, selectedIds = []) {
@@ -2626,7 +2606,7 @@ function renderAvisos() {
         <tr>
           <td><strong class="td-truncate">${escHtml(a.titulo)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
-          <td>${escHtml(a.local||'—')}</td>
+          <td>${escHtml(a.local||'ï¿½')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
@@ -2772,14 +2752,14 @@ function renderAgendaEventos() {
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(e => {
         const periodo = e.tipo === 'prazo' && !e.data
-          ? `${escHtml(formatDateBR(e.data_fim || '—'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
-          : `${escHtml(formatDateBR(e.data || '—'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
+          ? `${escHtml(formatDateBR(e.data_fim || 'ï¿½'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
+          : `${escHtml(formatDateBR(e.data || 'ï¿½'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
         return `
         <tr>
           <td><strong class="td-truncate">${escHtml(e.titulo)}</strong></td>
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${periodo}</td>
-          <td>${escHtml(e.local||'—')}</td>
+          <td>${escHtml(e.local||'ï¿½')}</td>
           <td><div class="td-actions">
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
             <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
