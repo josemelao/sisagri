@@ -3122,7 +3122,10 @@ input { font-family: inherit; }
     grid-template-columns: 1fr;
   }
 
-  .dashboard-side { position: static; }
+  .dashboard-side {
+    position: static;
+    width: 100%;
+  }
 
   .sidebar {
     transform: translateX(-100%);
