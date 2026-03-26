@@ -2407,88 +2407,14 @@ function renderServicos() {
       </tbody>
     </table></div>`);
 }
-function formServico(s = {}) {
-  const cats = ['Trator','Arborização','Capacitação','Insumos','Outro'];
-  return `
-    <h2 class="modal-title">${s.id ? 'Editar' : 'Novo'} Serviço</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome</label><input id="sv-nome" value="${escHtml(s.nome||'')}" /></div>
-      <div class="form-group">
-        <label>Categoria</label>
-        <select id="sv-categoria">${cats.map(c=>`<option ${(s.categoria||'')=== c?'selected':''}>${c}</option>`).join('')}</select>
-      </div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(s.icone, s.cor, 'servico')}
-      </div>
-      <div class="form-group full"><label>Descrição</label><textarea id="sv-descricao">${escHtml(s.descricao||'')}</textarea></div>
-      <div class="form-group full"><label>Público-alvo</label><input id="sv-publico" value="${escHtml(s.publico||'')}" /></div>
-      <div class="form-group full"><label>Como solicitar</label><textarea id="sv-como">${escHtml(s.como_solicitar||'')}</textarea></div>
-      <div class="form-group full">
-        <label>Documentos necessários</label>
-        ${renderServicoDocumentosFields(s.documentos || [])}
-      </div>
-      <div class="form-group full">
-        <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-        <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-          ${getSistemaLinksOptions('processos', s.processos_ids || [])}
-        </select>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
-      </div>
-      <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
-      <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions(`salvarServico(${s.id||0})`, s)}`;
-}
 
 function novoServico()     { abrirModal(formServico()); }
 function editarServico(id) { abrirModal(formServico(DB.getById('servicos', id))); }
 
-function salvarServico(id) {
-  const docsList = document.getElementById('dyn-servico-documentos');
-  const documentos = Array.from(docsList.children).map(div => {
-    const tipoSelect = div.querySelector('select[name^="sv_doc_tipo_"]');
-    const nomeInput = div.querySelector('input[name^="sv_doc_nome_"]');
-    const arquivoSelect = div.querySelector('select[name^="sv_doc_arquivo_"]');
-
-    if (tipoSelect && tipoSelect.value === 'arquivo') {
-      const arquivoId = arquivoSelect ? parseInt(arquivoSelect.value) : null;
-      if (arquivoId) {
-        const arquivo = DB.get('arquivos').find(a => a.id === arquivoId);
-        return {
-          nome: arquivo ? arquivo.nome : 'Arquivo',
-          arquivo_id: arquivoId
-        };
-      }
-      return null;
-    }
-
-    return nomeInput ? nomeInput.value.trim() : '';
-  }).filter(Boolean);
-
-  const { icone, cor } = getIconeCorValues('servico');
-  const dados = {
-    nome:           document.getElementById('sv-nome').value.trim(),
-    categoria:      document.getElementById('sv-categoria').value,
-    descricao:      document.getElementById('sv-descricao').value.trim(),
-    publico:        document.getElementById('sv-publico').value.trim(),
-    como_solicitar: document.getElementById('sv-como').value.trim(),
-    documentos,
-    processos_ids:  Array.from(document.getElementById('sv-processos').selectedOptions).map(o => parseInt(o.value)).filter(Boolean),
-    prazo:          document.getElementById('sv-prazo').value.trim(),
-    obs:            document.getElementById('sv-obs').value.trim(),
-    icone, cor,
-    publish_status: getModalPublishStatus(),
-  };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
-  id ? DB.update('servicos', id, dados) : DB.insert('servicos', dados);
-  fecharModal(); toast('Serviço salvo.'); renderServicos();
-}
 
 /* ============================================================
    AVISOS
    ============================================================ */
-// Sobrescreve o CRUD de servicos para suportar categoria personalizada.
 function formServico(s = {}) {
   const { categoriaSelect, categoriaOutra } = getServicoCategoriaState(s.categoria || '');
   return `
