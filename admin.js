@@ -1819,6 +1819,7 @@ function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
         <select name="etapa_manuais_${i}" multiple style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.8rem;outline:none;min-height:60px;max-height:100px">
           ${getManuaisOptions(manuais_ids)}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect(this.previousElementSibling)">Limpar sele&ccedil;&atilde;o</button>
         <p style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">Segure Ctrl (ou Cmd) para selecionar múltiplos manuais.</p>
       </div>
     </div>`;
@@ -2118,10 +2119,16 @@ function formVeiculo(v = {}) {
 function novoVeiculo()     { abrirModal(formVeiculo()); }
 function editarVeiculo(id) { abrirModal(formVeiculo(DB.getById('veiculos', id))); }
 
-function clearVeiculoMultiSelect(selectId) {
-  const select = document.getElementById(selectId);
+function clearAdminMultiSelect(selectRef) {
+  const select = typeof selectRef === 'string'
+    ? document.getElementById(selectRef)
+    : selectRef;
   if (!select) return;
   Array.from(select.options).forEach(option => { option.selected = false; });
+}
+
+function clearVeiculoMultiSelect(selectId) {
+  clearAdminMultiSelect(selectId);
 }
 
 function salvarVeiculo(id) {
@@ -2331,6 +2338,7 @@ function formSistema(s = {}) {
         <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('s-manuais')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
       <div class="form-group full">
@@ -2338,6 +2346,7 @@ function formSistema(s = {}) {
         <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('processos', s.processos_ids || [])}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('s-processos')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
     </div>
@@ -2453,6 +2462,7 @@ function formServico(s = {}) {
         <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('processos', s.processos_ids || [])}
         </select>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('sv-processos')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
       <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
