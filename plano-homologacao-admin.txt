@@ -1,6 +1,6 @@
 PLANO DE HOMOLOGACAO ADMIN - QOL LISTAGENS (BUSCA, PAGINACAO, ORDENACAO)
 
-Status geral: EM ANDAMENTO
+Status geral: CICLO CONCLUIDO (sem ordenacao por cabecalho)
 Branch de trabalho: codex/homologacao-admin
 Escopo deste documento: handoff operacional entre agentes com foco em seguranca, mudanca minima e continuidade.
 
@@ -26,11 +26,14 @@ Fora de escopo imediato:
 - Correcao de texto/encoding em labels que estavam quebrados (ex.: "Titulo", "Categoria", "Passos", "Acoes") realizada e validada.
 - Alinhamento da coluna de acoes para a direita nas tabelas (`admin-table-wrap`) realizado e validado.
 
-2.2 Implementado recentemente e pendente de registro final neste plano
-- Ordenacao default por NOME (ordem alfabetica) solicitada para reduzir confusao em listas antes ordenadas por criacao/ID.
-- Necessidade futura ja identificada: ordenacao clicavel por cabecalho (nao implementada neste ciclo documental).
+2.2 Concluido neste ciclo e validado pelo usuario
+- Ordenacao default por NOME (ordem alfabetica) consolidada nas listagens relevantes.
+- Opcao de ordenacao default em Configuracoes do admin (ID ou NOME) implementada e validada.
+- Persistencia da configuracao em admin_settings no Supabase com fallback local implementada e validada.
+- Feedback visual central para acoes do admin implementado e validado.
+- Animacao leve de reordenacao na busca/listagens do admin implementada e validada.
 
-2.3 Pendencias estrategicas (ainda nao implementadas no fluxo final)
+2.3 Pendencias estrategicas (fora deste fechamento)
 - Expor em Configuracoes do admin a opcao de ordenacao default (ID ou NOME).
 - Persistir configuracoes em tabela propria no Supabase (com fallback local para indisponibilidade).
 - Formalizar migracao segura por etapas para essa configuracao, com validacao por etapa e log de auditoria no plano.
@@ -85,12 +88,26 @@ H-06 | Ajuste de UX de tabela
 - Commit: SIM.
 - Ressalvas: nenhuma.
 
-H-07 | Ordenacao default por nome (etapa tecnica recente)
+H-07 | Ordenacao default por nome
 - O que: mudar ordenacao default para NOME nas listagens relevantes.
 - Como: ordenacao alfabetica aplicada por padrao para reduzir ambiguidade visual.
-- Validado: A CONFIRMAR NESTE CICLO DE PLANO (historico indica implementacao recente).
-- Commit: A CONFIRMAR (depende do fluxo manual do usuario).
-- Ressalvas: usuario quer controle explicito em Configuracoes (ID/NOME) no futuro.
+- Validado: SIM.
+- Commit: SIM.
+- Ressalvas: usuario quis controle explicito em Configuracoes (ID/NOME), tratado nas etapas seguintes.
+
+H-08 | Configuracao de ordenacao default no admin
+- O que: expor em Configuracoes a escolha entre ordenacao por NOME ou ID.
+- Como: patch local em admin.html + admin.js, preservando fluxo atual e fallback local.
+- Validado: SIM.
+- Commit: SIM.
+- Ressalvas: nenhuma.
+
+H-09 | Persistencia Supabase + feedback visual do admin
+- O que: persistir default_sort_mode em admin_settings com fallback local e melhorar feedback visual das acoes.
+- Como: integracao segura com Supabase autenticado (authenticated), controle em Configuracoes, loading central para acoes e animacao de reordenacao na busca/listagens.
+- Validado: SIM.
+- Commit: SIM.
+- Ressalvas: ordenacao por cabecalho permanece fora do escopo atual.
 
 ================================================================
 4) STATUS FUNCIONAL (CHECKLIST DE COBERTURA)
@@ -100,9 +117,9 @@ H-07 | Ordenacao default por nome (etapa tecnica recente)
 - Fix de foco da busca: CONCLUIDO.
 - Fix de encoding/texto quebrado: CONCLUIDO.
 - Coluna "Acoes" alinhada a direita: CONCLUIDO.
-- Ordenacao default por nome no codigo: IMPLEMENTADO RECENTE (validacao/commit final: conferir no git local).
-- Ordenacao configuravel via Configuracoes (ID/NOME): PENDENTE.
-- Persistencia de configuracoes no Supabase + fallback local: PENDENTE.
+- Ordenacao default por nome no codigo: CONCLUIDO.
+- Ordenacao configuravel via Configuracoes (ID/NOME): CONCLUIDO.
+- Persistencia de configuracoes no Supabase + fallback local: CONCLUIDO.
 - Ordenacao por clique em cabecalhos: PENDENTE (futuro, nao bloqueante).
 
 ================================================================
