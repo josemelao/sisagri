@@ -2111,7 +2111,7 @@ function formVeiculo(v = {}) {
         <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearVeiculoMultiSelect('v-arquivo-ids')">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
       </div>
-      <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||'')}</textarea></div>
+      <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||v.observacoes||'')}</textarea></div>
     </div>
     ${renderPublishStatusActions(`salvarVeiculo(${v.id||0})`, v)}`;
 }
@@ -2145,6 +2145,7 @@ function salvarVeiculo(id) {
     return f ? f.nome : '';
   }).filter(Boolean).join(', ');
 
+  const observacoes = document.getElementById('v-obs').value.trim();
   const { icone, cor } = getIconeCorValues('veiculo');
   const dados = {
     nome:          document.getElementById('v-nome').value.trim(),
@@ -2163,7 +2164,8 @@ function salvarVeiculo(id) {
     motorista_ids: motoristaIds,
     arquivo_ids:   arquivoIds,
     localizacao:   document.getElementById('v-localizacao').value.trim(),
-    obs:           document.getElementById('v-obs').value.trim(),
+    obs:           observacoes,
+    observacoes,
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
@@ -3052,6 +3054,7 @@ function salvarInfoSimples(colecao, id) {
     titulo: document.getElementById('info-titulo').value.trim(),
     campos,
     badge,
+    tag: badge,
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
