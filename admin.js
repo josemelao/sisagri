@@ -1067,7 +1067,7 @@ function getDynValues(fieldName) {
 
 // Tags fixas permitidas para arquivos
 const TAGS_ARQUIVO = [
-  'contrato', 'decreto', 'documentação', 'financeiro', 'formulário',
+  'contrato', 'decreto', 'minuta', 'financeiro', 'formulário',
   'imagem', 'manual', 'modelo', 'ofício', 'planilha',
   'portaria', 'rh', 'relatório', 've\u00EDculos'
 ];

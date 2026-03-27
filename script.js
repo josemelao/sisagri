@@ -1955,16 +1955,20 @@ function renderArquivos() {
     PNG: "ph-file-image",
     JPG: "ph-file-image",
     JPEG: "ph-file-image",
-    "JPG/JPEG": "ph-file-image"
+    "JPG/JPEG": "ph-file-image",
+    ZIP: "ph-file-zip",
+    RAR: "ph-file-zip"
   };
   const tipoCor   = {
     PDF: "#7a3d3d",
     XLSX: "#3d7a5e",
     DOCX: "#3d5c7a",
-    PNG: "#3d5c7a",
-    JPG: "#7a6a3d",
-    JPEG: "#7a6a3d",
-    "JPG/JPEG": "#7a6a3d"
+    PNG: "#d97706",
+    JPG: "#5a3b2e",
+    JPEG: "#5a3b2e",
+    "JPG/JPEG": "#5a3b2e",
+    ZIP: "#5e4b3c",
+    RAR: "#5e4b3c"
   };
 
   if (filtrados.length === 0) {
@@ -2022,16 +2026,20 @@ function openArquivo(id) {
     PNG: "ph-file-image",
     JPG: "ph-file-image",
     JPEG: "ph-file-image",
-    "JPG/JPEG": "ph-file-image"
+    "JPG/JPEG": "ph-file-image",
+    ZIP: "ph-file-zip",
+    RAR: "ph-file-zip"
   };
   const tipoCor   = {
     PDF: "#7a3d3d",
     XLSX: "#3d7a5e",
     DOCX: "#3d5c7a",
-    PNG: "#3d5c7a",
-    JPG: "#7a6a3d",
-    JPEG: "#7a6a3d",
-    "JPG/JPEG": "#7a6a3d"
+    PNG: "#d97706",
+    JPG: "#5a3b2e",
+    JPEG: "#5a3b2e",
+    "JPG/JPEG": "#5a3b2e",
+    ZIP: "#5e4b3c",
+    RAR: "#5e4b3c"
   };
   const cor   = tipoCor[a.tipo]   || "#5a6354";
   const icone = tipoIcone[a.tipo] || "ph-file";
@@ -2938,7 +2946,9 @@ function openVeiculo(id) {
     PNG: "ph-file-image",
     JPG: "ph-file-image",
     JPEG: "ph-file-image",
-    "JPG/JPEG": "ph-file-image"
+    "JPG/JPEG": "ph-file-image",
+    ZIP: "ph-file-zip",
+    RAR: "ph-file-zip"
   };
   const arquivosLinks = (v.arquivo_ids || []).map(aid => {
     const a = getPublishedArquivoById(aid);
