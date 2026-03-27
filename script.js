@@ -2990,13 +2990,14 @@ function openVeiculo(id) {
     const a = getPublishedArquivoById(aid);
     if (!a) return '';
     const icone = tipoIcone[a.tipo] || "ph-file";
-    if (a.arquivo_data) {
-      return `<a href="${a.arquivo_data}" download="${a.arquivo_nome || a.nome}" class="veiculo-arquivo-link">
+    const linkMeta = getArquivoLinkMeta(a);
+    if (linkMeta.isDownload) {
+      return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="veiculo-arquivo-link">
         <i class="ph-bold ${icone}"></i>${a.nome}
         <i class="ph-bold ph-download-simple" style="font-size:.7rem;opacity:.6;margin-left:auto"></i>
       </a>`;
-    } else if (a.url) {
-      return `<a href="${a.url}" target="_blank" rel="noopener" class="veiculo-arquivo-link">
+    } else if (linkMeta.isExternal) {
+      return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="veiculo-arquivo-link">
         <i class="ph-bold ${icone}"></i>${a.nome}
         <i class="ph-bold ph-arrow-square-out" style="font-size:.7rem;opacity:.6;margin-left:auto"></i>
       </a>`;
@@ -3263,10 +3264,9 @@ function renderSistemaFilhoManual(m, modo, passoAtivo) {
     const aid   = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
-      if (a && (a.arquivo_data || a.url)) {
-        const href = a.arquivo_data || a.url;
-        const dl   = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${dl} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (a) {
+        const linkMeta = getArquivoLinkMeta(a);
+        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
@@ -3464,12 +3464,9 @@ function openServico(id) {
 
     if (arquivoId) {
       const arquivo = getPublishedArquivoById(arquivoId);
-      if (arquivo && (arquivo.arquivo_data || arquivo.url)) {
-        const href = arquivo.arquivo_data || arquivo.url;
-        const attrs = arquivo.arquivo_data
-          ? `download="${arquivo.arquivo_nome || arquivo.nome}"`
-          : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (arquivo) {
+        const linkMeta = getArquivoLinkMeta(arquivo);
+        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
@@ -3658,12 +3655,9 @@ function renderServicoFilhoManual(m, modo, passoAtivo) {
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
-      if (a && (a.arquivo_data || a.url)) {
-        const href = a.arquivo_data || a.url;
-        const attrs = a.arquivo_data
-          ? `download="${a.arquivo_nome || a.nome}"`
-          : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (a) {
+        const linkMeta = getArquivoLinkMeta(a);
+        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
@@ -3774,10 +3768,9 @@ function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
-      if (a && (a.arquivo_data || a.url)) {
-        const href = a.arquivo_data || a.url;
-        const dl = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${dl} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (a) {
+        const linkMeta = getArquivoLinkMeta(a);
+        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
@@ -3875,10 +3868,9 @@ function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
     const aid = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
-      if (a && (a.arquivo_data || a.url)) {
-        const href = a.arquivo_data || a.url;
-        const attrs = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (a) {
+        const linkMeta = getArquivoLinkMeta(a);
+        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
