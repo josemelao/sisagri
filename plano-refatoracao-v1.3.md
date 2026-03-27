@@ -406,3 +406,86 @@ Observações:
     renderServicoNetoManual:   linhas 3695-3790 (96 linhas)
   Total atual: ~572 linhas para ~480 linhas de lógica duplicada
   Total esperado após v1.3: ~120 linhas (helpers + wrappers)
+
+[LOG 03]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js
+Bloco: BLOCO 3 â€” migrar renderSistemaFilhoManual
+Função migrada / criada: enderSistemaFilhoManual
+cfg utilizado:
+  panelId: sistema-filho-panel
+  selfFn: enderSistemaFilhoManual
+  voltarFn: echarSistemaFilho
+  fecharFn: echarSistemaCompleto
+  voltarLabel: Voltar ao sistema
+Linhas antes / depois: ~97 linhas â†’ 9 linhas
+node --check: OK
+Validação visual: usuário validou abertura do painel filho em Sistemas, abas Resumido/Completo, navegação entre passos, botão Voltar e botão X
+Resultado: bloco validado
+Commit: confirmado pelo usuário
+Observações:
+  - assinatura pública preservada
+
+[LOG 04]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js
+Bloco: BLOCO 4 â€” migrar renderServicoFilhoManual
+Função migrada / criada: enderServicoFilhoManual
+cfg utilizado:
+  panelId: servico-filho-panel
+  selfFn: enderServicoFilhoManual
+  voltarFn: echarServicoFilho
+  fecharFn: echarServicoCompleto
+  voltarLabel: Voltar ao serviço
+Linhas antes / depois: ~96 linhas â†’ 9 linhas
+node --check: OK
+Validação visual: usuário validou pelo fluxo Serviços â†’ processo vinculado â†’ manual da etapa
+Resultado: bloco validado
+Commit: confirmado pelo usuário
+Observações:
+  - função é alcançável via processo do serviço
+  - assinatura pública preservada
+
+[LOG 05]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js
+Bloco: BLOCO 5 â€” migrar renderSistemaNetoManual
+Função migrada / criada: enderSistemaNetoManual
+cfg utilizado:
+  panelId: sistema-neto-panel
+  selfFn: enderSistemaNetoManual
+  voltarFn: echarSistemaNetoFilho
+  fecharFn: echarSistemaCompleto
+  voltarLabel: Voltar ao processo
+  processoId: preservado
+Linhas antes / depois: ~96 linhas â†’ 10 linhas
+node --check: OK
+Validação visual: usuário validou o fluxo Sistema â†’ processo â†’ manual da etapa
+Resultado: bloco validado
+Commit: confirmado pelo usuário
+Observações:
+  - processoId mantido no cfg do helper
+
+[LOG 06]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js
+Bloco: BLOCO 6 â€” migrar renderServicoNetoManual
+Função migrada / criada: enderServicoNetoManual
+cfg utilizado:
+  panelId: servico-neto-panel
+  selfFn: enderServicoNetoManual
+  voltarFn: echarServicoNetoFilho
+  fecharFn: echarServicoCompleto
+  voltarLabel: Voltar ao processo
+  processoId: preservado
+Linhas antes / depois: ~96 linhas â†’ 10 linhas
+node --check: OK
+Validação visual: usuário validou o fluxo Serviços â†’ processo â†’ manual da etapa (painel neto)
+Resultado: bloco validado
+Commit: pendente de confirmação do usuário
+Observações:
+  - processoId mantido no cfg do helper
