@@ -1544,6 +1544,7 @@ function getArquivoExtensaoFallbackPorTipo(tipo) {
       return ".xls/.xlsx";
     case "jpg":
     case "jpeg":
+    case "jpg/jpeg":
       return ".jpg/.jpeg";
     case "zip":
     case "rar":
@@ -1947,8 +1948,24 @@ function renderArquivos() {
     }
   }
 
-  const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
-  const tipoCor   = { PDF: "#7a3d3d", XLSX: "#3d7a5e", DOCX: "#3d5c7a" };
+  const tipoIcone = {
+    PDF: "ph-file-pdf",
+    XLSX: "ph-file-xls",
+    DOCX: "ph-file-doc",
+    PNG: "ph-file-image",
+    JPG: "ph-file-image",
+    JPEG: "ph-file-image",
+    "JPG/JPEG": "ph-file-image"
+  };
+  const tipoCor   = {
+    PDF: "#7a3d3d",
+    XLSX: "#3d7a5e",
+    DOCX: "#3d5c7a",
+    PNG: "#3d5c7a",
+    JPG: "#7a6a3d",
+    JPEG: "#7a6a3d",
+    "JPG/JPEG": "#7a6a3d"
+  };
 
   if (filtrados.length === 0) {
     const filtroAtivo = tagsAtivas.size > 0 || extensoesAtivas.size > 0 || arquivoQuery !== "";
@@ -1998,8 +2015,24 @@ function openArquivo(id) {
   const a = getPublishedArquivoById(id);
   if (!a) return;
 
-  const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
-  const tipoCor   = { PDF: "#7a3d3d", XLSX: "#3d7a5e", DOCX: "#3d5c7a" };
+  const tipoIcone = {
+    PDF: "ph-file-pdf",
+    XLSX: "ph-file-xls",
+    DOCX: "ph-file-doc",
+    PNG: "ph-file-image",
+    JPG: "ph-file-image",
+    JPEG: "ph-file-image",
+    "JPG/JPEG": "ph-file-image"
+  };
+  const tipoCor   = {
+    PDF: "#7a3d3d",
+    XLSX: "#3d7a5e",
+    DOCX: "#3d5c7a",
+    PNG: "#3d5c7a",
+    JPG: "#7a6a3d",
+    JPEG: "#7a6a3d",
+    "JPG/JPEG": "#7a6a3d"
+  };
   const cor   = tipoCor[a.tipo]   || "#5a6354";
   const icone = tipoIcone[a.tipo] || "ph-file";
 
@@ -2898,7 +2931,15 @@ function openVeiculo(id) {
   }
 
   // Arquivos vinculados
-  const tipoIcone = { PDF: "ph-file-pdf", XLSX: "ph-file-xls", DOCX: "ph-file-doc" };
+  const tipoIcone = {
+    PDF: "ph-file-pdf",
+    XLSX: "ph-file-xls",
+    DOCX: "ph-file-doc",
+    PNG: "ph-file-image",
+    JPG: "ph-file-image",
+    JPEG: "ph-file-image",
+    "JPG/JPEG": "ph-file-image"
+  };
   const arquivosLinks = (v.arquivo_ids || []).map(aid => {
     const a = getPublishedArquivoById(aid);
     if (!a) return '';

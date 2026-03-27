@@ -1068,7 +1068,7 @@ function getDynValues(fieldName) {
 // Tags fixas permitidas para arquivos
 const TAGS_ARQUIVO = [
   'contrato', 'decreto', 'documentação', 'financeiro', 'formulário',
-  'manual', 'modelo', 'ofício', 'planilha',
+  'imagem', 'manual', 'modelo', 'ofício', 'planilha',
   'portaria', 'rh', 'relatório', 've\u00EDculos'
 ];
 
@@ -1875,7 +1875,7 @@ function formArquivo(a = {}) {
       <div class="form-group">
         <label>Tipo</label>
         <select id="a-tipo">
-          ${['PDF','DOCX','XLSX','PPTX','TXT','ZIP','Outro'].map(t => `<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
+          ${['PDF','DOCX','XLSX','PPTX','JPG/JPEG','PNG','TXT','ZIP','Outro'].map(t => `<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
         </select>
       </div>
 
@@ -3159,4 +3159,5 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
+
 
