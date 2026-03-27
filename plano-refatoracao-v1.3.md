@@ -1,4 +1,4 @@
-PLANO DE AÃƒâ€¡ÃƒÆ’O Ã¢â‚¬â€ REFATORAÃƒâ€¡ÃƒÆ’O SEGURA V1.3
+PLANO DE AÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â REFATORAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O SEGURA V1.3
 SisAgri / SMADER
 Data de abertura: 2026-03-26
 Status geral: PLANEJADO
@@ -6,16 +6,16 @@ Status geral: PLANEJADO
 ==================================================================
 0. OBJETIVO
 ==================================================================
-Consolidar os renderizadores de painÃƒÂ©is filho e neto em `script.js`,
-eliminando ~480 linhas de lÃƒÂ³gica 100% duplicada por meio de dois
+Consolidar os renderizadores de painÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©is filho e neto em `script.js`,
+eliminando ~480 linhas de lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica 100% duplicada por meio de dois
 helpers parametrizados.
 
 Escopo restrito a:
-  - `script.js` (ÃƒÂºnico arquivo alterado)
-  - 7 funÃƒÂ§ÃƒÂµes alvo (listadas na seÃƒÂ§ÃƒÂ£o 3)
-  - 2 helpers novos a criar (listados na seÃƒÂ§ÃƒÂ£o 4)
+  - `script.js` (ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico arquivo alterado)
+  - 7 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes alvo (listadas na seÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o 3)
+  - 2 helpers novos a criar (listados na seÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o 4)
 
-Esta refatoraÃƒÂ§ÃƒÂ£o NÃƒÆ’O toca:
+Esta refatoraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O toca:
   - `admin.js`
   - `db.js`
   - `dados.js`
@@ -23,32 +23,32 @@ Esta refatoraÃƒÂ§ÃƒÂ£o NÃƒÆ’O toca:
   - fluxo de `publish_status`
   - contratos de `DB.*`
 
-PrÃƒÂ©-requisito: v1.2 concluÃƒÂ­da e comitada na main. Ã¢Å“â€œ
+PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©-requisito: v1.2 concluÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­da e comitada na main. ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ
 
 ==================================================================
-1. CONTEXTO Ã¢â‚¬â€ POR QUE ESTA REFATORAÃƒâ€¡ÃƒÆ’O
+1. CONTEXTO ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â POR QUE ESTA REFATORAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O
 ==================================================================
 Durante a v1.2 foram identificados 7 renderizadores em `script.js`
-com lÃƒÂ³gica funcionalmente idÃƒÂªntica. Por conterem callbacks inline
+com lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica funcionalmente idÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªntica. Por conterem callbacks inline
 hardcoded (strings de `onclick` dentro de template literals), a
-consolidaÃƒÂ§ÃƒÂ£o exigia parametrizaÃƒÂ§ÃƒÂ£o Ã¢â‚¬â€ custo alto para a v1.2.
+consolidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o exigia parametrizaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â custo alto para a v1.2.
 
 A v1.3 ataca exatamente isso: extrai dois helpers com assinatura
-clara, substitui as 7 funÃƒÂ§ÃƒÂµes originais por chamadas a esses helpers,
-e valida o comportamento de cada contexto (processo, sistema, serviÃƒÂ§o).
+clara, substitui as 7 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes originais por chamadas a esses helpers,
+e valida o comportamento de cada contexto (processo, sistema, serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o).
 
-Resultado esperado: ~480 linhas Ã¢â€ â€™ ~120 linhas. Zero perda funcional.
+Resultado esperado: ~480 linhas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ ~120 linhas. Zero perda funcional.
 
 ==================================================================
-2. MAPEAMENTO DAS FUNÃƒâ€¡Ãƒâ€¢ES ALVO
+2. MAPEAMENTO DAS FUNÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ES ALVO
 ==================================================================
 Arquivo: `script.js`
 
-GRUPO A Ã¢â‚¬â€ Renderizadores de manual em painel filho/neto (5 funÃƒÂ§ÃƒÂµes)
-Cada uma renderiza o mesmo conteÃƒÂºdo (tabs resumido/completo,
-paginaÃƒÂ§ÃƒÂ£o de passos, documentos, observaÃƒÂ§ÃƒÂµes) com apenas 4 variÃƒÂ¡veis:
+GRUPO A ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Renderizadores de manual em painel filho/neto (5 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes)
+Cada uma renderiza o mesmo conteÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºdo (tabs resumido/completo,
+paginaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de passos, documentos, observaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes) com apenas 4 variÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡veis:
 
-  FunÃƒÂ§ÃƒÂ£o                    | panelId             | self (fn recursiva)            | voltar()               | fechar()
+  FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o                    | panelId             | self (fn recursiva)            | voltar()               | fechar()
   --------------------------|---------------------|-------------------------------|------------------------|------------------
   renderManualFilho         | manual-filho-panel  | renderManualFilho             | fecharManualFilho      | fecharProcessoCompleto
   renderSistemaFilhoManual  | sistema-filho-panel | renderSistemaFilhoManual      | fecharSistemaFilho     | fecharSistemaCompleto
@@ -57,73 +57,73 @@ paginaÃƒÂ§ÃƒÂ£o de passos, documentos, observaÃƒÂ§ÃƒÂµes) com ap
   renderServicoNetoManual   | servico-neto-panel  | renderServicoNetoManual       | fecharServicoNetoFilho | fecharServicoCompleto
 
   Tamanho atual: ~96 linhas cada = ~480 linhas totais
-  Tamanho apÃƒÂ³s consolidaÃƒÂ§ÃƒÂ£o: ~5 linhas cada (chamada ao helper)
+  Tamanho apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s consolidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: ~5 linhas cada (chamada ao helper)
 
   Nota sobre renderManualFilho:
-    - Recebe 3 parÃƒÂ¢metros: (m, modo, passoAtivo)
-    - NÃƒÂ£o tem processoId (diferente dos netos)
-    - Texto do botÃƒÂ£o voltar: "Voltar ao processo"
+    - Recebe 3 parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metros: (m, modo, passoAtivo)
+    - NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o tem processoId (diferente dos netos)
+    - Texto do botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o voltar: "Voltar ao processo"
 
   Nota sobre os netos (renderSistemaNetoManual, renderServicoNetoManual):
-    - Recebem 4 parÃƒÂ¢metros: (m, modo, processoId, passoAtivo)
-    - processoId ÃƒÂ© passado nos callbacks dos botÃƒÂµes de passo
-    - Texto do botÃƒÂ£o voltar: "Voltar ao processo"
+    - Recebem 4 parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metros: (m, modo, processoId, passoAtivo)
+    - processoId ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© passado nos callbacks dos botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes de passo
+    - Texto do botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o voltar: "Voltar ao processo"
 
-  Nota sobre os filhos de sistema/serviÃƒÂ§o:
-    - Recebem 3 parÃƒÂ¢metros: (m, modo, passoAtivo)
-    - Texto do botÃƒÂ£o voltar: "Voltar ao sistema" / "Voltar ao serviÃƒÂ§o"
+  Nota sobre os filhos de sistema/serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o:
+    - Recebem 3 parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metros: (m, modo, passoAtivo)
+    - Texto do botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o voltar: "Voltar ao sistema" / "Voltar ao serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o"
 
-GRUPO B Ã¢â‚¬â€ Renderizadores de processo em painel filho (2 funÃƒÂ§ÃƒÂµes)
+GRUPO B ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Renderizadores de processo em painel filho (2 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes)
 Cada uma renderiza a timeline de etapas com chips de manuais vinculados,
 diferindo apenas em 3 pontos:
 
-  FunÃƒÂ§ÃƒÂ£o                     | panelId              | chip onclick               | voltar()            | fechar()               | texto voltar
+  FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o                     | panelId              | chip onclick               | voltar()            | fechar()               | texto voltar
   ---------------------------|----------------------|---------------------------|---------------------|------------------------|------------------
   renderSistemaFilhoProcesso | sistema-filho-panel  | abrirManualNoSistemaFilho | fecharSistemaFilho  | fecharSistemaCompleto  | Voltar ao sistema
-  renderServicoFilhoProcesso | servico-filho-panel  | abrirManualNoServicoFilho | fecharServicoFilho  | fecharServicoCompleto  | Voltar ao serviÃƒÂ§o
+  renderServicoFilhoProcesso | servico-filho-panel  | abrirManualNoServicoFilho | fecharServicoFilho  | fecharServicoCompleto  | Voltar ao serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
 
   Tamanho atual: ~45 linhas cada = ~90 linhas totais
-  Tamanho apÃƒÂ³s consolidaÃƒÂ§ÃƒÂ£o: ~5 linhas cada (chamada ao helper)
+  Tamanho apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s consolidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: ~5 linhas cada (chamada ao helper)
 
 ==================================================================
-3. ESTRATÃƒâ€°GIA DE CONSOLIDAÃƒâ€¡ÃƒÆ’O
+3. ESTRATÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°GIA DE CONSOLIDAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O
 ==================================================================
 3.1. Helper para manuais: _renderManualEmPainel(m, modo, passoAtivo, cfg)
 
-  ParÃƒÂ¢metro cfg (objeto de configuraÃƒÂ§ÃƒÂ£o):
+  ParÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metro cfg (objeto de configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o):
   {
-    panelId:       string  Ã¢â‚¬â€ ID do elemento DOM do painel
-    selfFn:        string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o para os callbacks de onclick
-    voltarFn:      string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o chamada no botÃƒÂ£o Voltar
-    fecharFn:      string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o chamada no botÃƒÂ£o X
-    voltarLabel:   string  Ã¢â‚¬â€ texto do botÃƒÂ£o Voltar (ex: "Voltar ao processo")
-    processoId:    number  Ã¢â‚¬â€ opcional, apenas para painÃƒÂ©is neto
+    panelId:       string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ID do elemento DOM do painel
+    selfFn:        string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para os callbacks de onclick
+    voltarFn:      string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chamada no botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar
+    fecharFn:      string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chamada no botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o X
+    voltarLabel:   string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â texto do botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar (ex: "Voltar ao processo")
+    processoId:    number  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â opcional, apenas para painÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©is neto
   }
 
-  A funÃƒÂ§ÃƒÂ£o:
-  1. ObtÃƒÂ©m o elemento pelo panelId
+  A funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o:
+  1. ObtÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©m o elemento pelo panelId
   2. Monta as tabs usando selfFn nos onclicks
-  3. Monta o conteÃƒÂºdo (resumido ou completo) usando selfFn e processoId
+  3. Monta o conteÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºdo (resumido ou completo) usando selfFn e processoId
   4. Monta os documentos
   5. Escreve o innerHTML com voltarFn, fecharFn, voltarLabel
 
 3.2. Helper para processos: _renderProcessoEmPainel(p, cfg)
 
-  ParÃƒÂ¢metro cfg (objeto de configuraÃƒÂ§ÃƒÂ£o):
+  ParÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢metro cfg (objeto de configuraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o):
   {
-    panelId:     string  Ã¢â‚¬â€ ID do elemento DOM do painel
-    chipOnclick: string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o chamada no chip de manual
-    voltarFn:    string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o chamada no botÃƒÂ£o Voltar
-    fecharFn:    string  Ã¢â‚¬â€ nome da funÃƒÂ§ÃƒÂ£o chamada no botÃƒÂ£o X
-    voltarLabel: string  Ã¢â‚¬â€ texto do botÃƒÂ£o Voltar
+    panelId:     string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ID do elemento DOM do painel
+    chipOnclick: string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chamada no chip de manual
+    voltarFn:    string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chamada no botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar
+    fecharFn:    string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chamada no botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o X
+    voltarLabel: string  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â texto do botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar
   }
 
-  A funÃƒÂ§ÃƒÂ£o:
-  1. ObtÃƒÂ©m o elemento pelo panelId
+  A funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o:
+  1. ObtÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©m o elemento pelo panelId
   2. Monta a timeline com etapas e chips usando chipOnclick
   3. Escreve o innerHTML com voltarFn, fecharFn, voltarLabel
 
-3.3. Wrappers Ã¢â‚¬â€ as 7 funÃƒÂ§ÃƒÂµes originais viram wrappers de 3-5 linhas:
+3.3. Wrappers ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â as 7 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes originais viram wrappers de 3-5 linhas:
 
   function renderManualFilho(m, modo, passoAtivo) {
     _renderManualEmPainel(m, modo, passoAtivo, {
@@ -138,183 +138,183 @@ diferindo apenas em 3 pontos:
   (idem para as demais 6)
 
 ==================================================================
-4. ORDEM DE EXECUÃƒâ€¡ÃƒÆ’O Ã¢â‚¬â€ BLOCOS
+4. ORDEM DE EXECUÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â BLOCOS
 ==================================================================
-Executar nesta ordem exata. Um bloco por vez. NÃƒÂ£o avanÃƒÂ§ar sem commit.
+Executar nesta ordem exata. Um bloco por vez. NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o avanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar sem commit.
 
-BLOCO 1 Ã¢â‚¬â€ Criar _renderManualEmPainel (sem remover nada)
-  - Inserir a nova funÃƒÂ§ÃƒÂ£o logo antes de renderManualFilho
-  - NÃƒÂ£o alterar nenhuma das 5 funÃƒÂ§ÃƒÂµes existentes ainda
+BLOCO 1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Criar _renderManualEmPainel (sem remover nada)
+  - Inserir a nova funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o logo antes de renderManualFilho
+  - NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o alterar nenhuma das 5 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes existentes ainda
   - Validar: node --check + abrir um manual dentro de um processo
 
-BLOCO 2 Ã¢â‚¬â€ Migrar renderManualFilho para usar o helper
-  - Substituir o corpo da funÃƒÂ§ÃƒÂ£o pela chamada ao helper com cfg
+BLOCO 2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderManualFilho para usar o helper
+  - Substituir o corpo da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pela chamada ao helper com cfg
   - Validar: abrir manual dentro de processo (painel filho de processo)
 
-BLOCO 3 Ã¢â‚¬â€ Migrar renderSistemaFilhoManual
+BLOCO 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderSistemaFilhoManual
   - Validar: abrir manual dentro de sistema
 
-BLOCO 4 Ã¢â‚¬â€ Migrar renderServicoFilhoManual
-  - Validar: abrir manual dentro de serviÃƒÂ§o
+BLOCO 4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderServicoFilhoManual
+  - Validar: abrir manual dentro de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
 
-BLOCO 5 Ã¢â‚¬â€ Migrar renderSistemaNetoManual
-  - Validar: abrir sistema Ã¢â€ â€™ processo Ã¢â€ â€™ manual (painel neto)
+BLOCO 5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderSistemaNetoManual
+  - Validar: abrir sistema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manual (painel neto)
 
-BLOCO 6 Ã¢â‚¬â€ Migrar renderServicoNetoManual
-  - Validar: abrir serviÃƒÂ§o Ã¢â€ â€™ processo Ã¢â€ â€™ manual (painel neto)
+BLOCO 6 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderServicoNetoManual
+  - Validar: abrir serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manual (painel neto)
 
-BLOCO 7 Ã¢â‚¬â€ Criar _renderProcessoEmPainel (sem remover nada)
-  - Inserir a nova funÃƒÂ§ÃƒÂ£o logo antes de renderSistemaFilhoProcesso
-  - NÃƒÂ£o alterar nenhuma das 2 funÃƒÂ§ÃƒÂµes existentes ainda
+BLOCO 7 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Criar _renderProcessoEmPainel (sem remover nada)
+  - Inserir a nova funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o logo antes de renderSistemaFilhoProcesso
+  - NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o alterar nenhuma das 2 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes existentes ainda
   - Validar: node --check
 
-BLOCO 8 Ã¢â‚¬â€ Migrar renderSistemaFilhoProcesso
+BLOCO 8 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderSistemaFilhoProcesso
   - Validar: abrir processo dentro de sistema
 
-BLOCO 9 Ã¢â‚¬â€ Migrar renderServicoFilhoProcesso
-  - Validar: abrir processo dentro de serviÃƒÂ§o
+BLOCO 9 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Migrar renderServicoFilhoProcesso
+  - Validar: abrir processo dentro de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
 
-BLOCO 10 Ã¢â‚¬â€ Limpeza final
-  - Remover qualquer comentÃƒÂ¡rio residual
+BLOCO 10 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Limpeza final
+  - Remover qualquer comentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio residual
   - node --check final
-  - Confirmar zero funÃƒÂ§ÃƒÂµes duplicadas
+  - Confirmar zero funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes duplicadas
 
 ==================================================================
-5. PROTOCOLO OBRIGATÃƒâ€œRIO POR BLOCO
+5. PROTOCOLO OBRIGATÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œRIO POR BLOCO
 ==================================================================
 Cada agente deve seguir esta ordem em cada bloco:
 
-PASSO 1 Ã¢â‚¬â€ Ler o estado atual do arquivo antes de editar
+PASSO 1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ler o estado atual do arquivo antes de editar
   Nunca editar com base em contexto antigo. Sempre reler.
 
-PASSO 2 Ã¢â‚¬â€ Localizar a funÃƒÂ§ÃƒÂ£o alvo com grep + nÃƒÂºmero de linha
-  Confirmar inÃƒÂ­cio e fim antes de qualquer alteraÃƒÂ§ÃƒÂ£o.
+PASSO 2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Localizar a funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o alvo com grep + nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero de linha
+  Confirmar inÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­cio e fim antes de qualquer alteraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.
 
-PASSO 3 Ã¢â‚¬â€ Para blocos de criaÃƒÂ§ÃƒÂ£o (1 e 7):
-  Inserir a nova funÃƒÂ§ÃƒÂ£o em posiÃƒÂ§ÃƒÂ£o que nÃƒÂ£o quebre o fluxo.
-  NÃƒÂ£o remover nada. Validar sintaxe.
+PASSO 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Para blocos de criaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (1 e 7):
+  Inserir a nova funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o em posiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o que nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o quebre o fluxo.
+  NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o remover nada. Validar sintaxe.
 
-PASSO 4 Ã¢â‚¬â€ Para blocos de migraÃƒÂ§ÃƒÂ£o (2 a 6, 8 e 9):
-  a) Confirmar que o helper do bloco anterior estÃƒÂ¡ presente
-  b) Substituir apenas o corpo da funÃƒÂ§ÃƒÂ£o (manter assinatura idÃƒÂªntica)
-  c) Manter o nome da funÃƒÂ§ÃƒÂ£o Ã¢â‚¬â€ nÃƒÂ£o renomear
+PASSO 4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Para blocos de migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (2 a 6, 8 e 9):
+  a) Confirmar que o helper do bloco anterior estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ presente
+  b) Substituir apenas o corpo da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (manter assinatura idÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªntica)
+  c) Manter o nome da funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o renomear
   d) Validar sintaxe com node --check
   e) Validar manualmente o fluxo afetado
-  f) Commitar antes de avanÃƒÂ§ar
+  f) Commitar antes de avanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar
 
-PASSO 5 Ã¢â‚¬â€ Registrar no log antes de avanÃƒÂ§ar
-  NÃƒÂ£o pular o log mesmo que o bloco pareÃƒÂ§a simples.
+PASSO 5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Registrar no log antes de avanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar
+  NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pular o log mesmo que o bloco pareÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§a simples.
 
 REGRAS ADICIONAIS:
-  - Nunca alterar a assinatura das funÃƒÂ§ÃƒÂµes pÃƒÂºblicas
+  - Nunca alterar a assinatura das funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicas
   - Nunca renomear fecharManualFilho, fecharSistemaFilho etc.
   - Nunca alterar os IDs de painel (manual-filho-panel etc.)
-  - Se qualquer teste visual falhar: parar, reportar, nÃƒÂ£o avanÃƒÂ§ar
+  - Se qualquer teste visual falhar: parar, reportar, nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o avanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar
   - Se node --check falhar: restaurar o backup antes de tentar novamente
 
 ==================================================================
-6. VALIDAÃƒâ€¡ÃƒÆ’O POR BLOCO
+6. VALIDAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O POR BLOCO
 ==================================================================
-6.1. ValidaÃƒÂ§ÃƒÂ£o de sintaxe (todos os blocos)
+6.1. ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de sintaxe (todos os blocos)
   node --check script.js && echo "OK"
 
-6.2. ValidaÃƒÂ§ÃƒÂ£o visual Ã¢â‚¬â€ Grupo A (blocos 2 a 6)
+6.2. ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Grupo A (blocos 2 a 6)
   Para cada bloco migrado, testar o caminho completo:
 
   Bloco 2 (renderManualFilho):
-    Processos Ã¢â€ â€™ abrir qualquer processo Ã¢â€ â€™ clicar em chip de manual Ã¢â€ â€™
-    painel filho deve abrir com tabs Resumido/Completo Ã¢â€ â€™
-    navegar entre passos Ã¢â€ â€™ fechar com X e com botÃƒÂ£o Voltar
+    Processos ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir qualquer processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ clicar em chip de manual ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    painel filho deve abrir com tabs Resumido/Completo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    navegar entre passos ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ fechar com X e com botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar
 
   Bloco 3 (renderSistemaFilhoManual):
-    Sistemas Ã¢â€ â€™ abrir qualquer sistema que tenha manuais vinculados Ã¢â€ â€™
-    clicar no chip de manual Ã¢â€ â€™ painel filho deve abrir Ã¢â€ â€™
-    testar tabs e navegaÃƒÂ§ÃƒÂ£o entre passos
+    Sistemas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir qualquer sistema que tenha manuais vinculados ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    clicar no chip de manual ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ painel filho deve abrir ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    testar tabs e navegaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o entre passos
 
   Bloco 4 (renderServicoFilhoManual):
-    ServiÃƒÂ§os Ã¢â€ â€™ abrir qualquer serviÃƒÂ§o Ã¢â€ â€™ (se tiver processo vinculado,
-    abrir o processo) Ã¢â€ â€™ clicar em chip de manual Ã¢â€ â€™ painel deve abrir
+    ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir qualquer serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ (se tiver processo vinculado,
+    abrir o processo) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ clicar em chip de manual ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ painel deve abrir
 
   Bloco 5 (renderSistemaNetoManual):
-    Sistemas Ã¢â€ â€™ abrir sistema Ã¢â€ â€™ abrir processo vinculado Ã¢â€ â€™
-    clicar em chip de manual dentro de uma etapa Ã¢â€ â€™
+    Sistemas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir sistema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir processo vinculado ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    clicar em chip de manual dentro de uma etapa ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
     painel neto deve abrir com processoId correto nos callbacks
 
   Bloco 6 (renderServicoNetoManual):
-    ServiÃƒÂ§os Ã¢â€ â€™ abrir serviÃƒÂ§o Ã¢â€ â€™ abrir processo vinculado Ã¢â€ â€™
-    clicar em chip de manual dentro de uma etapa Ã¢â€ â€™
+    ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir processo vinculado ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    clicar em chip de manual dentro de uma etapa ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
     painel neto deve abrir
 
-6.3. ValidaÃƒÂ§ÃƒÂ£o visual Ã¢â‚¬â€ Grupo B (blocos 8 e 9)
+6.3. ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Grupo B (blocos 8 e 9)
   Bloco 8 (renderSistemaFilhoProcesso):
-    Sistemas Ã¢â€ â€™ abrir sistema com processo vinculado Ã¢â€ â€™
-    clicar no chip de processo Ã¢â€ â€™ timeline deve aparecer Ã¢â€ â€™
-    chips de manuais dentro das etapas devem funcionar Ã¢â€ â€™
-    botÃƒÂ£o Voltar deve retornar ao painel do sistema
+    Sistemas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir sistema com processo vinculado ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    clicar no chip de processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ timeline deve aparecer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    chips de manuais dentro das etapas devem funcionar ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar deve retornar ao painel do sistema
 
   Bloco 9 (renderServicoFilhoProcesso):
-    ServiÃƒÂ§os Ã¢â€ â€™ abrir serviÃƒÂ§o com processo vinculado Ã¢â€ â€™
-    clicar no chip de processo Ã¢â€ â€™ timeline Ã¢â€ â€™ manuais nas etapas
+    ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ abrir serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o com processo vinculado ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+    clicar no chip de processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ timeline ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manuais nas etapas
 
-6.4. ValidaÃƒÂ§ÃƒÂ£o de regressÃƒÂ£o (bloco 10)
-  Testar todos os caminhos de 6.2 e 6.3 novamente apÃƒÂ³s a limpeza.
+6.4. ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de regressÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o (bloco 10)
+  Testar todos os caminhos de 6.2 e 6.3 novamente apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s a limpeza.
   Confirmar que nenhum painel abre em branco ou com erro no console.
 
 ==================================================================
-7. ANTI-PADRÃƒâ€¢ES PROIBIDOS
+7. ANTI-PADRÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ES PROIBIDOS
 ==================================================================
-1. Alterar a assinatura das 7 funÃƒÂ§ÃƒÂµes pÃƒÂºblicas
-2. Renomear qualquer funÃƒÂ§ÃƒÂ£o fechar* ou abrir*
-3. Remover funÃƒÂ§ÃƒÂ£o antes de validar que o helper funciona
-4. AvanÃƒÂ§ar para o prÃƒÂ³ximo bloco sem commit do bloco atual
-5. Combinar criaÃƒÂ§ÃƒÂ£o do helper + migraÃƒÂ§ÃƒÂ£o de todas as funÃƒÂ§ÃƒÂµes em 1 commit
+1. Alterar a assinatura das 7 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicas
+2. Renomear qualquer funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o fechar* ou abrir*
+3. Remover funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o antes de validar que o helper funciona
+4. AvanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar para o prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ximo bloco sem commit do bloco atual
+5. Combinar criaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do helper + migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de todas as funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes em 1 commit
 6. Editar com base em contexto de conversa anterior sem reler o arquivo
 7. Usar eval() ou Function() para parametrizar os callbacks
-8. Passar funÃƒÂ§ÃƒÂµes como referÃƒÂªncia direta Ã¢â‚¬â€ usar sempre string com nome
+8. Passar funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes como referÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªncia direta ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â usar sempre string com nome
 
 ==================================================================
-8. CRITÃƒâ€°RIOS DE CONCLUSÃƒÆ’O DA V1.3
+8. CRITÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°RIOS DE CONCLUSÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O DA V1.3
 ==================================================================
 Esta frente pode ser considerada bem-sucedida quando:
 
-1. _renderManualEmPainel existe e ÃƒÂ© a ÃƒÂºnica implementaÃƒÂ§ÃƒÂ£o da lÃƒÂ³gica
-2. _renderProcessoEmPainel existe e ÃƒÂ© a ÃƒÂºnica implementaÃƒÂ§ÃƒÂ£o da lÃƒÂ³gica
-3. As 7 funÃƒÂ§ÃƒÂµes pÃƒÂºblicas continuam existindo com a mesma assinatura
-4. Cada uma delas ÃƒÂ© um wrapper de Ã¢â€°Â¤5 linhas
+1. _renderManualEmPainel existe e ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© a ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnica implementaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o da lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica
+2. _renderProcessoEmPainel existe e ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© a ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnica implementaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o da lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica
+3. As 7 funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblicas continuam existindo com a mesma assinatura
+4. Cada uma delas ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© um wrapper de ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¤5 linhas
 5. node --check OK
 6. Todos os caminhos de 6.2 e 6.3 validados manualmente
 7. Todos os blocos registrados em log
-8. Nenhuma regressÃƒÂ£o confirmada pelo usuÃƒÂ¡rio
+8. Nenhuma regressÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o confirmada pelo usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
 
 ==================================================================
 9. QUANDO PARAR E ESCALAR
 ==================================================================
 Parar imediatamente se:
-1. Qualquer painel abrir em branco apÃƒÂ³s migraÃƒÂ§ÃƒÂ£o
+1. Qualquer painel abrir em branco apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o
 2. Erro de console ao navegar entre passos
-3. BotÃƒÂ£o Voltar ou X nÃƒÂ£o funcionar apÃƒÂ³s migraÃƒÂ§ÃƒÂ£o
-4. processoId nÃƒÂ£o chegar corretamente nos callbacks dos netos
+3. BotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar ou X nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o funcionar apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o
+4. processoId nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o chegar corretamente nos callbacks dos netos
 5. node --check falhar
 
 Nesses casos:
-  - nÃƒÂ£o tentar corrigir no impulso
+  - nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o tentar corrigir no impulso
   - restaurar o arquivo do commit anterior
   - registrar a falha no log com o trecho exato que causou o problema
   - propor nova abordagem antes de reexecutar
 
 ==================================================================
-10. CHECKLIST DE EXECUÃƒâ€¡ÃƒÆ’O POR BLOCO
+10. CHECKLIST DE EXECUÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O POR BLOCO
 ==================================================================
 [ ] Arquivo relido antes de editar
-[ ] FunÃƒÂ§ÃƒÂ£o alvo localizada com grep (linha confirmada)
-[ ] Para criaÃƒÂ§ÃƒÂ£o: posiÃƒÂ§ÃƒÂ£o de inserÃƒÂ§ÃƒÂ£o definida
-[ ] Para migraÃƒÂ§ÃƒÂ£o: cfg completo mapeado (panelId, selfFn, voltarFn, fecharFn, voltarLabel, processoId?)
+[ ] FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o alvo localizada com grep (linha confirmada)
+[ ] Para criaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: posiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de inserÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o definida
+[ ] Para migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o: cfg completo mapeado (panelId, selfFn, voltarFn, fecharFn, voltarLabel, processoId?)
 [ ] Patch aplicado
 [ ] node --check OK
-[ ] ValidaÃƒÂ§ÃƒÂ£o visual executada conforme seÃƒÂ§ÃƒÂ£o 6
+[ ] ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual executada conforme seÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o 6
 [ ] Log registrado
 [ ] Commit feito
-[ ] PrÃƒÂ³ximo bloco iniciado somente apÃƒÂ³s confirmaÃƒÂ§ÃƒÂ£o
+[ ] PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ximo bloco iniciado somente apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s confirmaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o
 
 ==================================================================
 11. MODELO DE LOG OPERACIONAL
@@ -324,79 +324,79 @@ Data:
 Agente:
 Arquivo:
 Bloco:
-FunÃƒÂ§ÃƒÂ£o migrada / criada:
-cfg utilizado (para migraÃƒÂ§ÃƒÂ£o):
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada:
+cfg utilizado (para migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o):
 Linhas antes / depois:
 node --check:
-ValidaÃƒÂ§ÃƒÂ£o visual:
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual:
 Resultado:
 Commit:
-ObservaÃƒÂ§ÃƒÂµes:
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
 
 ==================================================================
-12. ROTEIRO DE EXECUÃƒâ€¡ÃƒÆ’O
+12. ROTEIRO DE EXECUÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O
 ==================================================================
-FASE 1 Ã¢â‚¬â€ GRUPO A (manual em painel)
-1. [x] BLOCO 1 Ã¢â‚¬â€ criar _renderManualEmPainel
-2. [x] BLOCO 2 Ã¢â‚¬â€ migrar renderManualFilho
-3. [x] BLOCO 3 Ã¢â‚¬â€ migrar renderSistemaFilhoManual
-4. [x] BLOCO 4 Ã¢â‚¬â€ migrar renderServicoFilhoManual
-5. [x] BLOCO 5 Ã¢â‚¬â€ migrar renderSistemaNetoManual
-6. [x] BLOCO 6 Ã¢â‚¬â€ migrar renderServicoNetoManual
+FASE 1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â GRUPO A (manual em painel)
+1. [x] BLOCO 1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â criar _renderManualEmPainel
+2. [x] BLOCO 2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderManualFilho
+3. [x] BLOCO 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderSistemaFilhoManual
+4. [x] BLOCO 4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderServicoFilhoManual
+5. [x] BLOCO 5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderSistemaNetoManual
+6. [x] BLOCO 6 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderServicoNetoManual
 
-FASE 2 Ã¢â‚¬â€ GRUPO B (processo em painel)
-7. [x] BLOCO 7 Ã¢â‚¬â€ criar _renderProcessoEmPainel
-8. [x] BLOCO 8 Ã¢â‚¬â€ migrar renderSistemaFilhoProcesso
-9. [x] BLOCO 9 Ã¢â‚¬â€ migrar renderServicoFilhoProcesso
+FASE 2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â GRUPO B (processo em painel)
+7. [x] BLOCO 7 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â criar _renderProcessoEmPainel
+8. [x] BLOCO 8 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderSistemaFilhoProcesso
+9. [x] BLOCO 9 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderServicoFilhoProcesso
 
-FASE 3 Ã¢â‚¬â€ ENCERRAMENTO
-10. [x] BLOCO 10 — limpeza final e validação de regressão
-11. [ ] Registro de conclusÃƒÂ£o
+FASE 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ENCERRAMENTO
+10. [x] BLOCO 10 Ã¢â‚¬â€ limpeza final e validaÃƒÂ§ÃƒÂ£o de regressÃƒÂ£o
+11. [x] Registro de conclusão
 
 ==================================================================
-13. RECOMENDAÃƒâ€¡ÃƒÆ’O FINAL AOS PRÃƒâ€œXIMOS AGENTES
+13. RECOMENDAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O FINAL AOS PRÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œXIMOS AGENTES
 ==================================================================
-Esta refatoraÃƒÂ§ÃƒÂ£o ÃƒÂ© cirÃƒÂºrgica, mas exige atenÃƒÂ§ÃƒÂ£o aos callbacks inline.
+Esta refatoraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© cirÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºrgica, mas exige atenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aos callbacks inline.
 
-O risco principal nÃƒÂ£o ÃƒÂ© a lÃƒÂ³gica em si, e sim as strings de onclick
-dentro dos template literals. Cada funÃƒÂ§ÃƒÂ£o precisa referenciar a si
-mesma pelo nome correto. Um erro no selfFn nÃƒÂ£o quebra a sintaxe, mas
-quebra a navegaÃƒÂ§ÃƒÂ£o entre passos silenciosamente.
+O risco principal nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© a lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica em si, e sim as strings de onclick
+dentro dos template literals. Cada funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o precisa referenciar a si
+mesma pelo nome correto. Um erro no selfFn nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o quebra a sintaxe, mas
+quebra a navegaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o entre passos silenciosamente.
 
-Antes de qualquer migraÃƒÂ§ÃƒÂ£o:
-1. Confirmar o cfg completo lendo a funÃƒÂ§ÃƒÂ£o original
-2. Checar o processoId Ã¢â‚¬â€ ele aparece apenas nos netos (blocos 5 e 6)
-3. Checar o oltarLabel Ã¢â‚¬â€ Ã¢â‚¬Å“Voltar ao processoÃ¢â‚¬Â vs Ã¢â‚¬Å“Voltar ao sistemaÃ¢â‚¬Â vs Ã¢â‚¬Å“Voltar ao serviÃƒÂ§oÃ¢â‚¬Â
-4. Testar a navegaÃƒÂ§ÃƒÂ£o entre passos, nÃƒÂ£o sÃƒÂ³ a abertura do painel
+Antes de qualquer migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o:
+1. Confirmar o cfg completo lendo a funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o original
+2. Checar o processoId ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ele aparece apenas nos netos (blocos 5 e 6)
+3. Checar o oltarLabel ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Voltar ao processoÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â vs ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Voltar ao sistemaÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â vs ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Voltar ao serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§oÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
+4. Testar a navegaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o entre passos, nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ a abertura do painel
 
-A validaÃƒÂ§ÃƒÂ£o mais importante ÃƒÂ©:
+A validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o mais importante ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©:
 navegar do passo 1 ao passo 3 e voltar ao passo 1 dentro do painel
-filho/neto. Isso confirma que selfFn e processoId estÃƒÂ£o corretos.
+filho/neto. Isso confirma que selfFn e processoId estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o corretos.
 
 Sempre:
 1. reler antes
 2. mapear o cfg antes de escrever
-3. validar a navegaÃƒÂ§ÃƒÂ£o entre passos
+3. validar a navegaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o entre passos
 4. commitar bloco a bloco
-5. nÃƒÂ£o avanÃƒÂ§ar sem confirmaÃƒÂ§ÃƒÂ£o do usuÃƒÂ¡rio
+5. nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o avanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ar sem confirmaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
 
 ==================================================================
-14. LOG DE EXECUÃƒâ€¡ÃƒÆ’O
+14. LOG DE EXECUÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O
 ==================================================================
 [LOG 00]
 Data: 2026-03-26
 Agente: Claude Sonnet 4.6
 Arquivo: plano-refatoracao-v1.3.md
 Bloco: abertura do plano
-FunÃƒÂ§ÃƒÂ£o migrada / criada: nÃƒÂ£o aplicÃƒÂ¡vel
-cfg utilizado: nÃƒÂ£o aplicÃƒÂ¡vel
-Linhas antes / depois: nÃƒÂ£o aplicÃƒÂ¡vel
-node --check: nÃƒÂ£o aplicÃƒÂ¡vel
-ValidaÃƒÂ§ÃƒÂ£o visual: nÃƒÂ£o aplicÃƒÂ¡vel
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel
+cfg utilizado: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel
+Linhas antes / depois: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel
+node --check: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel
 Resultado: plano operacional criado com base no mapeamento da v1.2
-Commit: pendente de validaÃƒÂ§ÃƒÂ£o do usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
-  FunÃƒÂ§ÃƒÂµes alvo mapeadas com linhas exatas no estado pÃƒÂ³s-v1.2:
+Commit: pendente de validaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
+  FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes alvo mapeadas com linhas exatas no estado pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s-v1.2:
     renderManualFilho: linhas 1194-1289 (96 linhas)
     renderSistemaFilhoManual: linhas 3082-3178 (97 linhas)
     renderSistemaFilhoProcesso: linhas 3180-3224 (45 linhas)
@@ -404,56 +404,56 @@ ObservaÃƒÂ§ÃƒÂµes:
     renderServicoFilhoManual: linhas 3478-3573 (96 linhas)
     renderSistemaNetoManual: linhas 3594-3689 (96 linhas)
     renderServicoNetoManual: linhas 3695-3790 (96 linhas)
-  Total atual: ~572 linhas para ~480 linhas de lÃƒÂ³gica duplicada
-  Total esperado apÃƒÂ³s v1.3: ~120 linhas (helpers + wrappers)
+  Total atual: ~572 linhas para ~480 linhas de lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica duplicada
+  Total esperado apÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³s v1.3: ~120 linhas (helpers + wrappers)
 
 [LOG 03]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 3 Ã¢â‚¬â€ migrar renderSistemaFilhoManual
-FunÃƒÂ§ÃƒÂ£o migrada / criada: enderSistemaFilhoManual
+Bloco: BLOCO 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderSistemaFilhoManual
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: enderSistemaFilhoManual
 cfg utilizado:
   panelId: sistema-filho-panel
   selfFn: enderSistemaFilhoManual
   voltarFn: echarSistemaFilho
   fecharFn: echarSistemaCompleto
   voltarLabel: Voltar ao sistema
-Linhas antes / depois: ~97 linhas Ã¢â€ â€™ 9 linhas
+Linhas antes / depois: ~97 linhas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ 9 linhas
 node --check: OK
-ValidaÃƒÂ§ÃƒÂ£o visual: usuÃƒÂ¡rio validou abertura do painel filho em Sistemas, abas Resumido/Completo, navegaÃƒÂ§ÃƒÂ£o entre passos, botÃƒÂ£o Voltar e botÃƒÂ£o X
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio validou abertura do painel filho em Sistemas, abas Resumido/Completo, navegaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o entre passos, botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Voltar e botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o X
 Resultado: bloco validado
-Commit: confirmado pelo usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
-  - assinatura pÃƒÂºblica preservada
+Commit: confirmado pelo usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
+  - assinatura pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblica preservada
 
 [LOG 04]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 4 Ã¢â‚¬â€ migrar renderServicoFilhoManual
-FunÃƒÂ§ÃƒÂ£o migrada / criada: enderServicoFilhoManual
+Bloco: BLOCO 4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderServicoFilhoManual
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: enderServicoFilhoManual
 cfg utilizado:
   panelId: servico-filho-panel
   selfFn: enderServicoFilhoManual
   voltarFn: echarServicoFilho
   fecharFn: echarServicoCompleto
-  voltarLabel: Voltar ao serviÃƒÂ§o
-Linhas antes / depois: ~96 linhas Ã¢â€ â€™ 9 linhas
+  voltarLabel: Voltar ao serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
+Linhas antes / depois: ~96 linhas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ 9 linhas
 node --check: OK
-ValidaÃƒÂ§ÃƒÂ£o visual: usuÃƒÂ¡rio validou pelo fluxo ServiÃƒÂ§os Ã¢â€ â€™ processo vinculado Ã¢â€ â€™ manual da etapa
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio validou pelo fluxo ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ processo vinculado ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manual da etapa
 Resultado: bloco validado
-Commit: confirmado pelo usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
-  - funÃƒÂ§ÃƒÂ£o ÃƒÂ© alcanÃƒÂ§ÃƒÂ¡vel via processo do serviÃƒÂ§o
-  - assinatura pÃƒÂºblica preservada
+Commit: confirmado pelo usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
+  - funÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© alcanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel via processo do serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
+  - assinatura pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºblica preservada
 
 [LOG 05]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 5 Ã¢â‚¬â€ migrar renderSistemaNetoManual
-FunÃƒÂ§ÃƒÂ£o migrada / criada: enderSistemaNetoManual
+Bloco: BLOCO 5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderSistemaNetoManual
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: enderSistemaNetoManual
 cfg utilizado:
   panelId: sistema-neto-panel
   selfFn: enderSistemaNetoManual
@@ -461,20 +461,20 @@ cfg utilizado:
   fecharFn: echarSistemaCompleto
   voltarLabel: Voltar ao processo
   processoId: preservado
-Linhas antes / depois: ~96 linhas Ã¢â€ â€™ 10 linhas
+Linhas antes / depois: ~96 linhas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ 10 linhas
 node --check: OK
-ValidaÃƒÂ§ÃƒÂ£o visual: usuÃƒÂ¡rio validou o fluxo Sistema Ã¢â€ â€™ processo Ã¢â€ â€™ manual da etapa
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio validou o fluxo Sistema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manual da etapa
 Resultado: bloco validado
-Commit: confirmado pelo usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
+Commit: confirmado pelo usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
   - processoId mantido no cfg do helper
 
 [LOG 06]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 6 Ã¢â‚¬â€ migrar renderServicoNetoManual
-FunÃƒÂ§ÃƒÂ£o migrada / criada: enderServicoNetoManual
+Bloco: BLOCO 6 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â migrar renderServicoNetoManual
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: enderServicoNetoManual
 cfg utilizado:
   panelId: servico-neto-panel
   selfFn: enderServicoNetoManual
@@ -482,20 +482,20 @@ cfg utilizado:
   fecharFn: echarServicoCompleto
   voltarLabel: Voltar ao processo
   processoId: preservado
-Linhas antes / depois: ~96 linhas Ã¢â€ â€™ 10 linhas
+Linhas antes / depois: ~96 linhas ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ 10 linhas
 node --check: OK
-ValidaÃƒÂ§ÃƒÂ£o visual: usuÃƒÂ¡rio validou o fluxo ServiÃƒÂ§os Ã¢â€ â€™ processo Ã¢â€ â€™ manual da etapa (painel neto)
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio validou o fluxo ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ processo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ manual da etapa (painel neto)
 Resultado: bloco validado
-Commit: pendente de confirmaÃƒÂ§ÃƒÂ£o do usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
+Commit: pendente de confirmaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
   - processoId mantido no cfg do helper
 
 [LOG 07]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js`r
-Bloco: BLOCO 7 Ã¢â‚¬â€ criar _renderProcessoEmPainel
-FunÃƒÂ§ÃƒÂ£o migrada / criada: _renderProcessoEmPainel`r
+Bloco: BLOCO 7 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â criar _renderProcessoEmPainel
+FunÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o migrada / criada: _renderProcessoEmPainel`r
 cfg utilizado:
   panelId: parametrizado
   chipOnclick: parametrizado
@@ -505,20 +505,20 @@ cfg utilizado:
   wrapScope: opcional
 Linhas antes / depois: +49 linhas / -0 linhas
 node --check: OK
-ValidaÃƒÂ§ÃƒÂ£o visual: nÃƒÂ£o aplicÃƒÂ¡vel neste bloco (criaÃƒÂ§ÃƒÂ£o sem migraÃƒÂ§ÃƒÂ£o)
+ValidaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o visual: nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o aplicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡vel neste bloco (criaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o sem migraÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o)
 Resultado: helper criado e pronto para os blocos 8 e 9
-Commit: pendente de confirmaÃƒÂ§ÃƒÂ£o do usuÃƒÂ¡rio
-ObservaÃƒÂ§ÃƒÂµes:
+Commit: pendente de confirmaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o do usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio
+ObservaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes:
   - helper cobre os dois contextos de processo em painel filho
-  - wrapScope foi incluÃƒÂ­do para preservar o markup atual de sistema e serviÃƒÂ§o
+  - wrapScope foi incluÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­do para preservar o markup atual de sistema e serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o
 
 
 [LOG 08]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: `script.js`
-Bloco: BLOCO 8 â€” migrar `renderSistemaFilhoProcesso`
-FunÃ§Ã£o migrada / criada: `renderSistemaFilhoProcesso`
+Bloco: BLOCO 8 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â migrar `renderSistemaFilhoProcesso`
+FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o migrada / criada: `renderSistemaFilhoProcesso`
 cfg utilizado:
   panelId: `sistema-filho-panel`
   chipOnclick: `abrirManualNoSistemaFilho`
@@ -528,61 +528,87 @@ cfg utilizado:
   wrapScope: `false`
 Linhas antes / depois: +9 linhas / -45 linhas
 node --check: OK
-ValidaÃ§Ã£o visual: usuÃ¡rio validou o fluxo Sistemas â†’ processo vinculado â†’ timeline â†’ manual da etapa
+ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o visual: usuÃƒÆ’Ã‚Â¡rio validou o fluxo Sistemas ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ processo vinculado ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ timeline ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ manual da etapa
 Resultado: bloco validado
-Commit: pendente de confirmaÃ§Ã£o do usuÃ¡rio
-ObservaÃ§Ãµes:
-  - helper `_renderProcessoEmPainel` reaproveitado sem alterar assinatura pÃºblica
+Commit: pendente de confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do usuÃƒÆ’Ã‚Â¡rio
+ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:
+  - helper `_renderProcessoEmPainel` reaproveitado sem alterar assinatura pÃƒÆ’Ã‚Âºblica
 
 [LOG 09]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: `script.js`
-Bloco: BLOCO 9 â€” migrar `renderServicoFilhoProcesso`
-FunÃ§Ã£o migrada / criada: `renderServicoFilhoProcesso`
+Bloco: BLOCO 9 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â migrar `renderServicoFilhoProcesso`
+FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o migrada / criada: `renderServicoFilhoProcesso`
 cfg utilizado:
   panelId: `servico-filho-panel`
   chipOnclick: `abrirManualNoServicoFilho`
   voltarFn: `fecharServicoFilho`
   fecharFn: `fecharServicoCompleto`
-  voltarLabel: `Voltar ao serviÃ§o`
+  voltarLabel: `Voltar ao serviÃƒÆ’Ã‚Â§o`
   wrapScope: `true`
 Linhas antes / depois: +9 linhas / -46 linhas
 node --check: OK
-ValidaÃ§Ã£o visual: usuÃ¡rio validou o fluxo ServiÃ§os â†’ processo vinculado â†’ timeline â†’ manual da etapa
+ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o visual: usuÃƒÆ’Ã‚Â¡rio validou o fluxo ServiÃƒÆ’Ã‚Â§os ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ processo vinculado ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ timeline ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ manual da etapa
 Resultado: bloco validado
-Commit: pendente de confirmaÃ§Ã£o do usuÃ¡rio
-ObservaÃ§Ãµes:
-  - helper `_renderProcessoEmPainel` reaproveitado sem alterar assinatura pÃºblica
+Commit: pendente de confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do usuÃƒÆ’Ã‚Â¡rio
+ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:
+  - helper `_renderProcessoEmPainel` reaproveitado sem alterar assinatura pÃƒÆ’Ã‚Âºblica
 
 [LOG 09-R]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: `script.js`
-Bloco: correÃ§Ã£o pÃ³s-validaÃ§Ã£o do BLOCO 9
-FunÃ§Ã£o migrada / criada: `fecharServicoFilho`, `fecharServicoNetoFilho`, `fecharServicoCompleto`
-cfg utilizado: nÃ£o aplicÃ¡vel
+Bloco: correÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o pÃƒÆ’Ã‚Â³s-validaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do BLOCO 9
+FunÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o migrada / criada: `fecharServicoFilho`, `fecharServicoNetoFilho`, `fecharServicoCompleto`
+cfg utilizado: nÃƒÆ’Ã‚Â£o aplicÃƒÆ’Ã‚Â¡vel
 Linhas antes / depois: +11 linhas / -0 linhas
 node --check: OK
-ValidaÃ§Ã£o visual: usuÃ¡rio validou retorno e fechamento no fluxo ServiÃ§o â†’ processo e no manual aberto dentro do processo
-Resultado: regressÃ£o corrigida
-Commit: pendente de confirmaÃ§Ã£o do usuÃ¡rio
-ObservaÃ§Ãµes:
-  - a migraÃ§Ã£o do bloco 9 expÃ´s a ausÃªncia das funÃ§Ãµes de fechamento do fluxo de serviÃ§os
-  - funÃ§Ãµes restauradas sem alterar contratos pÃºblicos
+ValidaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o visual: usuÃƒÆ’Ã‚Â¡rio validou retorno e fechamento no fluxo ServiÃƒÆ’Ã‚Â§o ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ processo e no manual aberto dentro do processo
+Resultado: regressÃƒÆ’Ã‚Â£o corrigida
+Commit: pendente de confirmaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do usuÃƒÆ’Ã‚Â¡rio
+ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes:
+  - a migraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o do bloco 9 expÃƒÆ’Ã‚Â´s a ausÃƒÆ’Ã‚Âªncia das funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de fechamento do fluxo de serviÃƒÆ’Ã‚Â§os
+  - funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes restauradas sem alterar contratos pÃƒÆ’Ã‚Âºblicos
 [LOG 10]
 Data: 2026-03-27
 Agente: Codex
 Arquivo: `script.js`
-Bloco: BLOCO 10 — limpeza final e validação de regressão
-Função migrada / criada: não aplicável
-cfg utilizado: não aplicável
+Bloco: BLOCO 10 Ã¢â‚¬â€ limpeza final e validaÃƒÂ§ÃƒÂ£o de regressÃƒÂ£o
+FunÃƒÂ§ÃƒÂ£o migrada / criada: nÃƒÂ£o aplicÃƒÂ¡vel
+cfg utilizado: nÃƒÂ£o aplicÃƒÂ¡vel
 Linhas antes / depois: +0 linhas / -0 linhas
 node --check: OK
-Validação visual: validação estrutural final concluída; sem novos fluxos alterados neste bloco
-Resultado: funções-alvo finais confirmadas como wrappers/helpers sem corpos duplicados remanescentes
-Commit: pendente de confirmação do usuário
-Observações:
-  - checagem final nas funções alvo: `renderManualFilho`, `renderSistemaFilhoManual`, `renderServicoFilhoManual`, `renderSistemaNetoManual`, `renderServicoNetoManual`, `renderSistemaFilhoProcesso`, `renderServicoFilhoProcesso`
+ValidaÃƒÂ§ÃƒÂ£o visual: validaÃƒÂ§ÃƒÂ£o estrutural final concluÃƒÂ­da; sem novos fluxos alterados neste bloco
+Resultado: funÃƒÂ§ÃƒÂµes-alvo finais confirmadas como wrappers/helpers sem corpos duplicados remanescentes
+Commit: pendente de confirmaÃƒÂ§ÃƒÂ£o do usuÃƒÂ¡rio
+ObservaÃƒÂ§ÃƒÂµes:
+  - checagem final nas funÃƒÂ§ÃƒÂµes alvo: `renderManualFilho`, `renderSistemaFilhoManual`, `renderServicoFilhoManual`, `renderSistemaNetoManual`, `renderServicoNetoManual`, `renderSistemaFilhoProcesso`, `renderServicoFilhoProcesso`
   - helpers finais confirmados: `_renderManualEmPainel` e `_renderProcessoEmPainel`
-  - regressão do fluxo de serviços permaneceu corrigida após validação final
+  - regressÃƒÂ£o do fluxo de serviÃƒÂ§os permaneceu corrigida apÃƒÂ³s validaÃƒÂ§ÃƒÂ£o final
+[LOG 11]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: `plano-refatoracao-v1.3.md`
+Bloco: encerramento da v1.3
+FunÃ§Ã£o migrada / criada: nÃ£o aplicÃ¡vel
+cfg utilizado: nÃ£o aplicÃ¡vel
+Linhas antes / depois: nÃ£o aplicÃ¡vel
+node --check: consolidado no BLOCO 10
+ValidaÃ§Ã£o visual: concluÃ­da ao longo dos blocos validados pelo usuÃ¡rio
+Resultado: plano v1.3 encerrado
+Commit: pendente de confirmaÃ§Ã£o do usuÃ¡rio
+ObservaÃ§Ãµes:
+  - a v1.3 nÃ£o unificou todas as funÃ§Ãµes pÃºblicas em uma sÃ³; isso foi intencional para preservar compatibilidade e reduzir risco
+  - o ganho principal foi remover a lÃ³gica pesada duplicada de dentro das funÃ§Ãµes especÃ­ficas e centralizar essa lÃ³gica em helpers reaproveitÃ¡veis
+  - as funÃ§Ãµes especÃ­ficas por mÃ³dulo foram mantidas como wrappers finos para preservar contexto, callbacks, rÃ³tulos e contratos jÃ¡ usados pelo app
+  - ganho real em manutenÃ§Ã£o: menos pontos para corrigir quando houver ajuste em painÃ©is de manual/processo
+  - ganho real em prevenÃ§Ã£o de bugs: menor chance de um fluxo receber correÃ§Ã£o e outro equivalente ficar para trÃ¡s
+  - ganho real em escalabilidade: novos painÃ©is do mesmo tipo podem reaproveitar `_renderManualEmPainel` e `_renderProcessoEmPainel`
+  - ganho em performance existe, mas Ã© secundÃ¡rio; o foco principal desta etapa foi reduzir duplicaÃ§Ã£o e divergÃªncia de comportamento
+
+Resumo leigo do que foi feito:
+  - antes, o sistema tinha vÃ¡rias funÃ§Ãµes diferentes com trechos grandes quase iguais
+  - agora, a parte repetida ficou centralizada em poucas funÃ§Ãµes internas reutilizÃ¡veis
+  - as entradas especÃ­ficas de cada mÃ³dulo continuam existindo, mas sÃ³ para dizer qual painel abrir, para onde voltar e qual contexto usar
+  - isso deixa o cÃ³digo mais previsÃ­vel, mais fÃ¡cil de manter e menos propenso a bugs silenciosos
