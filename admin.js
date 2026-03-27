@@ -1724,23 +1724,6 @@ function getManuaisOptions(selectedIds = []) {
   }).join('');
 }
 
-function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
-  return `
-    <div class="dyn-item etapa-item" style="flex-direction:column;gap:6px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
-      <div style="display:flex;gap:6px">
-        <input name="etapa_titulo_${i}" value="${escHtml(titulo)}" placeholder="Título da etapa..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-        <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
-      </div>
-      <textarea name="etapa_desc_${i}" placeholder="Descrição da etapa..." rows="2" style="border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(descricao)}</textarea>
-      <div>
-        <label style="font-size:0.65rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Manuais vinculados <span style="font-weight:400;opacity:.7">(opcional)</span></label>
-        <select name="etapa_manuais_${i}" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.8rem;outline:none;min-height:60px;max-height:100px">
-          ${getManuaisOptions(manuais_ids)}
-        </select>
-        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">Segure Ctrl (ou Cmd) para selecionar múltiplos manuais.</p>
-      </div>
-    </div>`;
-}
 
 function formProcesso(p = {}) {
   const etapasHTML = (p.etapas || []).map((e, i) =>
@@ -1803,7 +1786,6 @@ function salvarProcesso(id) {
   fecharModal(); toast('Processo salvo.'); renderProcessos();
 }
 
-// Sobrescreve o template das etapas para usar a largura total disponivel no modal.
 function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
   return `
     <div class="dyn-item etapa-item" style="flex-direction:column;gap:6px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
