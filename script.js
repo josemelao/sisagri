@@ -1191,18 +1191,38 @@ function openManualFilho(id) {
   });
 }
 
-function renderManualFilho(m, modo, passoAtivo) {
-  const filho = document.getElementById('manual-filho-panel');
-  if (!filho) return;
+/**
+ * Helper interno — renderiza um manual (tabs + passos + docs) em qualquer painel filho/neto.
+ * Nunca chamar diretamente: use os wrappers públicos abaixo.
+ *
+ * @param {object} m           — manual (do DB)
+ * @param {string} modo        — 'resumido' | 'completo'
+ * @param {number} passoAtivo  — índice do passo atual (modo completo)
+ * @param {object} cfg         — configuração do contexto:
+ *   {
+ *     panelId:     string  — ID do elemento DOM do painel
+ *     selfFn:      string  — nome desta função wrapper (para onclicks)
+ *     voltarFn:    string  — função chamada no botão Voltar
+ *     fecharFn:    string  — função chamada no botão X
+ *     voltarLabel: string  — texto do botão Voltar
+ *     processoId:  number  — opcional, apenas para painéis neto
+ *   }
+ */
+function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
+  const painel = document.getElementById(cfg.panelId);
+  if (!painel) return;
+
+  // processoId: presente apenas nos netos — inserido nos callbacks de passo
+  const pid = cfg.processoId !== undefined ? `,${cfg.processoId}` : '';
 
   const tabs = `
     <div class="manual-tabs" style="margin:0 0 16px">
       <button class="manual-tab ${modo==='resumido'?'active':''}"
-              onclick="renderManualFilho(manuais.find(x=>x.id===${m.id}),'resumido',0)">
+              onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'resumido'${pid},0)">
         <i class="ph-bold ph-list-numbers"></i> Resumido
       </button>
       <button class="manual-tab ${modo==='completo'?'active':''}"
-              onclick="renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',0)">
+              onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},0)">
         <i class="ph-bold ph-presentation"></i> Completo
       </button>
     </div>`;
@@ -1224,9 +1244,9 @@ function renderManualFilho(m, modo, passoAtivo) {
         ${buildManualPaginationHTML(
           total,
           passoAtivo,
-          i => `renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',${i})`,
-          `renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo-1})`,
-          `renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo+1})`
+          i => `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${i})`,
+          `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo-1})`,
+          `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo+1})`
         )}
         <div class="manual-passo-card">
           <div class="manual-passo-header">
@@ -1241,10 +1261,10 @@ function renderManualFilho(m, modo, passoAtivo) {
           </div>
           <div class="manual-passo-footer">
             <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    onclick="renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo-1})">
+                    onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo-1})">
               <i class="ph-bold ph-arrow-left"></i> Anterior</button>
             <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    onclick="renderManualFilho(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo+1})">
+                    onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo+1})">
               Próximo <i class="ph-bold ph-arrow-right"></i></button>
           </div>
         </div>
@@ -1253,8 +1273,8 @@ function renderManualFilho(m, modo, passoAtivo) {
 
   const docs = (m.documentos || []).map(d => {
     const isObj = typeof d === 'object' && d !== null;
-    const nome = isObj ? d.nome : d;
-    const aid  = isObj ? d.arquivo_id : null;
+    const nome  = isObj ? d.nome : d;
+    const aid   = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
       if (a && (a.arquivo_data || a.url)) {
@@ -1267,13 +1287,13 @@ function renderManualFilho(m, modo, passoAtivo) {
     return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
   }).join('');
 
-  filho.innerHTML = `
+  painel.innerHTML = `
     <div class="manual-transition-scope">
     <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharManualFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
+      <button class="manual-filho-back" onclick="${cfg.voltarFn}()">
+        <i class="ph-bold ph-arrow-left"></i> ${cfg.voltarLabel}
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharProcessoCompleto()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="${cfg.fecharFn}()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -1285,7 +1305,17 @@ function renderManualFilho(m, modo, passoAtivo) {
     ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
     </div>
   `;
-  animateManualPanelContent(filho, modo, passoAtivo);
+  animateManualPanelContent(painel, modo, passoAtivo);
+}
+
+function renderManualFilho(m, modo, passoAtivo) {
+  _renderManualEmPainel(m, modo, passoAtivo, {
+    panelId:     'manual-filho-panel',
+    selfFn:      'renderManualFilho',
+    voltarFn:    'fecharManualFilho',
+    fecharFn:    'fecharProcessoCompleto',
+    voltarLabel: 'Voltar ao processo',
+  });
 }
 
 function fecharManualFilho() {
