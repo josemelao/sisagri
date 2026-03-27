@@ -3207,16 +3207,15 @@ function renderSistemaFilhoManual(m, modo, passoAtivo) {
   });
 }
 
-function renderSistemaFilhoProcesso(p) {
-  const filho = document.getElementById('sistema-filho-panel');
-  if (!filho) return;
+function _renderProcessoEmPainel(p, cfg) {
+  const painel = document.getElementById(cfg.panelId);
+  if (!painel) return;
 
-  // Timeline com chips de manuais vinculados por etapa — igual ao openProcesso
-  const timeline = p.etapas.map(e => {
+  const timeline = (p.etapas || []).map(e => {
     const chips = (e.manuais_ids || []).map(mid => {
       const m = getPublishedManualById(mid);
       if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="abrirManualNoSistemaFilho(${m.id},${p.id})" title="Ver manual">
+      return `<button class="etapa-manual-chip" onclick="${cfg.chipOnclick}(${m.id},${p.id})" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${m.titulo}
         <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
       </button>`;
@@ -3236,12 +3235,16 @@ function renderSistemaFilhoProcesso(p) {
       </div>`;
   }).join('');
 
-  filho.innerHTML = `
+  const scopeStart = cfg.wrapScope ? '<div class="manual-transition-scope">' : '';
+  const scopeEnd = cfg.wrapScope ? '</div>' : '';
+
+  painel.innerHTML = `
+    ${scopeStart}
     <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharSistemaFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao sistema
+      <button class="manual-filho-back" onclick="${cfg.voltarFn}()">
+        <i class="ph-bold ph-arrow-left"></i> ${cfg.voltarLabel}
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaCompleto()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="${cfg.fecharFn}()">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3250,7 +3253,18 @@ function renderSistemaFilhoProcesso(p) {
     <hr class="detail-divider">
     <p class="detail-section-title">Fluxo do processo</p>
     <div class="timeline">${timeline}</div>
+    ${scopeEnd}
   `;
+}
+function renderSistemaFilhoProcesso(p) {
+  _renderProcessoEmPainel(p, {
+    panelId: 'sistema-filho-panel',
+    chipOnclick: 'abrirManualNoSistemaFilho',
+    voltarFn: 'fecharSistemaFilho',
+    fecharFn: 'fecharSistemaCompleto',
+    voltarLabel: 'Voltar ao sistema',
+    wrapScope: false,
+  });
 }
 
 /**

@@ -337,16 +337,16 @@ Observações:
 12. ROTEIRO DE EXECUÇÃO
 ==================================================================
 FASE 1 — GRUPO A (manual em painel)
-1. [ ] BLOCO 1 — criar _renderManualEmPainel
-2. [ ] BLOCO 2 — migrar renderManualFilho
-3. [ ] BLOCO 3 — migrar renderSistemaFilhoManual
-4. [ ] BLOCO 4 — migrar renderServicoFilhoManual
-5. [ ] BLOCO 5 — migrar renderSistemaNetoManual
-6. [ ] BLOCO 6 — migrar renderServicoNetoManual
+1. [x] BLOCO 1 — criar _renderManualEmPainel
+2. [x] BLOCO 2 — migrar renderManualFilho
+3. [x] BLOCO 3 — migrar renderSistemaFilhoManual
+4. [x] BLOCO 4 — migrar renderServicoFilhoManual
+5. [x] BLOCO 5 — migrar renderSistemaNetoManual
+6. [x] BLOCO 6 — migrar renderServicoNetoManual
 
 FASE 2 — GRUPO B (processo em painel)
-7. [ ] BLOCO 7 — criar _renderProcessoEmPainel
-8. [ ] BLOCO 8 — migrar renderSistemaFilhoProcesso
+7. [x] BLOCO 7 — criar _renderProcessoEmPainel
+8. [x] BLOCO 8 — migrar renderSistemaFilhoProcesso
 9. [ ] BLOCO 9 — migrar renderServicoFilhoProcesso
 
 FASE 3 — ENCERRAMENTO
@@ -356,22 +356,22 @@ FASE 3 — ENCERRAMENTO
 ==================================================================
 13. RECOMENDAÇÃO FINAL AOS PRÓXIMOS AGENTES
 ==================================================================
-Esta refatoração é cirúrgica mas exige atenção aos callbacks inline.
+Esta refatoração é cirúrgica, mas exige atenção aos callbacks inline.
 
-O risco principal não é a lógica — é a string dos onclicks dentro dos
-template literals. Cada função precisa referenciar a si mesma pelo nome
-correto. Um erro de digitação no selfFn não quebra a sintaxe mas quebra
-a navegação entre passos silenciosamente.
+O risco principal não é a lógica em si, e sim as strings de onclick
+dentro dos template literals. Cada função precisa referenciar a si
+mesma pelo nome correto. Um erro no selfFn não quebra a sintaxe, mas
+quebra a navegação entre passos silenciosamente.
 
 Antes de qualquer migração:
 1. Confirmar o cfg completo lendo a função original
-2. Checar o processoId — ele aparece APENAS nos netos (blocos 5 e 6)
-3. Checar o voltarLabel — "Voltar ao processo" vs "Voltar ao sistema" vs "Voltar ao serviço"
-4. Testar a navegação entre passos (não só a abertura do painel)
+2. Checar o processoId — ele aparece apenas nos netos (blocos 5 e 6)
+3. Checar o oltarLabel — “Voltar ao processo” vs “Voltar ao sistema” vs “Voltar ao serviço”
+4. Testar a navegação entre passos, não só a abertura do painel
 
-A validação mais importante é: navegar do passo 1 ao passo 3 e voltar
-ao passo 1 dentro do painel filho/neto. Isso confirma que selfFn e
-processoId estão corretos nos callbacks.
+A validação mais importante é:
+navegar do passo 1 ao passo 3 e voltar ao passo 1 dentro do painel
+filho/neto. Isso confirma que selfFn e processoId estão corretos.
 
 Sempre:
 1. reler antes
@@ -381,12 +381,12 @@ Sempre:
 5. não avançar sem confirmação do usuário
 
 ==================================================================
-14. LOG DE ABERTURA
+14. LOG DE EXECUÇÃO
 ==================================================================
 [LOG 00]
 Data: 2026-03-26
 Agente: Claude Sonnet 4.6
-Arquivo: `plano-refatoracao-v1.3.md`
+Arquivo: plano-refatoracao-v1.3.md
 Bloco: abertura do plano
 Função migrada / criada: não aplicável
 cfg utilizado: não aplicável
@@ -397,13 +397,13 @@ Resultado: plano operacional criado com base no mapeamento da v1.2
 Commit: pendente de validação do usuário
 Observações:
   Funções alvo mapeadas com linhas exatas no estado pós-v1.2:
-    renderManualFilho:         linhas 1194-1289 (96 linhas)
-    renderSistemaFilhoManual:  linhas 3082-3178 (97 linhas)
+    renderManualFilho: linhas 1194-1289 (96 linhas)
+    renderSistemaFilhoManual: linhas 3082-3178 (97 linhas)
     renderSistemaFilhoProcesso: linhas 3180-3224 (45 linhas)
     renderServicoFilhoProcesso: linhas 3431-3476 (46 linhas)
-    renderServicoFilhoManual:  linhas 3478-3573 (96 linhas)
-    renderSistemaNetoManual:   linhas 3594-3689 (96 linhas)
-    renderServicoNetoManual:   linhas 3695-3790 (96 linhas)
+    renderServicoFilhoManual: linhas 3478-3573 (96 linhas)
+    renderSistemaNetoManual: linhas 3594-3689 (96 linhas)
+    renderServicoNetoManual: linhas 3695-3790 (96 linhas)
   Total atual: ~572 linhas para ~480 linhas de lógica duplicada
   Total esperado após v1.3: ~120 linhas (helpers + wrappers)
 
@@ -411,7 +411,7 @@ Observações:
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 3 â€” migrar renderSistemaFilhoManual
+Bloco: BLOCO 3 — migrar renderSistemaFilhoManual
 Função migrada / criada: enderSistemaFilhoManual
 cfg utilizado:
   panelId: sistema-filho-panel
@@ -419,7 +419,7 @@ cfg utilizado:
   voltarFn: echarSistemaFilho
   fecharFn: echarSistemaCompleto
   voltarLabel: Voltar ao sistema
-Linhas antes / depois: ~97 linhas â†’ 9 linhas
+Linhas antes / depois: ~97 linhas → 9 linhas
 node --check: OK
 Validação visual: usuário validou abertura do painel filho em Sistemas, abas Resumido/Completo, navegação entre passos, botão Voltar e botão X
 Resultado: bloco validado
@@ -431,7 +431,7 @@ Observações:
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 4 â€” migrar renderServicoFilhoManual
+Bloco: BLOCO 4 — migrar renderServicoFilhoManual
 Função migrada / criada: enderServicoFilhoManual
 cfg utilizado:
   panelId: servico-filho-panel
@@ -439,9 +439,9 @@ cfg utilizado:
   voltarFn: echarServicoFilho
   fecharFn: echarServicoCompleto
   voltarLabel: Voltar ao serviço
-Linhas antes / depois: ~96 linhas â†’ 9 linhas
+Linhas antes / depois: ~96 linhas → 9 linhas
 node --check: OK
-Validação visual: usuário validou pelo fluxo Serviços â†’ processo vinculado â†’ manual da etapa
+Validação visual: usuário validou pelo fluxo Serviços → processo vinculado → manual da etapa
 Resultado: bloco validado
 Commit: confirmado pelo usuário
 Observações:
@@ -452,7 +452,7 @@ Observações:
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 5 â€” migrar renderSistemaNetoManual
+Bloco: BLOCO 5 — migrar renderSistemaNetoManual
 Função migrada / criada: enderSistemaNetoManual
 cfg utilizado:
   panelId: sistema-neto-panel
@@ -461,9 +461,9 @@ cfg utilizado:
   fecharFn: echarSistemaCompleto
   voltarLabel: Voltar ao processo
   processoId: preservado
-Linhas antes / depois: ~96 linhas â†’ 10 linhas
+Linhas antes / depois: ~96 linhas → 10 linhas
 node --check: OK
-Validação visual: usuário validou o fluxo Sistema â†’ processo â†’ manual da etapa
+Validação visual: usuário validou o fluxo Sistema → processo → manual da etapa
 Resultado: bloco validado
 Commit: confirmado pelo usuário
 Observações:
@@ -473,7 +473,7 @@ Observações:
 Data: 2026-03-27
 Agente: Codex
 Arquivo: script.js
-Bloco: BLOCO 6 â€” migrar renderServicoNetoManual
+Bloco: BLOCO 6 — migrar renderServicoNetoManual
 Função migrada / criada: enderServicoNetoManual
 cfg utilizado:
   panelId: servico-neto-panel
@@ -482,10 +482,54 @@ cfg utilizado:
   fecharFn: echarServicoCompleto
   voltarLabel: Voltar ao processo
   processoId: preservado
-Linhas antes / depois: ~96 linhas â†’ 10 linhas
+Linhas antes / depois: ~96 linhas → 10 linhas
 node --check: OK
-Validação visual: usuário validou o fluxo Serviços â†’ processo â†’ manual da etapa (painel neto)
+Validação visual: usuário validou o fluxo Serviços → processo → manual da etapa (painel neto)
 Resultado: bloco validado
 Commit: pendente de confirmação do usuário
 Observações:
   - processoId mantido no cfg do helper
+
+[LOG 07]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js`r
+Bloco: BLOCO 7 — criar _renderProcessoEmPainel
+Função migrada / criada: _renderProcessoEmPainel`r
+cfg utilizado:
+  panelId: parametrizado
+  chipOnclick: parametrizado
+  voltarFn: parametrizado
+  fecharFn: parametrizado
+  voltarLabel: parametrizado
+  wrapScope: opcional
+Linhas antes / depois: +49 linhas / -0 linhas
+node --check: OK
+Validação visual: não aplicável neste bloco (criação sem migração)
+Resultado: helper criado e pronto para os blocos 8 e 9
+Commit: pendente de confirmação do usuário
+Observações:
+  - helper cobre os dois contextos de processo em painel filho
+  - wrapScope foi incluído para preservar o markup atual de sistema e serviço
+
+
+[LOG 08]
+Data: 2026-03-27
+Agente: Codex
+Arquivo: script.js`r
+Bloco: BLOCO 8 — migrar renderSistemaFilhoProcesso
+Função migrada / criada: enderSistemaFilhoProcesso`r
+cfg utilizado:
+  panelId: sistema-filho-panel`r
+  chipOnclick: brirManualNoSistemaFilho`r
+  voltarFn: echarSistemaFilho`r
+  fecharFn: echarSistemaCompleto`r
+  voltarLabel: Voltar ao sistema`r
+  wrapScope: alse`r
+Linhas antes / depois: 45 linhas → 9 linhas
+node --check: OK
+Validação visual: usuário validou o fluxo Sistemas → processo vinculado → timeline → manual da etapa
+Resultado: bloco validado
+Commit: pendente de confirmação do usuário
+Observações:
+  - helper _renderProcessoEmPainel reaproveitado sem alterar assinatura pública
