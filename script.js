@@ -3470,50 +3470,14 @@ function openServicoFilho(tipo, id) {
 }
 
 function renderServicoFilhoProcesso(p) {
-  const filho = document.getElementById('servico-filho-panel');
-  if (!filho) return;
-
-  const timeline = p.etapas.map(e => {
-    const chips = (e.manuais_ids || []).map(mid => {
-      const m = getPublishedManualById(mid);
-      if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="abrirManualNoServicoFilho(${m.id},${p.id})" title="Ver manual">
-        <i class="ph-bold ph-book-open"></i>${m.titulo}
-        <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
-      </button>`;
-    }).join('');
-
-    return `
-      <div class="timeline-item">
-        <div class="timeline-left">
-          <div class="timeline-dot"></div>
-          <div class="timeline-line"></div>
-        </div>
-        <div class="timeline-content">
-          <strong>${e.titulo}</strong>
-          <p>${e.descricao}</p>
-          ${chips ? `<div class="etapa-manuais-row">${chips}</div>` : ''}
-        </div>
-      </div>`;
-  }).join('');
-
-  filho.innerHTML = `
-    <div class="manual-transition-scope">
-    <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharServicoFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao serviço
-      </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
-        <i class="ph-bold ph-x"></i>
-      </button>
-    </div>
-    <span class="detail-badge">${p.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${p.titulo}</div>
-    <hr class="detail-divider">
-    <p class="detail-section-title">Fluxo do processo</p>
-    <div class="timeline">${timeline}</div>
-    </div>
-  `;
+  _renderProcessoEmPainel(p, {
+    panelId: 'servico-filho-panel',
+    chipOnclick: 'abrirManualNoServicoFilho',
+    voltarFn: 'fecharServicoFilho',
+    fecharFn: 'fecharServicoCompleto',
+    voltarLabel: 'Voltar ao servi\u00e7o',
+    wrapScope: true,
+  });
 }
 
 function renderServicoFilhoManual(m, modo, passoAtivo) {
@@ -3569,6 +3533,18 @@ function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
     voltarLabel: 'Voltar ao processo',
     processoId,
   });
+}
+
+function fecharServicoFilho() {
+  closeNestedPanel({ panelId: 'servico-filho-panel', nestedPanelIds: ['servico-neto-panel'] });
+}
+
+function fecharServicoNetoFilho() {
+  closeChildPanel('servico-neto-panel');
+}
+
+function fecharServicoCompleto() {
+  closeDetail('servico-detail-overlay');
 }
 
 function eventoItemHTML(e, mostrarData = true) {
