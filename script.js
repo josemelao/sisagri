@@ -3503,97 +3503,13 @@ function renderServicoFilhoProcesso(p) {
 }
 
 function renderServicoFilhoManual(m, modo, passoAtivo) {
-  const filho = document.getElementById('servico-filho-panel');
-  if (!filho) return;
-
-  const tabs = `
-    <div class="manual-tabs" style="margin:0 0 16px">
-      <button class="manual-tab ${modo==='resumido'?'active':''}"
-              onclick="renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'resumido',0)">
-        <i class="ph-bold ph-list-numbers"></i> Resumido
-      </button>
-      <button class="manual-tab ${modo==='completo'?'active':''}"
-              onclick="renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',0)">
-        <i class="ph-bold ph-presentation"></i> Completo
-      </button>
-    </div>`;
-
-  let content = '';
-  if (modo === 'resumido') {
-    content = `<div class="manual-content-switch"><div class="manual-steps">${m.passos.map((p, i) => `
-      <div class="manual-step">
-        <div class="step-number">${i+1}</div>
-        <div class="step-text">${typeof p==='string' ? p : p.texto}</div>
-      </div>`).join('')}</div></div>`;
-  } else {
-    const passo = m.passos[passoAtivo];
-    const texto = typeof passo === 'string' ? passo : passo.texto;
-    const imagem = typeof passo === 'object' && passo.imagem ? passo.imagem : '';
-    const total = m.passos.length;
-    content = `
-      <div class="manual-content-switch"><div class="manual-completo">
-        ${buildManualPaginationHTML(
-          total,
-          passoAtivo,
-          i => `renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',${i})`,
-          `renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo-1})`,
-          `renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo+1})`
-        )}
-        <div class="manual-passo-card">
-          <div class="manual-passo-header">
-            <span class="step-number">${passoAtivo+1}</span>
-            <strong>Passo ${passoAtivo+1} de ${total}</strong>
-          </div>
-          <div class="manual-passo-body">
-            <p class="manual-passo-texto">${texto}</p>
-            ${imagem
-              ? `<div class="manual-passo-img-container"><img src="${imagem}" class="manual-passo-img"/></div>`
-              : `<div class="manual-passo-no-img"><i class="ph-bold ph-image-square"></i><span>Nenhuma imagem.</span></div>`}
-          </div>
-          <div class="manual-passo-footer">
-            <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    onclick="renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo-1})">
-              <i class="ph-bold ph-arrow-left"></i> Anterior</button>
-            <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    onclick="renderServicoFilhoManual(manuais.find(x=>x.id===${m.id}),'completo',${passoAtivo+1})">
-              Próximo <i class="ph-bold ph-arrow-right"></i></button>
-          </div>
-        </div>
-      </div></div>`;
-  }
-
-  const docs = (m.documentos || []).map(d => {
-    const isObj = typeof d === 'object' && d !== null;
-    const nome = isObj ? d.nome : d;
-    const aid = isObj ? d.arquivo_id : null;
-    if (aid) {
-      const a = getPublishedArquivoById(aid);
-      if (a) {
-        const linkMeta = getArquivoLinkMeta(a);
-        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-          <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
-      }
-    }
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
-  }).join('');
-
-  filho.innerHTML = `
-    <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharServicoFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao serviço
-      </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
-        <i class="ph-bold ph-x"></i>
-      </button>
-    </div>
-    <span class="detail-badge">${m.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${m.titulo}</div>
-    <hr class="detail-divider">
-    ${tabs}${content}
-    ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessários</p><div class="docs-list">${docs}</div>` : ''}
-    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
-  `;
-  animateManualPanelContent(filho, modo, passoAtivo);
+  _renderManualEmPainel(m, modo, passoAtivo, {
+    panelId:     'servico-filho-panel',
+    selfFn:      'renderServicoFilhoManual',
+    voltarFn:    'fecharServicoFilho',
+    fecharFn:    'fecharServicoCompleto',
+    voltarLabel: 'Voltar ao servi\u00e7o',
+  });
 }
 
 function abrirManualNoServicoFilho(manualId, processoId) {
@@ -3616,99 +3532,14 @@ function abrirManualNoServicoFilho(manualId, processoId) {
    MOBILE — Hamburger menu
    ============================================================ */
 function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
-  const neto = document.getElementById('sistema-neto-panel');
-  if (!neto) return;
-
-  const tabs = `
-    <div class="manual-tabs" style="margin:0 0 16px">
-      <button class="manual-tab ${modo==='resumido'?'active':''}"
-              onclick="renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'resumido',${processoId},0)">
-        <i class="ph-bold ph-list-numbers"></i> Resumido
-      </button>
-      <button class="manual-tab ${modo==='completo'?'active':''}"
-              onclick="renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},0)">
-        <i class="ph-bold ph-presentation"></i> Completo
-      </button>
-    </div>`;
-
-  let content = '';
-  if (modo === 'resumido') {
-    content = `<div class="manual-content-switch"><div class="manual-steps">${m.passos.map((p, i) => `
-      <div class="manual-step">
-        <div class="step-number">${i+1}</div>
-        <div class="step-text">${typeof p==='string' ? p : p.texto}</div>
-      </div>`).join('')}</div></div>`;
-  } else {
-    const passo = m.passos[passoAtivo];
-    const texto = typeof passo === 'string' ? passo : passo.texto;
-    const imagem = typeof passo === 'object' && passo.imagem ? passo.imagem : '';
-    const total = m.passos.length;
-    content = `
-      <div class="manual-content-switch"><div class="manual-completo">
-        ${buildManualPaginationHTML(
-          total,
-          passoAtivo,
-          i => `renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${i})`,
-          `renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo-1})`,
-          `renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo+1})`
-        )}
-        <div class="manual-passo-card">
-          <div class="manual-passo-header">
-            <span class="step-number">${passoAtivo+1}</span>
-            <strong>Passo ${passoAtivo+1} de ${total}</strong>
-          </div>
-          <div class="manual-passo-body">
-            <p class="manual-passo-texto">${texto}</p>
-            ${imagem
-              ? `<div class="manual-passo-img-container"><img src="${imagem}" class="manual-passo-img"/></div>`
-              : `<div class="manual-passo-no-img"><i class="ph-bold ph-image-square"></i><span>Nenhuma imagem.</span></div>`}
-          </div>
-          <div class="manual-passo-footer">
-            <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    onclick="renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo-1})">
-              <i class="ph-bold ph-arrow-left"></i> Anterior</button>
-            <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    onclick="renderSistemaNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo+1})">
-              Próximo <i class="ph-bold ph-arrow-right"></i></button>
-          </div>
-        </div>
-      </div></div>`;
-  }
-
-  const docs = (m.documentos || []).map(d => {
-    const isObj = typeof d === 'object' && d !== null;
-    const nome = isObj ? d.nome : d;
-    const aid = isObj ? d.arquivo_id : null;
-    if (aid) {
-      const a = getPublishedArquivoById(aid);
-      if (a) {
-        const linkMeta = getArquivoLinkMeta(a);
-        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-          <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
-      }
-    }
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
-  }).join('');
-
-  neto.innerHTML = `
-    <div class="manual-transition-scope">
-    <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharSistemaNetoFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
-      </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharSistemaCompleto()">
-        <i class="ph-bold ph-x"></i>
-      </button>
-    </div>
-    <span class="detail-badge">${m.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${m.titulo}</div>
-    <hr class="detail-divider">
-    ${tabs}${content}
-    ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessários</p><div class="docs-list">${docs}</div>` : ''}
-    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
-    </div>
-  `;
-  animateManualPanelContent(neto, modo, passoAtivo);
+  _renderManualEmPainel(m, modo, passoAtivo, {
+    panelId:     'sistema-neto-panel',
+    selfFn:      'renderSistemaNetoManual',
+    voltarFn:    'fecharSistemaNetoFilho',
+    fecharFn:    'fecharSistemaCompleto',
+    voltarLabel: 'Voltar ao processo',
+    processoId,
+  });
 }
 
 function fecharSistemaNetoFilho() {
@@ -3716,111 +3547,14 @@ function fecharSistemaNetoFilho() {
 }
 
 function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
-  const neto = document.getElementById('servico-neto-panel');
-  if (!neto) return;
-
-  const tabs = `
-    <div class="manual-tabs" style="margin:0 0 16px">
-      <button class="manual-tab ${modo==='resumido'?'active':''}"
-              onclick="renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'resumido',${processoId},0)">
-        <i class="ph-bold ph-list-numbers"></i> Resumido
-      </button>
-      <button class="manual-tab ${modo==='completo'?'active':''}"
-              onclick="renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},0)">
-        <i class="ph-bold ph-presentation"></i> Completo
-      </button>
-    </div>`;
-
-  let content = '';
-  if (modo === 'resumido') {
-    content = `<div class="manual-content-switch"><div class="manual-steps">${m.passos.map((p, i) => `
-      <div class="manual-step">
-        <div class="step-number">${i+1}</div>
-        <div class="step-text">${typeof p==='string' ? p : p.texto}</div>
-      </div>`).join('')}</div></div>`;
-  } else {
-    const passo = m.passos[passoAtivo];
-    const texto = typeof passo === 'string' ? passo : passo.texto;
-    const imagem = typeof passo === 'object' && passo.imagem ? passo.imagem : '';
-    const total = m.passos.length;
-    content = `
-      <div class="manual-content-switch"><div class="manual-completo">
-        ${buildManualPaginationHTML(
-          total,
-          passoAtivo,
-          i => `renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${i})`,
-          `renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo-1})`,
-          `renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo+1})`
-        )}
-        <div class="manual-passo-card">
-          <div class="manual-passo-header">
-            <span class="step-number">${passoAtivo+1}</span>
-            <strong>Passo ${passoAtivo+1} de ${total}</strong>
-          </div>
-          <div class="manual-passo-body">
-            <p class="manual-passo-texto">${texto}</p>
-            ${imagem
-              ? `<div class="manual-passo-img-container"><img src="${imagem}" class="manual-passo-img"/></div>`
-              : `<div class="manual-passo-no-img"><i class="ph-bold ph-image-square"></i><span>Nenhuma imagem.</span></div>`}
-          </div>
-          <div class="manual-passo-footer">
-            <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    onclick="renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo-1})">
-              <i class="ph-bold ph-arrow-left"></i> Anterior</button>
-            <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    onclick="renderServicoNetoManual(manuais.find(x=>x.id===${m.id}),'completo',${processoId},${passoAtivo+1})">
-              Próximo <i class="ph-bold ph-arrow-right"></i></button>
-          </div>
-        </div>
-      </div></div>`;
-  }
-
-  const docs = (m.documentos || []).map(d => {
-    const isObj = typeof d === 'object' && d !== null;
-    const nome = isObj ? d.nome : d;
-    const aid = isObj ? d.arquivo_id : null;
-    if (aid) {
-      const a = getPublishedArquivoById(aid);
-      if (a) {
-        const linkMeta = getArquivoLinkMeta(a);
-        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-          <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
-      }
-    }
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
-  }).join('');
-
-  neto.innerHTML = `
-    <div class="manual-transition-scope">
-    <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="fecharServicoNetoFilho()">
-        <i class="ph-bold ph-arrow-left"></i> Voltar ao processo
-      </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="fecharServicoCompleto()">
-        <i class="ph-bold ph-x"></i>
-      </button>
-    </div>
-    <span class="detail-badge">${m.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${m.titulo}</div>
-    <hr class="detail-divider">
-    ${tabs}${content}
-    ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessários</p><div class="docs-list">${docs}</div>` : ''}
-    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
-    </div>
-  `;
-  animateManualPanelContent(neto, modo, passoAtivo);
-}
-
-function fecharServicoNetoFilho() {
-  closeNestedPanel({ panelId: 'servico-neto-panel' });
-}
-
-function fecharServicoFilho() {
-  closeNestedPanel({ panelId: 'servico-filho-panel', nestedPanelIds: ['servico-neto-panel'] });
-}
-
-function fecharServicoCompleto() {
-  closeDetail('servico-detail-overlay');
+  _renderManualEmPainel(m, modo, passoAtivo, {
+    panelId:     'servico-neto-panel',
+    selfFn:      'renderServicoNetoManual',
+    voltarFn:    'fecharServicoNetoFilho',
+    fecharFn:    'fecharServicoCompleto',
+    voltarLabel: 'Voltar ao processo',
+    processoId,
+  });
 }
 
 function eventoItemHTML(e, mostrarData = true) {
