@@ -63,6 +63,41 @@ function getPublishedArquivoById(id) {
   return findPublishedById(arquivos, id);
 }
 
+async function baixarArquivo(url, nomeArquivo = "arquivo") {
+  try {
+    const resposta = await fetch(url);
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const blob = await resposta.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = nomeArquivo || "arquivo";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (erro) {
+    console.warn("[Arquivos] Falha no download forçado. Abrindo URL diretamente.", erro);
+    window.open(url, "_blank", "noopener");
+  }
+}
+
+function getArquivoLinkMeta(arquivo) {
+  if (!arquivo) return { href: "", attrs: "", isDownload: false, isExternal: false };
+  const href = arquivo.arquivo_data || arquivo.url || "";
+  if (!href) return { href: "", attrs: "", isDownload: false, isExternal: false };
+  const isDownload = !!(arquivo.arquivo_data || arquivo.storage_path);
+  const nomeArquivo = arquivo.arquivo_nome || arquivo.nome || "arquivo";
+  return {
+    href,
+    attrs: isDownload
+      ? `download="${nomeArquivo}" onclick='baixarArquivo(${JSON.stringify(href)}, ${JSON.stringify(nomeArquivo)}); return false;'`
+      : 'target="_blank" rel="noopener"',
+    isDownload,
+    isExternal: !isDownload,
+  };
+}
+
 function getPublishedVeiculoById(id) {
   return findPublishedById(veiculos, id);
 }
@@ -1024,11 +1059,11 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     if (arquivoId) {
       // Buscar o arquivo para verificar se tem dados
       const arquivo = getPublishedArquivoById(arquivoId);
-      if (arquivo && (arquivo.arquivo_data || arquivo.url)) {
-        const downloadUrl = arquivo.arquivo_data || arquivo.url;
-        const nomeArquivo = arquivo.arquivo_nome || arquivo.nome || 'arquivo';
+      if (arquivo) {
+        const linkMeta = getArquivoLinkMeta(arquivo);
+        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
         return `
-          <a href="${downloadUrl}" download="${nomeArquivo}" class="doc-tag doc-tag-link" style="text-decoration:none">
+          <a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
             <i class="ph-bold ph-download-simple"></i>${nome}
           </a>`;
       }
@@ -1277,10 +1312,10 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
     const aid   = isObj ? d.arquivo_id : null;
     if (aid) {
       const a = getPublishedArquivoById(aid);
-      if (a && (a.arquivo_data || a.url)) {
-        const href = a.arquivo_data || a.url;
-        const dl   = a.arquivo_data ? `download="${a.arquivo_nome || a.nome}"` : 'target="_blank" rel="noopener"';
-        return `<a href="${href}" ${dl} class="doc-tag doc-tag-link" style="text-decoration:none">
+      if (a) {
+        const linkMeta = getArquivoLinkMeta(a);
+        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
+        return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
           <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
       }
     }
@@ -2048,15 +2083,16 @@ function openArquivo(id) {
     `<span class="doc-tag"><i class="ph-bold ph-tag"></i>${t}</span>`
   ).join("");
 
+  const linkMeta = getArquivoLinkMeta(a);
   let acaoHTML = '';
-  if (a.arquivo_data) {
+  if (linkMeta.isDownload) {
     acaoHTML = `
-      <a href="${a.arquivo_data}" download="${a.arquivo_nome || a.nome}" class="sistema-btn">
+      <a href="${linkMeta.href}" ${linkMeta.attrs} class="sistema-btn">
         <i class="ph-bold ph-download-simple"></i> Baixar arquivo
       </a>`;
-  } else if (a.url) {
+  } else if (linkMeta.isExternal) {
     acaoHTML = `
-      <a href="${a.url}" target="_blank" rel="noopener" class="sistema-btn">
+      <a href="${linkMeta.href}" ${linkMeta.attrs} class="sistema-btn">
         <i class="ph-bold ph-arrow-square-out"></i> Abrir link externo
       </a>`;
   } else {
@@ -2078,17 +2114,17 @@ function openArquivo(id) {
       </div>
       <div class="detail-info-item">
         <label>Origem</label>
-        <span>${a.arquivo_data ? 'Upload local' : a.url ? 'Link externo' : 'Não definida'}</span>
+        <span>${linkMeta.isDownload ? 'Arquivo para download' : linkMeta.isExternal ? 'Link externo' : 'Não definida'}</span>
       </div>
       ${a.arquivo_nome ? `
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Nome original do arquivo</label>
         <span>${a.arquivo_nome}</span>
       </div>` : ''}
-      ${a.url && !a.arquivo_data ? `
+      ${linkMeta.isExternal ? `
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Link externo</label>
-        <span style="word-break:break-all;font-size:.8rem">${a.url}</span>
+        <span style="word-break:break-all;font-size:.8rem">${linkMeta.href}</span>
       </div>` : ''}
     </div>
     ${tagsHTML ? `
@@ -4807,3 +4843,4 @@ function getInitials(nome) {
   if (partes.length === 1) return partes[0][0].toUpperCase();
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
+

@@ -1854,10 +1854,13 @@ function renderArquivos() {
       </tbody>
     </table></div>`);
 }
+
+let arquivoUploadPendente = null;
+
 function formArquivo(a = {}) {
-  // Detectar se é base64 (upload local) ou URL externa
-  const isBase64 = (a.arquivo_data || '').startsWith('data:');
-  const temArquivo = !!a.arquivo_data;
+  arquivoUploadPendente = null;
+  const urlAtual = a.storage_path ? '' : (a.url || '');
+  const temArquivo = !!(a.arquivo_data || a.storage_path);
   const nomeArquivoAtual = a.arquivo_nome || '';
 
   const arquivoStatus = temArquivo
@@ -1883,17 +1886,20 @@ function formArquivo(a = {}) {
         <label>Upload de arquivo <span style="font-weight:400;color:var(--text-muted)">(recomendado)</span></label>
         ${arquivoStatus}
         <input type="file" id="a-file-input" style="display:none" onchange="processarArquivoUpload(this)" />
-        <input type="hidden" id="a-arquivo-data" value="" />
+        <input type="hidden" id="a-arquivo-data" value="${escHtml(a.arquivo_data || '')}" />
         <input type="hidden" id="a-arquivo-nome" value="${escHtml(nomeArquivoAtual)}" />
+        <input type="hidden" id="a-storage-path" value="${escHtml(a.storage_path || '')}" />
+        <input type="hidden" id="a-storage-bucket" value="${escHtml(a.storage_bucket || '')}" />
+        <input type="hidden" id="a-remover-arquivo" value="0" />
         <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="document.getElementById('a-file-input').click()">
           <i class="ph-bold ph-upload-simple"></i> ${temArquivo ? 'Substituir arquivo' : 'Escolher arquivo'}
         </button>
-        <span class="form-hint">O arquivo ficará disponível para download. Máx. recomendado: 5MB.</span>
+        <span class="form-hint">O arquivo ficará disponível para download. Máx. recomendado: 10MB.</span>
       </div>
 
       <div class="form-group full">
         <label>Ou use URL / Link externo <span style="font-weight:400;color:var(--text-muted)">(Google Drive, etc.)</span></label>
-        <input id="a-url" value="${escHtml(a.url||'')}" placeholder="https://drive.google.com/..." />
+        <input id="a-url" value="${escHtml(urlAtual)}" placeholder="https://drive.google.com/..." />
         <span class="form-hint">Se um arquivo foi carregado acima, o link externo é ignorado.</span>
       </div>
 
@@ -1906,39 +1912,39 @@ function formArquivo(a = {}) {
   return html;
 }
 
-/** Converte o arquivo selecionado para base64 e armazena nos hidden inputs */
 function processarArquivoUpload(input) {
   const file = input.files[0];
   if (!file) return;
 
-  const maxMB = 5;
+  const maxMB = 10;
   if (file.size > maxMB * 1024 * 1024) {
     toast(`Arquivo muito grande. Máximo ${maxMB}MB.`, 'error');
+    input.value = '';
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('a-arquivo-data').value = e.target.result;
-    document.getElementById('a-arquivo-nome').value = file.name;
+  arquivoUploadPendente = file;
+  document.getElementById('a-arquivo-nome').value = file.name;
+  document.getElementById('a-remover-arquivo').value = '0';
 
-    // Atualiza o status visual sem recriar o modal
-    const status = document.querySelector('#a-file-input').closest('.form-group').querySelector('div:first-of-type');
-    if (status) {
-      status.outerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
-        <i class="ph-bold ph-file-check"></i>
-        <span>${escHtml(file.name)}</span>
-        <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" onclick="removerArquivoUpload()"><i class="ph-bold ph-trash"></i></button>
-      </div>`;
-    }
-    toast('Arquivo carregado. Clique em Salvar para confirmar.');
-  };
-  reader.readAsDataURL(file);
+  const status = document.querySelector('#a-file-input').closest('.form-group').querySelector('div:first-of-type');
+  if (status) {
+    status.outerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
+      <i class="ph-bold ph-file-check"></i>
+      <span>${escHtml(file.name)}</span>
+      <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" onclick="removerArquivoUpload()"><i class="ph-bold ph-trash"></i></button>
+    </div>`;
+  }
+  toast('Arquivo selecionado. Clique em Salvar para enviar.');
 }
 
 function removerArquivoUpload() {
+  arquivoUploadPendente = null;
   document.getElementById('a-arquivo-data').value = '';
   document.getElementById('a-arquivo-nome').value = '';
+  document.getElementById('a-storage-path').value = '';
+  document.getElementById('a-storage-bucket').value = '';
+  document.getElementById('a-remover-arquivo').value = '1';
   const fileInput = document.getElementById('a-file-input');
   fileInput.value = '';
   const statusDiv = fileInput.closest('.form-group').querySelector('div:first-of-type');
@@ -1951,33 +1957,56 @@ function novoArquivo()     {
 function editarArquivo(id) {
   const a = DB.getById('arquivos', id);
   abrirModal(formArquivo(a));
-  // Restaura os dados do arquivo existente nos hidden inputs
-  setTimeout(() => {
-    if (a.arquivo_data) document.getElementById('a-arquivo-data').value = a.arquivo_data;
-    if (a.arquivo_nome) document.getElementById('a-arquivo-nome').value = a.arquivo_nome;
-  }, 50);
 }
 
-function salvarArquivo(id) {
-  const arquivoData = document.getElementById('a-arquivo-data').value;
-  const arquivoNome = document.getElementById('a-arquivo-nome').value;
+async function salvarArquivo(id) {
+  const nome = document.getElementById('a-nome').value.trim();
+  if (!nome) { toast('Nome é obrigatório.','error'); return; }
 
-  // Se editando e não fez novo upload, preserva os dados existentes
   const existente = id ? DB.getById('arquivos', id) : null;
-  const finalArquivoData = arquivoData || (existente?.arquivo_data || '');
-  const finalArquivoNome = arquivoNome || (existente?.arquivo_nome || '');
+  const removeArquivo = document.getElementById('a-remover-arquivo').value === '1';
+  const urlManual = document.getElementById('a-url').value.trim();
+  let finalUrl = arquivoUploadPendente ? '' : (urlManual || (removeArquivo ? '' : (existente?.url || '')));
+  let finalArquivoData = removeArquivo ? '' : (existente?.arquivo_data || '');
+  let finalArquivoNome = removeArquivo ? '' : (existente?.arquivo_nome || '');
+  let finalStoragePath = removeArquivo ? '' : (existente?.storage_path || '');
+  let finalStorageBucket = removeArquivo ? '' : (existente?.storage_bucket || '');
+
+  if (arquivoUploadPendente) {
+    try {
+      iniciarAcaoAdmin('Enviando arquivo...');
+      const upload = await DB.uploadArquivoStorage(arquivoUploadPendente);
+      finalUrl = upload.url;
+      finalArquivoData = '';
+      finalArquivoNome = upload.arquivo_nome;
+      finalStoragePath = upload.storage_path;
+      finalStorageBucket = upload.storage_bucket;
+    } catch (error) {
+      concluirAcaoAdmin();
+      toast(`Falha no upload: ${error?.message || 'erro desconhecido'}`, 'error');
+      return;
+    }
+  }
 
   const dados = {
-    nome:          document.getElementById('a-nome').value.trim(),
+    nome:          nome,
     tipo:          document.getElementById('a-tipo').value,
-    url:           document.getElementById('a-url').value.trim(),
+    url:           finalUrl,
     tags:          getTagsValues('arquivo'),
-    arquivo_data:  finalArquivoData,   // base64 do arquivo (se upload local)
-    arquivo_nome:  finalArquivoNome,   // nome original do arquivo
+    arquivo_data:  finalArquivoData,
+    arquivo_nome:  finalArquivoNome,
+    storage_path:  finalStoragePath,
+    storage_bucket: finalStorageBucket,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
+
   id ? DB.update('arquivos', id, dados) : DB.insert('arquivos', dados);
+  if (existente?.storage_path && (removeArquivo || (finalStoragePath && finalStoragePath !== existente.storage_path))) {
+    DB.deleteArquivoStorage(existente.storage_path, existente.storage_bucket).catch((error) => {
+      console.warn('[Admin] Falha ao remover arquivo antigo do Storage:', error);
+    });
+  }
+  arquivoUploadPendente = null;
   fecharModal(); toast('Arquivo salvo.'); renderArquivos();
 }
 

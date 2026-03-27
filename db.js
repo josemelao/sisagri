@@ -26,6 +26,10 @@ const DB_CONFIG = {
   CONFIG_LS_KEY:   'smader_layout_config_v1',
 };
 
+const STORAGE_CONFIG = {
+  ARQUIVOS_BUCKET: 'arquivos-smader',
+};
+
 /* ============================================================
    INICIALIZAÇÃO — carrega dados na memória
    ============================================================ */
@@ -38,6 +42,21 @@ let _dbStatus = {
   writesReachSupabase: false,
   lastError: '',
 };
+
+function _sanitizeStorageFileName(nome = 'arquivo') {
+  return (nome || 'arquivo')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'arquivo';
+}
+
+function _getStoragePublicUrl(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
+  if (!_sb || !path) return '';
+  const { data } = _sb.storage.from(bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET).getPublicUrl(path);
+  return data?.publicUrl || '';
+}
 
 function _ensureAppConfig() {
   if (!_db || typeof _db !== 'object') _db = {};
@@ -306,9 +325,11 @@ function _normalizeSupabaseRow(colecao, row) {
       return {
         ...row,
         tags: Array.isArray(row.tags) ? row.tags : [],
-        url: row.url || '',
+        url: row.url || _getStoragePublicUrl(row.storage_path, row.storage_bucket) || '',
         arquivo_data: row.arquivo_data || '',
         arquivo_nome: row.arquivo_nome || '',
+        storage_path: row.storage_path || '',
+        storage_bucket: row.storage_bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET,
       };
     case 'manuais':
       return {
@@ -481,6 +502,8 @@ function _toSupabasePayload(colecao, registro) {
         url: registro.url || null,
         arquivo_data: registro.arquivo_data || null,
         arquivo_nome: registro.arquivo_nome || null,
+        storage_path: registro.storage_path || null,
+        storage_bucket: registro.storage_bucket || null,
         publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'manuais':
@@ -511,8 +534,8 @@ function _toSupabasePayload(colecao, registro) {
 async function _loadSupabaseCollection(colecao, options = {}) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
   const tabela = SUPABASE_TABLES[colecao];
-  const columns = (colecao === 'arquivos' && options.metadataOnly)
-    ? 'id,nome,tipo,tags,url,arquivo_nome'
+  const columns = (colecao === 'arquivos')
+    ? 'id,nome,tipo,tags,url,arquivo_nome,storage_path,storage_bucket,publish_status'
     : '*';
   const { data, error } = await _sb.from(tabela).select(columns).order('id', { ascending: true });
   if (error) throw error;
@@ -521,14 +544,14 @@ async function _loadSupabaseCollection(colecao, options = {}) {
 
 async function _refreshSupabaseCollectionsForExport() {
   if (!_sb) return;
-  await Promise.all(Object.keys(SUPABASE_TABLES).map(colecao => _loadSupabaseCollection(colecao)));
+  await Promise.all(Object.keys(SUPABASE_TABLES).map(colecao => _loadSupabaseCollection(colecao, colecao === 'arquivos' ? { metadataOnly: true } : {})));
   _persistLocal();
   _notifyCollectionUpdated('arquivos');
 }
 
 async function _refreshSupabaseCollection(colecao) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
-  await _loadSupabaseCollection(colecao);
+  await _loadSupabaseCollection(colecao, colecao === 'arquivos' ? { metadataOnly: true } : {});
   _persistLocal();
   _notifyCollectionUpdated(colecao);
 }
@@ -635,16 +658,6 @@ async function _initSupabase() {
       lastError: '',
     });
     console.info('[DB] Dados carregados do Supabase.');
-
-    _loadSupabaseCollection('arquivos')
-      .then(() => {
-        _persistLocal();
-        _notifyCollectionUpdated('arquivos');
-        console.info('[DB] Arquivos completos carregados em segundo plano.');
-      })
-      .catch((e) => {
-        console.warn('[DB] Falha ao carregar arquivos completos em segundo plano.', e);
-      });
 
     return Promise.resolve();
   } catch (e) {
@@ -827,6 +840,30 @@ const DB = {
     if (!_isSupabaseCollection(colecao) || !_sb) return DB.get(colecao);
     await _refreshSupabaseCollection(colecao);
     return DB.get(colecao);
+  },
+
+  async uploadArquivoStorage(file) {
+    if (!_sb) throw new Error('Supabase indisponivel.');
+    if (!file) throw new Error('Arquivo invalido.');
+    const bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET;
+    const path = `arquivos/${Date.now()}-${_sanitizeStorageFileName(file.name)}`;
+    const { error } = await _sb.storage.from(bucket).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (error) throw error;
+    return {
+      url: _getStoragePublicUrl(path, bucket),
+      storage_path: path,
+      storage_bucket: bucket,
+      arquivo_nome: file.name || 'arquivo',
+    };
+  },
+
+  async deleteArquivoStorage(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
+    if (!_sb || !path) return;
+    const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET).remove([path]);
+    if (error) throw error;
   },
 
   /** Importa um banco completo (substitui tudo, usado no admin) */
