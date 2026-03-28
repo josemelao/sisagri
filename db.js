@@ -29,6 +29,7 @@ const DB_CONFIG = {
 const STORAGE_CONFIG = {
   ARQUIVOS_BUCKET: 'arquivos-smader',
   MANUAIS_IMAGENS_BUCKET: 'manuais-imagens-smader',
+  FUNCIONARIOS_FOTOS_BUCKET: 'funcionarios-fotos-smader',
 };
 
 /* ============================================================
@@ -263,6 +264,9 @@ function _normalizeSupabaseRow(colecao, row) {
         ...row,
         setor: row.setor || row.lotacao || '',
         lotacao: row.lotacao || row.setor || '',
+        foto: row.foto || _getStoragePublicUrl(row.foto_storage_path, row.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET) || '',
+        foto_storage_path: row.foto_storage_path || '',
+        foto_storage_bucket: row.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET,
       };
     case 'veiculos':
       return {
@@ -369,6 +373,8 @@ function _toSupabasePayload(colecao, registro) {
         departamento: registro.departamento || null,
         descricao: registro.descricao || null,
         foto: registro.foto || null,
+        foto_storage_path: registro.foto_storage_path || null,
+        foto_storage_bucket: registro.foto_storage_bucket || null,
         publish_status: _normalizePublishStatus(registro.publish_status),
       };
     case 'veiculos':
@@ -878,6 +884,23 @@ const DB = {
     };
   },
 
+  async uploadFuncionarioFotoStorage(file) {
+    if (!_sb) throw new Error('Supabase indisponivel.');
+    if (!file) throw new Error('Imagem invalida.');
+    const bucket = STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET;
+    const path = `funcionarios/${Date.now()}-${_sanitizeStorageFileName(file.name || 'foto')}`;
+    const { error } = await _sb.storage.from(bucket).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (error) throw error;
+    return {
+      url: _getStoragePublicUrl(path, bucket),
+      storage_path: path,
+      storage_bucket: bucket,
+    };
+  },
+
   async deleteArquivoStorage(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
     if (!_sb || !path) return;
     const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET).remove([path]);
@@ -887,6 +910,12 @@ const DB = {
   async deleteManualImageStorage(path, bucket = STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET) {
     if (!_sb || !path) return;
     const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET).remove([path]);
+    if (error) throw error;
+  },
+
+  async deleteFuncionarioFotoStorage(path, bucket = STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET) {
+    if (!_sb || !path) return;
+    const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET).remove([path]);
     if (error) throw error;
   },
 

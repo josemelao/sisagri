@@ -873,7 +873,7 @@ function atualizarBuscaInfoSimples(colecao, inputEl) {
   const state = getInfoSimplesListState(colecao);
   state.query = String(value || '');
   state.page = 1;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informa��es da Secretaria' : 'Informa��es do Munic�pio');
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
   const nextInput = document.getElementById(`infosimples-search-${colecao}`);
   if (!nextInput) return;
   nextInput.focus();
@@ -884,7 +884,7 @@ function atualizarBuscaInfoSimples(colecao, inputEl) {
 function mudarPaginaInfoSimples(colecao, delta) {
   const state = getInfoSimplesListState(colecao);
   state.page += delta;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informa��es da Secretaria' : 'Informa��es do Munic�pio');
+  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
 }
 
 const INFO_ORGAOS_LIST_STATE = { query: '', page: 1, pageSize: 12 };
@@ -1299,7 +1299,9 @@ function renderFuncionarios() {
     </div>
   `);
 }
+let funcionarioFotoUploadPendente = null;
 function formFuncionario(f = {}) {
+  funcionarioFotoUploadPendente = null;
   const fotoPreview = f.foto
     ? `<img src="${escHtml(f.foto)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:8px" />`
     : `<div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.8rem;margin-bottom:8px"><i class="ph-bold ph-user"></i></div>`;
@@ -1312,6 +1314,9 @@ function formFuncionario(f = {}) {
         <div id="foto-preview">${fotoPreview}</div>
         <input type="file" id="f-foto-file" accept="image/*" style="display:none" onchange="previewFoto(this)" />
         <input type="hidden" id="f-foto" value="${escHtml(f.foto||'')}" />
+        <input type="hidden" id="f-foto-storage-path" value="${escHtml(f.foto_storage_path||'')}" />
+        <input type="hidden" id="f-foto-storage-bucket" value="${escHtml(f.foto_storage_bucket||'')}" />
+        <input type="hidden" id="f-remover-foto" value="0" />
         <div style="display:flex;gap:8px;margin-top:4px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('f-foto-file').click()">
             <i class="ph-bold ph-upload-simple"></i> Escolher foto
@@ -1345,18 +1350,21 @@ function previewFoto(input) {
     toast('Imagem muito grande. Use uma imagem menor que 1MB.', 'error');
     return;
   }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const base64 = e.target.result;
-    document.getElementById('f-foto').value = base64;
-    document.getElementById('foto-preview').innerHTML = `
-      <img src="${base64}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);margin-bottom:8px" />`;
-  };
-  reader.readAsDataURL(file);
+  funcionarioFotoUploadPendente = file;
+  document.getElementById('f-remover-foto').value = '0';
+  const previewUrl = URL.createObjectURL(file);
+  document.getElementById('foto-preview').innerHTML = `
+      <img src="${previewUrl}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);margin-bottom:8px" />`;
 }
 
 function removerFoto() {
+  funcionarioFotoUploadPendente = null;
   document.getElementById('f-foto').value = '';
+  document.getElementById('f-foto-storage-path').value = '';
+  document.getElementById('f-foto-storage-bucket').value = '';
+  document.getElementById('f-remover-foto').value = '1';
+  const fileInput = document.getElementById('f-foto-file');
+  if (fileInput) fileInput.value = '';
   document.getElementById('foto-preview').innerHTML = `
     <div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.8rem;margin-bottom:8px"><i class="ph-bold ph-user"></i></div>`;
 }
@@ -1364,7 +1372,27 @@ function removerFoto() {
 function novoFuncionario()    { abrirModal(formFuncionario()); }
 function editarFuncionario(id){ abrirModal(formFuncionario(DB.getById('funcionarios', id))); }
 
-function salvarFuncionario(id) {
+async function salvarFuncionario(id) {
+  const existente = id ? DB.getById('funcionarios', id) : null;
+  const removeFoto = document.getElementById('f-remover-foto').value === '1';
+  let fotoFinal = removeFoto ? '' : (existente?.foto || '');
+  let fotoStoragePathFinal = removeFoto ? '' : (existente?.foto_storage_path || '');
+  let fotoStorageBucketFinal = removeFoto ? '' : (existente?.foto_storage_bucket || '');
+
+  if (funcionarioFotoUploadPendente) {
+    try {
+      iniciarAcaoAdmin('Enviando foto...');
+      const upload = await DB.uploadFuncionarioFotoStorage(funcionarioFotoUploadPendente);
+      fotoFinal = upload.url;
+      fotoStoragePathFinal = upload.storage_path;
+      fotoStorageBucketFinal = upload.storage_bucket;
+    } catch (error) {
+      concluirAcaoAdmin();
+      toast(`Falha no upload: ${error?.message || 'erro desconhecido'}`, 'error');
+      return;
+    }
+  }
+
   const dados = {
     nome:          document.getElementById('f-nome').value.trim(),
     matricula:     document.getElementById('f-matricula').value.trim(),
@@ -1378,12 +1406,20 @@ function salvarFuncionario(id) {
     email:         document.getElementById('f-email').value.trim(),
     cpf:           document.getElementById('f-cpf').value.trim(),
     departamento:  document.getElementById('f-departamento').value.trim(),
-    foto:          document.getElementById('f-foto').value,
+    foto:          fotoFinal,
+    foto_storage_path: fotoStoragePathFinal,
+    foto_storage_bucket: fotoStorageBucketFinal,
     descricao:     document.getElementById('f-descricao').value.trim(),
     publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   id ? DB.update('funcionarios', id, dados) : DB.insert('funcionarios', dados);
+  if (existente?.foto_storage_path && (removeFoto || (fotoStoragePathFinal && fotoStoragePathFinal !== existente.foto_storage_path))) {
+    DB.deleteFuncionarioFotoStorage(existente.foto_storage_path, existente.foto_storage_bucket).catch((error) => {
+      console.warn('[Admin] Falha ao remover foto antiga do Storage:', error);
+    });
+  }
+  funcionarioFotoUploadPendente = null;
   fecharModal();
   toast('Funcionário salvo com sucesso.');
   renderFuncionarios();
@@ -2624,7 +2660,7 @@ function renderAvisos() {
         <tr>
           <td><strong class="td-truncate">${escHtml(a.titulo)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
-          <td>${escHtml(a.local||'�')}</td>
+          <td>${escHtml(a.local||'ï¿½')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
@@ -2708,14 +2744,14 @@ function renderAgendaEventos() {
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(e => {
         const periodo = e.tipo === 'prazo' && !e.data
-          ? `${escHtml(formatDateBR(e.data_fim || '�'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
-          : `${escHtml(formatDateBR(e.data || '�'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
+          ? `${escHtml(formatDateBR(e.data_fim || 'ï¿½'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
+          : `${escHtml(formatDateBR(e.data || 'ï¿½'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
         return `
         <tr>
           <td><strong class="td-truncate">${escHtml(e.titulo)}</strong></td>
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${periodo}</td>
-          <td>${escHtml(e.local||'�')}</td>
+          <td>${escHtml(e.local||'ï¿½')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('agendaEventos', e)}
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
@@ -3249,5 +3285,6 @@ function salvarOrgao(id) {
   id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
+
 
 
