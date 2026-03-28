@@ -175,8 +175,12 @@ function getArquivoPreviewHTML(a) {
       </div>`;
   }
 
-  // Tipos sem preview — bloco vazio (sem mensagem, sem ruído visual)
-  return '';
+  return `
+      <hr class="detail-divider">
+      <p class="detail-section-title">Pré-visualização</p>
+      <div class="arquivo-preview-container">
+        <p class="arquivo-preview-fallback">Pré-visualização não disponível para este tipo de arquivo.</p>
+      </div>`;
 }
 
 function getPublishedVeiculoById(id) {
@@ -4554,4 +4558,5 @@ function getInitials(nome) {
   if (partes.length === 1) return partes[0][0].toUpperCase();
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
+
 
