@@ -2932,6 +2932,7 @@ input { font-family: inherit; }
   object-fit: cover;
   border: 3px solid var(--border);
   margin-bottom: 16px;
+  cursor: pointer;
   display: block !important;
 }
 
