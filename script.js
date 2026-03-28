@@ -4440,9 +4440,9 @@ function initLightbox() {
     }
   });
 
-  // Delegação de eventos — captura cliques em qualquer .manual-passo-img
+  // Delegação de eventos — captura cliques em imagens ampliáveis
   document.addEventListener("click", (e) => {
-    const img = e.target.closest(".manual-passo-img");
+    const img = e.target.closest(".manual-passo-img, .detail-avatar-foto");
     if (img && img.src) openLightbox(img.src, img.alt);
   });
 }
