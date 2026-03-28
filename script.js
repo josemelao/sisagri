@@ -104,11 +104,11 @@ function getArquivoLinkMeta(arquivo) {
  * Retorna: 'pdf' | 'imagem' | null
  */
 function _detectarTipoPreview(a) {
-  const IMAGENS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+  const IMAGENS  = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+  const OFFICE   = ['docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt'];
 
   function extDe(str) {
     if (!str) return '';
-    // Remove query string antes de pegar a extensão
     const semQuery = str.split('?')[0];
     const partes = semQuery.split('.');
     return partes.length > 1 ? partes[partes.length - 1].toLowerCase() : '';
@@ -118,16 +118,19 @@ function _detectarTipoPreview(a) {
   const extUrl = extDe(a.url);
   if (extUrl === 'pdf') return 'pdf';
   if (IMAGENS.includes(extUrl)) return 'imagem';
+  if (OFFICE.includes(extUrl)) return 'office';
 
   // 2. extensão do nome original do arquivo
   const extNome = extDe(a.arquivo_nome);
   if (extNome === 'pdf') return 'pdf';
   if (IMAGENS.includes(extNome)) return 'imagem';
+  if (OFFICE.includes(extNome)) return 'office';
 
   // 3. campo tipo como fallback
   const tipo = (a.tipo || '').toUpperCase();
   if (tipo === 'PDF') return 'pdf';
   if (['PNG', 'JPG', 'JPEG', 'WEBP', 'GIF', 'JPG/JPEG'].includes(tipo)) return 'imagem';
+  if (['DOCX', 'DOC', 'XLSX', 'XLS', 'PPTX', 'PPT'].includes(tipo)) return 'office';
 
   return null;
 }
@@ -171,6 +174,26 @@ function getArquivoPreviewHTML(a) {
         <p class="arquivo-preview-pdf-aviso">
           <i class="ph-bold ph-info"></i>
           Se o documento não carregar, use o botão abaixo para baixar ou abrir.
+        </p>
+      </div>`;
+  }
+
+  if (tipo === 'office') {
+    const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+    return `
+      <hr class="detail-divider">
+      <p class="detail-section-title">Pré-visualização</p>
+      <div class="arquivo-preview-container">
+        <iframe
+          src="${viewerUrl}"
+          class="arquivo-preview-pdf"
+          title="${a.nome || 'Documento'}"
+          loading="lazy"
+          allowfullscreen
+        ></iframe>
+        <p class="arquivo-preview-pdf-aviso">
+          <i class="ph-bold ph-info"></i>
+          Visualização via Microsoft Office Online. Se não carregar, use o botão abaixo para baixar.
         </p>
       </div>`;
   }
