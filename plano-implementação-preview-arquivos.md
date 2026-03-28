@@ -469,3 +469,108 @@ Observações:
   - Implementação pensada para ocorrer preferencialmente só em `script.js`
   - `style.css` só entra se o preview realmente exigir ajuste visual mínimo
 
+
+---
+
+[LOG 01]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Bloco: BLOCO 1 — Mapeamento do painel atual
+Função migrada / criada: não aplicável
+Linhas antes / depois: 4475 / 4475
+node --check: não aplicável (sem alteração)
+Validação visual: não aplicável
+Resultado: ponto de inserção confirmado — `openArquivo()` linha 2053, escrita em `arquivo-detail-content`. Helpers existentes mapeados: `getArquivoLinkMeta()` fornece `href` e flags `isDownload`/`isExternal`. Fonte de preview: `a.url` (bucket público Supabase). Fallbacks: `a.arquivo_nome` → `a.tipo`.
+Commit: pendente validação do usuário
+Observações: nenhuma alteração neste bloco
+
+---
+
+[LOG 02]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Bloco: BLOCO 2 — Helper de detecção de tipo
+Função migrada / criada: `_detectarTipoPreview(a)`
+Linhas antes / depois: 4475 / 4475 (inserido junto ao BLOCO 3)
+node --check: OK
+Validação visual: pendente usuário
+Resultado: helper criado após `getArquivoLinkMeta`. Ordem de detecção: extensão de `a.url` (remove query string antes) → extensão de `a.arquivo_nome` → campo `a.tipo`. Retorna `'pdf'`, `'imagem'` ou `null`.
+Commit: pendente validação do usuário
+Observações: implementado em conjunto com BLOCOs 3, 4 e 5 por serem inseparáveis
+
+---
+
+[LOG 03]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Bloco: BLOCO 3 — Preview de imagem
+Função migrada / criada: `getArquivoPreviewHTML(a)` (parcial — imagem)
+Linhas antes / depois: 4475 / 4557
+node --check: OK
+Validação visual: pendente usuário
+Resultado: para tipo `'imagem'`, renderiza `<img>` com `object-fit: contain`, `max-height: 420px`, `onerror` inline que substitui o container por mensagem de fallback. Botão de download preservado abaixo.
+Commit: pendente validação do usuário
+Observações: `onerror` usa aspas escapadas para funcionar dentro de template string HTML
+
+---
+
+[LOG 04]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Bloco: BLOCO 4 — Preview de PDF
+Função migrada / criada: `getArquivoPreviewHTML(a)` (parcial — PDF)
+Linhas antes / depois: 4475 / 4557
+node --check: OK
+Validação visual: pendente usuário
+Resultado: para tipo `'pdf'`, renderiza `<iframe>` com `height: 480px`, `loading="lazy"`, sem border. Aviso textual fixo abaixo do iframe orienta o usuário a usar o botão de download caso o embed não carregue — não depende de `onerror` (não confiável cross-browser para PDF). Botão de download preservado.
+Commit: pendente validação do usuário
+Observações: bucket público Supabase elimina risco de expiração de URL e de CORS para embed
+
+---
+
+[LOG 05]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`
+Bloco: BLOCO 5 — Fallback para tipos sem preview
+Função migrada / criada: `getArquivoPreviewHTML(a)` (retorno vazio para tipos não suportados)
+Linhas antes / depois: 4475 / 4557
+node --check: OK
+Validação visual: pendente usuário
+Resultado: quando `_detectarTipoPreview` retorna `null` ou `url` está vazia, `getArquivoPreviewHTML` retorna string vazia — nenhum bloco extra é renderizado, nenhuma mensagem de fallback visível. O painel exibe apenas as informações e o botão de ação existentes. Decisão: sem mensagem de fallback explícita para não criar ruído visual em tipos como DOCX, XLSX, ZIP.
+Commit: pendente validação do usuário
+Observações: divergência leve do plano original (que sugeria mensagem textual) — preferiu-se silêncio visual para tipos não suportados
+
+---
+
+[LOG 06]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `style.css`
+Bloco: BLOCO 6 — Acabamento visual mínimo
+Função migrada / criada: classes `.arquivo-preview-container`, `.arquivo-preview-img`, `.arquivo-preview-pdf`, `.arquivo-preview-pdf-aviso`, `.arquivo-preview-fallback`
+Linhas antes / depois: 3600 / 3653
+node --check: não aplicável
+Validação visual: pendente usuário
+Resultado: container com borda e border-radius consistentes com a UI. Imagem com `object-fit: contain` e `max-height: 420px`. PDF iframe com `height: 480px`. Aviso do PDF com fonte pequena e cor muted. Fallback de erro centrado e discreto. Nenhuma classe global alterada.
+Commit: pendente validação do usuário
+Observações: todas as classes prefixadas com `arquivo-preview-` para evitar colisão
+
+---
+
+[LOG 07]
+Data: 2026-03-27
+Agente: Claude Sonnet 4.6
+Arquivo: `script.js`, `style.css`
+Bloco: BLOCO 7 — Varredura de regressão
+Função migrada / criada: não aplicável
+Linhas antes / depois: script 4475→4557 / style 3600→3653
+node --check: OK — zero erros
+Validação visual: pendente usuário
+Resultado: validação estática passou. Pontos a confirmar manualmente: (1) imagem abre com preview, (2) PDF abre com iframe, (3) DOCX/ZIP abrem sem área quebrada, (4) download ainda funciona, (5) link externo ainda funciona, (6) painel fecha/reabre normalmente, (7) navegação entre itens estável.
+Commit: pendente validação do usuário
+Observações: nenhuma alteração fora de `script.js` e `style.css` — contrato do plano respeitado integralmente

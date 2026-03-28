@@ -98,6 +98,87 @@ function getArquivoLinkMeta(arquivo) {
   };
 }
 
+/**
+ * Detecta o tipo de preview possível para um arquivo.
+ * Ordem de prioridade: extensão da URL → extensão do arquivo_nome → campo tipo.
+ * Retorna: 'pdf' | 'imagem' | null
+ */
+function _detectarTipoPreview(a) {
+  const IMAGENS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+
+  function extDe(str) {
+    if (!str) return '';
+    // Remove query string antes de pegar a extensão
+    const semQuery = str.split('?')[0];
+    const partes = semQuery.split('.');
+    return partes.length > 1 ? partes[partes.length - 1].toLowerCase() : '';
+  }
+
+  // 1. extensão da URL
+  const extUrl = extDe(a.url);
+  if (extUrl === 'pdf') return 'pdf';
+  if (IMAGENS.includes(extUrl)) return 'imagem';
+
+  // 2. extensão do nome original do arquivo
+  const extNome = extDe(a.arquivo_nome);
+  if (extNome === 'pdf') return 'pdf';
+  if (IMAGENS.includes(extNome)) return 'imagem';
+
+  // 3. campo tipo como fallback
+  const tipo = (a.tipo || '').toUpperCase();
+  if (tipo === 'PDF') return 'pdf';
+  if (['PNG', 'JPG', 'JPEG', 'WEBP', 'GIF', 'JPG/JPEG'].includes(tipo)) return 'imagem';
+
+  return null;
+}
+
+/**
+ * Retorna o HTML do bloco de preview para o painel de detalhes de arquivo.
+ * Nunca quebra o painel — sempre tem fallback.
+ * O botão de download/link externo é responsabilidade de quem chama.
+ */
+function getArquivoPreviewHTML(a) {
+  const url = a.url || '';
+  if (!url) return '';
+
+  const tipo = _detectarTipoPreview(a);
+
+  if (tipo === 'imagem') {
+    return `
+      <hr class="detail-divider">
+      <p class="detail-section-title">Pré-visualização</p>
+      <div class="arquivo-preview-container">
+        <img
+          src="${url}"
+          alt="${a.nome || 'Imagem'}"
+          class="arquivo-preview-img"
+          onerror="this.closest('.arquivo-preview-container').innerHTML='<p class=\\'arquivo-preview-fallback\\'>Não foi possível carregar a imagem.</p>'"
+        />
+      </div>`;
+  }
+
+  if (tipo === 'pdf') {
+    return `
+      <hr class="detail-divider">
+      <p class="detail-section-title">Pré-visualização</p>
+      <div class="arquivo-preview-container">
+        <iframe
+          src="${url}"
+          class="arquivo-preview-pdf"
+          title="${a.nome || 'PDF'}"
+          loading="lazy"
+        ></iframe>
+        <p class="arquivo-preview-pdf-aviso">
+          <i class="ph-bold ph-info"></i>
+          Se o documento não carregar, use o botão abaixo para baixar ou abrir.
+        </p>
+      </div>`;
+  }
+
+  // Tipos sem preview — bloco vazio (sem mensagem, sem ruído visual)
+  return '';
+}
+
 function getPublishedVeiculoById(id) {
   return findPublishedById(veiculos, id);
 }
@@ -2131,6 +2212,7 @@ function openArquivo(id) {
     <hr class="detail-divider">
     <p class="detail-section-title">Tags</p>
     <div class="docs-list">${tagsHTML}</div>` : ''}
+    ${getArquivoPreviewHTML(a)}
     <hr class="detail-divider">
     ${acaoHTML}
   `;
