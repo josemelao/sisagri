@@ -28,6 +28,7 @@ const DB_CONFIG = {
 
 const STORAGE_CONFIG = {
   ARQUIVOS_BUCKET: 'arquivos-smader',
+  MANUAIS_IMAGENS_BUCKET: 'manuais-imagens-smader',
 };
 
 /* ============================================================
@@ -860,9 +861,32 @@ const DB = {
     };
   },
 
+  async uploadManualImageStorage(file) {
+    if (!_sb) throw new Error('Supabase indisponivel.');
+    if (!file) throw new Error('Imagem invalida.');
+    const bucket = STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET;
+    const path = `manuais/${Date.now()}-${_sanitizeStorageFileName(file.name || 'imagem')}`;
+    const { error } = await _sb.storage.from(bucket).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (error) throw error;
+    return {
+      url: _getStoragePublicUrl(path, bucket),
+      storage_path: path,
+      storage_bucket: bucket,
+    };
+  },
+
   async deleteArquivoStorage(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
     if (!_sb || !path) return;
     const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET).remove([path]);
+    if (error) throw error;
+  },
+
+  async deleteManualImageStorage(path, bucket = STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET) {
+    if (!_sb || !path) return;
+    const { error } = await _sb.storage.from(bucket || STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET).remove([path]);
     if (error) throw error;
   },
 

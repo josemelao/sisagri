@@ -1447,6 +1447,8 @@ function formManual(m = {}) {
   const passosHTML = (m.passos || []).map((p, i) => {
     const texto = typeof p === 'string' ? p : p.texto;
     const imagem = typeof p === 'object' ? p.imagem : '';
+    const imagemStoragePath = typeof p === 'object' ? (p.imagem_storage_path || '') : '';
+    const imagemStorageBucket = typeof p === 'object' ? (p.imagem_storage_bucket || '') : '';
     return `
       <div class="dyn-item" style="flex-direction:column;gap:8px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
         <div style="display:flex;gap:8px;width:100%">
@@ -1464,6 +1466,8 @@ function formManual(m = {}) {
             </div>
             <input type="file" accept="image/*" onchange="previewPassoImagem(this)" style="font-size:0.7rem;flex:1" />
             <input type="hidden" name="passo_imagem_${i}" value="${escHtml(imagem)}" />
+            <input type="hidden" name="passo_imagem_storage_path_${i}" value="${escHtml(imagemStoragePath)}" />
+            <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="${escHtml(imagemStorageBucket)}" />
           </div>
         </div>
       </div>`;
@@ -1598,6 +1602,8 @@ function addManualPasso() {
         </div>
         <input type="file" accept="image/*" onchange="previewPassoImagem(this)" style="font-size:0.7rem;flex:1" />
         <input type="hidden" name="passo_imagem_${i}" value="" />
+        <input type="hidden" name="passo_imagem_storage_path_${i}" value="" />
+        <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="" />
       </div>
     </div>`;
   list.appendChild(div);
@@ -1612,10 +1618,15 @@ function previewPassoImagem(input) {
   }
   const reader = new FileReader();
   const previewDiv = input.parentElement.querySelector('.passo-img-preview');
-  const hiddenInput = input.parentElement.querySelector('input[type="hidden"]');
+  const hiddenInput = input.parentElement.querySelector('input[name^="passo_imagem_"]:not([name*="storage_"])');
+  const storagePathInput = input.parentElement.querySelector('input[name^="passo_imagem_storage_path_"]');
+  const storageBucketInput = input.parentElement.querySelector('input[name^="passo_imagem_storage_bucket_"]');
+  input._pendingManualImageFile = file;
   
   reader.onload = (e) => {
     hiddenInput.value = e.target.result;
+    if (storagePathInput) storagePathInput.value = '';
+    if (storageBucketInput) storageBucketInput.value = '';
     previewDiv.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" />`;
   };
   reader.readAsDataURL(file);
@@ -1624,12 +1635,46 @@ function previewPassoImagem(input) {
 function novoManual()     { abrirModal(formManual()); }
 function editarManual(id) { abrirModal(formManual(DB.getById('manuais', id))); }
 
-function salvarManual(id) {
+async function salvarManual(id) {
   const list = document.getElementById('dyn-passos');
-  const passos = Array.from(list.children).map(div => ({
-    texto:  div.querySelector('textarea').value.trim(),
-    imagem: div.querySelector('input[type="hidden"]').value
-  })).filter(p => p.texto);
+  const existente = id ? DB.getById('manuais', id) : null;
+  const oldStorageRefs = new Set(
+    ((existente?.passos) || [])
+      .filter(p => p && typeof p === 'object' && p.imagem_storage_path)
+      .map(p => `${p.imagem_storage_bucket || 'manuais-imagens-smader'}::${p.imagem_storage_path}`)
+  );
+  const passos = [];
+
+  for (const div of Array.from(list.children)) {
+    const texto = div.querySelector('textarea').value.trim();
+    if (!texto) continue;
+
+    const fileInput = div.querySelector('input[type="file"]');
+    const imagemInput = div.querySelector('input[name^="passo_imagem_"]:not([name*="storage_"])');
+    const storagePathInput = div.querySelector('input[name^="passo_imagem_storage_path_"]');
+    const storageBucketInput = div.querySelector('input[name^="passo_imagem_storage_bucket_"]');
+
+    let imagem = imagemInput ? imagemInput.value : '';
+    let imagemStoragePath = storagePathInput ? storagePathInput.value.trim() : '';
+    let imagemStorageBucket = storageBucketInput ? storageBucketInput.value.trim() : '';
+
+    if (fileInput && fileInput._pendingManualImageFile) {
+      try {
+        const upload = await DB.uploadManualImageStorage(fileInput._pendingManualImageFile);
+        imagem = upload.url;
+        imagemStoragePath = upload.storage_path;
+        imagemStorageBucket = upload.storage_bucket;
+      } catch (error) {
+        toast(`Falha no upload da imagem: ${error?.message || 'erro desconhecido'}`, 'error');
+        return;
+      }
+    }
+
+    const passo = { texto, imagem };
+    if (imagemStoragePath) passo.imagem_storage_path = imagemStoragePath;
+    if (imagemStorageBucket) passo.imagem_storage_bucket = imagemStorageBucket;
+    passos.push(passo);
+  }
 
   // Processa documentos: texto simples ou objeto com arquivo_id
   const docsList = document.getElementById('dyn-documentos');
@@ -1665,6 +1710,22 @@ function salvarManual(id) {
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
   id ? DB.update('manuais', id, dados) : DB.insert('manuais', dados);
+
+  const currentStorageRefs = new Set(
+    passos
+      .filter(p => p.imagem_storage_path)
+      .map(p => `${p.imagem_storage_bucket || 'manuais-imagens-smader'}::${p.imagem_storage_path}`)
+  );
+  for (const ref of oldStorageRefs) {
+    if (currentStorageRefs.has(ref)) continue;
+    const [bucket, path] = ref.split('::');
+    try {
+      await DB.deleteManualImageStorage(path, bucket);
+    } catch (error) {
+      console.warn('[admin] Falha ao remover imagem antiga de manual no storage:', error);
+    }
+  }
+
   fecharModal(); toast('Manual salvo.'); renderManuais();
 }
 
