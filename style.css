@@ -713,7 +713,7 @@ input { font-family: inherit; }
 .relatorio-table th,
 .relatorio-table td {
   border: 1px solid #dbe2d7;
-  padding: 7px 8px;
+  padding: 4px 4px;
   text-align: left;
   vertical-align: top;
   white-space: normal;
@@ -739,6 +739,40 @@ input { font-family: inherit; }
 .relatorio-table--funcionarios td:nth-child(3),
 .relatorio-table--veiculos td:nth-child(11) {
   white-space: pre-line;
+}
+
+.relatorio-table--funcionarios th:nth-child(2),
+.relatorio-table--funcionarios td:nth-child(2) {
+  width: 5.5rem;
+  white-space: nowrap;
+}
+
+.relatorio-table--funcionarios th:nth-child(3),
+.relatorio-table--funcionarios td:nth-child(3) {
+  width: 11%;
+}
+
+.relatorio-table--funcionarios th:nth-child(4),
+.relatorio-table--funcionarios td:nth-child(4) {
+  width: 4.8rem;
+}
+
+.relatorio-table--funcionarios th:nth-child(5),
+.relatorio-table--funcionarios td:nth-child(5) {
+  width: 6.3rem;
+  white-space: nowrap;
+}
+
+.relatorio-table--funcionarios th:nth-child(7),
+.relatorio-table--funcionarios td:nth-child(7) {
+  width: 5.6rem;
+  white-space: nowrap;
+}
+
+.relatorio-table--funcionarios th:nth-child(6),
+.relatorio-table--funcionarios td:nth-child(6) {
+  width: 16%;
+  white-space: nowrap;
 }
 
 .relatorio-table--agenda {
@@ -3246,7 +3280,7 @@ input { font-family: inherit; }
   .relatorio-table td {
     white-space: normal;
     font-size: 0.61rem !important;
-    padding: 7px 8px !important;
+    padding: 4px 4px !important;
   }
 
   .relatorio-blocks {
