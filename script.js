@@ -2134,7 +2134,11 @@ function renderArquivos() {
   container.innerHTML = paginaAtualItens.map(a => {
     const cor   = tipoCor[a.tipo]   || "#5a6354";
     const icone = tipoIcone[a.tipo] || "ph-file";
-    const temArquivo = a.arquivo_data || a.arquivo_nome || a.url;
+    const temArquivo = !!(
+      (typeof a.arquivo_data === "string" && a.arquivo_data.trim()) ||
+      (typeof a.storage_path === "string" && a.storage_path.trim()) ||
+      (typeof a.url === "string" && a.url.trim())
+    );
     const extensaoGrupo = getArquivoExtensaoGrupo(getArquivoExtensaoReal(a) || getArquivoExtensaoFallbackPorTipo(a.tipo));
     const tagsHTML = buildArquivoCardTagsHTML(a.tags);
 
@@ -4581,5 +4585,4 @@ function getInitials(nome) {
   if (partes.length === 1) return partes[0][0].toUpperCase();
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
-
 
