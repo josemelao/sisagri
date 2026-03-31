@@ -1,14 +1,14 @@
-/* ============================================================
-   SMADER — script.js
-   Lógica principal e navegação SPA.
-   Os dados vêm de dados.js (via db.js) — não edite dados aqui.
+﻿/* ============================================================
+   SMADER â€” script.js
+   LÃ³gica principal e navegaÃ§Ã£o SPA.
+   Os dados vÃªm de dados.js (via db.js) â€” nÃ£o edite dados aqui.
    Para editar dados, use o painel Admin (/admin.html).
    ============================================================ */
 
 /* ============================================================
-   VARIÁVEIS DE DADOS — populadas pelo db.js na inicialização
-   Estas variáveis são usadas em todo o script como antes,
-   mas agora vêm do DB (localStorage ou Supabase no futuro).
+   VARIÃVEIS DE DADOS â€” populadas pelo db.js na inicializaÃ§Ã£o
+   Estas variÃ¡veis sÃ£o usadas em todo o script como antes,
+   mas agora vÃªm do DB (localStorage ou Supabase no futuro).
    ============================================================ */
 let funcionarios  = [];
 let manuais       = [];
@@ -77,7 +77,7 @@ async function baixarArquivo(url, nomeArquivo = "arquivo") {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   } catch (erro) {
-    console.warn("[Arquivos] Falha no download forçado. Abrindo URL diretamente.", erro);
+    console.warn("[Arquivos] Falha no download forÃ§ado. Abrindo URL diretamente.", erro);
     window.open(url, "_blank", "noopener");
   }
 }
@@ -99,8 +99,8 @@ function getArquivoLinkMeta(arquivo) {
 }
 
 /**
- * Detecta o tipo de preview possível para um arquivo.
- * Ordem de prioridade: extensão da URL → extensão do arquivo_nome → campo tipo.
+ * Detecta o tipo de preview possÃ­vel para um arquivo.
+ * Ordem de prioridade: extensÃ£o da URL â†’ extensÃ£o do arquivo_nome â†’ campo tipo.
  * Retorna: 'pdf' | 'imagem' | null
  */
 function _detectarTipoPreview(a) {
@@ -114,13 +114,13 @@ function _detectarTipoPreview(a) {
     return partes.length > 1 ? partes[partes.length - 1].toLowerCase() : '';
   }
 
-  // 1. extensão da URL
+  // 1. extensÃ£o da URL
   const extUrl = extDe(a.url);
   if (extUrl === 'pdf') return 'pdf';
   if (IMAGENS.includes(extUrl)) return 'imagem';
   if (OFFICE.includes(extUrl)) return 'office';
 
-  // 2. extensão do nome original do arquivo
+  // 2. extensÃ£o do nome original do arquivo
   const extNome = extDe(a.arquivo_nome);
   if (extNome === 'pdf') return 'pdf';
   if (IMAGENS.includes(extNome)) return 'imagem';
@@ -137,8 +137,8 @@ function _detectarTipoPreview(a) {
 
 /**
  * Retorna o HTML do bloco de preview para o painel de detalhes de arquivo.
- * Nunca quebra o painel — sempre tem fallback.
- * O botão de download/link externo é responsabilidade de quem chama.
+ * Nunca quebra o painel â€” sempre tem fallback.
+ * O botÃ£o de download/link externo Ã© responsabilidade de quem chama.
  */
 function getArquivoPreviewHTML(a) {
   const url = a.url || '';
@@ -149,13 +149,13 @@ function getArquivoPreviewHTML(a) {
   if (tipo === 'imagem') {
     return `
       <hr class="detail-divider">
-      <p class="detail-section-title">Pré-visualização</p>
+      <p class="detail-section-title">PrÃ©-visualizaÃ§Ã£o</p>
       <div class="arquivo-preview-container">
         <img
           src="${url}"
           alt="${a.nome || 'Imagem'}"
           class="arquivo-preview-img"
-          onerror="this.closest('.arquivo-preview-container').innerHTML='<p class=\\'arquivo-preview-fallback\\'>Não foi possível carregar a imagem.</p>'"
+          onerror="this.closest('.arquivo-preview-container').innerHTML='<p class=\\'arquivo-preview-fallback\\'>NÃ£o foi possÃ­vel carregar a imagem.</p>'"
         />
       </div>`;
   }
@@ -163,7 +163,7 @@ function getArquivoPreviewHTML(a) {
   if (tipo === 'pdf') {
     return `
       <hr class="detail-divider">
-      <p class="detail-section-title">Pré-visualização</p>
+      <p class="detail-section-title">PrÃ©-visualizaÃ§Ã£o</p>
       <div class="arquivo-preview-container">
         <iframe
           src="${url}"
@@ -173,7 +173,7 @@ function getArquivoPreviewHTML(a) {
         ></iframe>
         <p class="arquivo-preview-pdf-aviso">
           <i class="ph-bold ph-info"></i>
-          Se o documento não carregar, use o botão abaixo para baixar ou abrir.
+          Se o documento nÃ£o carregar, use o botÃ£o abaixo para baixar ou abrir.
         </p>
       </div>`;
   }
@@ -182,7 +182,7 @@ function getArquivoPreviewHTML(a) {
     const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
     return `
       <hr class="detail-divider">
-      <p class="detail-section-title">Pré-visualização</p>
+      <p class="detail-section-title">PrÃ©-visualizaÃ§Ã£o</p>
       <div class="arquivo-preview-container">
         <iframe
           src="${viewerUrl}"
@@ -193,16 +193,16 @@ function getArquivoPreviewHTML(a) {
         ></iframe>
         <p class="arquivo-preview-pdf-aviso">
           <i class="ph-bold ph-info"></i>
-          Visualização via Microsoft Office Online. Se não carregar, use o botão abaixo para baixar.
+          VisualizaÃ§Ã£o via Microsoft Office Online. Se nÃ£o carregar, use o botÃ£o abaixo para baixar.
         </p>
       </div>`;
   }
 
   return `
       <hr class="detail-divider">
-      <p class="detail-section-title">Pré-visualização</p>
+      <p class="detail-section-title">PrÃ©-visualizaÃ§Ã£o</p>
       <div class="arquivo-preview-container">
-        <p class="arquivo-preview-fallback">Pré-visualização não disponível para este tipo de arquivo.</p>
+        <p class="arquivo-preview-fallback">PrÃ©-visualizaÃ§Ã£o nÃ£o disponÃ­vel para este tipo de arquivo.</p>
       </div>`;
 }
 
@@ -268,7 +268,7 @@ async function waitForInitialPaint() {
   }
 }
 
-/** Carrega todas as coleções do DB para as variáveis locais */
+/** Carrega todas as coleÃ§Ãµes do DB para as variÃ¡veis locais */
 function carregarDados() {
   funcionarios  = filterPublished(DB.get('funcionarios'));
   manuais       = filterPublished(DB.get('manuais'));
@@ -330,15 +330,15 @@ function scheduleGlobalSearchIndexBuild() {
 }
 
 /* ============================================================
-   INICIALIZAÇÃO
+   INICIALIZAÃ‡ÃƒO
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   initBootScreen();
-  setBootProgress(12, "Carregando sistema", "Conectando ao banco e preparando a página inicial.");
+  setBootProgress(12, "Carregando sistema", "Conectando ao banco e preparando a p\u00e1gina inicial.");
   // dbInit() carrega os dados (localStorage ou dados.js)
-  // e só então renderiza a aplicação
+  // e s\u00f3 ent\u00e3o renderiza a aplica\u00e7\u00e3o
   dbInit().then(() => {
-    setBootProgress(52, "Dados carregados", "Organizando os módulos e sincronizando as informações iniciais.");
+    setBootProgress(52, "Dados carregados", "Organizando os m\u00f3dulos e sincronizando as informa\u00e7\u00f5es iniciais.");
     carregarDados();
     initDate();
     initNavigation();
@@ -348,22 +348,22 @@ document.addEventListener("DOMContentLoaded", () => {
     initMobile();
     initLightbox();
     modulosInicializados.add("dashboard");
-    setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experiência.");
+    setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experi\u00eancia.");
     return waitForInitialPaint();
   }).then(() => {
     if (bootState.screen) {
       bootState.screen.classList.add("is-complete");
       bootState.screen.setAttribute("aria-busy", "false");
     }
-    setBootProgress(100, "Sistema pronto", "Tudo foi carregado com sucesso. Você já pode usar a página.");
+    setBootProgress(100, "Sistema pronto", "Tudo foi carregado com sucesso. Voc\u00ea j\u00e1 pode usar a p\u00e1gina.");
     hideBootScreen();
   }).catch((error) => {
-    console.error("[App] Falha ao inicializar a aplicação.", error);
+    console.error("[App] Falha ao inicializar a aplica\u00e7\u00e3o.", error);
     if (bootState.screen) {
       bootState.screen.classList.remove("is-complete");
       bootState.screen.setAttribute("aria-busy", "false");
     }
-    setBootProgress(100, "Falha ao carregar", "O carregamento não foi concluído corretamente. Atualize a página para tentar novamente.");
+    setBootProgress(100, "Falha ao carregar", "O carregamento n\u00e3o foi conclu\u00eddo corretamente. Atualize a p\u00e1gina para tentar novamente.");
     document.body.classList.remove("app-loading");
     document.body.style.overflow = "";
   });
@@ -371,14 +371,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ============================================================
-   DASHBOARD — Escala de Férias + Acesso Rápido
+   DASHBOARD â€” Escala de FÃ©rias + Acesso RÃ¡pido
    ============================================================ */
 function initDashBottom() {
   renderFerias();
   renderAcessoRapido();
 }
 
-/* ---------- ESCALA DE FÉRIAS ---------- */
+/* ---------- ESCALA DE FÃ‰RIAS ---------- */
 function getFeriasStatus(periodoInicio, periodoFim) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -392,7 +392,7 @@ function getFeriasStatus(periodoInicio, periodoFim) {
 }
 
 function formatDateBR(value) {
-  if (!value || typeof value !== "string") return value || "—";
+  if (!value || typeof value !== "string") return value || "-";
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return value;
   return `${match[3]}/${match[2]}/${match[1]}`;
@@ -404,7 +404,7 @@ function renderFerias() {
 
   const hoje = new Date(); hoje.setHours(0,0,0,0);
 
-  // Ordena por data de início, exclui concluídos já passados
+  // Ordena por data de inÃ­cio, exclui concluÃ­dos jÃ¡ passados
   const lista = escalaFerias
     .filter(f => {
       if (f.funcionario_id && !getPublishedFuncionarioById(f.funcionario_id)) return false;
@@ -414,7 +414,7 @@ function renderFerias() {
     .sort((a, b) => new Date(a.periodo_inicio) - new Date(b.periodo_inicio));
 
   if (lista.length === 0) {
-    container.innerHTML = `<p class="dash-empty">Nenhuma férias agendada.</p>`;
+    container.innerHTML = `<p class="dash-empty">Nenhuma fÃ©rias agendada.</p>`;
     return;
   }
 
@@ -428,7 +428,7 @@ function renderFerias() {
     const mesIni = MESES_PT[ini.getMonth()].slice(0,3);
     const diaFim = String(fim.getDate()).padStart(2,"0");
     const mesFim = MESES_PT[fim.getMonth()].slice(0,3);
-    const periodo = `${diaIni}/${mesIni} — ${diaFim}/${mesFim}`;
+    const periodo = `${diaIni}/${mesIni} â€” ${diaFim}/${mesFim}`;
 
     // Calcula progresso da barra (apenas para em_curso)
     let barraHTML = "";
@@ -458,13 +458,13 @@ function renderFerias() {
           </span>
           ${barraHTML}
         </div>
-        ${emCurso ? '<span class="ferias-badge-ativo">Em férias</span>' : ""}
+        ${emCurso ? '<span class="ferias-badge-ativo">Em fÃ©rias</span>' : ""}
       </div>`;
   }).join("");
   });
 }
 
-/* ---------- ACESSO RÁPIDO ---------- */
+/* ---------- ACESSO RÃPIDO ---------- */
 function renderAcessoRapido() {
   const container = document.getElementById("acesso-grid");
   if (!container) return;
@@ -500,7 +500,7 @@ function initDate() {
 
 
 /* ============================================================
-   DASHBOARD LATERAL — Calendário, Avisos, Eventos e Instagram
+   DASHBOARD LATERAL â€” CalendÃ¡rio, Avisos, Eventos e Instagram
    ============================================================ */
 
 let calYear, calMonth;
@@ -601,20 +601,20 @@ function initWidgetCollapse() {
   });
 }
 
-/* ---------- CALENDÁRIO ---------- */
+/* ---------- CALENDÃRIO ---------- */
 
-const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+const MESES_PT = ["Janeiro","Fevereiro","MarÃ§o","Abril","Maio","Junho",
                   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-const DIAS_PT  = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const DIAS_PT  = ["Dom","Seg","Ter","Qua","Qui","Sex","SÃ¡b"];
 
 /* ---------- TIPOS de evento e aviso ---------- */
 
 const tipoEvento = {
-  reuniao:     { label: "Reunião",     cor: "#3d5c7a", icone: "ph-users-three" },
+  reuniao:     { label: "ReuniÃ£o",     cor: "#3d5c7a", icone: "ph-users-three" },
   evento:      { label: "Evento",      cor: "#3d7a5e", icone: "ph-calendar-check" },
   prazo:       { label: "Prazo",       cor: "#7a3d3d", icone: "ph-clock-countdown" },
-  capacitacao: { label: "Capacitação", cor: "#5c3d7a", icone: "ph-graduation-cap" },
-  operacao:    { label: "Operação",    cor: "#7a5c3d", icone: "ph-tractor" },
+  capacitacao: { label: "CapacitaÃ§Ã£o", cor: "#5c3d7a", icone: "ph-graduation-cap" },
+  operacao:    { label: "OperaÃ§Ã£o",    cor: "#7a5c3d", icone: "ph-tractor" },
 };
 
 function parseEventoDateTime(data, hora = null, usarFimDoDia = false) {
@@ -675,7 +675,7 @@ function formatEventoPeriodo(e) {
     const fim = t.fim;
     if (!fim) return '';
     const data = `${String(fim.getDate()).padStart(2,"0")} ${MESES_PT[fim.getMonth()].slice(0,3)} ${fim.getFullYear()}`;
-    return e.hora_fim ? `${data} às ${e.hora_fim}` : data;
+    return e.hora_fim ? `${data} Ã s ${e.hora_fim}` : data;
   }
 
   const ini = t.inicio;
@@ -686,16 +686,16 @@ function formatEventoPeriodo(e) {
   const mesmaData = ini.toDateString() === fim.toDateString();
 
   if (mesmaData) {
-    if (e.hora && e.hora_fim) return `${dataIni} · ${e.hora} às ${e.hora_fim}`;
-    if (e.hora) return `${dataIni} · ${e.hora}`;
-    if (e.hora_fim) return `${dataIni} · até ${e.hora_fim}`;
+    if (e.hora && e.hora_fim) return `${dataIni} Â· ${e.hora} Ã s ${e.hora_fim}`;
+    if (e.hora) return `${dataIni} Â· ${e.hora}`;
+    if (e.hora_fim) return `${dataIni} Â· atÃ© ${e.hora_fim}`;
     return dataIni;
   }
 
   const dataFim = `${String(fim.getDate()).padStart(2,"0")} ${MESES_PT[fim.getMonth()].slice(0,3)} ${fim.getFullYear()}`;
-  const parteIni = e.hora ? `${dataIni} · ${e.hora}` : dataIni;
-  const parteFim = e.hora_fim ? `${dataFim} · ${e.hora_fim}` : dataFim;
-  return `${parteIni} — ${parteFim}`;
+  const parteIni = e.hora ? `${dataIni} Â· ${e.hora}` : dataIni;
+  const parteFim = e.hora_fim ? `${dataFim} Â· ${e.hora_fim}` : dataFim;
+  return `${parteIni} â€” ${parteFim}`;
 }
 
 const tipoAviso = {
@@ -773,7 +773,7 @@ async function fetchInstagramPosts(token) {
   try {
     const url = `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&limit=6&access_token=${token}`;
     const res  = await fetch(url);
-    if (!res.ok) throw new Error("Token inválido ou expirado.");
+    if (!res.ok) throw new Error("Token invÃ¡lido ou expirado.");
     const data = await res.json();
     if (!data.data || data.data.length === 0) {
       grid.innerHTML = `<p class="ig-empty">Nenhuma postagem encontrada.</p>`;
@@ -781,7 +781,7 @@ async function fetchInstagramPosts(token) {
     }
     grid.innerHTML = data.data.map(post => {
       const img = post.media_type === "VIDEO" ? post.thumbnail_url : post.media_url;
-      const cap = post.caption ? post.caption.slice(0, 80) + (post.caption.length > 80 ? "…" : "") : "";
+      const cap = post.caption ? post.caption.slice(0, 80) + (post.caption.length > 80 ? "â€¦" : "") : "";
       return `
         <a href="${post.permalink}" target="_blank" rel="noopener" class="ig-post">
           <img src="${img}" alt="${cap}" loading="lazy" />
@@ -793,14 +793,14 @@ async function fetchInstagramPosts(token) {
       <div class="ig-error">
         <i class="ph-bold ph-warning-circle"></i>
         <p>${err.message}</p>
-        <small>Verifique se o token está correto e ainda é válido.</small>
+        <small>Verifique se o token estÃ¡ correto e ainda Ã© vÃ¡lido.</small>
       </div>`;
   }
 }
 
 /* ============================================================
-   NAVEGAÇÃO SPA
-   Troca de páginas sem recarregar — apenas mostra/oculta sections
+   NAVEGAÃ‡ÃƒO SPA
+   Troca de pÃ¡ginas sem recarregar â€” apenas mostra/oculta sections
    ============================================================ */
 function initNavigation() {
 
@@ -814,7 +814,7 @@ function initNavigation() {
     });
   });
 
-  // Cards do dashboard que navegam para módulos
+  // Cards do dashboard que navegam para mÃ³dulos
   const navCards = document.querySelectorAll(".card-nav");
   navCards.forEach(card => {
     card.addEventListener("click", () => {
@@ -824,15 +824,15 @@ function initNavigation() {
 }
 
 /**
- * Navega para uma página específica pelo ID.
+ * Navega para uma pÃ¡gina especÃ­fica pelo ID.
  * @param {string} pageId - Ex: "dashboard", "funcionarios"
  */
 function navigateTo(pageId) {
   ensureModuleInitialized(pageId);
 
-  // Oculta todas as páginas
+  // Oculta todas as pÃ¡ginas
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  // Mostra a página selecionada
+  // Mostra a pÃ¡gina selecionada
   const target = document.getElementById("page-" + pageId);
   if (target) target.classList.add("active");
 
@@ -841,7 +841,7 @@ function navigateTo(pageId) {
     n.classList.toggle("active", n.dataset.page === pageId);
   });
 
-  // Fecha sidebar no mobile após navegar
+  // Fecha sidebar no mobile apÃ³s navegar
   closeMobileSidebar();
 
   // Scroll para o topo
@@ -892,12 +892,12 @@ function ensureModuleInitialized(pageId) {
 
 
 /* ============================================================
-   MÓDULO: FUNCIONÁRIOS
+   MÃ“DULO: FUNCIONÃRIOS
    ============================================================ */
 function initFuncionarios() {
   renderFuncionarios(funcionarios);
 
-  // Botão fechar detalhe
+  // BotÃ£o fechar detalhe
   document.getElementById("func-detail-close").addEventListener("click", closeDetail.bind(null, "func-detail-overlay"));
 
   // Fechar ao clicar no fundo
@@ -918,11 +918,11 @@ function openFuncionario(id) {
     : `<div class="detail-avatar-large">${getInitials(f.nome)}</div>`;
   const lotacao = f.lotacao || f.setor || "";
   const camposInfo = [
-    ["Matrícula", f.matricula],
-    ["Lotação", lotacao],
-    ["Vínculo", f.vinculo],
-    ["Órgão", f.orgao],
-    ["Data de admissão", formatDateBR(f.data_admissao)],
+    ["MatrÃ­cula", f.matricula],
+    ["LotaÃ§Ã£o", lotacao],
+    ["VÃ­nculo", f.vinculo],
+    ["Ã“rgÃ£o", f.orgao],
+    ["Data de admissÃ£o", formatDateBR(f.data_admissao)],
     ["Telefone", f.telefone],
     ["E-mail institucional", f.email],
     ["CPF", f.cpf],
@@ -935,7 +935,7 @@ function openFuncionario(id) {
     <div class="detail-role">${f.cargo}</div>
     <span class="detail-badge">${lotacao}</span>
     <hr class="detail-divider">
-    <p class="detail-section-title">Informações do funcionário</p>
+    <p class="detail-section-title">InformaÃ§Ãµes do funcionÃ¡rio</p>
     <div class="detail-info-grid">${camposInfo.map(([label, valor]) => `
       <div class="detail-info-item">
         <label>${label}</label>
@@ -944,7 +944,7 @@ function openFuncionario(id) {
     `).join("")}</div>
     <hr class="detail-divider">
     <p class="detail-section-title">O que essa pessoa faz</p>
-    <p class="detail-desc">${f.descricao || "Sem descrição cadastrada."}</p>
+    <p class="detail-desc">${f.descricao || "Sem descriÃ§Ã£o cadastrada."}</p>
   `;
 
   openDetail("func-detail-overlay");
@@ -987,7 +987,7 @@ function renderFuncionarios(lista) {
   if (!container) return;
 
   if (lista.length === 0) {
-    container.innerHTML = `<p class="modulo-vazio">Nenhum funcionário encontrado.</p>`;
+    container.innerHTML = `<p class="modulo-vazio">Nenhum funcionÃ¡rio encontrado.</p>`;
     return;
   }
 
@@ -1015,7 +1015,7 @@ function renderFuncionarios(lista) {
 
 
 /* ============================================================
-   MÓDULO: MANUAIS
+   MÃ“DULO: MANUAIS
    ============================================================ */
 function initManuais() {
   renderManuais(manuais);
@@ -1083,11 +1083,11 @@ function openManual(id) {
   openDetail("manual-detail-overlay");
 }
 
-/** Renderiza o conteúdo do manual baseado no modo (resumido ou completo) */
+/** Renderiza o conteÃºdo do manual baseado no modo (resumido ou completo) */
 function renderManualDetail(m, modo, passoAtivo = 0) {
   const container = document.getElementById("manual-detail-content");
 
-  // Tabs de navegação entre modos
+  // Tabs de navegaÃ§Ã£o entre modos
   const tabsHTML = `
     <div class="manual-tabs">
       <button class="manual-tab ${modo === 'resumido' ? 'active' : ''}" onclick="switchManualMode(${m.id}, 'resumido')">
@@ -1110,7 +1110,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     `).join("");
     contentHTML = `<div class="manual-content-switch"><div class="manual-steps">${stepsHTML}</div></div>`;
   } else {
-    // Paginação horizontal para modo completo
+    // PaginaÃ§Ã£o horizontal para modo completo
     const passo = m.passos[passoAtivo];
     const texto = typeof passo === 'string' ? passo : passo.texto;
     const imagem = (typeof passo === 'object' && passo.imagem) ? passo.imagem : "";
@@ -1135,12 +1135,12 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
             <p class="manual-passo-texto">${texto}</p>
             ${imagem ? `
               <div class="manual-passo-img-container">
-                <img src="${imagem}" class="manual-passo-img" alt="Ilustração do passo ${passoAtivo + 1}" />
+                <img src="${imagem}" class="manual-passo-img" alt="IlustraÃ§Ã£o do passo ${passoAtivo + 1}" />
               </div>
             ` : `
               <div class="manual-passo-no-img">
                 <i class="ph-bold ph-image-square"></i>
-                <span>Nenhuma imagem disponível para este passo.</span>
+                <span>Nenhuma imagem disponÃ­vel para este passo.</span>
               </div>
             `}
           </div>
@@ -1150,7 +1150,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
               <i class="ph-bold ph-arrow-left"></i> Anterior
             </button>
             <button class="btn-passo btn-passo-primary" ${passoAtivo === m.passos.length - 1 ? 'disabled' : ''} onclick="switchManualPasso(${m.id}, ${passoAtivo + 1})">
-              Próximo <i class="ph-bold ph-arrow-right"></i>
+              PrÃ³ximo <i class="ph-bold ph-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -1159,7 +1159,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
   }
 
   const docsHTML = m.documentos.map(d => {
-    // Verifica se é um objeto vinculado a arquivo
+    // Verifica se Ã© um objeto vinculado a arquivo
     const isObj = typeof d === 'object' && d !== null;
     const nome = isObj ? d.nome : d;
     const arquivoId = isObj ? d.arquivo_id : null;
@@ -1187,22 +1187,22 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     ${tabsHTML}
 
     <hr class="detail-divider">
-    <p class="detail-section-title">${modo === 'resumido' ? 'Passo a passo' : 'Visualização Detalhada'}</p>
+    <p class="detail-section-title">${modo === 'resumido' ? 'Passo a passo' : 'VisualizaÃ§Ã£o Detalhada'}</p>
     ${contentHTML}
 
     <hr class="detail-divider">
-    <p class="detail-section-title">Documentos necessários</p>
+    <p class="detail-section-title">Documentos necessÃ¡rios</p>
     <div class="docs-list">${docsHTML}</div>
 
     <hr class="detail-divider">
-    <p class="detail-section-title">Observações</p>
+    <p class="detail-section-title">ObservaÃ§Ãµes</p>
     <div class="obs-box">${m.observacoes}</div>
     </div>
   `;
   animateManualPanelContent(container, modo, passoAtivo);
 }
 
-/** Troca o modo de visualização do manual */
+/** Troca o modo de visualizaÃ§Ã£o do manual */
 window.switchManualMode = function(id, modo) {
   const m = getPublishedManualById(id);
   if (m) renderManualDetail(m, modo);
@@ -1216,7 +1216,7 @@ window.switchManualPasso = function(id, passoIdx) {
 
 
 /* ============================================================
-   MÓDULO: PROCESSOS
+   MÃ“DULO: PROCESSOS
    ============================================================ */
 function initProcessos() {
   renderProcessos(processos);
@@ -1283,7 +1283,7 @@ function openProcesso(id) {
   const p = getPublishedProcessoById(id);
   if (!p) return;
 
-  // Remove filho residual de sessão anterior
+  // Remove filho residual de sessÃ£o anterior
   const filhoAnterior = document.getElementById('manual-filho-panel');
   if (filhoAnterior) filhoAnterior.remove();
 
@@ -1335,27 +1335,27 @@ function openManualFilho(id) {
 }
 
 /**
- * Helper interno — renderiza um manual (tabs + passos + docs) em qualquer painel filho/neto.
- * Nunca chamar diretamente: use os wrappers públicos abaixo.
+ * Helper interno â€” renderiza um manual (tabs + passos + docs) em qualquer painel filho/neto.
+ * Nunca chamar diretamente: use os wrappers pÃºblicos abaixo.
  *
- * @param {object} m           — manual (do DB)
- * @param {string} modo        — 'resumido' | 'completo'
- * @param {number} passoAtivo  — índice do passo atual (modo completo)
- * @param {object} cfg         — configuração do contexto:
+ * @param {object} m           â€” manual (do DB)
+ * @param {string} modo        â€” 'resumido' | 'completo'
+ * @param {number} passoAtivo  â€” Ã­ndice do passo atual (modo completo)
+ * @param {object} cfg         â€” configuraÃ§Ã£o do contexto:
  *   {
- *     panelId:     string  — ID do elemento DOM do painel
- *     selfFn:      string  — nome desta função wrapper (para onclicks)
- *     voltarFn:    string  — função chamada no botão Voltar
- *     fecharFn:    string  — função chamada no botão X
- *     voltarLabel: string  — texto do botão Voltar
- *     processoId:  number  — opcional, apenas para painéis neto
+ *     panelId:     string  â€” ID do elemento DOM do painel
+ *     selfFn:      string  â€” nome desta funÃ§Ã£o wrapper (para onclicks)
+ *     voltarFn:    string  â€” funÃ§Ã£o chamada no botÃ£o Voltar
+ *     fecharFn:    string  â€” funÃ§Ã£o chamada no botÃ£o X
+ *     voltarLabel: string  â€” texto do botÃ£o Voltar
+ *     processoId:  number  â€” opcional, apenas para painÃ©is neto
  *   }
  */
 function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
   const painel = document.getElementById(cfg.panelId);
   if (!painel) return;
 
-  // processoId: presente apenas nos netos — inserido nos callbacks de passo
+  // processoId: presente apenas nos netos â€” inserido nos callbacks de passo
   const pid = cfg.processoId !== undefined ? `,${cfg.processoId}` : '';
 
   const tabs = `
@@ -1408,7 +1408,7 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
               <i class="ph-bold ph-arrow-left"></i> Anterior</button>
             <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
                     onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo+1})">
-              Próximo <i class="ph-bold ph-arrow-right"></i></button>
+              PrÃ³ximo <i class="ph-bold ph-arrow-right"></i></button>
           </div>
         </div>
       </div></div>`;
@@ -1444,8 +1444,8 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
     <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${m.titulo}</div>
     <hr class="detail-divider">
     ${tabs}${content}
-    ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessários</p><div class="docs-list">${docs}</div>` : ''}
-    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
+    ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessÃ¡rios</p><div class="docs-list">${docs}</div>` : ''}
+    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">ObservaÃ§Ãµes</p><div class="obs-box">${m.observacoes}</div>` : ''}
     </div>
   `;
   animateManualPanelContent(painel, modo, passoAtivo);
@@ -1472,15 +1472,15 @@ function fecharProcessoCompleto() {
 
 
 /* ============================================================
-   MÓDULO: ARQUIVOS
-   Filtro por tags — múltiplas tags por arquivo, multi-seleção
+   MÃ“DULO: ARQUIVOS
+   Filtro por tags â€” mÃºltiplas tags por arquivo, multi-seleÃ§Ã£o
    ============================================================ */
 
 // Estado do filtro: conjunto de tags ativas (Set para facilitar toggle)
 let tagsAtivas = new Set();
 let extensoesAtivas = new Set();
 let arquivoQuery = "";        // texto da busca em lowercase (usado nos filtros)
-let arquivoQueryRaw = "";     // texto original digitado pelo usuário (usado no input)
+let arquivoQueryRaw = "";     // texto original digitado pelo usuÃ¡rio (usado no input)
 let arquivosPaginaAtual = 1;
 const ARQUIVOS_POR_PAGINA = 20;
 const ARQUIVOS_UI_STATE_KEY = "smader_arquivos_ui_state_v1";
@@ -1518,7 +1518,7 @@ function loadModuleSearchState() {
     const parsed = saved ? JSON.parse(saved) : {};
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch (error) {
-    console.warn("[Busca] Falha ao restaurar estado de busca dos módulos:", error);
+    console.warn("[Busca] Falha ao restaurar estado de busca dos mÃ³dulos:", error);
     return {};
   }
 }
@@ -1534,7 +1534,7 @@ function setModuleSearchValue(moduleId, value) {
   try {
     localStorage.setItem(MODULE_SEARCH_STATE_KEY, JSON.stringify(moduleSearchState));
   } catch (error) {
-    console.warn("[Busca] Falha ao salvar estado de busca dos módulos:", error);
+    console.warn("[Busca] Falha ao salvar estado de busca dos mÃ³dulos:", error);
   }
 }
 
@@ -1602,7 +1602,7 @@ function initArquivos() {
     if (e.target === document.getElementById("arquivo-detail-overlay")) closeDetail("arquivo-detail-overlay");
   });
 
-  // Busca por texto — filtra em tempo real
+  // Busca por texto â€” filtra em tempo real
   const input = document.getElementById("arquivo-search");
   if (input) {
     input.value = arquivoQueryRaw;
@@ -1616,14 +1616,14 @@ function initArquivos() {
 }
 
 /**
- * Coleta todas as tags únicas do array arquivos,
- * renderiza os botões de filtro no topo da página.
+ * Coleta todas as tags Ãºnicas do array arquivos,
+ * renderiza os botÃµes de filtro no topo da pÃ¡gina.
  */
 function renderTagFilter() {
   const container = document.getElementById("arquivos-tags");
   if (!container) return;
 
-  // Extrai todas as tags únicas e ordena alfabeticamente
+  // Extrai todas as tags Ãºnicas e ordena alfabeticamente
   const todasTags = [...new Set(arquivos.flatMap(a => a.tags))].sort();
 
   container.innerHTML = todasTags.map(tag => `
@@ -1644,7 +1644,7 @@ function toggleTag(tag) {
     tagsAtivas.add(tag);
   }
 
-  // Atualiza visual dos botões
+  // Atualiza visual dos botÃµes
   document.querySelectorAll("#arquivos-tags .tag-filter-btn").forEach(btn => {
     btn.classList.toggle("active", tagsAtivas.has(btn.dataset.tag));
   });
@@ -1721,7 +1721,7 @@ function getArquivoExtensaoGrupo(extensao) {
 }
 
 function getArquivoExtensaoLabel(grupo) {
-  return grupo === "__sem_extensao__" ? "Sem extensão" : grupo;
+  return grupo === "__sem_extensao__" ? "Sem extensÃ£o" : grupo;
 }
 
 function renderExtensaoFilter() {
@@ -1822,7 +1822,7 @@ function renderArquivosPagination(totalItens) {
   container.hidden = false;
   container.innerHTML = `
     <div class="arquivos-pagination-summary">
-      Página ${arquivosPaginaAtual} de ${totalPaginas} · ${totalItens} resultado${totalItens === 1 ? "" : "s"}
+      PÃ¡gina ${arquivosPaginaAtual} de ${totalPaginas} Â· ${totalItens} resultado${totalItens === 1 ? "" : "s"}
     </div>
     <button class="arquivos-page-btn" ${arquivosPaginaAtual === 1 ? "disabled" : ""}
       onclick="goToArquivosPage(${arquivosPaginaAtual - 1})">
@@ -1838,7 +1838,7 @@ function renderArquivosPagination(totalItens) {
     </div>
     <button class="arquivos-page-btn" ${arquivosPaginaAtual === totalPaginas ? "disabled" : ""}
       onclick="goToArquivosPage(${arquivosPaginaAtual + 1})">
-      Próxima
+      PrÃ³xima
       <i class="ph-bold ph-caret-right"></i>
     </button>
   `;
@@ -1974,7 +1974,7 @@ function buildManualPaginationHTML(total, passoAtivo, onSelect, onPrev, onNext) 
           : `<span class="pag-placeholder manual-pag-item" data-reflow-id="manual-gap-${i}"></span>`
         ).join("")}
       </div>
-      <button class="pag-arrow" ${passoAtivo === total - 1 ? "disabled" : ""} onclick="${onNext}" aria-label="Próximo passo">
+      <button class="pag-arrow" ${passoAtivo === total - 1 ? "disabled" : ""} onclick="${onNext}" aria-label="PrÃ³ximo passo">
         <i class="ph-bold ph-caret-right"></i>
       </button>
     </div>
@@ -2010,7 +2010,7 @@ function animateManualPanelContent(container, modo, passoAtivo = 0) {
   container.dataset.manualModo = modo;
   container.dataset.manualPasso = String(passoAtivo);
 
-  // Direção: positivo = avançando (track desliza da direita), negativo = voltando
+  // DireÃ§Ã£o: positivo = avanÃ§ando (track desliza da direita), negativo = voltando
   const direcao = passoAtivo - passoAnterior;
   centerActiveManualPagination(container, direcao);
 
@@ -2086,8 +2086,8 @@ function renderArquivos() {
       const inicioLabel = inicio + 1;
       const fimLabel = Math.min(fim, filtrados.length);
       contador.textContent = filtroAtivo
-        ? `${inicioLabel}–${fimLabel} de ${filtrados.length} resultados · pág. ${arquivosPaginaAtual}/${totalPaginas}`
-        : `${inicioLabel}–${fimLabel} de ${arquivos.length} arquivos · pág. ${arquivosPaginaAtual}/${totalPaginas}`;
+        ? `${inicioLabel}â€“${fimLabel} de ${filtrados.length} resultados Â· pÃ¡g. ${arquivosPaginaAtual}/${totalPaginas}`
+        : `${inicioLabel}â€“${fimLabel} de ${arquivos.length} arquivos Â· pÃ¡g. ${arquivosPaginaAtual}/${totalPaginas}`;
     }
   }
 
@@ -2120,7 +2120,7 @@ function renderArquivos() {
       <div class="arquivos-vazio">
         <i class="ph-bold ${filtroAtivo ? "ph-funnel-x" : "ph-folder-open"}"></i>
         <p>${filtroAtivo ? "Nenhum arquivo encontrado com os filtros atuais." : "Nenhum arquivo cadastrado no momento."}</p>
-        <span>${filtroAtivo ? "Tente ajustar a busca ou limpar os filtros para voltar à listagem completa." : "Quando novos arquivos forem cadastrados, eles aparecerão aqui."}</span>
+        <span>${filtroAtivo ? "Tente ajustar a busca ou limpar os filtros para voltar Ã  listagem completa." : "Quando novos arquivos forem cadastrados, eles aparecerÃ£o aqui."}</span>
         ${filtroAtivo ? `<button onclick="limparFiltros()">Limpar filtros</button>` : ""}
       </div>`;
     if (paginacao) {
@@ -2150,7 +2150,7 @@ function renderArquivos() {
           </div>
           <div style="min-width:0;flex:1">
             <div class="list-card-title arquivo-nome-clamp">${a.nome}</div>
-            <div class="list-card-sub">${getArquivoExtensaoLabel(extensaoGrupo)}${temArquivo ? ' · <span class="arquivo-disponivel">disponível</span>' : ''}</div>
+            <div class="list-card-sub">${getArquivoExtensaoLabel(extensaoGrupo)}${temArquivo ? ' Â· <span class="arquivo-disponivel">disponÃ­vel</span>' : ''}</div>
           </div>
         </div>
         <div class="arquivo-tags-row">${tagsHTML}</div>
@@ -2161,7 +2161,7 @@ function renderArquivos() {
   renderArquivosPagination(filtrados.length);
 }
 
-/** Abre o detail-panel de um arquivo com informações completas e botão de download */
+/** Abre o detail-panel de um arquivo com informaÃ§Ãµes completas e botÃ£o de download */
 function openArquivo(id) {
   const a = getPublishedArquivoById(id);
   if (!a) return;
@@ -2208,7 +2208,7 @@ function openArquivo(id) {
         <i class="ph-bold ph-arrow-square-out"></i> Abrir link externo
       </a>`;
   } else {
-    acaoHTML = `<p class="detail-desc" style="color:var(--text-muted)">Nenhum arquivo ou link disponível para este registro.</p>`;
+    acaoHTML = `<p class="detail-desc" style="color:var(--text-muted)">Nenhum arquivo ou link disponÃ­vel para este registro.</p>`;
   }
 
   document.getElementById("arquivo-detail-content").innerHTML = `
@@ -2218,7 +2218,7 @@ function openArquivo(id) {
     <div class="detail-name">${a.nome}</div>
     <span class="detail-badge">${a.tipo}</span>
     <hr class="detail-divider">
-    <p class="detail-section-title">Informações</p>
+    <p class="detail-section-title">InformaÃ§Ãµes</p>
     <div class="detail-info-grid">
       <div class="detail-info-item">
         <label>Tipo</label>
@@ -2226,7 +2226,7 @@ function openArquivo(id) {
       </div>
       <div class="detail-info-item">
         <label>Origem</label>
-        <span>${linkMeta.isDownload ? 'Arquivo para download' : linkMeta.isExternal ? 'Link externo' : 'Não definida'}</span>
+        <span>${linkMeta.isDownload ? 'Arquivo para download' : linkMeta.isExternal ? 'Link externo' : 'NÃ£o definida'}</span>
       </div>
       ${a.arquivo_nome ? `
       <div class="detail-info-item" style="grid-column:1/-1">
@@ -2254,8 +2254,8 @@ function openArquivo(id) {
 
 /* ============================================================
    BUSCA GLOBAL (Dashboard)
-   Indexa todos os módulos campo a campo.
-   Resultado: Módulo > Nome do item > Campo > Valor encontrado
+   Indexa todos os mÃ³dulos campo a campo.
+   Resultado: MÃ³dulo > Nome do item > Campo > Valor encontrado
    ============================================================ */
 function initSearch() {
   const input     = document.getElementById("global-search");
@@ -2276,7 +2276,7 @@ function initSearch() {
     }, 300);
   });
 
-  // Navegar com teclado (↑ ↓ Enter)
+  // Navegar com teclado (â†‘ â†“ Enter)
   input.addEventListener("keydown", (e) => {
     const items = resultsBox.querySelectorAll(".search-result-item");
     let cur = resultsBox.querySelector(".search-result-item.focused");
@@ -2305,15 +2305,15 @@ function initSearch() {
 }
 
 /**
- * Busca global rankeada — retorna um resultado por item, ordenado por score.
+ * Busca global rankeada â€” retorna um resultado por item, ordenado por score.
  *
  * Score por tier:
- *   Tier 1 (nome/título principal): 100
- *   Tier 2 (campos secundários identificadores): 50
- *   Tier 3 (texto livre — descrição, observações, passos): 10
+ *   Tier 1 (nome/tÃ­tulo principal): 100
+ *   Tier 2 (campos secundÃ¡rios identificadores): 50
+ *   Tier 3 (texto livre â€” descriÃ§Ã£o, observaÃ§Ãµes, passos): 10
  *
- * Dentro do mesmo score, a ordem de inserção no índice é preservada
- * (módulos mais relevantes primeiro: Funcionários, Manuais, etc.).
+ * Dentro do mesmo score, a ordem de inserÃ§Ã£o no Ã­ndice Ã© preservada
+ * (mÃ³dulos mais relevantes primeiro: FuncionÃ¡rios, Manuais, etc.).
  */
 function buildGlobalIndex(query) {
   const q = query.toLowerCase().trim();
@@ -2323,7 +2323,7 @@ function buildGlobalIndex(query) {
 
   for (const item of globalSearchIndex) {
     // Encontra o tier com maior score que bate com a query.
-    // Se o melhor match for o próprio título, tenta mostrar um único
+    // Se o melhor match for o prÃ³prio tÃ­tulo, tenta mostrar um Ãºnico
     // contexto complementar do mesmo item sem alterar o ranking.
     const camposComMatch = item.campos.filter(campo => campo.searchText.includes(q));
     if (camposComMatch.length === 0) continue;
@@ -2367,7 +2367,7 @@ function buildGlobalIndex(query) {
     });
   }
 
-  // Ordena: maior score primeiro; empate mantém ordem de inserção
+  // Ordena: maior score primeiro; empate mantÃ©m ordem de inserÃ§Ã£o
   resultados.sort((a, b) => b.score - a.score);
   return resultados;
 }
@@ -2376,10 +2376,10 @@ function rebuildGlobalSearchIndex() {
   const entries = [];
 
   /**
-   * Registra um item no índice.
-   * @param {string}   modulo   - Nome do módulo
-   * @param {string}   itemNome - Nome/título principal do item
-   * @param {Array}    campos   - [{tier, label, valor}] — campos com seus pesos
+   * Registra um item no Ã­ndice.
+   * @param {string}   modulo   - Nome do mÃ³dulo
+   * @param {string}   itemNome - Nome/tÃ­tulo principal do item
+   * @param {Array}    campos   - [{tier, label, valor}] â€” campos com seus pesos
    * @param {Function} action   - O que fazer ao clicar no resultado
    */
   function addItem(modulo, itemNome, campos, action) {
@@ -2398,21 +2398,21 @@ function rebuildGlobalSearchIndex() {
   }
 
   // Atalhos de tier para clareza
-  const T1 = 100; // nome/título principal
-  const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
-  const T3 = 10;  // texto livre (descrição, observações, passos, campos de contato)
+  const T1 = 100; // nome/tÃ­tulo principal
+  const T2 = 50;  // identificadores secundÃ¡rios (cargo, categoria, placa, Ã³rgÃ£o...)
+  const T3 = 10;  // texto livre (descriÃ§Ã£o, observaÃ§Ãµes, passos, campos de contato)
 
   funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };
-    addItem("Funcionários", f.nome, [
+    addItem("FuncionÃ¡rios", f.nome, [
       { tier: T1, label: "Nome",        valor: f.nome },
       { tier: T2, label: "Cargo",       valor: f.cargo },
-      { tier: T2, label: "Lotação",     valor: f.lotacao || f.setor },
-      { tier: T2, label: "Matrícula",   valor: f.matricula },
+      { tier: T2, label: "LotaÃ§Ã£o",     valor: f.lotacao || f.setor },
+      { tier: T2, label: "MatrÃ­cula",   valor: f.matricula },
       { tier: T2, label: "E-mail",      valor: f.email },
       { tier: T2, label: "Telefone",    valor: f.telefone },
       { tier: T2, label: "CPF",         valor: f.cpf },
-      { tier: T3, label: "Descrição",   valor: f.descricao },
+      { tier: T3, label: "DescriÃ§Ã£o",   valor: f.descricao },
     ], ir);
   });
 
@@ -2425,13 +2425,13 @@ function rebuildGlobalSearchIndex() {
     }));
     const docsCampos = (m.documentos || []).map(d => ({
       tier: T3,
-      label: "Documento necessário",
+      label: "Documento necessÃ¡rio",
       valor: typeof d === "object" ? d.nome : d,
     }));
     addItem("Manuais", m.titulo, [
-      { tier: T1, label: "Título",       valor: m.titulo },
+      { tier: T1, label: "TÃ­tulo",       valor: m.titulo },
       { tier: T2, label: "Categoria",    valor: m.categoria },
-      { tier: T3, label: "Observações",  valor: m.observacoes },
+      { tier: T3, label: "ObservaÃ§Ãµes",  valor: m.observacoes },
       ...passosCampos,
       ...docsCampos,
     ], ir);
@@ -2441,10 +2441,10 @@ function rebuildGlobalSearchIndex() {
     const ir = () => { navigateTo("processos"); setTimeout(() => openProcesso(p.id), 120); };
     const etapasCampos = (p.etapas || []).flatMap(e => [
       { tier: T2, label: "Etapa",      valor: e.titulo },
-      { tier: T3, label: "Descrição",  valor: e.descricao },
+      { tier: T3, label: "DescriÃ§Ã£o",  valor: e.descricao },
     ]);
     addItem("Processos", p.titulo, [
-      { tier: T1, label: "Título",    valor: p.titulo },
+      { tier: T1, label: "TÃ­tulo",    valor: p.titulo },
       { tier: T2, label: "Categoria", valor: p.categoria },
       ...etapasCampos,
     ], ir);
@@ -2473,7 +2473,7 @@ function rebuildGlobalSearchIndex() {
   infoMunicipio.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openMunicipio(item.id), 120); };
     const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
-    addItem("Município", item.titulo, [
+    addItem("MunicÃ­pio", item.titulo, [
       { tier: T1, label: "Bloco", valor: item.titulo },
       { tier: T2, label: "Tag",   valor: item.tag || item.badge },
       ...camposCampos,
@@ -2483,28 +2483,28 @@ function rebuildGlobalSearchIndex() {
   infoOrgaos.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openOrgao(item.id), 120); };
     const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
-    addItem("Órgãos", item.titulo, [
+    addItem("Ã“rgÃ£os", item.titulo, [
       { tier: T1, label: "Sigla",        valor: item.titulo },
       { tier: T1, label: "Nome",         valor: item.nome_completo },
-      { tier: T3, label: "Atribuição",   valor: item.atribuicao },
+      { tier: T3, label: "AtribuiÃ§Ã£o",   valor: item.atribuicao },
       ...camposCampos,
     ], ir);
   });
 
   veiculos.forEach(v => {
     const ir = () => { navigateTo("veiculos"); setTimeout(() => openVeiculo(v.id), 120); };
-    addItem("Veículos", v.nome, [
+    addItem("VeÃ­culos", v.nome, [
       { tier: T1, label: "Nome",        valor: v.nome },
       { tier: T2, label: "Placa",       valor: v.placa },
       { tier: T2, label: "Modelo",      valor: `${v.marca} ${v.modelo}`.trim() },
       { tier: T2, label: "Tipo",        valor: v.tipo },
-      { tier: T2, label: "Situação",    valor: v.situacao },
-      { tier: T2, label: "Patrimônio",  valor: v.patrimonio },
+      { tier: T2, label: "SituaÃ§Ã£o",    valor: v.situacao },
+      { tier: T2, label: "PatrimÃ´nio",  valor: v.patrimonio },
       { tier: T2, label: "Motorista",   valor: v.motorista },
-      { tier: T3, label: "Nº Série/Chassi", valor: v.chassi },
+      { tier: T3, label: "NÂº SÃ©rie/Chassi", valor: v.chassi },
       { tier: T3, label: "RENAVAM",     valor: v.renavam },
-      { tier: T3, label: "Localização", valor: v.localizacao },
-      { tier: T3, label: "Observações", valor: v.obs },
+      { tier: T3, label: "LocalizaÃ§Ã£o", valor: v.localizacao },
+      { tier: T3, label: "ObservaÃ§Ãµes", valor: v.obs },
     ], ir);
   });
 
@@ -2513,9 +2513,9 @@ function rebuildGlobalSearchIndex() {
     addItem("Sistemas", s.nome, [
       { tier: T1, label: "Nome",        valor: s.nome },
       { tier: T1, label: "Nome completo", valor: s.nome_completo },
-      { tier: T2, label: "Órgão",       valor: s.orgao },
+      { tier: T2, label: "Ã“rgÃ£o",       valor: s.orgao },
       { tier: T2, label: "Acesso",      valor: s.acesso },
-      { tier: T3, label: "Descrição",   valor: s.descricao },
+      { tier: T3, label: "DescriÃ§Ã£o",   valor: s.descricao },
       { tier: T3, label: "URL",         valor: s.url },
     ], ir);
   });
@@ -2527,14 +2527,14 @@ function rebuildGlobalSearchIndex() {
       label: "Documento",
       valor: typeof d === "object" ? d.nome : d,
     }));
-    addItem("Serviços", s.nome, [
+    addItem("ServiÃ§os", s.nome, [
       { tier: T1, label: "Nome",           valor: s.nome },
       { tier: T2, label: "Categoria",      valor: s.categoria },
-      { tier: T2, label: "Público-alvo",   valor: s.publico },
-      { tier: T3, label: "Descrição",      valor: s.descricao },
+      { tier: T2, label: "PÃºblico-alvo",   valor: s.publico },
+      { tier: T3, label: "DescriÃ§Ã£o",      valor: s.descricao },
       { tier: T3, label: "Como solicitar", valor: s.como_solicitar },
       { tier: T3, label: "Prazo",          valor: s.prazo },
-      { tier: T3, label: "Observações",    valor: s.obs },
+      { tier: T3, label: "ObservaÃ§Ãµes",    valor: s.obs },
       ...docsCampos,
     ], ir);
   });
@@ -2542,21 +2542,21 @@ function rebuildGlobalSearchIndex() {
   avisos.forEach(a => {
     const ir = () => { navigateTo("agenda"); setTimeout(() => openAviso(a.id), 120); };
     addItem("Avisos", a.titulo, [
-      { tier: T1, label: "Título",    valor: a.titulo },
+      { tier: T1, label: "TÃ­tulo",    valor: a.titulo },
       { tier: T2, label: "Tipo",      valor: tipoAviso[a.tipo]?.label || a.tipo },
       { tier: T2, label: "Local",     valor: a.local },
-      { tier: T3, label: "Descrição", valor: a.desc },
+      { tier: T3, label: "DescriÃ§Ã£o", valor: a.desc },
     ], ir);
   });
 
   agendaEventos.forEach(e => {
     const ir = () => { navigateTo("agenda"); setTimeout(() => openEvento(e.id), 120); };
     addItem("Agenda", e.titulo, [
-      { tier: T1, label: "Título",    valor: e.titulo },
+      { tier: T1, label: "TÃ­tulo",    valor: e.titulo },
       { tier: T2, label: "Tipo",      valor: tipoEvento[e.tipo]?.label || e.tipo },
       { tier: T2, label: "Local",     valor: e.local },
       { tier: T2, label: "Data",      valor: formatDateBR(e.data) },
-      { tier: T3, label: "Descrição", valor: e.desc },
+      { tier: T3, label: "DescriÃ§Ã£o", valor: e.desc },
     ], ir);
   });
 
@@ -2595,11 +2595,11 @@ function renderGlobalResults(results, resultsBox, input) {
   const shown   = results.slice(0, 10);
   const hasMore = results.length > 10;
 
-  // Contexto: se o valor é o próprio nome do item, não repete — mostra o label do campo
+  // Contexto: se o valor Ã© o prÃ³prio nome do item, nÃ£o repete â€” mostra o label do campo
   function buildContexto(r) {
     const valorIgualNome = r.contextoValor.toLowerCase() === r.itemNome.toLowerCase();
     if (valorIgualNome) {
-      // O match foi no próprio título — contexto fica vazio (nome já aparece acima)
+      // O match foi no prÃ³prio tÃ­tulo â€” contexto fica vazio (nome jÃ¡ aparece acima)
       return "";
     }
     const labelHTML = `<span class="result-ctx-label">${escapeHtml(r.contextoLabel)}:</span>`;
@@ -2619,7 +2619,7 @@ function renderGlobalResults(results, resultsBox, input) {
       </div>
     `;
   }).join("") + (hasMore ? `
-    <div class="search-more">+${results.length - 10} resultados — refine a busca</div>
+    <div class="search-more">+${results.length - 10} resultados â€” refine a busca</div>
   ` : "");
 
   resultsBox.querySelectorAll(".search-result-item").forEach((el, i) => {
@@ -2636,23 +2636,23 @@ function renderGlobalResults(results, resultsBox, input) {
 
 /**
  * Recorta o valor ao redor da query para mostrar contexto relevante.
- * Ex: "...assistência técnica e extensão rural..." ao buscar "extensão"
+ * Ex: "...assistÃªncia tÃ©cnica e extensÃ£o rural..." ao buscar "extensÃ£o"
  */
 function truncarContexto(texto, query, maxLen = 60) {
   const idx = texto.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return texto.slice(0, maxLen) + (texto.length > maxLen ? "…" : "");
+  if (idx === -1) return texto.slice(0, maxLen) + (texto.length > maxLen ? "â€¦" : "");
 
   const meio = Math.floor(maxLen / 2);
   const inicio = Math.max(0, idx - meio);
   const fim = Math.min(texto.length, inicio + maxLen);
   const trecho = texto.slice(inicio, fim);
 
-  return (inicio > 0 ? "…" : "") + trecho + (fim < texto.length ? "…" : "");
+  return (inicio > 0 ? "â€¦" : "") + trecho + (fim < texto.length ? "â€¦" : "");
 }
 
 
 /* ============================================================
-   HELPERS — Overlay de detalhe
+   HELPERS â€” Overlay de detalhe
    ============================================================ */
 function openDetail(overlayId) {
   const overlay = document.getElementById(overlayId);
@@ -2699,8 +2699,8 @@ function getInstagramWidgetHTML() {
         <div class="ig-info-box">
           <i class="ph-bold ph-lock-key"></i>
           <div>
-            <strong>Integração via API do Instagram</strong>
-            <p>Para exibir postagens automáticas, configure o token de acesso do Instagram Basic Display API no campo abaixo e recarregue a página.</p>
+            <strong>IntegraÃ§Ã£o via API do Instagram</strong>
+            <p>Para exibir postagens automÃ¡ticas, configure o token de acesso do Instagram Basic Display API no campo abaixo e recarregue a pÃ¡gina.</p>
             <div class="ig-token-row">
               <input type="text" id="ig-token-input" placeholder="Cole seu Access Token aqui..." />
               <button id="ig-token-save">Salvar</button>
@@ -2825,8 +2825,8 @@ document.addEventListener("keydown", (e) => {
 
 
 /* ============================================================
-   MÓDULO: INFORMAÇÕES
-   Três seções: Secretaria · Município/Prefeitura · Órgãos Externos
+   MÃ“DULO: INFORMAÃ‡Ã•ES
+   TrÃªs seÃ§Ãµes: Secretaria Â· MunicÃ­pio/Prefeitura Â· Ã“rgÃ£os Externos
    ============================================================ */
 function initInformacoes() {
   renderJuridico(infoJuridico);
@@ -2845,7 +2845,7 @@ function initInformacoes() {
     });
   });
 
-  // Busca global que filtra as três seções simultaneamente
+  // Busca global que filtra as trÃªs seÃ§Ãµes simultaneamente
   const input = restoreModuleSearchInput("informacoes", "info-search");
   if (input) {
     applyInformacoesSearch(input.value);
@@ -2887,7 +2887,7 @@ function camposGridHTML(campos) {
   }).join("");
 }
 
-/** Abre um overlay genérico de informações (campos simples) */
+/** Abre um overlay genÃ©rico de informaÃ§Ãµes (campos simples) */
 function openInfoCard({ overlayId, contentId, item, badgeLabel }) {
   document.getElementById(contentId).innerHTML = `
     <div class="detail-avatar-large" style="background:color-mix(in srgb,${item.cor} 12%,transparent);color:${item.cor}">
@@ -2898,7 +2898,7 @@ function openInfoCard({ overlayId, contentId, item, badgeLabel }) {
     <span class="detail-badge">${badgeLabel}</span>
     ${item.atribuicao ? `
       <hr class="detail-divider">
-      <p class="detail-section-title">Atribuição / O que fazem</p>
+      <p class="detail-section-title">AtribuiÃ§Ã£o / O que fazem</p>
       <p class="detail-desc">${item.atribuicao}</p>` : ""}
     <hr class="detail-divider">
     <div class="detail-info-grid">${camposGridHTML(item.campos)}</div>
@@ -2906,7 +2906,7 @@ function openInfoCard({ overlayId, contentId, item, badgeLabel }) {
   openDetail(overlayId);
 }
 
-/* ---------- SEÇÃO 1 — Secretaria ---------- */
+/* ---------- SEÃ‡ÃƒO 1 â€” Secretaria ---------- */
 
 function renderJuridico(lista = infoJuridico) {
   const container = document.getElementById("juridico-list");
@@ -2921,7 +2921,7 @@ function renderJuridico(lista = infoJuridico) {
         </div>
         <div>
           <div class="list-card-title">${item.titulo}</div>
-          <div class="list-card-sub">${item.campos.length} informações</div>
+          <div class="list-card-sub">${item.campos.length} informaÃ§Ãµes</div>
         </div>
       </div>
       <span class="list-card-tag">Secretaria</span>
@@ -2936,7 +2936,7 @@ function openJuridico(id) {
   openInfoCard({ overlayId: "juridico-detail-overlay", contentId: "juridico-detail-content", item, badgeLabel: item.badge || item.tag || "SMADER" });
 }
 
-/* ---------- SEÇÃO 2 — Município e Prefeitura ---------- */
+/* ---------- SEÃ‡ÃƒO 2 â€” MunicÃ­pio e Prefeitura ---------- */
 
 function renderMunicipio(lista = infoMunicipio) {
   const container = document.getElementById("municipio-list");
@@ -2951,7 +2951,7 @@ function renderMunicipio(lista = infoMunicipio) {
         </div>
         <div>
           <div class="list-card-title">${item.titulo}</div>
-          <div class="list-card-sub">${item.campos.length} informações</div>
+          <div class="list-card-sub">${item.campos.length} informaÃ§Ãµes</div>
         </div>
       </div>
       <span class="list-card-tag">${item.tag}</span>
@@ -2963,10 +2963,10 @@ function renderMunicipio(lista = infoMunicipio) {
 function openMunicipio(id) {
   const item = findPublishedById(infoMunicipio, id);
   if (!item) return;
-  openInfoCard({ overlayId: "municipio-detail-overlay", contentId: "municipio-detail-content", item, badgeLabel: item.badge || item.tag || "Município" });
+  openInfoCard({ overlayId: "municipio-detail-overlay", contentId: "municipio-detail-content", item, badgeLabel: item.badge || item.tag || "MunicÃ­pio" });
 }
 
-/* ---------- SEÇÃO 3 — Órgãos Externos ---------- */
+/* ---------- SEÃ‡ÃƒO 3 â€” Ã“rgÃ£os Externos ---------- */
 
 function renderOrgaos(lista = infoOrgaos) {
   const container = document.getElementById("orgaos-list");
@@ -2993,12 +2993,12 @@ function renderOrgaos(lista = infoOrgaos) {
 function openOrgao(id) {
   const item = findPublishedById(infoOrgaos, id);
   if (!item) return;
-  openInfoCard({ overlayId: "orgaos-detail-overlay", contentId: "orgaos-detail-content", item, badgeLabel: item.badge || "Órgão Externo" });
+  openInfoCard({ overlayId: "orgaos-detail-overlay", contentId: "orgaos-detail-content", item, badgeLabel: item.badge || "Ã“rgÃ£o Externo" });
 }
 
 /* ============================================================
-   MÓDULO: VEÍCULOS
-   Frota e patrimônio oficial da secretaria
+   MÃ“DULO: VEÃCULOS
+   Frota e patrimÃ´nio oficial da secretaria
    ============================================================ */
 function initVeiculos() {
   renderVeiculos(veiculos);
@@ -3033,16 +3033,16 @@ function applyVeiculosSearch(query = getModuleSearchValue("veiculos")) {
   renderVeiculos(filtrados);
 }
 
-/** Renderiza cards de veículos */
+/** Renderiza cards de veÃ­culos */
 function renderVeiculos(lista = veiculos) {
   const container = document.getElementById("veiculos-list");
   if (!container) return;
   if (lista.length === 0) {
-    container.innerHTML = `<p class="modulo-vazio">Nenhum veículo encontrado.</p>`;
+    container.innerHTML = `<p class="modulo-vazio">Nenhum veÃ­culo encontrado.</p>`;
     return;
   }
 
-  const situacaoBadge = (s) => s === "Em operação"
+  const situacaoBadge = (s) => s === "Em operaÃ§Ã£o"
     ? `<span class="list-card-tag" style="background:#e6f4ea;color:#2d6a4f">${s}</span>`
     : `<span class="list-card-tag" style="background:#fff3e0;color:#7a4f00">${s}</span>`;
 
@@ -3055,7 +3055,7 @@ function renderVeiculos(lista = veiculos) {
         </div>
         <div>
           <div class="list-card-title">${v.nome}</div>
-          <div class="list-card-sub">${v.marca} ${v.modelo} · ${v.ano}</div>
+          <div class="list-card-sub">${v.marca} ${v.modelo} Â· ${v.ano}</div>
         </div>
       </div>
       ${situacaoBadge(v.situacao)}
@@ -3064,12 +3064,12 @@ function renderVeiculos(lista = veiculos) {
   });
 }
 
-/** Abre detalhe de um veículo */
+/** Abre detalhe de um veÃ­culo */
 function openVeiculo(id) {
   const v = getPublishedVeiculoById(id);
   if (!v) return;
 
-  const situacaoStyle = v.situacao === "Em operação"
+  const situacaoStyle = v.situacao === "Em operaÃ§Ã£o"
     ? "background:#e6f4ea;color:#2d6a4f"
     : "background:#fff3e0;color:#7a4f00";
 
@@ -3082,9 +3082,9 @@ function openVeiculo(id) {
         ? `<span style="display:flex;align-items:center;gap:6px"><i class="ph-bold ph-user"></i>${f.nome} <small style="color:var(--text-muted)">${f.cargo}</small></span>`
         : '';
     }).filter(Boolean).join('');
-    motoristasHTML = itens || '—';
+    motoristasHTML = itens || 'â€”';
   } else {
-    motoristasHTML = v.motorista || '—';
+    motoristasHTML = v.motorista || 'â€”';
   }
 
   // Arquivos vinculados
@@ -3125,30 +3125,30 @@ function openVeiculo(id) {
       <i class="ph-bold ${v.icone}"></i>
     </div>
     <div class="detail-name">${v.nome}</div>
-    <div class="detail-role">${v.marca} ${v.modelo} · ${v.ano}</div>
+    <div class="detail-role">${v.marca} ${v.modelo} Â· ${v.ano}</div>
     <span class="detail-badge" style="${situacaoStyle}">${v.situacao}</span>
     <hr class="detail-divider">
-    <p class="detail-section-title">Identificação do veículo</p>
+    <p class="detail-section-title">IdentificaÃ§Ã£o do veÃ­culo</p>
     <div class="detail-info-grid">
       <div class="detail-info-item"><label>Placa</label><span>${v.placa}</span></div>
-      <div class="detail-info-item"><label>Nº Patrimônio</label><span>${v.patrimonio}</span></div>
-      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${v.chassi}</span></div>
+      <div class="detail-info-item"><label>NÂº PatrimÃ´nio</label><span>${v.patrimonio}</span></div>
+      <div class="detail-info-item"><label>NÂº SÃ©rie/Chassi</label><span style="font-size:.78rem">${v.chassi}</span></div>
       <div class="detail-info-item"><label>RENAVAM</label><span>${v.renavam}</span></div>
       <div class="detail-info-item"><label>Cor</label><span>${v.cor_veiculo}</span></div>
-      <div class="detail-info-item"><label>Combustível</label><span>${v.combustivel}</span></div>
+      <div class="detail-info-item"><label>CombustÃ­vel</label><span>${v.combustivel}</span></div>
     </div>
     <hr class="detail-divider">
-    <p class="detail-section-title">Operação</p>
+    <p class="detail-section-title">OperaÃ§Ã£o</p>
     <div class="detail-info-grid">
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Motorista(s) habilitado(s)</label>
         <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">${motoristasHTML}</div>
       </div>
-      <div class="detail-info-item" style="grid-column:1/-1"><label>Localização atual</label><span>${v.localizacao}</span></div>
+      <div class="detail-info-item" style="grid-column:1/-1"><label>LocalizaÃ§Ã£o atual</label><span>${v.localizacao}</span></div>
     </div>
     ${arquivosLinks.length ? `
     <hr class="detail-divider">
-    <p class="detail-section-title">Documentos do veículo</p>
+    <p class="detail-section-title">Documentos do veÃ­culo</p>
     <div class="veiculo-arquivos-list">${arquivosLinks.join('')}</div>` : ''}
     <hr class="detail-divider">
     <div class="obs-box">${v.obs}</div>
@@ -3158,8 +3158,8 @@ function openVeiculo(id) {
 
 
 /* ============================================================
-   MÓDULO: SISTEMAS
-   Links e informações dos sistemas externos utilizados
+   MÃ“DULO: SISTEMAS
+   Links e informaÃ§Ãµes dos sistemas externos utilizados
    ============================================================ */
 function initSistemas() {
   renderSistemas(sistemas);
@@ -3232,7 +3232,7 @@ function openSistema(id) {
   const s = getPublishedSistemaById(id);
   if (!s) return;
 
-  // Limpa filho residual de sessão anterior
+  // Limpa filho residual de sessÃ£o anterior
   const filhoAnterior = document.getElementById('sistema-filho-panel');
   if (filhoAnterior) filhoAnterior.remove();
   const netoAnterior = document.getElementById('sistema-neto-panel');
@@ -3277,7 +3277,7 @@ function openSistema(id) {
     <div class="detail-role">${s.nome_completo}</div>
     <span class="detail-badge">${s.orgao}</span>
     <hr class="detail-divider">
-    <p class="detail-section-title">Descrição</p>
+    <p class="detail-section-title">DescriÃ§Ã£o</p>
     <p class="detail-desc">${s.descricao}</p>
     <hr class="detail-divider">
     <p class="detail-section-title">Acesso</p>
@@ -3382,7 +3382,7 @@ function renderSistemaFilhoProcesso(p) {
 
 /**
  * Abre manual no painel filho de sistema, a partir de um chip de etapa
- * dentro de um processo. Guarda o processo pai para o botão "Voltar".
+ * dentro de um processo. Guarda o processo pai para o botÃ£o "Voltar".
  */
 function abrirManualNoSistemaFilho(manualId, processoId) {
   const m = getPublishedManualById(manualId);
@@ -3408,15 +3408,15 @@ function fecharSistemaCompleto() {
 
 
 /* ============================================================
-   MÓDULO: SERVIÇOS
-   Serviços prestados pela secretaria à população
+   MÃ“DULO: SERVIÃ‡OS
+   ServiÃ§os prestados pela secretaria Ã  populaÃ§Ã£o
    ============================================================ */
 
 // Mapa de cores por categoria para os badges
 const catCores = {
   "Trator":       { bg: "#e8f3ec", fg: "#2d6a4f" },
-  "Arborização":  { bg: "#eaf3e8", fg: "#3d7a5e" },
-  "Capacitação":  { bg: "#e8ecf3", fg: "#3d5c7a" },
+  "ArborizaÃ§Ã£o":  { bg: "#eaf3e8", fg: "#3d7a5e" },
+  "CapacitaÃ§Ã£o":  { bg: "#e8ecf3", fg: "#3d5c7a" },
   "Insumos":      { bg: "#f3f0e8", fg: "#7a6b3d" },
 };
 
@@ -3460,7 +3460,7 @@ function renderServicos(lista = servicos) {
   const container = document.getElementById("servicos-list");
   if (!container) return;
   if (lista.length === 0) {
-    container.innerHTML = `<p class="modulo-vazio">Nenhum serviço encontrado.</p>`;
+    container.innerHTML = `<p class="modulo-vazio">Nenhum serviÃ§o encontrado.</p>`;
     return;
   }
   animateGridReflow(container, () => {
@@ -3486,7 +3486,7 @@ function renderServicos(lista = servicos) {
   });
 }
 
-/** Abre o painel lateral com todos os detalhes do serviço */
+/** Abre o painel lateral com todos os detalhes do serviÃ§o */
 function openServico(id) {
   const s = getPublishedServicoById(id);
   if (!s) return;
@@ -3532,11 +3532,11 @@ function openServico(id) {
     <span class="detail-badge" style="background:${cat.bg};color:${cat.fg}">${s.categoria}</span>
 
     <hr class="detail-divider">
-    <p class="detail-section-title">Descrição do serviço</p>
+    <p class="detail-section-title">DescriÃ§Ã£o do serviÃ§o</p>
     <p class="detail-desc">${s.descricao}</p>
 
     <hr class="detail-divider">
-    <p class="detail-section-title">Público-alvo</p>
+    <p class="detail-section-title">PÃºblico-alvo</p>
     <p class="detail-desc">${s.publico}</p>
 
     <hr class="detail-divider">
@@ -3544,7 +3544,7 @@ function openServico(id) {
     <p class="detail-desc">${s.como_solicitar}</p>
 
     <hr class="detail-divider">
-    <p class="detail-section-title">Documentos necessários</p>
+    <p class="detail-section-title">Documentos necessÃ¡rios</p>
     <div class="docs-list">${docs}</div>
 
     ${processosChips ? `
@@ -3558,7 +3558,7 @@ function openServico(id) {
 
     <hr class="detail-divider">
     <div class="detail-ausencia">
-      <strong><i class="ph-bold ph-note"></i> Observações</strong>
+      <strong><i class="ph-bold ph-note"></i> ObservaÃ§Ãµes</strong>
       <p>${s.obs}</p>
     </div>
   `;
@@ -3620,7 +3620,7 @@ function abrirManualNoServicoFilho(manualId, processoId) {
 
 
 /* ============================================================
-   MOBILE — Hamburger menu
+   MOBILE â€” Hamburger menu
    ============================================================ */
 function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
   _renderManualEmPainel(m, modo, passoAtivo, {
@@ -3668,7 +3668,7 @@ function eventoItemHTML(e, mostrarData = true) {
   const dia   = badgeDate ? String(badgeDate.getDate()).padStart(2, "0") : "--";
   const mes   = badgeDate ? MESES_PT[badgeDate.getMonth()].slice(0, 3) : "---";
   const duracao = e.tipo !== 'prazo' && e.data_fim
-    ? ` <span class="evento-duracao">até ${new Date(e.data_fim+"T00:00:00").getDate()}/${MESES_PT[new Date(e.data_fim+"T00:00:00").getMonth()].slice(0,3)}</span>`
+    ? ` <span class="evento-duracao">atÃ© ${new Date(e.data_fim+"T00:00:00").getDate()}/${MESES_PT[new Date(e.data_fim+"T00:00:00").getMonth()].slice(0,3)}</span>`
     : "";
   const horaMeta = e.tipo === 'prazo'
     ? (e.hora_fim ? `<span><i class="ph-bold ph-clock"></i> ${e.hora_fim}</span>` : "")
@@ -3710,7 +3710,7 @@ function renderDashEventos() {
     .sort((a, b) => getEventoTiming(a).sortDate - getEventoTiming(b).sortDate);
 
   if (proximos.length === 0) {
-    container.innerHTML = `<p class="eventos-vazio">Nenhum evento próximo.</p>`;
+    container.innerHTML = `<p class="eventos-vazio">Nenhum evento prÃ³ximo.</p>`;
     return;
   }
   container.innerHTML = proximos.map(e => eventoItemHTML(e)).join("");
@@ -3805,7 +3805,7 @@ function initCalTooltip(grid) {
             <span class="cal-tip-meta">
               <span class="cal-tip-tag" style="--ct:${tipo.cor}">${tipo.label}</span>
               ${horas}${multi}
-              ${ev.local ? `· ${ev.local}` : ""}
+              ${ev.local ? `Â· ${ev.local}` : ""}
             </span>
           </div>
         </div>`;
@@ -3830,7 +3830,7 @@ function initAgenda() {
   renderAgendaEventos(agendaEventos);
   renderAgendaHistorico(agendaEventos);
 
-  // Restaura estado do toggle do histórico
+  // Restaura estado do toggle do histÃ³rico
   _restoreAgendaHistoricoState();
 
   const agendaSearch = restoreModuleSearchInput("agenda", "agenda-search");
@@ -3876,7 +3876,7 @@ function _persistAgendaHistoricoState(aberto) {
     state.historicoAberto = aberto;
     localStorage.setItem(AGENDA_UI_STATE_KEY, JSON.stringify(state));
   } catch (error) {
-    console.warn("[Agenda] Falha ao salvar estado do histórico:", error);
+    console.warn("[Agenda] Falha ao salvar estado do histÃ³rico:", error);
   }
 }
 
@@ -3892,7 +3892,7 @@ function _restoreAgendaHistoricoState() {
   wrap.hidden = !aberto;
   if (chevron) chevron.style.transform = aberto ? "rotate(180deg)" : "";
 
-  // Atualiza label com contagem — o container já foi preenchido por renderAgendaHistorico
+  // Atualiza label com contagem â€” o container jÃ¡ foi preenchido por renderAgendaHistorico
   if (label) {
     const container = document.getElementById("agenda-historico-list");
     const total = container ? container.querySelectorAll(".agenda-card").length : 0;
@@ -3979,13 +3979,13 @@ function openAviso(id) {
     <p class="detail-section-title">Local / contexto</p>
     <div class="detail-info-grid">
       <div class="detail-info-item" style="grid-column:1/-1">
-        <label>Referência</label>
+        <label>ReferÃªncia</label>
         <span>${a.local || "Comunicado interno"}</span>
       </div>
     </div>
     ${a.desc ? `
       <hr class="detail-divider">
-      <p class="detail-section-title">Descrição</p>
+      <p class="detail-section-title">DescriÃ§Ã£o</p>
       <p class="detail-desc">${a.desc}</p>` : ""}
   `;
 
@@ -4011,7 +4011,7 @@ function renderAgendaEventos(lista) {
   }, ".agenda-card[data-reflow-id]");
 }
 
-/* ── Renderiza histórico (encerrados, do mais recente ao mais antigo) ── */
+/* â”€â”€ Renderiza histÃ³rico (encerrados, do mais recente ao mais antigo) â”€â”€ */
 function renderAgendaHistorico(lista) {
   const container = document.getElementById("agenda-historico-list");
   if (!container) return;
@@ -4020,7 +4020,7 @@ function renderAgendaHistorico(lista) {
 
   if (encerrados.length === 0) {
     container.innerHTML = `<p class="modulo-vazio">Nenhum evento encerrado.</p>`;
-    // Atualiza o contador no botão
+    // Atualiza o contador no botÃ£o
     const label = document.getElementById("historico-toggle-label");
     if (label) label.textContent = "Mostrar (0)";
     return;
@@ -4029,7 +4029,7 @@ function renderAgendaHistorico(lista) {
   // Mais recente primeiro
   const sorted = [...encerrados].sort((a, b) => getEventoTiming(b).sortDate - getEventoTiming(a).sortDate);
 
-  // Atualiza contador no botão toggle
+  // Atualiza contador no botÃ£o toggle
   const label = document.getElementById("historico-toggle-label");
   if (label) {
     const wrap = document.getElementById("historico-eventos-wrap");
@@ -4042,7 +4042,7 @@ function renderAgendaHistorico(lista) {
   }, ".agenda-card[data-reflow-id]");
 }
 
-/* ── Toggle de visibilidade do histórico ── */
+/* â”€â”€ Toggle de visibilidade do histÃ³rico â”€â”€ */
 function toggleHistorico() {
   const wrap     = document.getElementById("historico-eventos-wrap");
   const chevron  = document.getElementById("historico-chevron");
@@ -4063,7 +4063,7 @@ function toggleHistorico() {
   _persistAgendaHistoricoState(abrindo);
 }
 
-/* ── HTML compartilhado de card de evento (ativo ou histórico) ── */
+/* â”€â”€ HTML compartilhado de card de evento (ativo ou histÃ³rico) â”€â”€ */
 function _agendaEventoCardHTML(e, isHistorico = false) {
   const tipo   = tipoEvento[e.tipo] || tipoEvento.evento;
   const timing = getEventoTiming(e);
@@ -4072,9 +4072,9 @@ function _agendaEventoCardHTML(e, isHistorico = false) {
   const mes  = MESES_PT[baseDate.getMonth()].slice(0,3);
   const periodoHTML = formatEventoPeriodo(e);
   const horarioLinha = e.tipo === 'prazo'
-    ? (e.hora_fim ? ` · <i class="ph-bold ph-clock"></i>${e.hora_fim}` : "")
+    ? (e.hora_fim ? ` Â· <i class="ph-bold ph-clock"></i>${e.hora_fim}` : "")
     : [e.hora, e.hora_fim].filter(Boolean).length
-      ? ` · <i class="ph-bold ph-clock"></i>${[e.hora, e.hora_fim].filter(Boolean).join(" - ")}`
+      ? ` Â· <i class="ph-bold ph-clock"></i>${[e.hora, e.hora_fim].filter(Boolean).join(" - ")}`
       : "";
 
   return `
@@ -4098,7 +4098,7 @@ function _agendaEventoCardHTML(e, isHistorico = false) {
       <div class="agenda-card-local">
         <i class="ph-bold ph-calendar-blank"></i>${periodoHTML}
         ${horarioLinha}
-        ${e.local ? ` &nbsp;·&nbsp;<i class="ph-bold ph-map-pin"></i>${e.local}` : ""}
+        ${e.local ? ` &nbsp;Â·&nbsp;<i class="ph-bold ph-map-pin"></i>${e.local}` : ""}
       </div>
       ${e.desc ? `<p class="agenda-card-desc">${e.desc}</p>` : ""}
     </div>
@@ -4129,7 +4129,7 @@ function openEvento(id) {
     <p class="detail-section-title">Data e local</p>
     <div class="detail-info-grid">
       <div class="detail-info-item" style="grid-column:1/-1">
-        <label>${timing.isPrazo ? 'Prazo final' : 'Período'}</label>
+        <label>${timing.isPrazo ? 'Prazo final' : 'PerÃ­odo'}</label>
         <span>${periodoLabel}</span>
       </div>
       ${!timing.isPrazo && e.hora ? `<div class="detail-info-item"><label>Hora inicial</label><span>${e.hora}</span></div>` : ""}
@@ -4138,7 +4138,7 @@ function openEvento(id) {
     </div>
     ${e.desc ? `
       <hr class="detail-divider">
-      <p class="detail-section-title">Descrição</p>
+      <p class="detail-section-title">DescriÃ§Ã£o</p>
       <p class="detail-desc">${e.desc}</p>` : ""}
   `;
   openDetail("evento-detail-overlay");
@@ -4205,7 +4205,7 @@ function relatorioLayoutHTML({ titulo, descricao, total, conteudo }) {
     <article class="relatorio-print-doc">
       <header class="relatorio-print-header">
         <div>
-      <span class="relatorio-print-kicker">SMADER · Relatório</span>
+      <span class="relatorio-print-kicker">SMADER \u00b7 Relat\u00f3rio</span>
           <h2 class="relatorio-print-title">${escapeHtml(titulo)}</h2>
           <p class="relatorio-print-subtitle">${escapeHtml(descricao)}</p>
         </div>
@@ -4219,6 +4219,23 @@ function relatorioLayoutHTML({ titulo, descricao, total, conteudo }) {
   `;
 }
 
+function relatorioValorImpresso(valor) {
+  if (valor == null || valor === "") return "-";
+  const texto = String(valor);
+  if (!texto.includes("<a")) return texto;
+  const box = document.createElement("div");
+  box.innerHTML = texto;
+  const links = Array.from(box.querySelectorAll("a"));
+  if (!links.length) {
+    const limpo = (box.textContent || "").replace(/\s+/g, " ").trim();
+    return limpo || "-";
+  }
+  return links
+    .map(link => (link.getAttribute("href") || "").trim())
+    .filter(Boolean)
+    .join(" | ") || "-";
+}
+
 function relatorioTabelaHTML(colunas, linhas, tableClass = "") {
   const classes = ["relatorio-table"];
   if (tableClass) classes.push(tableClass);
@@ -4230,7 +4247,7 @@ function relatorioTabelaHTML(colunas, linhas, tableClass = "") {
         </thead>
         <tbody>
           ${linhas.map(linha => `
-            <tr>${linha.map(valor => `<td>${escapeHtml(String(valor ?? "—"))}</td>`).join("")}</tr>
+            <tr>${linha.map(valor => `<td>${escapeHtml(relatorioValorImpresso(valor))}</td>`).join("")}</tr>
           `).join("")}
         </tbody>
       </table>
@@ -4251,7 +4268,7 @@ function relatorioBlocosHTML(blocos) {
             ${bloco.campos.map(campo => `
               <div class="relatorio-field">
                 <span class="relatorio-field-label">${escapeHtml(campo.label)}</span>
-                <span class="relatorio-field-value">${escapeHtml(String(campo.valor ?? "—"))}</span>
+                <span class="relatorio-field-value">${escapeHtml(relatorioValorImpresso(campo.valor))}</span>
               </div>
             `).join("")}
           </div>
@@ -4262,21 +4279,21 @@ function relatorioBlocosHTML(blocos) {
 }
 
 function renderRelatorioFuncionarios() {
-  const colunas = ["Nome", "Matrícula", "Cargo", "Data de admissão", "Telefone", "E-mail", "CPF", "Departamento"];
+  const colunas = ["Nome", "Matr\u00edcula", "Cargo", "Data de admiss\u00e3o", "Telefone", "E-mail", "CPF", "Departamento"];
   const linhas = funcionarios.map(f => [
-    f.nome || "—",
-    f.matricula || "—",
-    f.cargo || "—",
+    f.nome || "-",
+    f.matricula || "-",
+    f.cargo || "-",
     formatDateBR(f.data_admissao),
-    f.telefone || "—",
-    f.email || "—",
-    f.cpf || "—",
-    f.departamento || "—",
+    f.telefone || "-",
+    f.email || "-",
+    f.cpf || "-",
+    f.departamento || "-",
   ]);
 
   return relatorioLayoutHTML({
-    titulo: "Relação de Funcionários",
-    descricao: "Listagem textual completa dos funcionários cadastrados.",
+    titulo: "Rela\u00e7\u00e3o de Funcion\u00e1rios",
+    descricao: "Listagem textual completa dos funcion\u00e1rios cadastrados.",
     total: linhas.length,
     conteudo: relatorioTabelaHTML(colunas, linhas, "relatorio-table--funcionarios"),
   });
@@ -4289,13 +4306,13 @@ function renderRelatorioSecretaria() {
     subtitulo: item.nome_completo || item.badge || item.tag || "",
     campos: (item.campos || []).map(campo => ({
       label: campo.label || "Campo",
-      valor: campo.valor || "—",
+      valor: campo.valor || "-",
     })),
   }));
 
   return relatorioLayoutHTML({
     titulo: "Dados da Secretaria",
-    descricao: "Informações institucionais e contatos cadastrados para a secretaria.",
+    descricao: "Informa\u00e7\u00f5es institucionais e contatos cadastrados para a secretaria.",
     total: blocos.length,
     conteudo: relatorioBlocosHTML(blocos),
   });
@@ -4307,13 +4324,13 @@ function renderRelatorioMunicipio() {
     subtitulo: item.nome_completo || item.badge || item.tag || "",
     campos: (item.campos || []).map(campo => ({
       label: campo.label || "Campo",
-      valor: campo.valor || "—",
+      valor: campo.valor || "-",
     })),
   }));
 
   return relatorioLayoutHTML({
-    titulo: "Município e Prefeitura",
-    descricao: "Dados administrativos e contatos cadastrados para o município e a prefeitura.",
+    titulo: "Munic\u00edpio e Prefeitura",
+    descricao: "Dados administrativos e contatos cadastrados para o munic\u00edpio e a prefeitura.",
     total: blocos.length,
     conteudo: relatorioBlocosHTML(blocos),
   });
@@ -4321,20 +4338,20 @@ function renderRelatorioMunicipio() {
 
 function renderRelatorioOrgaos() {
   const blocos = infoOrgaos.map(item => ({
-    titulo: item.titulo || "Órgão",
+    titulo: item.titulo || "\u00d3rg\u00e3o",
     subtitulo: item.nome_completo || "",
     campos: [
-      ...(item.atribuicao ? [{ label: "Atribuição", valor: item.atribuicao }] : []),
+      ...(item.atribuicao ? [{ label: "Atribui\u00e7\u00e3o", valor: item.atribuicao }] : []),
       ...((item.campos || []).map(campo => ({
         label: campo.label || "Campo",
-        valor: campo.valor || "—",
+        valor: campo.valor || "-",
       }))),
     ],
   }));
 
   return relatorioLayoutHTML({
-    titulo: "Órgãos Parceiros",
-    descricao: "Listagem dos órgãos parceiros e seus dados de contato.",
+    titulo: "\u00d3rg\u00e3os Parceiros",
+    descricao: "Listagem dos \u00f3rg\u00e3os parceiros e seus dados de contato.",
     total: blocos.length,
     conteudo: relatorioBlocosHTML(blocos),
   });
@@ -4343,34 +4360,34 @@ function renderRelatorioOrgaos() {
 function renderRelatorioServicos() {
   const blocosHTML = servicos.map(servico => {
     const campos = [
-      { label: "Público-alvo", valor: servico.publico || "—" },
-      { label: "Como solicitar", valor: servico.como_solicitar || "—" },
-      { label: "Prazo", valor: servico.prazo || "—" },
-      { label: "Descrição", valor: servico.descricao || "—" },
-      ...(servico.obs ? [{ label: "Observações", valor: servico.obs }] : []),
+      { label: "P\u00fablico-alvo", valor: servico.publico || "-" },
+      { label: "Como solicitar", valor: servico.como_solicitar || "-" },
+      { label: "Prazo", valor: servico.prazo || "-" },
+      { label: "Descri\u00e7\u00e3o", valor: servico.descricao || "-" },
+      ...(servico.obs ? [{ label: "Observa\u00e7\u00f5es", valor: servico.obs }] : []),
     ];
 
     const documentos = (servico.documentos || []).map(doc =>
-      typeof doc === "object" && doc !== null ? (doc.nome || "—") : (doc || "—")
+      typeof doc === "object" && doc !== null ? (doc.nome || "-") : (doc || "-")
     ).filter(Boolean);
 
     return `
       <section class="relatorio-block">
         <div class="relatorio-block-head">
-          <h3>${escapeHtml(servico.nome || "Serviço")}</h3>
+          <h3>${escapeHtml(servico.nome || "Servi\u00e7o")}</h3>
           ${servico.categoria ? `<p>${escapeHtml(servico.categoria)}</p>` : ""}
         </div>
         <div class="relatorio-block-fields">
           ${campos.map(campo => `
             <div class="relatorio-field">
               <span class="relatorio-field-label">${escapeHtml(campo.label)}</span>
-              <span class="relatorio-field-value">${escapeHtml(String(campo.valor ?? "—"))}</span>
+              <span class="relatorio-field-value">${escapeHtml(relatorioValorImpresso(campo.valor))}</span>
             </div>
           `).join("")}
         </div>
         ${documentos.length ? `
           <div class="relatorio-subsection">
-            <div class="relatorio-subsection-title">Documentação</div>
+            <div class="relatorio-subsection-title">Documenta\u00e7\u00e3o</div>
             <div class="relatorio-doc-list">
               ${documentos.map((doc, index) => `
                 <div class="relatorio-doc-item">
@@ -4386,8 +4403,8 @@ function renderRelatorioServicos() {
   }).join("");
 
   return relatorioLayoutHTML({
-    titulo: "Serviços Cadastrados",
-    descricao: "Listagem textual dos serviços cadastrados pela secretaria.",
+    titulo: "Servi\u00e7os Cadastrados",
+    descricao: "Listagem textual dos servi\u00e7os cadastrados pela secretaria.",
     total: servicos.length,
     conteudo: `<div class="relatorio-blocks">${blocosHTML}</div>`,
   });
@@ -4402,15 +4419,15 @@ function getEventoStatusLabel(evento) {
 
 function buildRelatorioAgendaRows(listaEventos) {
   return listaEventos.map(evento => [
-    evento.titulo || "—",
-    tipoEvento[evento.tipo]?.label || evento.tipo || "—",
+    evento.titulo || "-",
+    tipoEvento[evento.tipo]?.label || evento.tipo || "-",
     formatDateBR(evento.data),
     formatDateBR(evento.data_fim),
-    evento.hora || "—",
-    evento.hora_fim || "—",
-    evento.local || "—",
+    evento.hora || "-",
+    evento.hora_fim || "-",
+    evento.local || "-",
     getEventoStatusLabel(evento),
-    evento.desc || "—",
+    evento.desc || "-",
   ]);
 }
 
@@ -4419,11 +4436,11 @@ function renderRelatorioAgenda() {
     .filter(evento => !getEventoTiming(evento).encerrado)
     .sort((a, b) => getEventoTiming(a).sortDate - getEventoTiming(b).sortDate);
 
-  const colunas = ["Título", "Tipo", "Data inicial", "Data final", "Hora inicial", "Hora final", "Local", "Status", "Descrição"];
+  const colunas = ["T\u00edtulo", "Tipo", "Data inicial", "Data final", "Hora inicial", "Hora final", "Local", "Status", "Descri\u00e7\u00e3o"];
 
   return relatorioLayoutHTML({
     titulo: "Agenda",
-    descricao: "Eventos em andamento e eventos futuros, ordenados do mais próximo para o mais distante.",
+    descricao: "Eventos em andamento e eventos futuros, ordenados do mais pr\u00f3ximo para o mais distante.",
     total: eventos.length,
     conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos), "relatorio-table--agenda"),
   });
@@ -4434,10 +4451,10 @@ function renderRelatorioHistoricoAgenda() {
     .filter(evento => getEventoTiming(evento).encerrado)
     .sort((a, b) => getEventoTiming(b).sortDate - getEventoTiming(a).sortDate);
 
-  const colunas = ["Título", "Tipo", "Data inicial", "Data final", "Hora inicial", "Hora final", "Local", "Status", "Descrição"];
+  const colunas = ["T\u00edtulo", "Tipo", "Data inicial", "Data final", "Hora inicial", "Hora final", "Local", "Status", "Descri\u00e7\u00e3o"];
 
   return relatorioLayoutHTML({
-    titulo: "Histórico de Agenda",
+    titulo: "Hist\u00f3rico de Agenda",
     descricao: "Eventos encerrados, ordenados do mais recente para o mais antigo.",
     total: eventos.length,
     conteudo: relatorioTabelaHTML(colunas, buildRelatorioAgendaRows(eventos), "relatorio-table--agenda"),
@@ -4445,7 +4462,7 @@ function renderRelatorioHistoricoAgenda() {
 }
 
 function renderRelatorioVeiculos() {
-  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrimonio", "Nº Série/Chassi", "RENAVAM", "Combustivel", "Motorista(s)"];
+  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrim\u00f4nio", "N\u00ba S\u00e9rie/Chassi", "RENAVAM", "Combust\u00edvel", "Motorista(s)"];
   const linhas = veiculos.map(v => {
     const motoristasPublicados = Array.isArray(v.motorista_ids) && v.motorista_ids.length
       ? v.motorista_ids
@@ -4456,17 +4473,17 @@ function renderRelatorioVeiculos() {
       : String(v.motorista || "").replace(/\s*,\s*/g, ",\n");
 
     return [
-      v.nome || "â€”",
-      v.tipo || "â€”",
-      v.marca || "â€”",
-      v.modelo || "â€”",
-      v.ano || "â€”",
-      v.placa || "â€”",
-      v.patrimonio || "â€”",
-      v.chassi || "â€”",
-      v.renavam || "â€”",
-      v.combustivel || "â€”",
-      motoristasPublicados || v.motorista || "â€”",
+      v.nome || "-",
+      v.tipo || "-",
+      v.marca || "-",
+      v.modelo || "-",
+      v.ano || "-",
+      v.placa || "-",
+      v.patrimonio || "-",
+      v.chassi || "-",
+      v.renavam || "-",
+      v.combustivel || "-",
+      motoristasPublicados || v.motorista || "-",
     ];
   });
 
@@ -4524,10 +4541,10 @@ function closeMobileSidebar() {
 
 
 /* ============================================================
-   LIGHTBOX — zoom de imagens dos manuais
+   LIGHTBOX â€” zoom de imagens dos manuais
    ============================================================ */
 function initLightbox() {
-  // Cria o overlay uma única vez
+  // Cria o overlay uma Ãºnica vez
   const overlay = document.createElement("div");
   overlay.id = "lightbox-overlay";
   overlay.className = "lightbox-overlay";
@@ -4539,21 +4556,21 @@ function initLightbox() {
   `;
   document.body.appendChild(overlay);
 
-  // Fechar ao clicar no fundo ou no botão X
+  // Fechar ao clicar no fundo ou no botÃ£o X
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay || e.target.closest(".lightbox-close")) {
       closeLightbox();
     }
   });
 
-  // Fechar com Escape (prioridade menor que outros overlays — não interrompe)
+  // Fechar com Escape (prioridade menor que outros overlays â€” nÃ£o interrompe)
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && overlay.classList.contains("open")) {
       closeLightbox();
     }
   });
 
-  // Delegação de eventos — captura cliques em imagens ampliáveis
+  // DelegaÃ§Ã£o de eventos â€” captura cliques em imagens ampliÃ¡veis
   document.addEventListener("click", (e) => {
     const img = e.target.closest(".manual-passo-img, .detail-avatar-foto");
     if (img && img.src) openLightbox(img.src, img.alt);
@@ -4578,7 +4595,7 @@ function closeLightbox() {
 }
 
 /* ============================================================
-   UTILITÁRIO — Iniciais do nome para avatar
+   UTILITÃRIO â€” Iniciais do nome para avatar
    ============================================================ */
 function getInitials(nome) {
   const partes = nome.trim().split(" ");
