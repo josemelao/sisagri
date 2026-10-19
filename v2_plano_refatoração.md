@@ -997,29 +997,63 @@ falhasse.
 
 ### Tarefas
 
-- [ ] **T5.1 — Checar papel, não só sessão**
-  `isAdminLoggedIn()` passa a exigir `session.user.app_metadata.role` em `('admin','editor')`.
-  Sessão sem papel → `false` **e** `DB.adminLogout()` (não deixar sessão órfã no `localStorage`).
-- [ ] **T5.2 — Mensagem clara**
-  Sessão válida sem papel → tela de login com "Sua conta não tem permissão de acesso ao painel. Fale com o administrador."
-- [ ] **T5.3 — Teste**
+- [x] **T5.1 — Checar papel, não só sessão**
+  `isAdminLoggedIn()` passa a exigir `rpc('is_admin') === true`.
+  Sessão sem permissão → `false` **e** `DB.adminLogout()` (não deixar sessão órfã).
+- [x] **T5.2 — Mensagem clara**
+  Sessão válida sem permissão → tela de login com "Sua conta não tem permissão de acesso ao painel. Fale com o administrador."
+- [x] **T5.3 — Teste** (5 casos, `tests/unit/admin-auth.test.mjs`)
+
+### ADAPTAÇÃO NECESSÁRIA (executada)
+
+O plano original dizia `session.user.app_metadata.role in ('admin','editor')`.
+Isso **nunca existiu** neste projeto: a autorização real é a tabela
+`public.app_admins` + `public.is_admin()`, criadas no Bloco 3.
+
+Decisão: `isAdminLoggedIn()` chama **`rpc('is_admin')`**. Vantagens:
+
+- é a **mesma** função que as 59 policies de RLS usam — front e banco não podem
+  divergir;
+- não exige DDL nova nem policy de leitura em `app_admins` (que tem RLS ligado e
+  **zero** policies, de propósito);
+- `is_admin()` é `security definer` e executável por `anon`/`authenticated`
+  (medido: `POST /rest/v1/rpc/is_admin` sem sessão devolve `200 false`).
 
 ### Validação (prova)
 
 ```bash
 npm test -- -t "isAdminLoggedIn"
-# esperado: verde nos 4 casos (sem sessao / sessao sem role / role editor / role admin)
+# 5 casos: sem sessão / sem permissão / admin / erro de rpc / erro de sessão
 ```
-Manual (se existir conta de teste sem papel):
-- login com conta sem papel → **não entra** e vê a mensagem
-- login com a conta admin → entra normalmente
+- RPC em produção com a anon key e sem sessão: `status=200 corpo=false`.
+- `/admin.html` sem sessão (Chromium): tela de login visível, `#admin-app`
+  escondido, sem erro de JS.
+- Login real com a conta admin: **pendente de teste humano** (não há credenciais
+  no ambiente de execução).
 
 ### Checklist
-- [ ] sessão sem `role` não entra no painel
-- [ ] sessão órfã é encerrada
-- [ ] conta admin continua entrando
-- [ ] `AGENTS.md` §6 respeitado (não alterei contrato de `DB.*`; só o corpo de `isAdminLoggedIn`, mesma assinatura)
-- [ ] fluxo público intocado
+- [x] sessão sem permissão não entra no painel
+- [x] sessão órfã é encerrada
+- [x] conta admin continua entrando (mesma assinatura, mesma chamada)
+- [x] `AGENTS.md` §6 respeitado (contrato de `DB.*` preservado; só o corpo de
+      `isAdminLoggedIn`, mesma assinatura; `motivoUltimoAcesso` é campo novo)
+- [x] fluxo público intocado
+
+### Registro de execução (2026-10-19)
+
+**Mudanças:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `db.js` | `isAdminLoggedIn` consulta `rpc('is_admin')`; expõe `motivoUltimoAcesso` (`sem_sessao` / `sem_permissao` / `erro` / `ok`) |
+| `admin.js` | `fazerLogin()` só entra depois de confirmar permissão; login mostra a mensagem de recusa |
+| `admin.js` | na carga da página, mostra a mensagem quando havia sessão sem permissão |
+
+**Distinção importante:** erro de rede no `rpc` **não** derruba a sessão (não é
+prova de falta de permissão); `is_admin = false` derruba.
+
+**TDD:** 5 testes escritos antes; 3 falharam de início (qualquer sessão entrava,
+`rpc` nem era chamado). Depois da correção: 34/34.
 
 ### Rollback
 `git checkout -- db.js admin.js`.

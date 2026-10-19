@@ -24,6 +24,13 @@ async function fazerLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
   if (await DB.adminLogin(email, senha)) {
+    // Autenticou, mas autenticação não é permissão: só entra quem o banco
+    // confirma em app_admins. Conta sem permissão já é deslogada aqui.
+    if (!(await DB.isAdminLoggedIn())) {
+      document.getElementById('login-error').textContent =
+        'Sua conta não tem permissão de acesso ao painel. Fale com o administrador.';
+      return;
+    }
     mostrarAdmin();
     initAdmin();
   } else {
@@ -58,6 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     mostrarLogin();
+    // Havia sessão válida, mas a conta não está em app_admins.
+    if (DB.motivoUltimoAcesso === 'sem_permissao') {
+      const erro = document.getElementById('login-error');
+      if (erro) {
+        erro.textContent = 'Sua conta não tem permissão de acesso ao painel. Fale com o administrador.';
+      }
+    }
   });
 });
 

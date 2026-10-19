@@ -17,6 +17,7 @@ documento **não** propõe correção nenhuma.
 | `tests/helpers/load-script.mjs` | carrega `db.js`/`script.js` em `node:vm` com window/document/localStorage falsos |
 | `tests/unit/db.test.mjs` | 18 testes de `db.js` |
 | `tests/unit/script.test.mjs` | 11 testes de `script.js` |
+| `tests/unit/admin-auth.test.mjs` | 5 testes de `DB.isAdminLoggedIn` |
 | `playwright.config.mjs` | sobe o servidor e roda o Chromium |
 | `tests/e2e/publico.spec.mjs` | 5 fluxos do site, somente leitura |
 | `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
@@ -55,7 +56,7 @@ acusar `'DB' is not defined`, a config foi quebrada, não o código.
 
 ```
 npm test         ->  exit 0
-29 testes, 29 passando
+34 testes, 34 passando
 ```
 
 ### Check completo

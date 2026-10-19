@@ -196,6 +196,10 @@ export function carregarScripts(arquivos, opcoes = {}) {
   if (opcoes.dadosIniciais) sandbox.DADOS_INICIAIS = opcoes.dadosIniciais;
   if (opcoes.supabase !== false) sandbox.supabase = criarSupabaseFalso();
 
+  // Cliente ja construido: o teste injeta em `_sb` depois do load
+  // (`h.run('_sb = window.__clienteFake')`).
+  if (opcoes.cliente) sandbox.__clienteFake = opcoes.cliente;
+
   const contexto = vm.createContext(sandbox);
 
   for (const arquivo of arquivos) {

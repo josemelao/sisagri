@@ -965,14 +965,59 @@ const DB = {
   /* ---- Autenticação admin (Supabase Auth) ---- */
 
   /** Verifica se a sessão admin está ativa */
+  /**
+   * Só é admin quem o BANCO disser que é.
+   *
+   * Estar autenticado NÃO basta: a resposta vem de `public.is_admin()`, que
+   * consulta `public.app_admins` com security definer. É a mesma função que as
+   * policies de RLS usam, então front e banco concordam.
+   *
+   * `motivoUltimoAcesso` fica disponível para o painel explicar a recusa.
+   */
+  motivoUltimoAcesso: 'sem_sessao',
+
   async isAdminLoggedIn() {
-    if (!_sb) return false;
+    if (!_sb) {
+      DB.motivoUltimoAcesso = 'sem_sessao';
+      return false;
+    }
+
     const { data, error } = await _sb.auth.getSession();
     if (error) {
       console.error('[DB] Falha ao verificar sessão admin:', error);
+      DB.motivoUltimoAcesso = 'erro';
       return false;
     }
-    return !!data.session;
+    if (!data.session) {
+      DB.motivoUltimoAcesso = 'sem_sessao';
+      return false;
+    }
+
+    let resposta;
+    try {
+      resposta = await _sb.rpc('is_admin');
+    } catch (e) {
+      console.error('[DB] Falha ao consultar permissão de admin:', e);
+      DB.motivoUltimoAcesso = 'erro';
+      return false;
+    }
+
+    const { data: ehAdmin, error: erroPermissao } = resposta || {};
+    if (erroPermissao) {
+      console.error('[DB] Falha ao consultar permissão de admin:', erroPermissao);
+      DB.motivoUltimoAcesso = 'erro';
+      return false;
+    }
+
+    if (ehAdmin !== true) {
+      // Sessão válida, mas sem permissão: não deixa sessão órfã no navegador.
+      DB.motivoUltimoAcesso = 'sem_permissao';
+      await DB.adminLogout();
+      return false;
+    }
+
+    DB.motivoUltimoAcesso = 'ok';
+    return true;
   },
 
   /** Tenta fazer login com email e senha */
