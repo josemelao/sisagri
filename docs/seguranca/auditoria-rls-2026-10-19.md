@@ -7,6 +7,14 @@
 **Natureza:** 100% leitura. Nenhuma DDL, nenhum `write`, nenhum arquivo do app alterado.
 
 > Este documento é a **linha de base** do Bloco 1 do `v2_plano_refatoração.md`. Toda correção dos Blocos 3, 3b e 3c deve ser comparada com os números abaixo.
+>
+> **Atualização (2026-10-19, pós-correção):** o Bloco 3 foi **aplicado em
+> produção** (`0002_admin_gate`, `0003_hardening_leitura`). O achado **C2 está
+> fechado** e o **N1** também. Os números desta auditoria refletem o *antes* e
+> continuam válidos como linha de base. O *depois* está em
+> `supabase/README.md` (seção do Bloco 3) e no registro do Bloco 3 do plano v2.
+> **Ainda em aberto:** Storage (N2/N5) — buckets `public = true`, URL pública do
+> rascunho `arquivos.id = 45` — que é o Bloco 3b/3c.
 
 ---
 

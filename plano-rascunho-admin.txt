@@ -6,47 +6,71 @@ Branch de trabalho: codex/fase2 (base da655a0; main = producao, nada enviado ao 
 LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 =========================================================================
 
-Documento completo de retomada:
-  C:\Users\PICHAU\.opencode\plan\2026-10-19-estado-atual-fase2.md
+Plano vigente (substitui a v1):
+  C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
+  -> Blocos 0, 0.5, 1, 2 e 3 (parte de tabela) CONCLUIDOS.
+  -> O registro dentro do Bloco 3 descreve as duas divergencias do previsto.
 
-Documentos de apoio (mesma pasta):
-  2026-10-19-relatorio-analise-sisagri.md    -> diagnostico (26 achados)
-  2026-10-19-plano-acao-robustez.md          -> plano (9 fases, 44 tarefas)
-  2026-10-19-fase2-bootstrap.md              -> bootstrap ja executado (historico)
+Evidencia:
+  C:\Users\PICHAU\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
+  C:\Users\PICHAU\Desktop\SisAgri\supabase\README.md
+
+Historico (v1, nao usar como plano):
+  C:\Users\PICHAU\.opencode\plan\2026-10-19-plano-acao-robustez.md
 
 =========================================================================
 ONDE PARAMOS
 =========================================================================
 
 Concluido:
-  - branch codex/fase2 criada
-  - .gitignore commitado (8fa4c71); nada enviado ao remoto
-  - graphify rodado (--code-only --no-label), 460 nos / 1184 arestas
-  - relatorio e plano de acao gravados
-  - MCP do Supabase configurado (read_only, projeto yiujxempodimegdoexqo)
+  - branch codex/fase2 criada; .gitignore commitado; nada enviado ao remoto
+  - MCP do Supabase autenticado (escrita confirmada; current_user = postgres)
+  - Bloco 0 (dono, dashboard): signup desabilitado -> 422 signup_disabled
+  - Bloco 0.5 (N4): senha vazada trocada; login confirmado em 2026-10-19 19:44
+  - Bloco 1: auditoria RLS/Storage + scripts/check-draft-leak.mjs (exit 0, 15/15)
+  - Bloco 2: baseline versionada (esquema + 85 policies), digests conferidos
+  - Bloco 3 (parte de TABELA): APLICADO EM PRODUCAO
 
-Bloqueado no usuario:
-  - autenticar o MCP: rodar /mcps na interface, escolher "supabase",
-    Authenticate, escolher a organizacao dona do projeto, reiniciar sessao.
-    (NAO usar "opencode mcp auth" no terminal.)
+Migrations aplicadas (primeira DDL rastreavel do projeto):
+  20261019205209  supabase/migrations/0002_admin_gate.sql
+  20261019205211  supabase/migrations/0003_hardening_leitura.sql
 
-Proxima acao do agente (assim que o MCP conectar):
-  1. list_tables
-  2. execute_sql -> RLS por tabela + policies (pg_policies)
-  3. execute_sql -> contagem de rascunhos (publish_status='draft')
-  4. get_advisors -> linter de seguranca do Supabase
-  5. teste de vazamento com a anon key
-  SQL pronto no documento de estado, secao 7.2.
+Commits locais (codex/fase2, sem push):
+  8b053d4  auditoria + suite de vazamento
+  640c0b0  baseline versionada
+  f49d477  0002 (gate is_admin nas 42 policies de escrita + fix N1)
+  9ae6e1b  0003 (fecha leitura de rascunho e admin_settings)
 
-=========================================================================
-DECISOES ABERTAS (perguntar ao usuario)
-=========================================================================
+O que o Bloco 3 fez, medido:
+  anon        -> 59 publicados, 0 rascunhos
+  nao-admin   -> 59 publicados, 0 rascunhos (era 1: o furo C2), escrita bloqueada
+  admin       -> 59 publicados, 1 rascunho, admin_settings ok, escreve ok
+  73 policies = 59 exigindo is_admin() + 14 anon intactas
+  Login, listagem e edicao no painel confirmados pelo dono.
 
-  1. Caminho A ou B para o RLS? (plano assume A: tranca "anon so ve
-     publicado" hoje, catracas de papeis depois)
-  2. Metodo de execucao: nativo nas Fases 0-1, subagent da Fase 2 em diante?
+PENDENTE 1 — Bloco 3b (Storage), nao iniciado:
+  Os 3 buckets continuam public = true. O gate do Bloco 3 NAO cobre
+  storage.objects. Decisao recomendada: buckets privados + signed URL
+  (mexe em script.js; depende do Bloco 4).
 
-  (resolvido em 8fa4c71: commit do .gitignore e deste handoff)
+PENDENTE 2 — Bloco 3c (destrutivo, precisa de decisao do dono):
+  - arquivos.id = 45 (rascunho) tem objeto servido publicamente: 200 sem
+    credencial. Opcoes: mover para bucket privado / apagar / aceitar o risco.
+  - 1 objeto orfao no bucket arquivos-smader.
+  Nao fazer nada destrutivo sem autorizacao explicita.
+
+PENDENTE 3 — conferencia no DASHBOARD (o MCP nao tem get_advisors):
+  verificar se os avisos rls_policy_always_true (42) e
+  anon/authenticated_security_definer_function_executable sumiram.
+
+PENDENTE 4 — projeto Supabase de TESTE:
+  nao existe. Necessario para ensaiar 3b/3c e para exercitar o rollback.
+  Rollback atual do Bloco 3 = aplicar 0001_baseline_policies.sql e devolver:
+  grant execute on function public.rls_auto_enable() to public, anon, authenticated;
+
+Proxima acao sugerida:
+  decidir 3c (o que fazer com arquivos.id=45 e o orfao) e criar o projeto de
+  teste antes de 3b, porque 3b mexe em script.js e precisa de ensaio.
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
@@ -58,3 +82,6 @@ REGRAS QUE NAO PODEM SER QUEBRADAS
   - Nunca expor service_role no frontend (apenas anon key, que e publica).
   - Preservar publish_status, IDs, classes e chaves persistidas.
   - Rascunho nunca pode chegar ao navegador de visitante anonimo.
+  - Nao alterar contratos de DB.*; fallback local e feature, nao divida.
+  - Toda DDL por migration versionada; um bloco por vez, validado antes do
+    proximo. Nao aplicar nada destrutivo sem autorizacao explicita.

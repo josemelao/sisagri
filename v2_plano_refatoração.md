@@ -6,6 +6,7 @@
 **Branch de trabalho:** `codex/fase2` (base `da655a0`)
 **Commit de referência na criação deste plano:** `0d97cc0`
 **Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
+**Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2** e **3** (parte de tabela) **concluídos**; a `0002` e a `0003` estão **aplicadas em produção**. Ver o registro dentro do Bloco 3 — ele descreve duas divergências em relação ao previsto (gate por tabela em vez de JWT; leitura também fechada).
 **`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
@@ -436,6 +437,7 @@ Nenhum efeito em produção (arquivos aditivos).
 **Objetivo:** parar de tratar "autenticado" como "admin". Toda escrita, toda leitura de rascunho **e todo acesso a arquivo** passa a exigir papel de admin, **verificado no banco**.
 **Achados:** C2, N1, N3. **Este é o bloco de maior impacto do plano.**
 **Decisão necessária:** confirmar o **Caminho A** (fechar agora com gate mínimo; catracas por área no Bloco 6).
+**Status: ✅ APLICADO EM PRODUÇÃO em 2026-10-19** — parte de tabela concluída; a parte de Storage virou o Bloco 3b.
 
 **Arquivos:**
 - Criar: `supabase/migrations/0002_is_admin.sql`
@@ -446,6 +448,78 @@ Nenhum efeito em produção (arquivos aditivos).
 - Criar: `supabase/tests/02_admin_gate.sql`
 
 > **Numeração:** os arquivos são numerados na ordem real de execução. Se o Bloco 6 rodar depois, suas migrations passam a ser `0004_profiles.sql` e `0005_rls_papeis.sql` — confira antes de aplicar.
+
+### ✅ Executado em 2026-10-19 — o que foi feito de verdade
+
+Este bloco saiu da forma **descrita abaixo** em dois pontos. Registrado aqui para o
+plano não mentir sobre o código.
+
+**Divergência 1 — `is_admin()` por tabela, não por JWT.**
+O plano previa ler `auth.jwt() -> 'app_metadata' ->> 'role'`. Foi implementado com
+a tabela `public.app_admins` + `public.is_admin()` (`security definer`,
+`set search_path = public`). Motivo: a verdade fica no banco, e promover um admin
+não depende de reescrever `raw_app_meta_data` de `auth.users` nem de esperar o
+token renovar. Mesmo efeito, menos partes móveis. O seed da conta do dono está
+dentro da própria `0002`, com uma trava `raise exception` que aborta a migration
+se o admin não for encontrado — a ordem T3.2-antes-de-T3.3 virou garantia
+estrutural, não disciplina.
+
+**Divergência 2 — a leitura também foi fechada.**
+O plano dizia "não tocar" nas policies de leitura. O dono autorizou fechar, então
+as 14 policies de SELECT de conteúdo passaram a
+`using (publish_status = 'published' OR public.is_admin())` — e **não**
+`using (public.is_admin())` puro, de propósito: a forma com `OR` mantém o
+publicado legível por um autenticado (evita o site público vazio no Bloco 6, já
+que a policy `anon` é `to anon` e `authenticated` não é membro de `anon`) e fecha
+só o rascunho. As 3 policies de `admin_settings` também passaram a exigir
+`is_admin()`, mantendo as travas de `scope = 'global'`.
+
+**Arquivos reais (nomes diferentes dos previstos):**
+
+| Previsto no plano | O que existe de fato |
+|---|---|
+| `0002_is_admin.sql` + `0003_gate_admin_policies.sql` | `migrations/0002_admin_gate.sql` |
+| (sem previsão no plano) | `migrations/0003_hardening_leitura.sql` |
+| `0003_rollback.sql` | `migrations/0001_baseline_policies.sql` (já é a baseline completa, 73 policies) |
+| `tests/02_admin_gate.sql` | `tests/02_admin_gate.sql` + `tests/03_hardening_leitura.sql` |
+| `0003b_storage_objects.sql` / `0003b_rollback.sql` | **não feitos** — são o Bloco 3b |
+
+**Migrations aplicadas** em `supabase_migrations.schema_migrations`, que estava
+**vazia**: `20261019205209` = `0002_admin_gate` e `20261019205211` =
+`0003_hardening_leitura`. Esta é a primeira DDL rastreável do projeto.
+
+**Como foi validado** (nada foi clicado no dashboard): cada arquivo foi buscado
+**literal** do disco via HTTP local, executado dentro de `begin … rollback` contra
+produção para medir o estado **combinado** (é ele que vale), e só depois aplicado
+por `apply_migration`. Depois de aplicar: `tests/03_hardening_leitura.sql` rodado
+contra produção → 15/15 `ok`; `node scripts/check-draft-leak.mjs` com a anon key
+real → exit 0 (15/15).
+
+**Medido depois de aplicar:**
+
+| Medição | anon | autenticado não-admin | admin |
+|---|---|---|---|
+| vê publicados | 59 | 59 | 59 |
+| vê rascunhos | 0 | **0** (era 1) | 1 |
+| vê `admin_settings` | n/a | 0 | 1 |
+| escreve | — | bloqueado (`42501`) | ok |
+
+73 policies = 59 exigindo `is_admin()` + 14 `anon` intactas. Zero policy de
+`authenticated` com `using (true)`.
+
+**Verificação humana obrigatória:** login no painel, listagem e edição de
+registro confirmados pelo dono em 2026-10-19.
+
+**Commits** (branch `codex/fase2`, sem push): `8b053d4` (auditoria + suíte),
+`640c0b0` (baseline), `f49d477` (`0002`), `9ae6e1b` (`0003`).
+
+**Pendências que saíram deste bloco:**
+- gate no **Storage** (`storage.objects` dos 3 buckets) → Bloco 3b;
+- advertências `rls_policy_always_true` (42): conferir no **dashboard** se
+  sumiram — o MCP não tem `get_advisors`;
+- rollback exercitado em projeto de teste: **não foi**, porque não existe projeto
+  de teste. O rollback é aplicar `0001_baseline_policies.sql` e devolver o
+  `grant execute on function public.rls_auto_enable() to public, anon, authenticated;`.
 
 ### Ordem obrigatória (não inverter)
 
@@ -459,6 +533,9 @@ T3.4 testar
 > Se a T3.3 rodar antes da T3.2, o dono **perde o acesso ao painel**. Este é o erro mais provável do bloco.
 
 ### Tarefas
+
+> As descrições abaixo são o **plano original**. Onde ele divergiu do que foi
+> feito, vale o **registro de execução acima**. T3.5 é o Bloco 3b (pendente).
 
 - [ ] **T3.1 — Função `is_admin()`**
   `supabase/migrations/0002_is_admin.sql`:
@@ -490,6 +567,12 @@ T3.4 testar
   **Não tocar** na policy `anon` (`publish_status = 'published'`) de nenhuma tabela.
   **Não tocar** nas 3 policies de `admin_settings` (já têm trava própria) — registrar como pendência se ficarem inconsistentes.
   O `anon` continua exatamente como está: é isso que mantém o app público funcionando.
+
+  **Executado assim:** as 42 de escrita viraram `is_admin()` puro (como previsto);
+  as 14 de leitura viraram `publish_status = 'published' OR public.is_admin()`
+  (com a autorização do dono — o plano original não previa mexer na leitura); as
+  3 de `admin_settings` também passaram a exigir `is_admin()`. A policy `anon` não
+  foi tocada, como previsto.
 - [ ] **T3.4 — Rollback escrito antes do teste**
   `0003_rollback.sql` recria as policies antigas (copiadas do Bloco 2).
 - [ ] **T3.5 — Gate no Storage (`storage.objects`)**
@@ -550,20 +633,20 @@ curl -s -X POST "https://<proj>.supabase.co/rest/v1/avisos" \
 **Verificação humana obrigatória:** abrir o painel admin com a conta real e confirmar login, listagem, criação e edição de um registro.
 
 ### Checklist
-- [ ] `is_admin()` criada com `security definer` + `set search_path`
-- [ ] conta do dono promovida **antes** das policies (ordem provada no log)
-- [ ] 0 policies `authenticated` com `qual = true` nas 14 tabelas
-- [ ] 14 policies `anon` intactas
-- [ ] matriz de 4 personas × 4 testes executada e registrada
-- [ ] `check-draft-leak.mjs` exit 0
-- [ ] login real no painel confirmado pelo dono
-- [ ] `0003_rollback.sql` escrito e **testado em projeto de teste**
-- [ ] policies de `storage.objects` dos 3 buckets exigem `is_admin()` (listar/escrever)
-- [ ] admin real consegue subir e apagar arquivo com o novo gate
-- [ ] `EXECUTE` de `public.rls_auto_enable()` revogado de `anon`/`authenticated`
-- [ ] avisos `anon/authenticated_security_definer_function_executable` sumiram de Advisors
-- [ ] auto-habilitação de RLS em tabela nova continua funcionando
-- [ ] avisos `rls_policy_always_true` (42) sumiram de Advisors
+- [x] `is_admin()` criada com `security definer` + `set search_path`
+- [x] conta do dono promovida **antes** das policies (virou trava estrutural na `0002`)
+- [x] 0 policies `authenticated` com `qual = true` nas 14 tabelas
+- [x] 14 policies `anon` intactas
+- [x] matriz de personas × testes executada e registrada (versão em `tests/02` e `tests/03`)
+- [x] `check-draft-leak.mjs` exit 0
+- [x] login real no painel confirmado pelo dono **+ listagem e edição**
+- [x] `EXECUTE` de `public.rls_auto_enable()` revogado de `anon`/`authenticated`
+- [x] auto-habilitação de RLS em tabela nova continua funcionando
+- [ ] Advisors: conferir **no dashboard** se `rls_policy_always_true` (42) e
+      `anon/authenticated_security_definer_function_executable` sumiram
+- [ ] rollback (`0001_baseline_policies.sql`) exercitado em **projeto de teste** — não existe projeto de teste ainda
+- [ ] policies de `storage.objects` dos 3 buckets exigem `is_admin()` → **Bloco 3b**
+- [ ] admin real consegue subir e apagar arquivo com o novo gate → **Bloco 3b**
 
 ### Rollback
 Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pode ficar (é inofensivo sem policy usando).
