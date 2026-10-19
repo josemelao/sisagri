@@ -9,6 +9,7 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
+  -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
@@ -36,6 +37,7 @@ Concluido:
   - Bloco 4 (rede de seguranca): eslint + harness vm + 29 testes + playwright
   - Bloco 4.1: publish_status fail-closed + migracao do formato antigo
   - Bloco 5: painel exige is_admin() do banco (rpc), nao so sessao
+  - Bloco 10: token do Instagram saiu do navegador (proxy em Edge Function)
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
@@ -57,6 +59,7 @@ Commits locais (codex/fase2, sem push):
   029bb30  bloco 4.1: publish_status fail-closed + migracao do formato antigo
   e04d279  docs do bloco 4.1
   7c48bca  bloco 5: painel exige is_admin() do banco
+  4ee128e  bloco 10: token do Instagram sai do navegador (Edge Function)
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -80,9 +83,9 @@ Proxima acao sugerida:
   1. Teste humano do painel (obrigatorio antes de seguir): entrar com a conta
      admin e criar/editar um registro. Isso valida o Bloco 4.1 (fail-closed)
      e o Bloco 5 (rpc is_admin) no fluxo real.
-  2. Depois, escolher entre: Bloco 6 (RBAC por papel/area, precisa de desenho),
-     Bloco 7 (defesa de rascunho em profundidade), Bloco 9 (XSS/CSP) ou
-     Bloco 10 (token do Instagram fora do navegador - checar se ainda existe).
+  2. Deploy da function + rotacao do token (PENDENTE 7).
+  3. Depois, escolher entre: Bloco 6 (RBAC por papel/area, precisa de desenho),
+     Bloco 7 (defesa de rascunho em profundidade) ou Bloco 9 (XSS/CSP).
 
 =========================================================================
 PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
@@ -126,6 +129,21 @@ PENDENTE 5 — RESOLVIDO em 2026-10-19 (Bloco 4.1)
   local ficaria vazio. Dado do Supabase NAO passa pela migracao.
   Prova: 29/29 testes, 5 e2e verdes, 3 cards de processo no site publico e o
   rascunho id=4 fora. Detalhes no BLOCO 4.1 do plano v2.
+
+PENDENTE 7 — DEPLOY da function do Instagram + rotacao do token (humano)
+  Codigo pronto em supabase/functions/instagram/index.ts; frontend ja chama o
+  proxy e nao guarda mais token. Falta:
+    1. Meta: gerar token novo e INVALIDAR o antigo (o atual circulou em URL e
+       no localStorage - considerar comprometido);
+    2. instalar/autenticar o CLI do Supabase (nao existe neste ambiente) ou
+       deployar pelo dashboard;
+    3. supabase secrets set IG_ACCESS_TOKEN=...
+    4. supabase functions deploy instagram
+  Enquanto isso: GET /functions/v1/instagram -> 404 e o widget mostra
+  "Feed do Instagram indisponivel no momento." (nao quebra a pagina).
+  Detalhes no BLOCO 10 do plano v2 e no supabase/README.md.
+  ATENCAO: o MCP deste ambiente nao tem a feature "functions". Para deployar
+  pelo MCP, reconfigurar a URL incluindo functions e reautenticar.
 
 PENDENTE 6 — RESOLVIDO em 2026-10-19 (Bloco 5)
   O Bloco 5 falava em app_metadata.role; isso nunca existiu no projeto.
