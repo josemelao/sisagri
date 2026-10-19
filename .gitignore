@@ -1,0 +1,16 @@
+# Segredos e ambiente (nao versionar)
+.env
+.env.*
+!.env.example
+
+# Artefatos de analise do graphify (regeneraveis via CLI)
+graphify-out/
+raw/
+
+# Estado local de ferramentas/skills
+.superpowers/
+
+# Dependencias e arquivos de sistema
+node_modules/
+Thumbs.db
+.DS_Store

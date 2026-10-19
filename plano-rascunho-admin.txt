@@ -1,0 +1,61 @@
+HANDOFF VIGENTE — SisAgri / Fase 2
+Atualizado em: 2026-10-19
+Branch de trabalho: codex/fase2 (base da655a0; main = producao, nada enviado ao remoto)
+
+=========================================================================
+LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
+=========================================================================
+
+Documento completo de retomada:
+  C:\Users\PICHAU\.opencode\plan\2026-10-19-estado-atual-fase2.md
+
+Documentos de apoio (mesma pasta):
+  2026-10-19-relatorio-analise-sisagri.md    -> diagnostico (26 achados)
+  2026-10-19-plano-acao-robustez.md          -> plano (9 fases, 44 tarefas)
+  2026-10-19-fase2-bootstrap.md              -> bootstrap ja executado (historico)
+
+=========================================================================
+ONDE PARAMOS
+=========================================================================
+
+Concluido:
+  - branch codex/fase2 criada
+  - .gitignore criado (NAO commitado)
+  - graphify rodado (--code-only --no-label), 460 nos / 1184 arestas
+  - relatorio e plano de acao gravados
+  - MCP do Supabase configurado (read_only, projeto yiujxempodimegdoexqo)
+
+Bloqueado no usuario:
+  - autenticar o MCP: rodar /mcps na interface, escolher "supabase",
+    Authenticate, escolher a organizacao dona do projeto, reiniciar sessao.
+    (NAO usar "opencode mcp auth" no terminal.)
+
+Proxima acao do agente (assim que o MCP conectar):
+  1. list_tables
+  2. execute_sql -> RLS por tabela + policies (pg_policies)
+  3. execute_sql -> contagem de rascunhos (publish_status='draft')
+  4. get_advisors -> linter de seguranca do Supabase
+  5. teste de vazamento com a anon key
+  SQL pronto no documento de estado, secao 7.2.
+
+=========================================================================
+DECISOES ABERTAS (perguntar ao usuario)
+=========================================================================
+
+  1. Caminho A ou B para o RLS? (plano assume A: tranca "anon so ve
+     publicado" hoje, catracas de papeis depois)
+  2. Metodo de execucao: nativo nas Fases 0-1, subagent da Fase 2 em diante?
+  3. Commitar o .gitignore?
+     git add .gitignore
+     git commit -m "chore: adiciona gitignore para artefatos locais e segredos"
+
+=========================================================================
+REGRAS QUE NAO PODEM SER QUEBRADAS
+=========================================================================
+
+  - Nada vai para main sem validacao explicita (main = producao).
+  - Nao usar a branch codex/fase1-busca-filtros-paginacao como base:
+    ela apaga AGENTS.md e os 3 planos (5.198 delecoes).
+  - Nunca expor service_role no frontend (apenas anon key, que e publica).
+  - Preservar publish_status, IDs, classes e chaves persistidas.
+  - Rascunho nunca pode chegar ao navegador de visitante anonimo.
