@@ -8,7 +8,7 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 
 Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
-  -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c e 4 CONCLUIDOS.
+  -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
@@ -35,6 +35,7 @@ Concluido:
   - Bloco 3b (parte 1): gate is_admin nas 12 policies de storage.objects
   - Bloco 4 (rede de seguranca): eslint + harness vm + 29 testes + playwright
   - Bloco 4.1: publish_status fail-closed + migracao do formato antigo
+  - Bloco 5: painel exige is_admin() do banco (rpc), nao so sessao
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
@@ -54,6 +55,8 @@ Commits locais (codex/fase2, sem push):
   c00c64d  bloco 4: playwright (4 fluxos publicos) + CI
   b2c144b  bloco 4: registro do desvio e pendencias
   029bb30  bloco 4.1: publish_status fail-closed + migracao do formato antigo
+  e04d279  docs do bloco 4.1
+  7c48bca  bloco 5: painel exige is_admin() do banco
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -74,10 +77,12 @@ Bloco 4, medido:
   nenhuma linha de db.js/script.js/admin.js/dados.js mudou
 
 Proxima acao sugerida:
-  Bloco 5 adaptado (ver PENDENTE 6) ou projeto de teste + 3b parte 2.
-  Antes de qualquer um: rodar a suite completa (npm run check + npm run
-  test:e2e) e, se possivel, abrir o painel e criar/editar um registro para
-  confirmar que o fail-closed nao atrapalhou a publicacao.
+  1. Teste humano do painel (obrigatorio antes de seguir): entrar com a conta
+     admin e criar/editar um registro. Isso valida o Bloco 4.1 (fail-closed)
+     e o Bloco 5 (rpc is_admin) no fluxo real.
+  2. Depois, escolher entre: Bloco 6 (RBAC por papel/area, precisa de desenho),
+     Bloco 7 (defesa de rascunho em profundidade), Bloco 9 (XSS/CSP) ou
+     Bloco 10 (token do Instagram fora do navegador - checar se ainda existe).
 
 =========================================================================
 PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
@@ -122,11 +127,12 @@ PENDENTE 5 — RESOLVIDO em 2026-10-19 (Bloco 4.1)
   Prova: 29/29 testes, 5 e2e verdes, 3 cards de processo no site publico e o
   rascunho id=4 fora. Detalhes no BLOCO 4.1 do plano v2.
 
-PENDENTE 6 — Bloco 5 do plano esta desatualizado
-  O plano fala em `app_metadata.role` no JWT. A implementacao real e a tabela
-  public.app_admins + public.is_admin(). Antes de executar o Bloco 5, adaptar o
-  desenho: o painel deve perguntar ao banco (rpc is_admin / select em
-  app_admins), nao ler claim do JWT.
+PENDENTE 6 — RESOLVIDO em 2026-10-19 (Bloco 5)
+  O Bloco 5 falava em app_metadata.role; isso nunca existiu no projeto.
+  Adaptado para rpc('is_admin'), a mesma funcao das 59 policies de RLS.
+  Prova: POST /rest/v1/rpc/is_admin sem sessao -> 200 false; /admin.html sem
+  sessao mostra login sem erro de JS; 5 testes de unidade; 34/34 verdes.
+  FALTA: teste humano do login real com a conta admin (sem credenciais aqui).
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
