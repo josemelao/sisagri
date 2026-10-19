@@ -93,9 +93,8 @@ PENDENTE 3 — projeto Supabase de TESTE
   12 de storage) e devolver:
   grant execute on function public.rls_auto_enable() to public, anon, authenticated;
 
-PENDENTE 4 — teste humano do Storage
-  subir e apagar um arquivo no painel para confirmar que o gate da 0004 nao
-  atrapalhou o fluxo do admin.
+PENDENTE 4 — nenhum. (Teste humano do Storage: upload e exclusao confirmados
+pelo dono em 2026-10-19; o gate da 0004 nao atrapalhou o painel.)
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS

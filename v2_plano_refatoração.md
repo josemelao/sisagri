@@ -738,7 +738,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 - [x] listagem bloqueada: `anon` não tem policy em `storage.objects` (0 objetos visíveis, provado por `set local role`)
 - [ ] avisos `public_bucket_allows_listing` — só somem no Bloco 3b (bucket segue público)
 - [x] app público baixando anexo normalmente (anexo e imagem de manual → 200)
-- [ ] upload/delete do admin funcionando — **aguardando teste humano no painel**
+- [x] upload/delete do admin funcionando — **confirmado pelo dono em 2026-10-19**
 - [x] decisão sobre rascunho e órfão registrada e executada (ambos apagados, com backup)
 - [x] exposição documentada aqui e em `docs/seguranca/`
 
@@ -759,7 +759,7 @@ Recriar as 3 policies de `SELECT` (copiadas da baseline do Bloco 2). Nada de des
 Medido: não-admin vê **0** objetos (era 133), DELETE devolve **0 linhas**; admin
 vê **133** e apaga normalmente; `anon` nunca teve policy. Nada mudou para o site
 público (URL direta não passa por policy) — anexo publicado e imagem de manual
-seguem **200**.
+seguem **200**. O dono confirmou **upload e exclusão** no painel em 2026-10-19.
 
 **O que falta (parte 2, o mecanismo):** os 3 buckets continuam `public = true`.
 URL pública **não consulta policy**, então todo upload novo em rascunho nasce
