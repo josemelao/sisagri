@@ -5,6 +5,7 @@
 **Data:** 2026-10-19
 **Branch de trabalho:** `codex/fase2` (base `da655a0`)
 **Commit de referência na criação deste plano:** `0d97cc0`
+**Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
 **`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
@@ -44,6 +45,49 @@ Toda a evidência abaixo foi **medida**, não inferida. Método: MCP do Supabase
 
 **Conclusão:** a separação rascunho/publicado **já funciona para visitante anônimo**. O RLS é a única garantia e hoje ela está de pé.
 
+### 1.1 Advisors de segurança (dashboard, 2026-10-19)
+
+Cinco avisos, nenhum erro. **Quatro são achados novos** — o relatório de análise não olhou nem para `storage` nem para funções do banco.
+
+| Advisor | Avisos | Achado | Bloco |
+|---|---|---|---|
+| `rls_policy_always_true` (0024) | 42 | policies `UPDATE`/`INSERT`/`DELETE` com `USING`/`WITH CHECK = true` para `authenticated` nas 14 tabelas | **3** (confirma a auditoria de forma independente) |
+| `public_bucket_allows_listing` (0025) | 3 | 3 buckets públicos com policy `SELECT` ampla em `storage.objects` para `authenticated` | **3c** |
+| `anon_security_definer_function_executable` (0028) | 1 | `public.rls_auto_enable()` é `SECURITY DEFINER` e executável pelo `anon` | **3** (T3.6) |
+| `authenticated_security_definer_function_executable` (0029) | 1 | idem, executável por `authenticated` | **3** (T3.6) |
+| `auth_leaked_password_protection` | 1 | proteção contra senha vazada (HaveIBeenPwned) desligada | **0.5** |
+
+Sobre o `rls_auto_enable()`: é função de **event trigger do próprio Supabase** (auto-habilita RLS em tabela nova criada em `public`), dono `postgres`, `SET search_path TO 'pg_catalog'`. Fora do contexto de event trigger, `pg_event_trigger_ddl_commands()` falha — **não parece explorável**. O hardening ainda é barato e recomendado pelo próprio Advisor (T3.6).
+
+### 1.2 Storage — a superfície que a análise não olhou
+
+Os 3 buckets são **`public = true`**. Regra do Supabase: objeto em bucket público é servido por URL **sem passar por policy** — a policy só controla listagem (`SELECT` em `storage.objects`).
+
+Prova executada (sem enviar credencial alguma, nem a anon key):
+
+```
+GET /storage/v1/object/public/arquivos-smader/arquivos/1774662485424-29012026171821_614-Remessa.pdf
+→ 200 · content-type: application/pdf · content-length: 1460078 · primeiros bytes: %PDF-
+```
+
+Esse arquivo pertence ao registro **`arquivos.id = 45`, `publish_status = 'draft'`** (bucket `arquivos-smader`, path acima). Ou seja:
+
+> **O RLS protege a linha do banco; não protege o arquivo.** O rascunho é invisível na API, mas o anexo responde `200` para qualquer pessoa que tenha a URL — sem login e **de forma permanente**: despublicar não remove o acesso.
+
+Inventário medido:
+
+| Bucket | Objetos | Tamanho | Público | Observação |
+|---|---:|---:|---|---|
+| `arquivos-smader` | 59 | 33 MB | **sim** | 58 referenciados por registros, **1 órfão** (nenhum registro aponta para ele) |
+| `funcionarios-fotos-smader` | 3 | 348 kB | **sim** | fotos de servidores (dado pessoal — LGPD), 0 rascunhos |
+| `manuais-imagens-smader` | 73 | 6,7 MB | **sim** | referenciadas dentro de `manuais.documentos` (JSON), **não** por coluna de storage |
+
+Detalhe de `arquivos`: 60 registros, 58 com `storage_path`, 1 rascunho — **e esse rascunho tem arquivo**. Colunas de storage existentes: `arquivos(storage_bucket, storage_path)`, `funcionarios(foto, foto_storage_bucket, foto_storage_path)`. `manuais` e `processos` **não** têm coluna de storage.
+
+Policies de `storage.objects` (medidas): `SELECT`/`INSERT`/`UPDATE`/`DELETE` para `authenticated`, com `qual`/`with_check = (bucket_id = '<bucket>')`. É o **mesmo padrão do C2**: qualquer conta autenticada lista, sobrescreve e apaga arquivos.
+
+Atenuante honesta: a URL **não** é descobrível pela API (o RLS esconde a linha que a contém). O risco se materializa quando a URL já circulou — histórico/localStorage de máquina compartilhada, WhatsApp, e-mail, link colado — ou quando alguém com conta lista o bucket.
+
 ---
 
 ## 2. Correções em relação à v1 (o que mudou e por quê)
@@ -59,6 +103,10 @@ Toda a evidência abaixo foi **medida**, não inferida. Método: MCP do Supabase
 | 7 | §7.2 passo 4 do documento de estado: `get_advisors` | **Indisponível**: esse método não existe no conjunto de ferramentas do MCP conectado. Usar a página **Advisors** do dashboard (ação humana). | catálogo do MCP |
 | 8 | — | **Risco novo (baixo):** `escala_ferias` tem `publish_status` **e** `status`. Toda policy/consulta deve usar **`publish_status`**; confundir os dois quebra regra de publicação. | `information_schema.columns` |
 | 9 | — | **Risco novo (latente):** `dados.js` não tem `publish_status` em nenhum registro (caminho de fallback local nasce publicado). No banco isso não ocorre (0 registros sem status). Tratar junto com o M6. | contagem = 0 |
+| 10 | — | **A v1 e o relatório não olharam para `storage`.** Achado novo **N5**: arquivo de rascunho é publicamente acessível por URL (bucket público). Provado com `200` sem credencial. | seção 1.2 |
+| 11 | — | **Achado novo N3:** `public.rls_auto_enable()` é `SECURITY DEFINER` executável por `anon`/`authenticated` (Advisor 0028/0029). | dashboard Advisors |
+| 12 | — | **Achado novo N4:** proteção contra senha vazada desligada. | dashboard Advisors |
+| 13 | Fase 0 apenas no banco | **Alcance do gate de admin ampliado**: o Bloco 3 passa a cobrir também `storage.objects` — hoje `authenticated` lista, sobrescreve e apaga arquivos de qualquer bucket. | `pg_policies` (schema `storage`) |
 
 ---
 
@@ -86,6 +134,8 @@ Toda a evidência abaixo foi **medida**, não inferida. Método: MCP do Supabase
 5. **Dois editores** salvando o mesmo registro — sem ID duplicado e sem sobrescrita silenciosa.
 6. **Anon** tentando `select` com `publish_status=eq.draft` em qualquer tabela — sempre `[]`.
 7. **Autenticado sem papel de admin** tentando `insert/update/delete` — sempre negado pelo banco.
+8. **Arquivo de rascunho** (ou de registro apagado) acessível por URL — não pode continuar público só porque o bucket é público.
+9. **Autenticado sem papel de admin** listando, sobrescrevendo ou apagando arquivo em `storage.objects` — sempre negado.
 
 ---
 
@@ -142,9 +192,12 @@ git commit -m "<tipo>(<escopo>): <descrição curta>"
 | Bloco | Nome | Tipo | Esforço | Depende de | Achados |
 |---|---|---|---|---|---|
 | **0** | Contenção: fechar o cadastro público | 🤝 humano | 5 min | — | C2 |
+| **0.5** | Hardening de Auth (senha vazada) | 🤝 humano | 2 min | — | **N4** |
 | **1** | Gravar a auditoria + suíte adversarial | 🤖 | 4h | B0 | C1, C2, B6 |
 | **2** | Baseline versionado do schema/policies | 🤖 | 1 dia | B0 | B6 |
-| **3** | **Gate de admin no RLS** | 🤖 + 🤝 | 1–2 dias | B1, B2 | **C2** |
+| **3** | **Gate de admin no RLS** (tabelas + `storage.objects` + revoke do N3) | 🤖 + 🤝 | 1–2 dias | B1, B2 | **C2, N1, N3** |
+| **3c** | Storage: fechar listagem, órfão e arquivo de rascunho | 🤖 + 🤝 | 4h | B3 | **N2, N5** |
+| **3b** | Storage: modelo de acesso (privado + *signed URL*) | 🤝 design + 🤖 | 2–3 dias | B4 | **N5** |
 | **4** | Rede de segurança do código (lint/testes/CI) | 🤖 | 1–2 dias | — | A5 |
 | **5** | Autorização no frontend | 🤖 | 1 dia | B3, B4 | C2 |
 | **6** | RBAC por papel e por área | 🤝 design + 🤖 | 3–5 dias | B3, B5 | C2, M6 |
@@ -158,9 +211,11 @@ git commit -m "<tipo>(<escopo>): <descrição curta>"
 
 Legenda de esforço: **S** ≤ 4h · **M** 1–2 dias · **G** 3–5 dias.
 
-**Ordem recomendada:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13.
+**Ordem recomendada:** 0 → 0.5 → 1 → 2 → 3 → 3c → 4 → 3b → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13.
+Blocos 3c e 0.5 não dependem de código e podem ser feitos imediatamente.
+Bloco 3b depende do Bloco 4 porque altera `script.js` (troca de URL pública por *signed URL*) e precisa de teste.
 Blocos 10 e 13 podem correr em paralelo com 11/12 quando houver folga.
-**Nunca** inverta 0/1/2/3: são a contenção.
+**Nunca** inverta 0 / 0.5 / 1 / 2 / 3 / 3c: é a contenção.
 
 ---
 ---
@@ -171,15 +226,15 @@ Blocos 10 e 13 podem correr em paralelo com 11/12 quando houver folga.
 **Por que primeiro:** hoje qualquer pessoa cria conta no projeto e, como as 14 tabelas de conteúdo concedem `authenticated` com `qual = true`, essa conta passa a **ler rascunhos, editar e apagar tudo**. É o único achado com exploração trivial em produção.
 **Achados:** C2 (porta de entrada).
 
-### Tarefas
+### Tarefas — ✅ executadas em 2026-10-19
 
-- [ ] **T0.1 — Desligar o cadastro público**
+- [x] **T0.1 — Desligar o cadastro público** (feito pelo dono no dashboard)
   Supabase Dashboard → **Authentication → Providers → Email** → desligar **"Allow new users to sign up"**.
-- [ ] **T0.2 — Manter a confirmação de e-mail ligada**
+- [x] **T0.2 — Manter a confirmação de e-mail ligada**
   Em **Authentication → Providers → Email**, garantir **"Confirm email" = ON** (`mailer_autoconfirm` já é `false`; não mudar).
-- [ ] **T0.3 — Conferir Advisors**
-  Abrir **Advisors → Security** no dashboard e anotar o que aparecer (o método `get_advisors` não está disponível no MCP).
-- [ ] **T0.4 — Conferir os usuários existentes**
+- [x] **T0.3 — Conferir Advisors**
+  Abrir **Advisors → Security** no dashboard e anotar o que aparecer (o método `get_advisors` não está disponível no MCP). Resultado: 5 avisos → seções 1.1, 1.2 e bloco 0.5.
+- [x] **T0.4 — Conferir os usuários existentes**
   Authentication → Users: confirmar que só existe **1 conta** (a legítima).
 
 ### Validação (prova)
@@ -199,12 +254,25 @@ curl -s -X POST "https://<proj>.supabase.co/auth/v1/signup" \
 # execute_sql: select count(*) from auth.users;   -> 1
 ```
 
+### Resultado (executado em 2026-10-19)
+
+| Verificação | Comando | Saída obtida |
+|---|---|---|
+| Cadastro fechado | `GET /auth/v1/settings` | `disable_signup: true` ✅ |
+| Tentativa real de cadastro | `POST /auth/v1/signup` | `422 — {"error_code":"signup_disabled","msg":"Signups not allowed for this instance"}` ✅ |
+| Confirmação de e-mail mantida | `GET /auth/v1/settings` | `mailer_autoconfirm: false` ✅ |
+| Contas no projeto | `select count(*) from auth.users` | `1` ✅ |
+| Advisors consultados | dashboard | 5 avisos registrados (§1.1) ✅ |
+| Código alterado | — | nenhum ✅ |
+
+A conta `teste-contencao-bloco0@example.com` **não** foi criada — a requisição foi rejeitada antes de existir. Rollback não foi necessário.
+
 ### Checklist
-- [ ] `disable_signup = true` provado por HTTP
-- [ ] tentativa de signup rejeitada provada por HTTP
-- [ ] confirmação de e-mail continua ligada
-- [ ] Advisors de segurança consultados e anotados
-- [ ] nenhuma alteração de código feita
+- [x] `disable_signup = true` provado por HTTP
+- [x] tentativa de signup rejeitada provada por HTTP
+- [x] confirmação de e-mail continua ligada
+- [x] Advisors de segurança consultados e anotados
+- [x] nenhuma alteração de código feita
 
 ### Rollback
 Reativar "Allow new users to sign up" no dashboard. **Não fazer** sem decidir junto do Bloco 3.
@@ -212,6 +280,36 @@ Reativar "Allow new users to sign up" no dashboard. **Não fazer** sem decidir j
 ### Proibido neste bloco
 - Não mexer em policies (é o Bloco 3).
 - Não alterar `db.js` (é o Bloco 5).
+
+---
+
+# BLOCO 0.5 — Hardening de Auth: senha vazada
+
+**Tipo:** ação humana (dono). **Esforço:** 2 min. **Achado:** N4.
+**Objetivo:** ligar a checagem de senhas comprometidas (HaveIBeenPwned) — o Advisor `auth_leaked_password_protection` está disparando.
+
+### Tarefas
+
+- [ ] **T0.5.1 — Ligar a proteção**
+  Dashboard → **Authentication** → seção de senha (**Settings** / **Policies** / **Password security**, depende da versão) → ligar **"Leaked password protection"**.
+- [ ] **T0.5.2 — Anotar o mínimo de senha** vigente (comprimento/força) para o registro do bloco.
+
+### Validação (prova)
+
+- O aviso `auth_leaked_password_protection` **deixa de aparecer** em Advisors → Security (prova principal).
+- Prova opcional: com o cadastro fechado, testar senha vazada exige uma conta existente ou um **projeto de teste**. Se fizer no projeto de teste, use algo como `Password123!` e confirme a rejeição.
+
+### Checklist
+- [ ] "Leaked password protection" ligada
+- [ ] aviso N4 sumiu de Advisors → Security
+- [ ] mínimo de senha anotado
+- [ ] nenhuma alteração de código
+
+### Rollback
+Desligar o toggle. Sem impacto no app público ou no admin.
+
+### Proibido neste bloco
+- Não mexer em policies nem em código. É só configuração de Auth.
 
 ---
 
@@ -335,15 +433,19 @@ Nenhum efeito em produção (arquivos aditivos).
 
 # BLOCO 3 — Gate de admin no RLS (correção real do C2)
 
-**Objetivo:** parar de tratar "autenticado" como "admin". Toda escrita e toda leitura de rascunho passa a exigir papel de admin, **verificado no banco**.
-**Achados:** C2. **Este é o bloco de maior impacto do plano.**
+**Objetivo:** parar de tratar "autenticado" como "admin". Toda escrita, toda leitura de rascunho **e todo acesso a arquivo** passa a exigir papel de admin, **verificado no banco**.
+**Achados:** C2, N1, N3. **Este é o bloco de maior impacto do plano.**
 **Decisão necessária:** confirmar o **Caminho A** (fechar agora com gate mínimo; catracas por área no Bloco 6).
 
 **Arquivos:**
 - Criar: `supabase/migrations/0002_is_admin.sql`
 - Criar: `supabase/migrations/0003_gate_admin_policies.sql`
-- Criar: `supabase/migrations/0003_rollback.sql` (reversão do anterior, a partir da baseline)
+- Criar: `supabase/migrations/0003b_storage_objects.sql`
+- Criar: `supabase/migrations/0003_rollback.sql` (reversão das policies de tabela, a partir da baseline)
+- Criar: `supabase/migrations/0003b_rollback.sql`
 - Criar: `supabase/tests/02_admin_gate.sql`
+
+> **Numeração:** os arquivos são numerados na ordem real de execução. Se o Bloco 6 rodar depois, suas migrations passam a ser `0004_profiles.sql` e `0005_rls_papeis.sql` — confira antes de aplicar.
 
 ### Ordem obrigatória (não inverter)
 
@@ -390,6 +492,16 @@ T3.4 testar
   O `anon` continua exatamente como está: é isso que mantém o app público funcionando.
 - [ ] **T3.4 — Rollback escrito antes do teste**
   `0003_rollback.sql` recria as policies antigas (copiadas do Bloco 2).
+- [ ] **T3.5 — Gate no Storage (`storage.objects`)**
+  `0003b_storage_objects.sql`: trocar as policies de `authenticated` nos 3 buckets (`SELECT`/`INSERT`/`UPDATE`/`DELETE`, hoje com `qual = bucket_id = '...'`) por versões com `public.is_admin()`.
+  **Atenção 1:** `storage.objects` pertence à Supabase — **não** habilitar/desabilitar RLS nela, só substituir policies.
+  **Atenção 2:** objetos com URL pública continuam legíveis por URL independentemente de policy (isso é o Bloco 3c/3b). Este passo fecha **listagem e escrita**.
+  **Atenção 3:** confirmar que o admin **não** depende de listar bucket no upload (o fluxo atual envia direto pelo caminho).
+- [ ] **T3.6 — Revogar o `EXECUTE` da função do N3**
+  ```sql
+  revoke execute on function public.rls_auto_enable() from anon, authenticated;
+  ```
+  Não afeta o event trigger (função de trigger dispara por privilégio do dono, não por `EXECUTE`). Conferir que a auto-habilitação de RLS continua funcionando criando uma tabela descartável em `public` e verificando `relrowsecurity = true`.
 
 ### Validação (prova)
 
@@ -446,6 +558,12 @@ curl -s -X POST "https://<proj>.supabase.co/rest/v1/avisos" \
 - [ ] `check-draft-leak.mjs` exit 0
 - [ ] login real no painel confirmado pelo dono
 - [ ] `0003_rollback.sql` escrito e **testado em projeto de teste**
+- [ ] policies de `storage.objects` dos 3 buckets exigem `is_admin()` (listar/escrever)
+- [ ] admin real consegue subir e apagar arquivo com o novo gate
+- [ ] `EXECUTE` de `public.rls_auto_enable()` revogado de `anon`/`authenticated`
+- [ ] avisos `anon/authenticated_security_definer_function_executable` sumiram de Advisors
+- [ ] auto-habilitação de RLS em tabela nova continua funcionando
+- [ ] avisos `rls_policy_always_true` (42) sumiram de Advisors
 
 ### Rollback
 Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pode ficar (é inofensivo sem policy usando).
@@ -455,6 +573,110 @@ Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pod
 - Não criar tabela de perfis/papéis (é o Bloco 6).
 - Não alterar `db.js`, `admin.js` nem `script.js` (é o Bloco 5).
 - Não tocar nas policies `anon`.
+
+> **Nota de ordem:** o Bloco **3c executa antes** do Bloco **3b** (3c não tem decisão de design e não mexe em código). A letra não é a ordem.
+
+---
+
+# BLOCO 3c — Storage: fechar listagem, órfão e arquivo de rascunho
+
+**Tipo:** 🤖 + 🤝 (uma decisão destrutiva). **Esforço:** 4h. **Depende de:** B3. **Achados:** N2, N5.
+**Objetivo:** reduzir a superfície imediata **sem mudar o modelo** — o bucket continua público neste bloco. Fecha-se a **listagem** e resolve-se o que já está exposto.
+
+### Tarefas
+
+- [ ] **T3c.1 — Confirmar que ninguém lista bucket**
+  `grep -n "\.list(\|object/list" db.js admin.js script.js` → se houver listagem, parar e reportar (a policy de `SELECT` seria necessária e o plano muda).
+- [ ] **T3c.2 — Remover a policy de `SELECT` ampla**
+  Para os 3 buckets: `drop policy if exists <bucket>_select_auth on storage.objects;`
+  Bucket público **não precisa** dessa policy para servir objeto por URL — ela só permite **listar**.
+- [ ] **T3c.3 — Decisão do dono sobre o já exposto (destrutiva)**
+  Duas coisas precisam de decisão explícita, nada será feito sem autorização:
+  1. **Arquivo do rascunho** `arquivos.id=45` → `arquivos/1774662485424-29012026171821_614-Remessa.pdf`.
+  2. **Objeto órfão** em `arquivos-smader` (1 objeto que nenhum registro referencia).
+  Opções por item: (a) mover para bucket privado no Bloco 3b; (b) apagar; (c) aceitar o risco.
+- [ ] **T3c.4 — Registrar a exposição conhecida**
+  Em `docs/seguranca/`, documentar que a URL do item 1 **já esteve publicamente acessível** e que isso **não tem como ser desfeito** — o registro fica como histórico.
+
+### Validação (prova)
+
+```bash
+# listagem deve estar bloqueada para anon
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  "https://<proj>.supabase.co/storage/v1/object/list/arquivos-smader" \
+  -H "apikey: <ANON_KEY>" -H "Authorization: Bearer <ANON_KEY>" \
+  -H "Content-Type: application/json" -d '{"prefix":"","limit":10}'
+# esperado: 400/403 (ou lista vazia) — NÃO uma lista de arquivos
+```
+- Advisor `public_bucket_allows_listing`: **3 avisos devem sumir**.
+- App público continua baixando os anexos dos registros publicados (verificação manual em 3 registros).
+- Admin continua subindo e apagando arquivo.
+- Esperado que `GET /storage/v1/object/public/...` **continue** retornando `200` — isso só muda no Bloco 3b.
+
+### Checklist
+- [ ] nenhuma dependência de listagem encontrada
+- [ ] 3 policies de `SELECT` ampla removidas
+- [ ] listagem bloqueada provada por HTTP
+- [ ] 3 avisos `public_bucket_allows_listing` sumiram
+- [ ] app público baixando anexo normalmente
+- [ ] upload/delete do admin funcionando
+- [ ] decisão sobre rascunho e órfão registrada (mesmo que seja "aceitar")
+- [ ] exposição documentada em `docs/seguranca/`
+
+### Rollback
+Recriar as 3 policies de `SELECT` (copiadas da baseline do Bloco 2). Nada de destrutivo acontece sem autorização, então o rollback é sempre seguro.
+
+---
+
+# BLOCO 3b — Storage: modelo de acesso (buckets privados + URL assinada)
+
+**Tipo:** 🤝 design + 🤖. **Esforço:** 2–3 dias. **Depende de:** B4 (mexe em `script.js`). **Achados:** N5.
+**Objetivo:** fazer o acesso a arquivo depender de **autorização**, e não de "conhecer a URL".
+
+### Decisão de design (obrigatória antes do código)
+
+| Opção | O que é | Custo | Resolve? |
+|---|---|---|---|
+| **1 — Buckets privados + *signed URL*** | `arquivos-smader` (e `funcionarios-fotos-smader`) passam a `public = false`. O app pede URL assinada de curta duração, só para registros publicados. | Muda `script.js` (hoje linka URL pública), o admin (preview) e o modelo de dados de `arquivos.url` / `funcionarios.foto` | ✅ arquivo de rascunho deixa de ser acessível |
+| **2 — Bucket público com caminho opaco** | Trocar o path para UUID sem nome original | Baixo (não muda código) | ❌ não impede acesso por URL conhecida; só dificulta adivinhar |
+
+**Recomendação:** opção **1**. A opção **2** não resolve o achado N5 — a URL do rascunho já existe e continuaria funcionando.
+
+### Tarefas (assumindo opção 1)
+
+- [ ] **T3b.1 — Design doc** em `docs/superpowers/specs/` cobrindo: como o app público obtém a URL assinada, tempo de expiração, cache, comportamento offline e o que acontece com `arquivos.url` (campo hoje persistido com URL pública).
+- [ ] **T3b.2 — Tornar o bucket privado** (`arquivos-smader` primeiro; `funcionarios-fotos-smader` depois).
+- [ ] **T3b.3 — Emissão de URL assinada** — Edge Function (só para `published`) ou `create_signed_url` no cliente com policy restrita. Avaliar com o dono qual caminho.
+- [ ] **T3b.4 — Adaptar o frontend** — `script.js` (download/exibição) e admin (preview de anexo/foto).
+- [ ] **T3b.5 — Migrar os dados** — `arquivos.url` / `funcionarios.foto` deixam de guardar URL pública; ler de `storage_path` e assinar em runtime (mantendo fallback para os valores antigos durante a transição).
+
+### Validação (prova)
+
+```bash
+# URL pública deve parar de funcionar para o bucket privado
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "https://<proj>.supabase.co/storage/v1/object/public/arquivos-smader/arquivos/<arquivo>.pdf"
+# esperado: 400/404 (não 200)
+```
+- Link assinado gerado funciona, e **expira** depois do tempo definido.
+- App público abre anexo de registro **publicado** normalmente.
+- Rascunho: **nenhum** caminho devolve URL sem papel de admin (prova pelo app e por API).
+- `functions` habilitado no MCP se a opção for Edge Function (mesmo fluxo de `/mcps` do Bloco 10).
+
+### Checklist
+- [ ] design aprovado antes do código
+- [ ] bucket privado: URL pública deixa de responder `200`
+- [ ] URL assinada funciona e expira
+- [ ] anexo publicado continua acessível no app público
+- [ ] rascunho sem acesso por nenhum caminho
+- [ ] dados migrados (`storage_path` como fonte) com fallback para os valores antigos
+
+### Rollback
+Voltar `public = true` no bucket (reverte o acesso por URL). O código tem que tolerar os dois modos durante a transição.
+
+### Proibido neste bloco
+- Não apagar objetos sem autorização explícita.
+- Não quebrar o download dos registros publicados (é o que o cidadão usa).
 
 ---
 
@@ -955,6 +1177,11 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 | **M12** CDN frágil | 13 |
 | **B1–B5** higiene de repositório | 13 |
 | **B6** banco não versionado | **2** |
+| **N1** 42 policies `always true` (Advisor 0024) | **3** |
+| **N2** buckets públicos listáveis (Advisor 0025) | **3c** |
+| **N3** `rls_auto_enable()` executável por anon/auth (Advisor 0028/0029) | **3** (T3.6) |
+| **N4** senha vazada sem proteção | **0.5** |
+| **N5** arquivo de rascunho público por URL | **3b, 3c** |
 
 ## 9. Mapa v1 → v2
 
@@ -977,6 +1204,10 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 | Fase 7 produto público | **Bloco 13** | mantido |
 | Fase 8 higiene | **Bloco 13** | fundido |
 | — | **Bloco 7 (novo)** | defesa em profundidade do rascunho |
+| — | **Bloco 0.5 (novo)** | hardening de Auth (N4) — a v1 não olhou Advisors |
+| — | **Bloco 3b (novo)** | Storage: modelo de acesso com URL assinada (N5) |
+| — | **Bloco 3c (novo)** | Storage: fechar listagem, órfão e arquivo de rascunho (N2, N5) |
+| Fase 0 / T0.1 (Advisors) | **Bloco 0 / 0.5 / 3 / 3c** | o Advisor revelou 4 achados que a v1 não previa |
 
 ## 10. Decisões abertas (precisam do dono)
 
@@ -989,6 +1220,9 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 | 5 | Existe campo sensível a mascarar em `funcionarios`? | Bloco 6 | decisão de negócio |
 | 6 | Autorizar a rotação do token do Instagram (T10.1) e o redeploy do feed? | Bloco 10 | sim, o token atual circulou no browser |
 | 7 | Autorizar a limpeza das branches fantasma (T13.6)? | Bloco 13 | sim, mas é irreversível no remoto |
+| 8 | **Modelo de Storage**: opção 1 (bucket privado + URL assinada) ou opção 2 (path opaco)? | Bloco 3b | **opção 1** — a opção 2 não resolve o N5 |
+| 9 | **O que fazer com o arquivo do rascunho `id=45` e com o objeto órfão** (apagar / mover para privado / aceitar)? | Bloco 3c | decisão sua; nada é apagado sem autorização |
+| 10 | Autorizar **Edge Function** para emitir URL assinada (exige habilitar `functions` no MCP e reautenticar)? | Bloco 3b | sim, se a opção 1 for escolhida |
 
 ## 11. O que este plano não faz
 
@@ -996,6 +1230,7 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 - Não define o visual da repaginação (Bloco 12 precisa de design aprovado).
 - Não faz push para `main` nem para o remoto em nenhum momento.
 - Não promete que o app fica 100% seguro com o Bloco 0: o Bloco 0 apenas fecha a porta de entrada. A correção estrutural é o Bloco 3.
+- Não resolve o **histórico**: a URL do arquivo do rascunho `id=45` já circulou como endereço público. Torna-la privada no Bloco 3b impede acesso futuro por um caminho novo, mas não apaga o conhecimento de quem já viu. Isso é registro, não tarefa.
 
 ## 12. Regras de ouro para o agente executor
 
@@ -1006,3 +1241,4 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 5. **Provar, não supor:** toda afirmação de segurança precisa de saída de comando colada como evidência.
 6. **Não "consertar de passagem".** Registre e siga.
 7. **Nada em `main`.**
+8. **Arquivo não é linha.** Toda regra de acesso a conteúdo vale também para `storage.objects` e para o bucket. Proteger a tabela e deixar o arquivo público é proteger metade.
