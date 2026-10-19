@@ -8,8 +8,9 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 
 Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
-  -> Blocos 0, 0.5, 1, 2 e 3 (parte de tabela) CONCLUIDOS.
-  -> O registro dentro do Bloco 3 descreve as duas divergencias do previsto.
+  -> Blocos 0, 0.5, 1, 2, 3 (tabela) e 3c CONCLUIDOS.
+  -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
+  -> Os registros dentro dos Blocos 3 e 3c descrevem as divergencias do previsto.
 
 Evidencia:
   C:\Users\PICHAU\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
@@ -29,48 +30,72 @@ Concluido:
   - Bloco 0.5 (N4): senha vazada trocada; login confirmado em 2026-10-19 19:44
   - Bloco 1: auditoria RLS/Storage + scripts/check-draft-leak.mjs (exit 0, 15/15)
   - Bloco 2: baseline versionada (esquema + 85 policies), digests conferidos
-  - Bloco 3 (parte de TABELA): APLICADO EM PRODUCAO
+  - Bloco 3 (tabela): APLICADO EM PRODUCAO (escrita + leitura)
+  - Bloco 3c (limpeza): rascunho id=45 e orfao apagados, com backup local
+  - Bloco 3b (parte 1): gate is_admin nas 12 policies de storage.objects
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
   20261019205211  supabase/migrations/0003_hardening_leitura.sql
+  20261019221229  supabase/migrations/0004_storage_gate.sql
 
 Commits locais (codex/fase2, sem push):
   8b053d4  auditoria + suite de vazamento
   640c0b0  baseline versionada
   f49d477  0002 (gate is_admin nas 42 policies de escrita + fix N1)
   9ae6e1b  0003 (fecha leitura de rascunho e admin_settings)
+  c8a2179  docs: registro do bloco 3 aplicado
+  9fe66a1  0004 (gate is_admin nas 12 policies de storage.objects)
 
-O que o Bloco 3 fez, medido:
-  anon        -> 59 publicados, 0 rascunhos
-  nao-admin   -> 59 publicados, 0 rascunhos (era 1: o furo C2), escrita bloqueada
-  admin       -> 59 publicados, 1 rascunho, admin_settings ok, escreve ok
-  73 policies = 59 exigindo is_admin() + 14 anon intactas
-  Login, listagem e edicao no painel confirmados pelo dono.
+O que esta fechado, medido:
+  tabelas   anon 59 publicados / 0 rascunhos
+            nao-admin 59 publicados / 0 rascunhos / escrita bloqueada
+            admin tudo, inclusive 1 rascunho e admin_settings
+  storage   nao-admin ve 0 objetos (era 133) / DELETE 0 linhas
+            admin ve 133 / apaga normalmente
+            buckets seguem public = true (mecanismo ainda aberto)
 
-PENDENTE 1 — Bloco 3b (Storage), nao iniciado:
-  Os 3 buckets continuam public = true. O gate do Bloco 3 NAO cobre
-  storage.objects. Decisao recomendada: buckets privados + signed URL
-  (mexe em script.js; depende do Bloco 4).
-
-PENDENTE 2 — Bloco 3c (destrutivo, precisa de decisao do dono):
-  - arquivos.id = 45 (rascunho) tem objeto servido publicamente: 200 sem
-    credencial. Opcoes: mover para bucket privado / apagar / aceitar o risco.
-  - 1 objeto orfao no bucket arquivos-smader.
-  Nao fazer nada destrutivo sem autorizacao explicita.
-
-PENDENTE 3 — conferencia no DASHBOARD (o MCP nao tem get_advisors):
-  verificar se os avisos rls_policy_always_true (42) e
-  anon/authenticated_security_definer_function_executable sumiram.
-
-PENDENTE 4 — projeto Supabase de TESTE:
-  nao existe. Necessario para ensaiar 3b/3c e para exercitar o rollback.
-  Rollback atual do Bloco 3 = aplicar 0001_baseline_policies.sql e devolver:
-  grant execute on function public.rls_auto_enable() to public, anon, authenticated;
+Backup local (nao versionado, fora do repo):
+  C:\Users\PICHAU\Desktop\SisAgri-backup-storage\
+    rascunho-id45-teste.pdf      87.377 bytes
+    orfao-arquivos-smader.pdf 1.460.078 bytes
 
 Proxima acao sugerida:
-  decidir 3c (o que fazer com arquivos.id=45 e o orfao) e criar o projeto de
-  teste antes de 3b, porque 3b mexe em script.js e precisa de ensaio.
+  Bloco 4 (rede de seguranca do codigo) antes do 3b parte 2, porque o 3b mexe em
+  script.js e o Bloco 4 e o que da rede para mexer la com seguranca.
+
+=========================================================================
+PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
+=========================================================================
+
+  Os 3 buckets continuam public = true. URL publica NAO consulta policy, entao
+  todo upload novo em rascunho nasce publico. Isso e o achado N5.
+
+  Desenho recomendado (viabilidade ja conferida):
+    - bucket privado;
+    - policy em storage.objects consultando publish_status por join
+      (arquivos.storage_path e funcionarios.foto_storage_path existem);
+    - site publico por URL assinada.
+  Excecao: manuais nao tem coluna de vinculo (imagens embutidas no HTML de
+  passos) -> precisa de convencao de caminho ou decisao explicita.
+
+  Precisa de projeto Supabase de TESTE antes, porque mexe em script.js e nas
+  URLs ja gravadas no banco.
+
+PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
+  verificar se os avisos rls_policy_always_true (42) e
+  anon/authenticated_security_definer_function_executable sumiram.
+  O aviso de bucket publico com listagem continua valido ate o 3b parte 2.
+
+PENDENTE 3 — projeto Supabase de TESTE
+  nao existe. Necessario para ensaiar 3b parte 2 e para exercitar rollback.
+  Rollback atual = aplicar 0001_baseline_policies.sql (73 policies de public +
+  12 de storage) e devolver:
+  grant execute on function public.rls_auto_enable() to public, anon, authenticated;
+
+PENDENTE 4 — teste humano do Storage
+  subir e apagar um arquivo no painel para confirmar que o gate da 0004 nao
+  atrapalhou o fluxo do admin.
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
@@ -85,3 +110,5 @@ REGRAS QUE NAO PODEM SER QUEBRADAS
   - Nao alterar contratos de DB.*; fallback local e feature, nao divida.
   - Toda DDL por migration versionada; um bloco por vez, validado antes do
     proximo. Nao aplicar nada destrutivo sem autorizacao explicita.
+  - Nao apagar objeto de Storage por SQL: o trigger storage.protect_delete
+    bloqueia. Usar a Storage API (e lembrar que ela faz SELECT antes de DELETE).

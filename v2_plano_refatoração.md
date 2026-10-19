@@ -6,7 +6,7 @@
 **Branch de trabalho:** `codex/fase2` (base `da655a0`)
 **Commit de referência na criação deste plano:** `0d97cc0`
 **Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
-**Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2** e **3** (parte de tabela) **concluídos**; a `0002` e a `0003` estão **aplicadas em produção**. Ver o registro dentro do Bloco 3 — ele descreve duas divergências em relação ao previsto (gate por tabela em vez de JWT; leitura também fechada).
+**Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2**, **3** (parte de tabela) e **3c** **concluídos**; Bloco **3b** está **parcial** (parte 1 = gate do Storage). `0002`, `0003` e `0004` estão **aplicadas em produção**. Os registros dentro dos Blocos 3 e 3c descrevem as divergências em relação ao previsto.
 **`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
@@ -666,6 +666,42 @@ Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pod
 **Tipo:** 🤖 + 🤝 (uma decisão destrutiva). **Esforço:** 4h. **Depende de:** B3. **Achados:** N2, N5.
 **Objetivo:** reduzir a superfície imediata **sem mudar o modelo** — o bucket continua público neste bloco. Fecha-se a **listagem** e resolve-se o que já está exposto.
 
+**Status: ✅ CONCLUÍDO em 2026-10-19** (com duas correções ao plano, abaixo).
+
+**Correção 1 — a premissa de T3c.1/T3c.2 estava errada.** `anon` já **não tinha
+policy nenhuma** em `storage.objects` (as 12 eram todas `{authenticated}`), então
+a listagem **já estava fechada**. E `db.js` não usa `.list()` em lugar nenhum —
+só `getPublicUrl`, `upload` e `remove`. Portanto "remover as policies de SELECT
+ampla" era desnecessário e seria pior: tiraria do admin a capacidade de
+inspecionar o bucket. A `0004` manteve as policies de SELECT, só com `is_admin()`.
+
+**Correção 2 — não dá para apagar objeto por SQL.** Existe o trigger
+`storage.protect_delete` ("Use the Storage API instead"). E a Storage API faz um
+`SELECT` antes de apagar, para devolver os metadados. Então a exclusão exigiu
+duas policies temporárias para `anon`, escopadas nesses dois nomes exatos
+(SELECT + DELETE), chamada da API, e derrubada das duas no mesmo minuto.
+Verificado depois: **0 policies `tmp_*`**.
+
+**O que foi feito (com autorização explícita do dono):**
+
+| Item | Ação |
+|---|---|
+| `arquivos.id=45` — rascunho "teste", PDF | **linha + objeto apagados** |
+| órfão `arquivos/1774649141324-…pdf` (1,4 MB) | **apagado** |
+| backup antes | os 2 PDFs em `Desktop\SisAgri-backup-storage\`; o órfão confere byte a byte com os 1.460.078 do metadata |
+
+Depois: as duas URLs públicas passaram a responder **400**; `arquivos-smader`
+caiu de 59 para 57 objetos; `tests/04_storage_rascunho_publico.sql` retorna
+**0 linhas**; `check-draft-leak.mjs` continua exit 0; anexo publicado e imagem de
+manual continuam **200**.
+
+**T3c.4 — exposição histórica:** o objeto do rascunho esteve publicamente
+acessível de 2026-03-27 até 2026-10-19. Isso não se desfaz; fica registrado aqui
+e em `docs/seguranca/`.
+
+**Aviso de Advisor `public_bucket_allows_listing` (se aparecer):** ele fala do
+bucket ser público, não de policy — continua válido até o Bloco 3b.
+
 ### Tarefas
 
 - [ ] **T3c.1 — Confirmar que ninguém lista bucket**
@@ -697,14 +733,14 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 - Esperado que `GET /storage/v1/object/public/...` **continue** retornando `200` — isso só muda no Bloco 3b.
 
 ### Checklist
-- [ ] nenhuma dependência de listagem encontrada
-- [ ] 3 policies de `SELECT` ampla removidas
-- [ ] listagem bloqueada provada por HTTP
-- [ ] 3 avisos `public_bucket_allows_listing` sumiram
-- [ ] app público baixando anexo normalmente
-- [ ] upload/delete do admin funcionando
-- [ ] decisão sobre rascunho e órfão registrada (mesmo que seja "aceitar")
-- [ ] exposição documentada em `docs/seguranca/`
+- [x] nenhuma dependência de listagem encontrada (`db.js` usa só `getPublicUrl`/`upload`/`remove`)
+- [x] policies de `SELECT` **mantidas, com gate `is_admin()`** — não removidas (decisão registrada acima)
+- [x] listagem bloqueada: `anon` não tem policy em `storage.objects` (0 objetos visíveis, provado por `set local role`)
+- [ ] avisos `public_bucket_allows_listing` — só somem no Bloco 3b (bucket segue público)
+- [x] app público baixando anexo normalmente (anexo e imagem de manual → 200)
+- [ ] upload/delete do admin funcionando — **aguardando teste humano no painel**
+- [x] decisão sobre rascunho e órfão registrada e executada (ambos apagados, com backup)
+- [x] exposição documentada aqui e em `docs/seguranca/`
 
 ### Rollback
 Recriar as 3 policies de `SELECT` (copiadas da baseline do Bloco 2). Nada de destrutivo acontece sem autorização, então o rollback é sempre seguro.
@@ -715,6 +751,29 @@ Recriar as 3 policies de `SELECT` (copiadas da baseline do Bloco 2). Nada de des
 
 **Tipo:** 🤝 design + 🤖. **Esforço:** 2–3 dias. **Depende de:** B4 (mexe em `script.js`). **Achados:** N5.
 **Objetivo:** fazer o acesso a arquivo depender de **autorização**, e não de "conhecer a URL".
+
+**Status: 🟡 PARCIAL.** A **parte 1** foi aplicada em 2026-10-19:
+`migrations/0004_storage_gate.sql` fecha **quem** lista, sobrescreve e apaga — as
+12 policies de `storage.objects` passaram a exigir `public.is_admin()`.
+
+Medido: não-admin vê **0** objetos (era 133), DELETE devolve **0 linhas**; admin
+vê **133** e apaga normalmente; `anon` nunca teve policy. Nada mudou para o site
+público (URL direta não passa por policy) — anexo publicado e imagem de manual
+seguem **200**.
+
+**O que falta (parte 2, o mecanismo):** os 3 buckets continuam `public = true`.
+URL pública **não consulta policy**, então todo upload novo em rascunho nasce
+público. É exatamente o que as tarefas T3b.2–T3b.5 abaixo resolvem, e o motivo de
+`tests/04_storage_rascunho_publico.sql` existir.
+
+**Nota de viabilidade descoberta agora:** `arquivos` tem `storage_path` +
+`storage_bucket` e `funcionarios` tem `foto_storage_path` + `foto_storage_bucket`
+— ou seja, dá para escrever policy em `storage.objects` que consulta
+`publish_status` por join. Isso torna a opção 1 melhor do que parecia: dá para
+manter bucket privado **e** permitir que o `anon` assine URL apenas do que está
+publicado. `manuais` é a exceção: não tem coluna de vínculo (as imagens são
+embutidas no HTML de `passos`), então essa tabela precisa de convenção de caminho
+ou de decisão explícita.
 
 ### Decisão de design (obrigatória antes do código)
 

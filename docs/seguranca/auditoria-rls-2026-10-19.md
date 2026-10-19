@@ -9,12 +9,20 @@
 > Este documento é a **linha de base** do Bloco 1 do `v2_plano_refatoração.md`. Toda correção dos Blocos 3, 3b e 3c deve ser comparada com os números abaixo.
 >
 > **Atualização (2026-10-19, pós-correção):** o Bloco 3 foi **aplicado em
-> produção** (`0002_admin_gate`, `0003_hardening_leitura`). O achado **C2 está
-> fechado** e o **N1** também. Os números desta auditoria refletem o *antes* e
-> continuam válidos como linha de base. O *depois* está em
-> `supabase/README.md` (seção do Bloco 3) e no registro do Bloco 3 do plano v2.
-> **Ainda em aberto:** Storage (N2/N5) — buckets `public = true`, URL pública do
-> rascunho `arquivos.id = 45` — que é o Bloco 3b/3c.
+> produção** (`0002_admin_gate`, `0003_hardening_leitura`) e o Storage recebeu a
+> `0004_storage_gate`. O achado **C2 está fechado** (tabelas **e** Storage) e o
+> **N1** também. Os números desta auditoria refletem o *antes* e continuam válidos
+> como linha de base. O *depois* está em `supabase/README.md`.
+>
+> **N5 — parcialmente resolvido.** O rascunho `arquivos.id = 45` e o objeto órfão
+> de 1,4 MB foram **apagados** (com backup local antes) e as duas URLs passaram a
+> responder **400**. O objeto do rascunho, porém, **esteve publicamente acessível
+> de 2026-03-27 a 2026-10-19** — isso não se desfaz. E o **mecanismo continua
+> aberto**: os 3 buckets seguem `public = true`, então um upload novo em rascunho
+> nasce público. Fechar isso é o Bloco 3b parte 2.
+>
+> Guarda de regressão: `supabase/tests/04_storage_rascunho_publico.sql`
+> (esperado: 0 linhas).
 
 ---
 
