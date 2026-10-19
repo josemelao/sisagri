@@ -11,18 +11,18 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **0** |
-| `supabase_migrations.schema_migrations` | **vazia** |
-| Arquivos aqui | snapshots, **não aplicados** |
-| DDL em produção até agora | feita **à mão**, pelo dashboard |
+| Migrations aplicadas em produção | **2** (`0002`, `0003`) |
+| `supabase_migrations.schema_migrations` | `20261019205209` + `20261019205211` |
+| `0001_*` | snapshots do ponto de partida, **não aplicados** |
+| DDL em produção antes disso | feita **à mão**, pelo dashboard |
+| Achado C2 | **fechado** em 2026-10-19 |
 
-Ou seja: o projeto **nunca usou migrations versionadas**. Nada neste diretório
-foi executado contra o banco de produção. Tudo aqui foi **gerado por
-introspecção** do catálogo do Postgres em **2026-10-19**.
+O projeto não usava migrations versionadas. O Bloco 3 é a primeira DDL
+rastreável: `0002` (escrita) e `0003` (leitura) foram aplicadas em produção pelo
+próprio MCP e ficaram registradas na tabela de histórico — que estava vazia.
 
-> A partir do Bloco 3 do `v2_plano_refatoração.md`, toda mudança de banco passa a
-> ser migration versionada e revisada. Estes dois arquivos `0001_*` são o
-> retrato do ponto de partida.
+Os `0001_*` continuam sendo **snapshots por introspecção** do catálogo do
+Postgres em **2026-10-19**, e não foram executados contra produção.
 
 ---
 
@@ -32,9 +32,11 @@ introspecção** do catálogo do Postgres em **2026-10-19**.
 |---|---|---|
 | `migrations/0001_baseline_schema.sql` | 15 tabelas, 30 constraints, extensões, flags de RLS | **Não sem autorização** |
 | `migrations/0001_baseline_policies.sql` | 73 policies em `public` + 12 em `storage.objects` | **Não sem autorização** |
-| `migrations/0002_admin_gate.sql` | Bloco 3: `is_admin()` + 42 policies de escrita fechadas + fix N1 | **Ainda NÃO aplicado** |
+| `migrations/0002_admin_gate.sql` | Bloco 3: `is_admin()` + 42 policies de escrita fechadas + fix N1 | **Aplicado em 2026-10-19** |
+| `migrations/0003_hardening_leitura.sql` | Bloco 3 (parte 2): 14 SELECT de conteúdo + 3 de `admin_settings` fechadas | **Aplicado em 2026-10-19** |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
 | `tests/02_admin_gate.sql` | 7 consultas de verificação do Bloco 3 | Sim — **só leitura** |
+| `tests/03_hardening_leitura.sql` | 15 medições do estado final (por papel) | Sim — **transação revertida** |
 
 Os números acima foram conferidos: 73 + 12 = **85 `create policy`**.
 
@@ -54,11 +56,12 @@ para:
 
 ## `0001_baseline_policies.sql` é o rollback do Bloco 3
 
-O Bloco 3 vai substituir, nas 14 tabelas de conteúdo, as policies de escrita de
-`authenticated` — hoje `using (true)` — por um gate `is_admin()`.
+O Bloco 3 substituiu, nas 14 tabelas de conteúdo, as policies de escrita de
+`authenticated` — que eram `using (true)` — por um gate `is_admin()`.
 
 Se algo der errado, o caminho de volta é este arquivo. Ele é reaplicável
-(`drop policy if exists` antes de cada `create policy`).
+(`drop policy if exists` antes de cada `create policy`) e devolve as 73 policies
+ao estado de 2026-10-19, incluindo as 15 de leitura.
 
 **A policy `anon` de leitura NUNCA é alterada por nenhum bloco.** É ela —
 `using (publish_status = 'published'::text)` — que impede o rascunho de vazar.
@@ -68,39 +71,62 @@ Ela é o mecanismo que faz o sistema funcionar corretamente hoje.
 
 ## Bloco 3 — o gate `is_admin()`
 
-`migrations/0002_admin_gate.sql` fecha o achado C2: as **42 policies de escrita**
-(14 tabelas × INSERT/UPDATE/DELETE) deixam de ser `using (true)` e passam a exigir
-`public.is_admin()`. Também cria a tabela `app_admins`, semeia a conta do dono e
-revoga o EXECUTE de `rls_auto_enable()` (N1).
+Duas migrations, aplicadas em sequência:
 
-**Estado: validado, não aplicado.** O arquivo foi executado dentro de uma
-transação revertida e passou em 11 testes de comportamento — inclusive os
-controles negativos (não-admin bloqueado) e a garantia de que a leitura anônima
-e o event trigger `ensure_rls` continuam funcionando.
+### `0002_admin_gate.sql` — escrita
+
+Fecha o achado C2: as **42 policies de escrita** (14 tabelas × INSERT/UPDATE/
+DELETE) deixam de ser `using (true)` e passam a exigir `public.is_admin()`.
+Também cria a tabela `app_admins`, semeia a conta do dono e revoga o EXECUTE de
+`rls_auto_enable()` (N1).
+
+### `0003_hardening_leitura.sql` — leitura
+
+Fecha as **14 policies de SELECT de conteúdo** e as **3 de `admin_settings`**.
+
+Decisão de desenho que vale registrar: as de conteúdo usam
+`using (publish_status = 'published' OR public.is_admin())`, e **não**
+`using (public.is_admin())`. A forma com `OR` foi escolhida porque:
+
+1. é a **mudança menor** — o que muda é só o rascunho, que vira exclusivo do
+   admin; o publicado continua legível por um autenticado, igual ao anon;
+2. evita uma **armadilha futura**: com só `is_admin()`, um usuário autenticado
+   que não fosse admin (Bloco 6) veria o site público **vazio**, porque a policy
+   `anon` é `to anon` e `authenticated` não é membro de `anon`;
+3. o efeito de segurança é o mesmo: nenhum rascunho exposto a não-admin.
+
+`admin_settings` não tem `publish_status` — é tabela interna, então as 3 policies
+passam a exigir `is_admin()`, mantendo as travas de `scope = 'global'`.
+
+### Estado depois das duas (medido em produção)
+
+| Medição | anon | autenticado não-admin | admin |
+|---|---|---|---|
+| Vê publicados | 59 | 59 | 59 |
+| Vê rascunhos | 0 | **0** (era 1) | 1 |
+| Vê `admin_settings` | n/a | 0 | 1 |
+| Escreve | não | **bloqueado** (`42501`) | ok |
+
+Policies: **73** no total = 59 exigindo `is_admin()` + 14 `anon` intactas.
+Zero policy de `authenticated` com `using (true)`.
 
 ### O que o Bloco 3 NÃO fecha (medido)
 
 | Furo | Medição | Onde tratar |
 |---|---|---|
-| Não-admin **lê rascunho** | `select count(*) from arquivos where publish_status='draft'` como não-admin → **1** | decisão pendente |
-| `admin_settings` aberta a qualquer autenticado | 3 policies só com `scope = 'global'` | decisão pendente |
 | URL do objeto do rascunho `id=45` | público por bucket `public = true` | Blocos 3b / 3c |
+| Buckets `public = true` (3) | `arquivos` 59 objetos, `funcionarios-fotos` 3, `manuais-imagens` 73 | Blocos 3b / 3c |
 
-Ou seja: o Bloco 3 fecha a **escrita**. A leitura de rascunho por um autenticado
-qualquer continua aberta de propósito, porque as 15 policies de SELECT de
-`authenticated` não foram tocadas — endurecer leitura é decisão à parte.
+O banco está fechado. O rascunho ainda pode vazar por **Storage**, não por RLS.
 
 ### Aplicar e reverter
 
-```sql
-begin;
--- cole aqui o conteúdo de migrations/0002_admin_gate.sql
--- rode tests/02_admin_gate.sql e confira
-commit;    -- ou rollback;
-```
+Aplicadas via MCP (`apply_migration`), cada uma em sua própria transação, com o
+estado combinado validado antes em transação revertida.
 
 Rollback: aplicar `migrations/0001_baseline_policies.sql` devolve as 42 policies
-liberadas. A ACL de `rls_auto_enable()` volta com
+de escrita liberadas; para devolver também as 15 de leitura, ele já é o arquivo
+completo (73 policies). A ACL de `rls_auto_enable()` volta com
 `grant execute on function public.rls_auto_enable() to public, anon, authenticated;`.
 
 ---
@@ -126,9 +152,12 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
 
 1. `migrations/0001_baseline_schema.sql`
 2. `migrations/0001_baseline_policies.sql`
+3. `migrations/0002_admin_gate.sql`
+4. `migrations/0003_hardening_leitura.sql`
 
-Depois disso, aponte `db.js` para o projeto de teste e rode o script. É assim
-que se valida que o Bloco 3 fecha o acesso sem quebrar a leitura pública.
+Depois disso, aponte `db.js` para o projeto de teste e rode o script. Como o
+Bloco 3 já está em produção, isso serve principalmente para ensaiar os Blocos 3b
+e 3c (Storage) e para ter um lugar onde quebrar coisas sem consequência.
 
 ---
 
