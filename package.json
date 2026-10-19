@@ -12,6 +12,7 @@
     "check": "npm run syntax && npm run lint && npm test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "eslint": "^9.0.0",
     "globals": "^15.0.0"
   }

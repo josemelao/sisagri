@@ -14,3 +14,7 @@ raw/
 node_modules/
 Thumbs.db
 .DS_Store
+
+# Artefatos do Playwright (regeneraveis)
+test-results/
+playwright-report/

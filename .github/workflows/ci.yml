@@ -1,0 +1,61 @@
+name: CI
+
+# Roda em toda branch e em pull request. Nao faz deploy - o app e servido
+# como estatico, entao "publicar" e so atualizar os arquivos.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Sintaxe + lint + testes de unidade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+  e2e:
+    name: E2E (Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes de ponta a ponta
+        # Os fluxos do painel sao pulados sem credenciais.
+        # Para roda-los no CI, criar os secrets e descomentar o env abaixo.
+        # env:
+        #   SISAGRI_ADMIN_EMAIL: ${{ secrets.SISAGRI_ADMIN_EMAIL }}
+        #   SISAGRI_ADMIN_PASSWORD: ${{ secrets.SISAGRI_ADMIN_PASSWORD }}
+        run: npm run test:e2e
+
+      - name: Guardar relatorio em caso de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

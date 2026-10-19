@@ -70,7 +70,7 @@ module.exports = [
 
   // -------------------- ferramentas: Node / ESM --------------------
   {
-    files: ['scripts/**/*.mjs', 'tests/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'tests/**/*.mjs', 'playwright.config.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

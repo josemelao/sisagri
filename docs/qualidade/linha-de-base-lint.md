@@ -17,6 +17,10 @@ documento **não** propõe correção nenhuma.
 | `tests/helpers/load-script.mjs` | carrega `db.js`/`script.js` em `node:vm` com window/document/localStorage falsos |
 | `tests/unit/db.test.mjs` | 12 testes de `db.js` |
 | `tests/unit/script.test.mjs` | 9 testes de `script.js` |
+| `playwright.config.mjs` | sobe o servidor e roda o Chromium |
+| `tests/e2e/publico.spec.mjs` | 4 fluxos do site, somente leitura |
+| `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
+| `.github/workflows/ci.yml` | `check` + `e2e` em toda branch e PR |
 
 O app **não** é compilado. Nada aqui é referenciado pelos HTMLs.
 
@@ -59,6 +63,47 @@ npm test         ->  exit 0
 ```
 npm run check    ->  exit 0   (syntax + lint + test)
 ```
+
+### E2E (Playwright + Chromium)
+
+```
+npm run test:e2e ->  exit 0
+4 passed, 2 skipped   (16s)
+```
+
+**4 fluxos verdes** no site público, todos somente leitura:
+
+1. boot carrega, `#boot-screen` recebe `is-hidden` e o dashboard fica ativo;
+2. clicar no menu troca a página ativa e o item de menu;
+3. busca global só abre com 2+ letras (o `input` tem debounce de 300 ms);
+4. **todos os módulos** abrem sem exceção de JavaScript — este é o teste que
+   pega regressão de verdade (um `initXxx()` quebrado aparece aqui).
+
+**2 fluxos pulados** porque não há projeto de teste nem credenciais no
+ambiente: login no painel e abertura de um módulo do painel. Para rodar:
+
+```bash
+SISAGRI_ADMIN_EMAIL=... SISAGRI_ADMIN_PASSWORD=... npm run test:e2e
+```
+
+### Por que os e2e não criam nem editam nada
+
+`db.js` tem `USE_SUPABASE: true` apontando para o projeto **real**. Um teste
+"criar registro" gravaria dado de produção e poderia publicar algo por acidente.
+Enquanto não existir projeto Supabase de teste, os fluxos de escrita ficam
+**fora**. Isso está anotado como pendência junto do Bloco 3b parte 2 (que
+também precisa do projeto de teste).
+
+### CI
+
+`.github/workflows/ci.yml` roda em toda branch e em PR:
+
+- job `check`: `npm ci` → `npm run check`;
+- job `e2e`: `npm ci` → `npx playwright install --with-deps chromium` → `npm run test:e2e`;
+- em falha, sobe `playwright-report/` como artefato.
+
+Ainda **não rodou no GitHub** — a branch `codex/fase2` não tem remoto. O
+primeiro push é que valida o workflow.
 
 ---
 
