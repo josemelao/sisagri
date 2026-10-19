@@ -20,7 +20,7 @@ ONDE PARAMOS
 
 Concluido:
   - branch codex/fase2 criada
-  - .gitignore criado (NAO commitado)
+  - .gitignore commitado (8fa4c71); nada enviado ao remoto
   - graphify rodado (--code-only --no-label), 460 nos / 1184 arestas
   - relatorio e plano de acao gravados
   - MCP do Supabase configurado (read_only, projeto yiujxempodimegdoexqo)
@@ -45,9 +45,8 @@ DECISOES ABERTAS (perguntar ao usuario)
   1. Caminho A ou B para o RLS? (plano assume A: tranca "anon so ve
      publicado" hoje, catracas de papeis depois)
   2. Metodo de execucao: nativo nas Fases 0-1, subagent da Fase 2 em diante?
-  3. Commitar o .gitignore?
-     git add .gitignore
-     git commit -m "chore: adiciona gitignore para artefatos locais e segredos"
+
+  (resolvido em 8fa4c71: commit do .gitignore e deste handoff)
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
