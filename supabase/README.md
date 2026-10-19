@@ -32,7 +32,9 @@ introspecção** do catálogo do Postgres em **2026-10-19**.
 |---|---|---|
 | `migrations/0001_baseline_schema.sql` | 15 tabelas, 30 constraints, extensões, flags de RLS | **Não sem autorização** |
 | `migrations/0001_baseline_policies.sql` | 73 policies em `public` + 12 em `storage.objects` | **Não sem autorização** |
+| `migrations/0002_admin_gate.sql` | Bloco 3: `is_admin()` + 42 policies de escrita fechadas + fix N1 | **Ainda NÃO aplicado** |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
+| `tests/02_admin_gate.sql` | 7 consultas de verificação do Bloco 3 | Sim — **só leitura** |
 
 Os números acima foram conferidos: 73 + 12 = **85 `create policy`**.
 
@@ -61,6 +63,45 @@ Se algo der errado, o caminho de volta é este arquivo. Ele é reaplicável
 **A policy `anon` de leitura NUNCA é alterada por nenhum bloco.** É ela —
 `using (publish_status = 'published'::text)` — que impede o rascunho de vazar.
 Ela é o mecanismo que faz o sistema funcionar corretamente hoje.
+
+---
+
+## Bloco 3 — o gate `is_admin()`
+
+`migrations/0002_admin_gate.sql` fecha o achado C2: as **42 policies de escrita**
+(14 tabelas × INSERT/UPDATE/DELETE) deixam de ser `using (true)` e passam a exigir
+`public.is_admin()`. Também cria a tabela `app_admins`, semeia a conta do dono e
+revoga o EXECUTE de `rls_auto_enable()` (N1).
+
+**Estado: validado, não aplicado.** O arquivo foi executado dentro de uma
+transação revertida e passou em 11 testes de comportamento — inclusive os
+controles negativos (não-admin bloqueado) e a garantia de que a leitura anônima
+e o event trigger `ensure_rls` continuam funcionando.
+
+### O que o Bloco 3 NÃO fecha (medido)
+
+| Furo | Medição | Onde tratar |
+|---|---|---|
+| Não-admin **lê rascunho** | `select count(*) from arquivos where publish_status='draft'` como não-admin → **1** | decisão pendente |
+| `admin_settings` aberta a qualquer autenticado | 3 policies só com `scope = 'global'` | decisão pendente |
+| URL do objeto do rascunho `id=45` | público por bucket `public = true` | Blocos 3b / 3c |
+
+Ou seja: o Bloco 3 fecha a **escrita**. A leitura de rascunho por um autenticado
+qualquer continua aberta de propósito, porque as 15 policies de SELECT de
+`authenticated` não foram tocadas — endurecer leitura é decisão à parte.
+
+### Aplicar e reverter
+
+```sql
+begin;
+-- cole aqui o conteúdo de migrations/0002_admin_gate.sql
+-- rode tests/02_admin_gate.sql e confira
+commit;    -- ou rollback;
+```
+
+Rollback: aplicar `migrations/0001_baseline_policies.sql` devolve as 42 policies
+liberadas. A ACL de `rls_auto_enable()` volta com
+`grant execute on function public.rls_auto_enable() to public, anon, authenticated;`.
 
 ---
 
