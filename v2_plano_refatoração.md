@@ -1,0 +1,1008 @@
+# v2 — Plano de Refatoração e Robustez do SisAgri / SMADER
+
+> **Para agentes de IA executores:** este documento substitui `2026-10-19-plano-acao-robustez.md` (v1) como plano de execução. A v1 permanece como **histórico**. Leia o cabeçalho inteiro, o *Protocolo de execução* e o bloco que vai executar **antes** de tocar em qualquer arquivo. Execute **um bloco por vez** e não avance sem a validação aprovada.
+
+**Data:** 2026-10-19
+**Branch de trabalho:** `codex/fase2` (base `da655a0`)
+**Commit de referência na criação deste plano:** `0d97cc0`
+**`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
+**Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
+
+---
+
+## 1. Estado verificado (auditoria de 2026-10-19)
+
+Toda a evidência abaixo foi **medida**, não inferida. Método: MCP do Supabase (`list_tables`, `execute_sql`, `list_migrations`) + requisições PostgREST com a `anon key` pública do `db.js` + `GET /auth/v1/settings`.
+
+| Verificação | Resultado medido |
+|---|---|
+| Tabelas em `public` | 15 |
+| RLS habilitado | **15/15** (`relforcerowsecurity = false` em todas) |
+| Tabelas com `publish_status` | 14 (`admin_settings` é a exceção) |
+| Policies totais | 73 — 14 × (1 `anon` SELECT + 4 `authenticated`) + 3 em `admin_settings` |
+| Policy `anon` de conteúdo | `roles={anon}`, `qual = (publish_status = 'published'::text)` |
+| Policies `authenticated` de conteúdo | `SELECT/INSERT/UPDATE/DELETE` com `qual = true` / `with_check = true` |
+| `admin_settings` | sem policy `anon`; `authenticated` com trava `scope='global'` |
+| Registros nas tabelas | **123** + 1 em `admin_settings` |
+| Rascunhos | **2** (1 em `arquivos`, 1 em `processos`) |
+| Registros sem `publish_status` | **0** |
+| Contas em `auth.users` | **1** |
+| Migrations registradas | **0** |
+| `disable_signup` | **`false` — cadastro público ABERTO** |
+| `mailer_autoconfirm` | `false` (exige confirmação de e-mail) |
+| `external.anonymous_users` | `false` |
+
+### Teste de vazamento com a anon key (prova, não suposição)
+
+| Teste | Resultado |
+|---|---|
+| `GET /rest/v1/arquivos?select=id,publish_status` como anon | `0-0/59` → **o rascunho não aparece** |
+| `GET /rest/v1/arquivos?...&publish_status=eq.draft` como anon | `*/0` |
+| `GET /rest/v1/processos?...&publish_status=eq.draft` como anon | `*/0` |
+| `GET /rest/v1/admin_settings?select=*` como anon | `*/0` |
+| `GET /rest/v1/funcionarios?...` como anon | 15/15, todos `published` |
+
+**Conclusão:** a separação rascunho/publicado **já funciona para visitante anônimo**. O RLS é a única garantia e hoje ela está de pé.
+
+---
+
+## 2. Correções em relação à v1 (o que mudou e por quê)
+
+| # | v1 dizia | v2 corrige | Evidência |
+|---|---|---|---|
+| 1 | **C1 = Crítico**: rascunho vaza para o navegador de qualquer visitante; conter com política interina (T0.3) | **Rebaixado a "defesa em profundidade"**. O RLS **já bloqueia** rascunho para `anon`. A política interina da T0.3 **já existe** no banco; não há nada a criar. | testes anon acima |
+| 2 | **C2 = "login não verifica papel"** (frontend), contido por T0.4 | **C2 é o achado nº 1 e é explorável hoje**: `disable_signup=false` **+** policies `authenticated` com `qual=true` em 14 tabelas. Qualquer pessoa cria conta e vira admin total (lê rascunhos, edita, apaga). A contenção real é **desligar o cadastro público** + **gate de admin no RLS**, não a checagem no frontend. | `/auth/v1/settings` + `pg_policies` |
+| 3 | Fase 0 = "fechar sangramento" com T0.1–T0.6 | O sangramento **não é** o anon. É a porta de entrada (`disable_signup`). Bloco 0 novo, **ação humana de 5 minutos**, antes de tudo. | idem |
+| 4 | T0.1 (auditoria) = pendente | **Concluída.** Resultados na seção 1. Falta apenas gravar a evidência em arquivo (Bloco 1). | seção 1 |
+| 5 | B6/T0.2 = "banco não versionado" (intuição) | **Confirmado**: `list_migrations` = 0. Todas as policies foram criadas à mão no dashboard. Prioridade **elevada**, porque qualquer correção de RLS fica irreversível sem baseline. | `list_migrations` |
+| 6 | Ordem: contenção → base de qualidade → RBAC | **Mantida a espinha**, com duas trocas: (a) **gate de admin no RLS vem antes** do RBAC completo, porque o problema é conter acesso, não desenhar papéis; (b) a **base de qualidade** (lint/testes/CI) vem antes dos blocos que alteram `db.js`/`script.js`/`admin.js`. | — |
+| 7 | §7.2 passo 4 do documento de estado: `get_advisors` | **Indisponível**: esse método não existe no conjunto de ferramentas do MCP conectado. Usar a página **Advisors** do dashboard (ação humana). | catálogo do MCP |
+| 8 | — | **Risco novo (baixo):** `escala_ferias` tem `publish_status` **e** `status`. Toda policy/consulta deve usar **`publish_status`**; confundir os dois quebra regra de publicação. | `information_schema.columns` |
+| 9 | — | **Risco novo (latente):** `dados.js` não tem `publish_status` em nenhum registro (caminho de fallback local nasce publicado). No banco isso não ocorre (0 registros sem status). Tratar junto com o M6. | contagem = 0 |
+
+---
+
+## 3. Restrições globais invioláveis (valem para todos os blocos)
+
+1. **Nada vai para `main` nem para o remoto.** Trabalho em `codex/fase2`; push só com autorização explícita.
+2. **Nunca expor `service_role`** em qualquer arquivo do front. Apenas `anon key` (pública por design). Segredos de servidor vivem em Supabase Secrets.
+3. **Não renomear** IDs, classes, chaves persistidas (`smader_db_v1`, `MODULE_SEARCH_STATE_KEY`, `ARQUIVOS_UI_STATE_KEY`, `AGENDA_UI_STATE_KEY`, `ig_access_token`) nem assinaturas de `DB.*` sem tarefa explícita.
+4. **Preservar o fluxo `publish_status`** em 100% das alterações. Rascunho nunca pode chegar a visitante anônimo.
+5. **Não migrar** para framework, bundler ou módulos ES (`AGENTS.md` §9).
+6. **Fallback local é feature**, não bug: o app precisa continuar funcionando com Supabase fora do ar.
+7. **Toda DDL** (tabela, função, policy, trigger) entra por **migration versionada** a partir do Bloco 2. Nada de clicar no dashboard.
+8. **Todo bloco termina com**: validação executada e registrada + checklist do bloco preenchido + `git status` limpo + **um commit próprio**.
+9. **Nunca "consertar de passagem".** Achou outro problema? Registra no fim do bloco e segue.
+10. **Antes de alterar policy**, ler o Bloco 3. Há uma ordem obrigatória (promover o admin atual **antes** de fechar as policies).
+
+---
+
+## 4. Foco de revisão (o que os testes de cada bloco precisam cobrir)
+
+1. Registro **sem** `publish_status` (importado, legado, criado por script) — deve nascer **rascunho**, nunca público.
+2. Sessão válida **sem papel** (`role` ausente/estranho em `app_metadata`) — deve ser **negada**, nunca promovida.
+3. **Falha de rede** durante `insert/update/delete` — o dado não pode desaparecer nem a UI mentir "salvo".
+4. Texto com `<`, `>`, `"`, `'`, `&` vindo de formulário ou de terceiros (Instagram) — não pode quebrar layout nem executar script.
+5. **Dois editores** salvando o mesmo registro — sem ID duplicado e sem sobrescrita silenciosa.
+6. **Anon** tentando `select` com `publish_status=eq.draft` em qualquer tabela — sempre `[]`.
+7. **Autenticado sem papel de admin** tentando `insert/update/delete` — sempre negado pelo banco.
+
+---
+
+## 5. Protocolo de execução obrigatório (agentes de IA)
+
+```
+1. LER: AGENTS.md → plano-rascunho-admin.txt → este doc (cabeçalho + bloco alvo).
+2. CONFIRMAR: git branch --show-current == codex/fase2 ; git status limpo.
+3. ANUNCIAR antes de editar: "Bloco N — tarefa X.Y".
+4. EXECUTAR apenas as tarefas do bloco. Não antecipar o próximo bloco.
+5. PROVAR: rodar o comando de validação do bloco e colar a saída.
+6. PARAR: preencher o checklist, listar o que NÃO foi validado e aguardar o dono.
+7. COMMITAR só o bloco validado, com a mensagem do template.
+```
+
+**Regra de parada dura:** se a validação falhar, **reverter o bloco** (`git checkout -- <arquivos>` + migration de rollback) e relatar. Não tentar "consertar na hora".
+
+**Regra de escopo:** se o bloco exigir tocar arquivo não listado nele, **parar e perguntar**. Não expandir escopo por conta própria.
+
+---
+
+## 6. Como provar cada bloco (modelo de evidência)
+
+Ao fechar um bloco, anexar no relatório ao dono:
+
+```
+BLOCO: <n> — <nome>
+DATA: <aaaa-mm-dd>
+COMMIT: <hash>
+ARQUIVOS: <lista>
+VALIDAÇÃO:
+  comando: <comando exato>
+  saída esperada: <texto>
+  saída obtida: <colar>
+CHECKLIST: <colar o checklist preenchido>
+NÃO VALIDADO / LIMITAÇÕES: <o que ficou de fora>
+ROLLBACK TESTADO: sim/não (e como)
+```
+
+Sem isso, o bloco **não** é considerado concluído.
+
+### Template de commit
+
+```bash
+git add <arquivos do bloco>
+git commit -m "<tipo>(<escopo>): <descrição curta>"
+# tipos: fix | feat | refactor | chore | docs | test | security
+```
+
+---
+
+## 7. Mapa de blocos
+
+| Bloco | Nome | Tipo | Esforço | Depende de | Achados |
+|---|---|---|---|---|---|
+| **0** | Contenção: fechar o cadastro público | 🤝 humano | 5 min | — | C2 |
+| **1** | Gravar a auditoria + suíte adversarial | 🤖 | 4h | B0 | C1, C2, B6 |
+| **2** | Baseline versionado do schema/policies | 🤖 | 1 dia | B0 | B6 |
+| **3** | **Gate de admin no RLS** | 🤖 + 🤝 | 1–2 dias | B1, B2 | **C2** |
+| **4** | Rede de segurança do código (lint/testes/CI) | 🤖 | 1–2 dias | — | A5 |
+| **5** | Autorização no frontend | 🤖 | 1 dia | B3, B4 | C2 |
+| **6** | RBAC por papel e por área | 🤝 design + 🤖 | 3–5 dias | B3, B5 | C2, M6 |
+| **7** | Rascunho: defesa em profundidade + M6 | 🤖 | 1 dia | B3, B4 | C1, M6 |
+| **8** | Escrita confiável | 🤖 | 2–3 dias | B4 | A2, A3, A4, M10, M11 |
+| **9** | Saída segura (XSS, handlers, CSP) | 🤖 | 2–3 dias | B4 | A1, M2, M4 |
+| **10** | Token do Instagram fora do navegador | 🤖 + 🤝 | 1 dia | B4 | C3 |
+| **11** | Consolidação do admin (motor de listas) | 🤖 | 3–5 dias | B4 | M1, M3 |
+| **12** | Repaginação de UX do admin | 🤝 design + 🤖 | 3–5 dias | B11 | relato do dono |
+| **13** | Produto público e higiene | 🤖 | 3–5 dias | B4 | M5, M7, M8, M9, M12, B1–B5 |
+
+Legenda de esforço: **S** ≤ 4h · **M** 1–2 dias · **G** 3–5 dias.
+
+**Ordem recomendada:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13.
+Blocos 10 e 13 podem correr em paralelo com 11/12 quando houver folga.
+**Nunca** inverta 0/1/2/3: são a contenção.
+
+---
+---
+
+# BLOCO 0 — Contenção: fechar o cadastro público
+
+**Tipo:** ação humana (dono), sem código.
+**Por que primeiro:** hoje qualquer pessoa cria conta no projeto e, como as 14 tabelas de conteúdo concedem `authenticated` com `qual = true`, essa conta passa a **ler rascunhos, editar e apagar tudo**. É o único achado com exploração trivial em produção.
+**Achados:** C2 (porta de entrada).
+
+### Tarefas
+
+- [ ] **T0.1 — Desligar o cadastro público**
+  Supabase Dashboard → **Authentication → Providers → Email** → desligar **"Allow new users to sign up"**.
+- [ ] **T0.2 — Manter a confirmação de e-mail ligada**
+  Em **Authentication → Providers → Email**, garantir **"Confirm email" = ON** (`mailer_autoconfirm` já é `false`; não mudar).
+- [ ] **T0.3 — Conferir Advisors**
+  Abrir **Advisors → Security** no dashboard e anotar o que aparecer (o método `get_advisors` não está disponível no MCP).
+- [ ] **T0.4 — Conferir os usuários existentes**
+  Authentication → Users: confirmar que só existe **1 conta** (a legítima).
+
+### Validação (prova)
+
+```bash
+# 1) Cadastro deve estar fechado
+curl -s "https://<proj>.supabase.co/auth/v1/settings" -H "apikey: <ANON_KEY>" | jq .disable_signup
+# esperado: true
+
+# 2) Tentativa de cadastro deve falhar
+curl -s -X POST "https://<proj>.supabase.co/auth/v1/signup" \
+  -H "apikey: <ANON_KEY>" -H "Content-Type: application/json" \
+  -d '{"email":"teste-contencao@example.com","password":"Teste!12345"}'
+# esperado: erro "Signups not allowed for this instance"
+
+# 3) Contas seguem sendo 1
+# execute_sql: select count(*) from auth.users;   -> 1
+```
+
+### Checklist
+- [ ] `disable_signup = true` provado por HTTP
+- [ ] tentativa de signup rejeitada provada por HTTP
+- [ ] confirmação de e-mail continua ligada
+- [ ] Advisors de segurança consultados e anotados
+- [ ] nenhuma alteração de código feita
+
+### Rollback
+Reativar "Allow new users to sign up" no dashboard. **Não fazer** sem decidir junto do Bloco 3.
+
+### Proibido neste bloco
+- Não mexer em policies (é o Bloco 3).
+- Não alterar `db.js` (é o Bloco 5).
+
+---
+
+# BLOCO 1 — Gravar a auditoria + suíte adversarial
+
+**Objetivo:** transformar a auditoria de 2026-10-19 em artefato versionado e em **teste executável**, para que qualquer regressão de RLS apareça sozinha.
+**Achados:** C1, C2, B6.
+
+**Arquivos:**
+- Criar: `docs/seguranca/auditoria-rls-2026-10-19.md`
+- Criar: `scripts/check-draft-leak.mjs`
+- Criar: `scripts/check-anon-probe.mjs` (opcional, se `check-draft-leak.mjs` crescer)
+- Criar: `supabase/tests/01_anon_policy.sql`
+
+### Tarefas
+
+- [ ] **T1.1 — Documentar a auditoria**
+  Gravar `docs/seguranca/auditoria-rls-2026-10-19.md` com: método, a tabela da seção 1 deste plano, a tabela de testes anon, a saída de `/auth/v1/settings` e a data/hora. Registrar como **linha de base** ("estado antes dos blocos 3–7").
+
+- [ ] **T1.2 — Script de vazamento de rascunho**
+  Criar `scripts/check-draft-leak.mjs` (Node ≥ 20, `fetch` nativo, zero dependências):
+  - Lê a `anon key` de `db.js` (regex no arquivo) — **não** duplicar a chave no script.
+  - Descobre as tabelas via `GET /rest/v1/` ou lista fixa das 14.
+  - Para cada tabela: pede `?select=id,publish_status&limit=1` com `Prefer: count=exact` e verifica que **nenhuma** linha retornada tem `publish_status = 'draft'`.
+  - Também pede `?publish_status=eq.draft` e exige `content-range: */0`.
+  - Sai com código `1` e mensagem clara na primeira violação.
+
+- [ ] **T1.3 — Teste SQL da política anon**
+  Criar `supabase/tests/01_anon_policy.sql` que, para cada tabela de conteúdo, verifica via `pg_policies` que existe exatamente **1 policy com `roles = {anon}` e `cmd = SELECT`** e que o `qual` contém `publish_status`.
+
+- [ ] **T1.4 — Rodar e registrar**
+
+### Validação (prova)
+
+```bash
+node scripts/check-draft-leak.mjs
+# esperado: "OK — 14/14 tabelas sem rascunho exposto para anon" (exit 0)
+```
+
+```sql
+-- execute_sql (leitura)
+select tablename, count(*) filter (where roles::text like '%anon%') as pol_anon
+from pg_policies where schemaname='public' group by tablename order by tablename;
+-- esperado: 1 em cada uma das 14 tabelas de conteúdo; 0 em admin_settings
+```
+
+### Checklist
+- [ ] `docs/seguranca/auditoria-rls-2026-10-19.md` criado com números medidos
+- [ ] `node scripts/check-draft-leak.mjs` → exit 0
+- [ ] script **falha de propósito** quando testado contra uma policy alterada em projeto de teste (prova de que o teste detecta regressão)
+- [ ] nenhum arquivo de produção tocado
+
+### Rollback
+Remover os arquivos criados (são aditivos; não afetam runtime).
+
+### Proibido neste bloco
+- Não corrigir nada "já que estou aqui". Este bloco só **mede**.
+
+---
+
+# BLOCO 2 — Baseline versionado do schema e das policies
+
+**Objetivo:** ter no repositório o estado exato do RLS antes de mudá-lo, com caminho de volta.
+**Por que agora:** `list_migrations` = 0. As 73 policies foram criadas à mão. Sem baseline, o Bloco 3 é irreversível.
+**Achados:** B6.
+
+**Arquivos:**
+- Criar: `supabase/migrations/0001_baseline_schema.sql`
+- Criar: `supabase/migrations/0001_baseline_policies.sql`
+- Criar: `supabase/README.md`
+
+### Tarefas
+
+- [ ] **T2.1 — Extrair o schema atual (somente leitura)**
+  Via MCP `execute_sql`, gerar:
+  - `CREATE TABLE` de cada uma das 15 tabelas (colunas, tipos, defaults, PK, FKs) — usar `information_schema` / `pg_catalog`.
+  - Listas de `extension`s (`list_extensions`).
+  - Índices e sequences.
+- [ ] **T2.2 — Extrair as 73 policies**
+  Gerar `drop policy if exists ... ; create policy ...` em `0001_baseline_policies.sql`, a partir de `pg_policies` (a mesma consulta da seção 1). Incluir `alter table ... enable row level security;` para cada tabela.
+- [ ] **T2.3 — Cabeçalho de aviso**
+  Cada arquivo começa com:
+  ```sql
+  -- ATENCAO: FOTOGRAFIA do banco em 2026-10-19. Estas policies JA EXISTEM em producao.
+  -- NAO executar em producao. Serve como referencia e como rollback.
+  ```
+- [ ] **T2.4 — `supabase/README.md`**
+  Explicar: como o schema foi descoberto, que a baseline **já está aplicada**, que **toda DDL futura** entra por `apply_migration`, e como fazer rollback usando este arquivo.
+
+### Validação (prova)
+
+```bash
+# contagem de policies no arquivo == contagem no banco (73)
+grep -c "create policy" supabase/migrations/0001_baseline_policies.sql
+# esperado: 73
+```
+```sql
+-- execute_sql
+select count(*) from pg_policies where schemaname='public';   -- esperado: 73
+select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';  -- esperado: 15
+```
+Prova forte (recomendada): aplicar a baseline em um **projeto Supabase de teste** e comparar `pg_policies` com produção.
+
+### Checklist
+- [ ] 15 tabelas presentes no arquivo de schema
+- [ ] 73 policies presentes no arquivo de policies
+- [ ] cabeçalho de aviso em ambos
+- [ ] `supabase/README.md` escrito
+- [ ] nenhuma DDL executada em produção
+
+### Rollback
+Nenhum efeito em produção (arquivos aditivos).
+
+### Riscos
+| Risco | Mitigação |
+|---|---|
+| Alguém rodar a baseline em produção | cabeçalho de aviso + README; as policies usam `drop if exists` + `create` (idempotente, mas não é para rodar) |
+| Baseline incompleta (faltar índice/sequence) | validar por contagem + projeto de teste |
+
+---
+
+# BLOCO 3 — Gate de admin no RLS (correção real do C2)
+
+**Objetivo:** parar de tratar "autenticado" como "admin". Toda escrita e toda leitura de rascunho passa a exigir papel de admin, **verificado no banco**.
+**Achados:** C2. **Este é o bloco de maior impacto do plano.**
+**Decisão necessária:** confirmar o **Caminho A** (fechar agora com gate mínimo; catracas por área no Bloco 6).
+
+**Arquivos:**
+- Criar: `supabase/migrations/0002_is_admin.sql`
+- Criar: `supabase/migrations/0003_gate_admin_policies.sql`
+- Criar: `supabase/migrations/0003_rollback.sql` (reversão do anterior, a partir da baseline)
+- Criar: `supabase/tests/02_admin_gate.sql`
+
+### Ordem obrigatória (não inverter)
+
+```
+T3.1 preparar a função is_admin()
+T3.2 promover a conta admin ATUAL      <-- antes de fechar qualquer policy
+T3.3 substituir as policies
+T3.4 testar
+```
+
+> Se a T3.3 rodar antes da T3.2, o dono **perde o acesso ao painel**. Este é o erro mais provável do bloco.
+
+### Tarefas
+
+- [ ] **T3.1 — Função `is_admin()`**
+  `supabase/migrations/0002_is_admin.sql`:
+  ```sql
+  create or replace function public.is_admin()
+  returns boolean
+  language sql
+  stable
+  security definer
+  set search_path = public
+  as $$
+    select coalesce(
+      (auth.jwt() -> 'app_metadata' ->> 'role') in ('admin','editor'),
+      false
+    );
+  $$;
+  revoke all on function public.is_admin() from public;
+  grant execute on function public.is_admin() to authenticated, anon;
+  ```
+  **Regra dura:** `security definer` **com** `set search_path` (sem isso a função é vetor de escalada).
+- [ ] **T3.2 — Promover a conta admin atual**
+  `update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"admin"}'::jsonb where email = '<e-mail do dono>';`
+  Conferir com `select email, raw_app_meta_data from auth.users;`.
+  Enquanto o Bloco 6 não chegar, este é o **único** admin. Não criar mais contas.
+- [ ] **T3.3 — Substituir as policies `authenticated`**
+  Para as **14 tabelas de conteúdo**, trocar as 4 policies antigas (`qual = true`) por versões com `is_admin()`:
+  - `select` de rascunho/painel: `qual = public.is_admin()`
+  - `insert` / `update` / `delete`: `qual/with_check = public.is_admin()`
+  **Não tocar** na policy `anon` (`publish_status = 'published'`) de nenhuma tabela.
+  **Não tocar** nas 3 policies de `admin_settings` (já têm trava própria) — registrar como pendência se ficarem inconsistentes.
+  O `anon` continua exatamente como está: é isso que mantém o app público funcionando.
+- [ ] **T3.4 — Rollback escrito antes do teste**
+  `0003_rollback.sql` recria as policies antigas (copiadas do Bloco 2).
+
+### Validação (prova)
+
+```sql
+-- 1) Policies antigas nao existem mais
+select tablename, policyname, qual from pg_policies
+where schemaname='public' and roles::text like '%authenticated%' and qual = 'true';
+-- esperado: 0 linhas
+
+-- 2) A policy anon continua intacta
+select tablename, qual from pg_policies
+where schemaname='public' and roles::text like '%anon%';
+-- esperado: 14 linhas, todas com publish_status = 'published'
+
+-- 3) Anon continua lendo publicado
+select tablename, count(*) from pg_policies ...   -- (usar scripts/check-draft-leak.mjs)
+
+-- 4) Simulacao de papel (matriz obrigatoria)
+set local role authenticated;
+set local request.jwt.claims = '{"app_metadata":{"role":"funcionario"}}';
+select count(*) from avisos;      -- esperado: 0 (negado) ou erro
+reset role;
+```
+
+**Matriz obrigatória de testes (todas as linhas precisam passar):**
+
+| Persona | `avisos` (SELECT) | `avisos` (INSERT) | `arquivos` draft (SELECT) | `admin_settings` (SELECT) |
+|---|---|---|---|---|
+| `anon` | só `published` | negado | `[]` | `[]` |
+| `authenticated` sem `role` | **negado** | **negado** | **negado** | negado |
+| `authenticated` com `role='admin'` | tudo | permitido | tudo | permitido |
+| `authenticated` com `role='editor'` | tudo | permitido | tudo | permitido |
+
+E a prova de ponta a ponta:
+
+```bash
+node scripts/check-draft-leak.mjs        # exit 0 (anon nao ve rascunho)
+```
+```bash
+# anon tentando escrever deve falhar
+curl -s -X POST "https://<proj>.supabase.co/rest/v1/avisos" \
+  -H "apikey: <ANON_KEY>" -H "Authorization: Bearer <ANON_KEY>" \
+  -H "Content-Type: application/json" -d '{"titulo":"probe"}'
+# esperado: 401/403 (permission denied)
+```
+**Verificação humana obrigatória:** abrir o painel admin com a conta real e confirmar login, listagem, criação e edição de um registro.
+
+### Checklist
+- [ ] `is_admin()` criada com `security definer` + `set search_path`
+- [ ] conta do dono promovida **antes** das policies (ordem provada no log)
+- [ ] 0 policies `authenticated` com `qual = true` nas 14 tabelas
+- [ ] 14 policies `anon` intactas
+- [ ] matriz de 4 personas × 4 testes executada e registrada
+- [ ] `check-draft-leak.mjs` exit 0
+- [ ] login real no painel confirmado pelo dono
+- [ ] `0003_rollback.sql` escrito e **testado em projeto de teste**
+
+### Rollback
+Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pode ficar (é inofensivo sem policy usando).
+**Teste o rollback em projeto de teste antes de declarar o bloco concluído.**
+
+### Proibido neste bloco
+- Não criar tabela de perfis/papéis (é o Bloco 6).
+- Não alterar `db.js`, `admin.js` nem `script.js` (é o Bloco 5).
+- Não tocar nas policies `anon`.
+
+---
+
+# BLOCO 4 — Rede de segurança do código
+
+**Objetivo:** criar a rede que permite mexer em `db.js` / `script.js` / `admin.js` sem fé.
+**Achados:** A5.
+**Pré-requisito dos blocos 5, 7, 8, 9, 10, 11, 13.**
+
+**Arquivos:**
+- Criar: `package.json` (`private: true`)
+- Criar: `eslint.config.js`
+- Criar: `tests/helpers/load-script.mjs`
+- Criar: `tests/unit/*.test.mjs`
+- Criar: `tests/e2e/*.spec.mjs`
+- Criar: `.github/workflows/ci.yml`
+- Criar/modificar: `.gitignore` (adicionar `node_modules/` se faltar)
+
+### Tarefas
+
+- [ ] **T4.1 — `package.json` e servidor local**
+  Scripts: `lint`, `test`, `test:e2e`, `serve`, `check` (`node --check` nos 4 arquivos JS + lint + test).
+  `npm run serve` → app em `http://localhost:5173` com boot funcionando.
+- [ ] **T4.2 — ESLint (flat config)**
+  Ambiente browser, `sourceType: 'script'`, `no-undef: error`, `no-redeclare: error`, `no-unused-vars: warn`.
+  Medir e **registrar a linha de base** (esperado: zero erro de sintaxe, avisos de variáveis não usadas). Não corrigir código nesta tarefa.
+- [ ] **T4.3 — Harness para scripts clássicos**
+  `tests/helpers/load-script.mjs` carrega `db.js`/`script.js` em `node:vm` com `window`, `document`, `localStorage` e `supabase` falsos.
+  Primeiros testes: `_normalizePublishStatus` (default = rascunho), `_normalizeSupabaseRow` (compat `setor`/`lotacao`), `DB.get` (cópia profunda), `escapeHtml` (não-string, `<`, `"`, `&`, `'`).
+- [ ] **T4.4 — Playwright (6 fluxos)**
+  boot do público; navegação entre 3 páginas; busca global; login admin; criar/editar registro; rascunho invisível no público.
+- [ ] **T4.5 — CI**
+  `.github/workflows/ci.yml`: `npm ci` → `lint` → `test` → `test:e2e`.
+
+### Validação (prova)
+
+```bash
+npm run check     # esperado: node --check OK nos 4 arquivos + lint sem erros + testes verdes
+npm test          # esperado: >= 10 testes, 0 falhas
+npm run test:e2e  # esperado: 6 fluxos verdes
+```
+```bash
+git status --short   # esperado: so arquivos do bloco
+```
+CI: workflow verde no push da branch (verificar na aba Actions).
+
+### Checklist
+- [ ] `npm run serve` sobe o app e o boot funciona
+- [ ] `npm test` ≥ 10 testes verdes
+- [ ] `npm run test:e2e` 6 fluxos verdes
+- [ ] linha de base do lint registrada
+- [ ] CI verde
+- [ ] nenhuma linha de `db.js`/`script.js`/`admin.js` alterada (só reportagem de lint)
+
+### Rollback
+Remover os arquivos de ferramenta. Nada disso entra no app em produção (não é referenciado pelos HTMLs).
+
+---
+
+# BLOCO 5 — Autorização no frontend
+
+**Objetivo:** o painel não deve nem tentar abrir para quem não é admin. É **defesa em profundidade** — a garantia real é o Bloco 3.
+**Achados:** C2.
+
+**Arquivos:**
+- Modificar: `db.js` (`isAdminLoggedIn`, ~linha 938)
+- Modificar: `admin.js` (entrada do painel / `mostrarLogin`)
+
+### Tarefas
+
+- [ ] **T5.1 — Checar papel, não só sessão**
+  `isAdminLoggedIn()` passa a exigir `session.user.app_metadata.role` em `('admin','editor')`.
+  Sessão sem papel → `false` **e** `DB.adminLogout()` (não deixar sessão órfã no `localStorage`).
+- [ ] **T5.2 — Mensagem clara**
+  Sessão válida sem papel → tela de login com "Sua conta não tem permissão de acesso ao painel. Fale com o administrador."
+- [ ] **T5.3 — Teste**
+
+### Validação (prova)
+
+```bash
+npm test -- -t "isAdminLoggedIn"
+# esperado: verde nos 4 casos (sem sessao / sessao sem role / role editor / role admin)
+```
+Manual (se existir conta de teste sem papel):
+- login com conta sem papel → **não entra** e vê a mensagem
+- login com a conta admin → entra normalmente
+
+### Checklist
+- [ ] sessão sem `role` não entra no painel
+- [ ] sessão órfã é encerrada
+- [ ] conta admin continua entrando
+- [ ] `AGENTS.md` §6 respeitado (não alterei contrato de `DB.*`; só o corpo de `isAdminLoggedIn`, mesma assinatura)
+- [ ] fluxo público intocado
+
+### Rollback
+`git checkout -- db.js admin.js`.
+
+### Proibido
+- Não renomear `isAdminLoggedIn` nem mudar sua assinatura (é chamada pelo `admin.html`).
+- Não mexer em policies (Bloco 3 já fez).
+
+---
+
+# BLOCO 6 — RBAC por papel e por área
+
+**Objetivo:** público vê o público; funcionário vê o interno; editor edita a sua área; admin faz tudo — com garantia no banco.
+**Achados:** C2, M6.
+**Começa com design, não com código.** Requer decisão de negócio do dono.
+
+### T6.0 — Design (obrigatório antes de qualquer SQL)
+
+- [ ] **T6.0.1 — Matriz de classificação das 14 coleções**
+  Para cada coleção: **pública** / **interna** / **restrita**. Nenhuma coleção pode ficar sem classificação.
+- [ ] **T6.0.2 — Matriz papel × coleção × ação**
+  Papéis: `anon`, `funcionario`, `editor(<área>)`, `admin`. Ações: SELECT / INSERT / UPDATE / DELETE.
+- [ ] **T6.0.3 — Campos sensíveis**
+  Existe CPF, telefone, e-mail ou dado pessoal que precise de mascaramento por papel? (`funcionarios` é o suspeito nº 1.)
+- [ ] **T6.0.4 — Aprovação explícita do dono** (sem isso, nada de SQL)
+
+**Validação do T6.0:** as duas matrizes escritas em `docs/superpowers/specs/2026-XX-XX-rbac-design.md` e aprovadas. Nenhuma linha de SQL antes disso.
+
+### Tarefas de implementação (só depois do design aprovado)
+
+- [ ] **T6.1 — `profiles` + papéis**
+  `supabase/migrations/0004_profiles.sql`: tabela `profiles(id, role, nome, ativo)`, trigger em `auth.users insert` criando `role='funcionario'` por padrão, `role` espelhado em `app_metadata`.
+  **Regra:** usuário novo nasce **sem** privilégio; promoção exige SQL explícito.
+- [ ] **T6.2 — Políticas finais por papel e área**
+  `supabase/migrations/0005_rls_papeis.sql` + função `auth_role()` / `has_area()` `security definer`.
+  A "área" de cada editor vem de `profiles.areas text[]`.
+- [ ] **T6.3 — Carregamento escopado**
+  `db.js` (`_initSupabase`, `_loadSupabaseCollection`, `DB.get`): não baixar coleção que o papel não pode ler; `DB.get` de coleção proibida → `[]`; expor `DB.can(acao, colecao)`.
+- [ ] **T6.4 — Guardas de UI**
+  `admin.js` (`initNav`, `renderSection`, `novo*`, `salvar*`) consultam `DB.can`. Menu esconde o que não pode; ação proibida não aparece.
+- [ ] **T6.5 — Suíte de acesso**
+  `tests/security/access-matrix.spec.mjs`: 4 personas × 14 coleções × 4 ações. Roda na CI.
+
+### Validação (prova)
+
+- `tests/security/access-matrix.spec.mjs` verde (nenhuma célula fora da matriz aprovada)
+- sessão anônima **não faz request** das tabelas internas (verificar no Network do navegador)
+- tentativa de ação proibida via console do DevTools → **negada pelo banco** (prova de que a UI não é a garantia)
+- `funcionarios`: campos sensíveis mascarados para as personas que a matriz define
+
+### Checklist
+- [ ] matriz aprovada e versionada
+- [ ] nenhuma coleção sem classificação
+- [ ] `profiles` criada e usuário novo nasce sem privilégio
+- [ ] suíte de acesso verde
+- [ ] UI esconde, banco nega (as duas coisas provadas separadamente)
+- [ ] `publish_status` preservado em todas as políticas
+
+### Rollback
+Migration de reversão por arquivo; manter sempre a baseline (Bloco 2) como último recurso.
+
+---
+
+# BLOCO 7 — Rascunho: defesa em profundidade + M6
+
+**Objetivo:** parar de baixar o que não é público. O RLS já protege (provado); este bloco reduz exposição e fecha o M6.
+**Achados:** C1 (rebaixado), M6.
+
+**Arquivos:**
+- Modificar: `db.js` (`_loadSupabaseCollection`, `_normalizePublishStatus`/default)
+- Modificar: `dados.js` (só se for adicionar o campo — ver T7.3)
+
+### Tarefas
+
+- [ ] **T7.1 — Filtro server-side para o público**
+  Em `_loadSupabaseCollection`, quando a sessão **não** for admin, pedir `.eq('publish_status','published')`.
+  Manter o filtro no cliente (`filterPublished`) como segunda camada — não remover.
+  **Atenção:** o painel admin compartilha o mesmo `db.js`; a condição precisa ser por sessão, e não global, senão o admin deixa de ver rascunhos.
+- [ ] **T7.2 — Default seguro de `publish_status`**
+  `_normalizePublishStatus` passa a devolver `'draft'` quando o campo estiver ausente/nulo/desconhecido (hoje o default é publicado).
+  Conferir também `isPublished` em `script.js`.
+  **Prova obrigatória de que nada publicado desaparece:** hoje há **0 registros sem `publish_status`**; após a mudança, a contagem do que o app público exibe deve ser **idêntica**.
+- [ ] **T7.3 — `status` vs `publish_status` em `escala_ferias`**
+  Documentar e garantir que **todo** filtro de publicação usa `publish_status`. Adicionar teste que falha se alguém usar `status` como critério de publicação.
+- [ ] **T7.4 — Teste**
+
+### Validação (prova)
+
+```bash
+node scripts/check-draft-leak.mjs    # exit 0
+npm test -- -t "filterPublished"     # verde, incluindo campos ausentes -> rascunho
+```
+Antes/depois, contagem idêntica do conteúdo público:
+```bash
+# anon, por tabela, antes e depois: os totais precisam ser iguais
+# baseline medida em 2026-10-19: acesso_rapido 6, agenda_eventos 1, arquivos 59,
+# avisos 1, escala_ferias 5, funcionarios 15, info_juridico 5, info_municipio 4,
+# info_orgaos 3, manuais 6, processos 3, servicos 6, sistemas 4, veiculos 3
+```
+Network do navegador (sessão anônima): a resposta de cada coleção deve ter **apenas** `published`.
+
+### Checklist
+- [ ] consultas anônimas pedem `publish_status=eq.published`
+- [ ] contagens públicas **idênticas** à baseline (0 regressão de conteúdo)
+- [ ] admin **continua** vendo rascunhos
+- [ ] campo ausente → rascunho (teste verde)
+- [ ] `escala_ferias` usa `publish_status`
+- [ ] filtro do cliente preservado
+
+### Rollback
+`git checkout -- db.js`.
+
+---
+
+# BLOCO 8 — Escrita confiável
+
+**Objetivo:** nenhuma escrita pode mentir "salvo", colidir ID ou apagar tabela.
+**Achados:** A2, A3, A4, M10, M11.
+
+**Arquivos:**
+- Modificar: `db.js` (`insert`/`update`/`delete` ~709/743/776, `_nextId` ~702, `replaceCollection` 802-818, `importAll` ~923, `DB.get`, `carregarDados`)
+- Criar: `supabase/migrations/0006_ids.sql`
+- Criar: `supabase/migrations/0007_replace_collection.sql`
+
+### Tarefas
+
+- [ ] **T8.1 — Estado real da escrita (A2)**
+  `await` na chamada Supabase; emitir eventos `db:write-pending` / `db:write-ok` / `db:write-failed`; UI só confirma após resposta; falha mostra erro acionável.
+  Manter o fallback local gravando (é feature), mas **marcar** o registro como pendente em vez de dizer "salvo".
+- [ ] **T8.2 — Fila de escrita offline**
+  Chave `smader_pending_writes_v1` + replay no boot e no evento `online`, sem duplicar.
+- [ ] **T8.3 — ID gerado pelo banco (A3)**
+  `0006_ids.sql`: `identity`/sequence nas 14 tabelas (nas colunas `id`).
+  `db.js`: insert **sem** `id` + `select().single()` para recuperar; remover `Math.max(...ids) + 1`.
+  **Risco:** o fallback local precisa continuar gerando IDs coerentes quando offline — manter o caminho local, só trocar a fonte de verdade quando houver banco.
+- [ ] **T8.4 — `replaceCollection` transacional (A4)**
+  `0007_replace_collection.sql`: RPC `replace_collection(tabela, payload)` numa transação única.
+  `db.js:802-818` e `importAll` passam a chamar a RPC. **Nunca** `delete` antes de `insert`.
+- [ ] **T8.5 — Conflito entre editores**
+  Coluna `updated_at` + trigger; `update` envia o `updated_at` esperado; segundo editor recebe aviso em vez de sobrescrever.
+- [ ] **T8.6 — Limpeza M10/M11**
+  `_loadSupabaseCollection(colecao, options)`: implementar ou remover o `options` morto (decidir e documentar).
+  `DB.get`: evitar o `JSON.parse(JSON.stringify())` duplo; `carregarDados` uma leitura por coleção (15 em vez de 28).
+
+### Validação (prova)
+
+```bash
+npm test          # testes novos: escrita com falha de rede, replay sem duplicar, ID do banco, replace com payload invalido
+```
+```bash
+# Prova de nao-destrutividade do replace (projeto de teste)
+# 1) contar linhas antes:  select count(*) from arquivos;          -> N
+# 2) chamar replace_collection com payload invalido (viola NOT NULL)
+# 3) contar depois:        select count(*) from arquivos;          -> N (NAO 0)
+```
+```bash
+# Prova de ID: dois inserts simultaneos -> ids distintos (sem colisao)
+```
+Manual: desligar a rede, salvar 2 registros, religar → ambos chegam **sem duplicar**; a UI mostrou "pendente" e depois "salvo".
+
+### Checklist
+- [ ] UI não confirma antes da resposta do banco
+- [ ] falha de rede mostra erro acionável (não `console.error` silencioso)
+- [ ] 2 inserts simultâneos sem colisão de ID
+- [ ] `replace` com payload inválido **não** esvazia a tabela
+- [ ] `importAll` não aplica 14 tabelas sem transação
+- [ ] fallback local continua funcionando offline
+- [ ] boot faz 15 leituras (não 28)
+- [ ] `options` morto resolvido (implementado ou removido) e documentado
+
+### Rollback
+Migrations de reversão + `git checkout -- db.js`.
+
+### Proibido
+- Não trocar o provedor de persistência (AGENTS.md §6).
+- Não remover o fallback local.
+
+---
+
+# BLOCO 9 — Saída segura (XSS, handlers, CSP)
+
+**Objetivo:** dado de usuário nunca vira HTML executável.
+**Achados:** A1, M2, M4.
+
+**Arquivos:**
+- Criar: `js/core/utils.js` (exposto como `window.SisUtils`)
+- Modificar: `script.js`, `admin.js`, `index.html`, `admin.html`
+
+### Tarefas
+
+- [ ] **T9.1 — `SisUtils` (mata M2)**
+  `escapeHtml` (com `String()` + aspas), `escapeAttr`, `formatDateBR`, `getFeriasStatus`, `normalizeSearchText`, `debounce`.
+  Carregado **antes** de `db.js` nos dois HTMLs. Substituir as implementações locais duplicadas (`escapeHtml` / `escHtml`).
+- [ ] **T9.2 — Escapar os pontos de A1**
+  `script.js` (`avisoItemHTML`, `renderFuncionarios`, Instagram, etc.) e `admin.js` (renders de tabela): todo dado de usuário passa por `SisUtils.escapeHtml`; atributos por `escapeAttr`.
+  Preferir `textContent`/`createElement` onde for simples.
+- [ ] **T9.3 — Guarda de CI contra `innerHTML` cru**
+  `scripts/check-innerhtml.mjs`: lista toda atribuição `innerHTML` com `${...}` e falha se aparecer arquivo fora da allowlist de dívida técnica (inventário inicial: 69 em `script.js`, 34 com interpolação).
+- [ ] **T9.4 — Remover handlers inline (M4)**
+  42 em `script.js` + 105 em `admin.js` + 18 no HTML → `data-action` + delegação.
+  **Estratégia:** um módulo por commit, com teste após cada um. Inventário deve chegar a 0.
+- [ ] **T9.5 — CSP**
+  Só **depois** do T9.4. `meta` CSP em `index.html` e `admin.html`, começando com `Report-Only` e depois aplicando:
+  `default-src 'self'; script-src 'self' <cdn exato>; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co`.
+
+### Validação (prova)
+
+```bash
+npm test -- -t "escapeHtml"   # verde: Non-string, <, >, ", ', &
+```
+E2E: criar registro com `<img src=x onerror=alert(1)>` e com `"` no nome →
+- não executa script
+- renderiza o texto literal
+- não quebra o layout
+
+```bash
+node scripts/check-innerhtml.mjs   # exit 0 (nenhum ponto novo fora da allowlist)
+```
+CSP: app funciona e o console **não** registra violações.
+
+### Checklist
+- [ ] zero definição duplicada de `escapeHtml`/`escHtml`
+- [ ] teste de XSS armazenado verde no público **e** no admin
+- [ ] `check-innerhtml.mjs` verde
+- [ ] inventário de handlers inline = 0
+- [ ] CSP aplicada sem violação no console
+- [ ] Instagram com `<`, `"`, `&` no caption não quebra o grid
+
+### Rollback
+`git checkout -- <arquivos>`; CSP volta a Report-Only.
+
+---
+
+# BLOCO 10 — Token do Instagram fora do navegador
+
+**Objetivo:** nenhum token de longa duração no `localStorage` nem na query string.
+**Achados:** C3.
+
+**Arquivos:**
+- Criar: `supabase/functions/instagram/index.ts`
+- Modificar: `script.js` (~751-799)
+
+### Tarefas
+
+- [ ] **T10.1 — Rotacionar o token (ação humana, 🤝)**
+  Meta for Developers: gerar token novo e **invalidar o antigo**. O token atual já circulou em URL/localStorage — considerar comprometido.
+- [ ] **T10.2 — Edge Function como proxy**
+  `instagram/index.ts` lê o token de **Supabase Secrets**, com cache de 5 min e CORS restrito ao domínio do app.
+- [ ] **T10.3 — Limpar o frontend**
+  `script.js`: chamar a função em vez de `graph.instagram.com`; remover `ig_access_token` do `localStorage` e o campo de token da UI; **limpar** a chave antiga de quem já a tem.
+- [ ] **T10.4 — Ativar o feature de functions no MCP**
+  A URL do MCP hoje é `...&features=database,docs`. Para deploy da function, reconfigurar para incluir `functions` e reautenticar (mesmo fluxo do `/mcps`). Alternativa: deploy pelo CLI/dashboard.
+
+### Validação (prova)
+
+```bash
+grep -rn "ig_access_token\|access_token=" script.js admin.js index.html admin.html
+# esperado: 0 ocorrencias
+```
+Feed carrega para **visitante anônimo** (sem login, sem token digitado).
+DevTools → Application → Local Storage: **nenhum** token.
+Falha da function → o app degrada (não quebra a página).
+
+### Checklist
+- [ ] token rotacionado no Meta (antigo invalidado)
+- [ ] token só em Supabase Secrets
+- [ ] `grep` de token no front = 0
+- [ ] feed funciona para anônimo
+- [ ] chave antiga limpa do `localStorage` dos navegadores que a tinham
+
+### Rollback
+Reverter `script.js`; a function pode ficar.
+
+---
+
+# BLOCO 11 — Consolidação do admin (motor de listas)
+
+**Objetivo:** transformar 39 funções duplicadas em um motor. Pré-requisito da repaginação (Bloco 12).
+**Achados:** M1, M3.
+
+**Arquivos:**
+- Criar: `js/admin/list-controller.js`
+- Modificar: `admin.js`
+
+### Tarefas
+
+- [ ] **T11.1 — `createListController`**
+  `createListController({ colecao, pageSize, filter, render, searchInputId, stateKey })` → `{ setQuery, setPage, getState, render }`.
+  Com testes unitários: filtro, página, estado vazio, persistência.
+- [ ] **T11.2 — 3 módulos piloto**
+  Arquivos, Avisos, Funcionários passam a usar o controlador; funções antigas ficam mortas (não apagar ainda).
+- [ ] **T11.3 — Os 10 restantes + apagar duplicatas**
+  Remover 13 `filtrar*`, 13 `atualizarBusca*`, 13 `mudarPagina*`.
+- [ ] **T11.4 — Registro de módulos**
+  `MODULES = { arquivos: { render, form, save, delete, searchId } }` substituindo cadeias de `if`.
+
+### Validação (prova)
+
+```bash
+npm test                      # controlador verde
+npm run test:e2e              # os 3 modulos piloto com comportamento identico
+```
+```bash
+# admin.js reduz pelo menos 25% de linhas
+(Get-Content admin.js).Count
+```
+Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificação manual no painel.
+`grep -c "filtrar" admin.js` → 0 (ou só as que o plano documentar).
+
+### Checklist
+- [ ] controlador testado
+- [ ] 13 módulos migrados
+- [ ] duplicatas removidas
+- [ ] `admin.js` −25% de linhas
+- [ ] busca/página persistem
+- [ ] nenhuma função órfã
+- [ ] comportamento idêntico (E2E)
+
+### Rollback
+`git checkout -- admin.js` (+ remover arquivo novo).
+
+---
+
+# BLOCO 12 — Repaginação de UX do admin
+
+**Objetivo:** resolver o relato do dono: "não sinto que algo está acontecendo".
+**Começa com design, não com código.**
+
+### T12.0 — Design (obrigatório)
+
+- [ ] **T12.0.1 — Brainstorming + spec**
+  Cobrir: abertura do modal, estados (`idle → salvando → salvo → erro`), anexos com progresso, selects dependentes, validação por campo, cancelar com alterações pendentes.
+- [ ] **T12.0.2 — Protótipo HTML estático** aprovado pelo dono **antes** de tocar em `admin.js`.
+
+### Tarefas de implementação (só depois da aprovação)
+
+- [ ] **T12.1 — Modal com máquina de estados** — não permite duplo envio; progresso visível em < 200 ms; erro mantém o formulário com os dados.
+- [ ] **T12.2 — Uploads com progresso e cancelamento** — arquivo de 10 MB mostra progresso real; cancelar libera o formulário; falha permite tentar de novo sem reescolher.
+- [ ] **T12.3 — Feedback global de ação** — toda gravação emite estado visível em < 200 ms e resultado explícito (não depender de toast de 3 s).
+- [ ] **T12.4 — Selects dependentes pesquisáveis** — sistema → processo → manual, com teclado e busca; trocar o pai limpa os filhos de forma previsível.
+- [ ] **T12.5 — Acessibilidade do admin** — foco preso no modal, `Esc` fecha, `aria-live` nos toasts, labels associados, navegação completa por teclado.
+
+### Validação (prova)
+- roteiro de teste manual por tarefa, com captura antes/depois
+- `npm run test:e2e` cobrindo os novos estados
+- checklist de teclado (Tab/Shift+Tab/Esc/Enter) executado no formulário completo
+
+### Checklist
+- [ ] protótipo aprovado antes do código
+- [ ] duplo envio bloqueado
+- [ ] progresso de upload real
+- [ ] erro preserva dados
+- [ ] feedback em < 200 ms
+- [ ] teclado completo
+
+---
+
+# BLOCO 13 — Produto público e higiene
+
+**Objetivo:** SEO, acessibilidade, CSS, CDN e limpeza de repositório. Sem impacto em segurança; pode rodar por último ou em paralelo.
+
+**Achados:** M5, M7, M8, M9, M12, B1–B5.
+
+| Tarefa | Ação | Validação | Esforço |
+|---|---|---|---|
+| T13.1 | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
+| T13.2 | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
+| T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
+| T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
+| T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
+| T13.6 | Higiene de repositório | `plano-refatoracao-v1.3.md` (mojibake real) regenerado/arquivado; branch fantasma `codex/fase1-...` e `origin/master` órfã **com confirmação do dono**; ADRs; `README.md` de setup | S |
+
+### Checklist do bloco
+- [ ] nenhuma mudança visual não intencional (screenshots)
+- [ ] Lighthouse SEO ≥ 90 e a11y ≥ 90
+- [ ] app funciona com CDN bloqueado
+- [ ] `AGENTS.md` atualizado com a nova arquitetura
+- [ ] nenhuma branch apagada sem autorização explícita
+
+---
+
+## 8. Rastreabilidade — todo achado tem dono
+
+| Achado | Bloco |
+|---|---|
+| **C1** rascunho trafega para o visitante | 1, 3 (anon já bloqueado — provado), 7 |
+| **C2** qualquer conta autenticada = admin | **0, 3**, 5, 6 |
+| **C3** token do Instagram | 10 |
+| **A1** XSS armazenado | 9 |
+| **A2** escrita local-first silenciosa | 8 |
+| **A3** ID gerado no cliente | 8 |
+| **A4** `replaceCollection` destrutivo | 8 |
+| **A5** sem testes/lint/CI | 4 |
+| **M1** duplicação no admin | 11 |
+| **M2** helpers duplicados | 9 |
+| **M3** busca não persiste no admin | 11 |
+| **M4** handlers inline | 9 |
+| **M5** sem roteamento | 13 |
+| **M6** `publish_status` fail-open | 7 |
+| **M7** SEO | 13 |
+| **M8** acessibilidade | 9, 12, 13 |
+| **M9** CSS monolítico | 13 |
+| **M10** `options` morto | 8 |
+| **M11** clone duplo no boot | 8 |
+| **M12** CDN frágil | 13 |
+| **B1–B5** higiene de repositório | 13 |
+| **B6** banco não versionado | **2** |
+
+## 9. Mapa v1 → v2
+
+| v1 | v2 | Observação |
+|---|---|---|
+| Fase 0 / T0.1 auditoria | **Bloco 1** | já executada |
+| Fase 0 / T0.2 baseline | **Bloco 2** | prioridade elevada |
+| Fase 0 / T0.3 política interina anon | **removida como tarefa** | **já existe e está provada**; virou teste de regressão no Bloco 1 |
+| Fase 0 / T0.4 papel no login | **Bloco 5** | deixou de ser contenção e passou a defesa em profundidade |
+| Fase 0 / T0.5 token Instagram | **Bloco 10** | mantido |
+| Fase 0 / T0.6 backup | fundido no Bloco 2 | a baseline é o backup estrutural; o `pg_dump` continua recomendado |
+| — | **Bloco 0 (novo)** | fechar `disable_signup` — contenção real do C2 |
+| — | **Bloco 3 (novo)** | gate `is_admin()` no RLS — correção real do C2 |
+| Fase 1 base de qualidade | **Bloco 4** | mesma função, posição reajustada |
+| Fase 2 RBAC | **Bloco 6** | mantido; now reduzido ao que sobra após o Bloco 3 |
+| Fase 3 escrita | **Bloco 8** | mantido |
+| Fase 4 saída segura | **Bloco 9** | mantido |
+| Fase 5 consolidação admin | **Bloco 11** | mantido |
+| Fase 6 UX do admin | **Bloco 12** | mantido |
+| Fase 7 produto público | **Bloco 13** | mantido |
+| Fase 8 higiene | **Bloco 13** | fundido |
+| — | **Bloco 7 (novo)** | defesa em profundidade do rascunho |
+
+## 10. Decisões abertas (precisam do dono)
+
+| # | Decisão | Trava | Recomendação |
+|---|---|---|---|
+| 1 | Executar o **Bloco 0** agora? | blocos 1–3 | **Sim.** Leva 5 min e é o único risco com exploração trivial hoje |
+| 2 | **Caminho A** (fechar `authenticated` com gate mínimo agora; áreas no Bloco 6) ou **B** (modelo completo antes)? | bloque 3 e 6 | **A** |
+| 3 | Método de execução: nativo nas Fases 0–4 e subagent da Fase 5 em diante, ou tudo nativo? | todos | nativo até o Bloco 5 |
+| 4 | **Matriz de permissões** (T6.0.1/T6.0.2) | Bloco 6 | decisão de negócio |
+| 5 | Existe campo sensível a mascarar em `funcionarios`? | Bloco 6 | decisão de negócio |
+| 6 | Autorizar a rotação do token do Instagram (T10.1) e o redeploy do feed? | Bloco 10 | sim, o token atual circulou no browser |
+| 7 | Autorizar a limpeza das branches fantasma (T13.6)? | Bloco 13 | sim, mas é irreversível no remoto |
+
+## 11. O que este plano não faz
+
+- Não decide a matriz de permissões por você (Bloco 6 precisa da sua decisão).
+- Não define o visual da repaginação (Bloco 12 precisa de design aprovado).
+- Não faz push para `main` nem para o remoto em nenhum momento.
+- Não promete que o app fica 100% seguro com o Bloco 0: o Bloco 0 apenas fecha a porta de entrada. A correção estrutural é o Bloco 3.
+
+## 12. Regras de ouro para o agente executor
+
+1. **Um bloco, uma validação, um commit.** Nunca dois blocos no mesmo commit.
+2. **A ordem 0 → 1 → 2 → 3 é intocável.** Sem baseline (2), não há rollback para o Bloco 3.
+3. **No Bloco 3, promover o admin antes de fechar as policy.** Inverter isso derruba o painel.
+4. **Nunca** remover a policy `anon` de `publish_status = 'published'`. É ela que mantém o site de pé.
+5. **Provar, não supor:** toda afirmação de segurança precisa de saída de comando colada como evidência.
+6. **Não "consertar de passagem".** Registre e siga.
+7. **Nada em `main`.**
