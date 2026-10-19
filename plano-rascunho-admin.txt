@@ -33,7 +33,8 @@ Concluido:
   - Bloco 3 (tabela): APLICADO EM PRODUCAO (escrita + leitura)
   - Bloco 3c (limpeza): rascunho id=45 e orfao apagados, com backup local
   - Bloco 3b (parte 1): gate is_admin nas 12 policies de storage.objects
-  - Bloco 4 (rede de seguranca): eslint + harness vm + 21 testes + playwright
+  - Bloco 4 (rede de seguranca): eslint + harness vm + 29 testes + playwright
+  - Bloco 4.1: publish_status fail-closed + migracao do formato antigo
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
@@ -51,6 +52,8 @@ Commits locais (codex/fase2, sem push):
   0d31e24  docs: confirma upload/exclusao no painel
   239a271  bloco 4: eslint + harness vm + 21 testes de unidade
   c00c64d  bloco 4: playwright (4 fluxos publicos) + CI
+  b2c144b  bloco 4: registro do desvio e pendencias
+  029bb30  bloco 4.1: publish_status fail-closed + migracao do formato antigo
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -71,9 +74,10 @@ Bloco 4, medido:
   nenhuma linha de db.js/script.js/admin.js/dados.js mudou
 
 Proxima acao sugerida:
-  Decidir PENDENTE 5 (fail-open do publish_status), que e a unica coisa
-  encontrada no Bloco 4 com peso de seguranca, antes de seguir para o Bloco 5.
-  Depois: Bloco 5 adaptado (ver PENDENTE 6) ou projeto de teste + 3b parte 2.
+  Bloco 5 adaptado (ver PENDENTE 6) ou projeto de teste + 3b parte 2.
+  Antes de qualquer um: rodar a suite completa (npm run check + npm run
+  test:e2e) e, se possivel, abrir o painel e criar/editar um registro para
+  confirmar que o fail-closed nao atrapalhou a publicacao.
 
 =========================================================================
 PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
@@ -107,13 +111,16 @@ PENDENTE 3 — projeto Supabase de TESTE
 PENDENTE 4 — nenhum. (Teste humano do Storage: upload e exclusao confirmados
 pelo dono em 2026-10-19; o gate da 0004 nao atrapalhou o painel.)
 
-PENDENTE 5 — decisao: publish_status ausente vira PUBLICADO (fail-open)
-  db.js `_normalizePublishStatus`: so o valor exato 'draft' mantem rascunho;
-  todo o resto (undefined, null, '', valor desconhecido) vira 'published'.
-  Medido hoje: 0 registros sem status, entao o impacto atual e zero.
-  Risco futuro: linha vinda do Supabase sem a coluna aparece no site publico.
-  Teste que trava o comportamento atual: tests/unit/db.test.mjs
-  ("DIVERGENCIA CONHECIDA"). Corrigir = bloco proprio, com teste antes.
+PENDENTE 5 — RESOLVIDO em 2026-10-19 (Bloco 4.1)
+  publish_status agora e fail-closed: so 'published' explicito publica.
+    db.js  _normalizePublishStatus  -> ausente/nulo/vazio/desconhecido = 'draft'
+    script.js isPublished           -> exige 'published'
+  Migracao do formato antigo em db.js (_migrarPublishStatusLegado), so nos
+  caminhos locais (localStorage atual, chave legada seagri_db_v1 e dados.js):
+  dados.js tinha 76 registros e ZERO com o campo; sem a migracao o fallback
+  local ficaria vazio. Dado do Supabase NAO passa pela migracao.
+  Prova: 29/29 testes, 5 e2e verdes, 3 cards de processo no site publico e o
+  rascunho id=4 fora. Detalhes no BLOCO 4.1 do plano v2.
 
 PENDENTE 6 — Bloco 5 do plano esta desatualizado
   O plano fala em `app_metadata.role` no JWT. A implementacao real e a tabela

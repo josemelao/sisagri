@@ -885,9 +885,9 @@ Remover os arquivos de ferramenta. Nada disso entra no app em produção (não �
 ```
 npm run syntax   -> exit 0
 npm run lint     -> exit 0    (0 erros, 124 avisos no-unused-vars)
-npm test         -> exit 0    (21 testes, 21 passando)
+npm test         -> exit 0    (29 testes, 29 passando)
 npm run check    -> exit 0
-npm run test:e2e -> exit 0    (4 passed, 2 skipped, 16s)
+npm run test:e2e -> exit 0    (5 passed, 2 skipped, 16s)
 git diff --stat <antes do bloco>..HEAD -- db.js script.js admin.js dados.js
                  -> vazio (nenhuma linha do app mudou)
 ```
@@ -899,16 +899,13 @@ git diff --stat <antes do bloco>..HEAD -- db.js script.js admin.js dados.js
 `.github/workflows/ci.yml`, `docs/qualidade/linha-de-base-lint.md`.
 `.gitignore` ganhou `test-results/` e `playwright-report/`.
 
-#### Desvio 1 — o plano esperava "default = rascunho"; o código publica
+#### Desvio 1 — o plano esperava "default = rascunho"; o código publicava (CORRIGIDO)
 
-`_normalizePublishStatus` devolve `'published'` para qualquer valor que não seja
-exatamente `'draft'`. Ou seja: **fail-open**. O teste está marcado
-`DIVERGENCIA CONHECIDA` em `tests/unit/db.test.mjs`.
+`_normalizePublishStatus` devolvia `'published'` para qualquer valor que não
+fosse exatamente `'draft'`. Ou seja: **fail-open**.
 
-Hoje o impacto medido é **zero** (a auditoria achou 0 registros sem
-`publish_status`), mas a direção é errada para o futuro. Não foi corrigido
-porque o T4 proíbe mexer no app. **Decisão pendente** — a correção natural é um
-bloco próprio, com teste antes.
+Corrigido em seguida, em 2026-10-19, com autorização do dono — ver
+**BLOCO 4.1** abaixo. Não ficou "pendente".
 
 #### Desvio 2 — `escapeHtml` não escapa aspas e lança com não-string
 
@@ -929,6 +926,63 @@ dependência do Bloco 3b parte 2.
 
 O workflow está no repositório, mas a branch `codex/fase2` não tem remoto. O
 primeiro `git push` é que prova o verde na aba Actions.
+
+---
+
+# BLOCO 4.1 — publish_status fail-closed
+
+**Origem:** achado do Bloco 4 (Desvio 1). Autorizado pelo dono em 2026-10-19:
+"gosto da ideia de que status ausente vira rascunho".
+
+**Objetivo:** só `publish_status = 'published'` explícito publica. Ausente,
+nulo, vazio ou valor desconhecido fica em rascunho.
+
+### O que mudou (2 funções, 1 migração)
+
+| Arquivo | Função | Antes | Depois |
+|---|---|---|---|
+| `db.js` | `_normalizePublishStatus` | `'draft'` mantém; resto publica | só `'published'` publica |
+| `script.js` | `isPublished` | `publish_status \|\| 'published'` | `=== 'published'` |
+| `db.js` | `_migrarPublishStatusLegado` (nova) | — | marca `'published'` em registro **local** sem status |
+
+A migração roda **só** nos 3 caminhos locais de `_initLocal`: `localStorage`
+atual, `localStorage` legado `seagri_db_v1` e `dados.js`. Dado vindo do
+Supabase **não** passa por ela.
+
+### Por que a migração era obrigatória
+
+`dados.js` tem **76 registros e nenhum com `publish_status`** — é um snapshot
+anterior ao campo. Sem a migração, inverter o default deixaria o fallback local
+inteiro em rascunho e o site apareceria **vazio** justamente quando o Supabase
+falhasse.
+
+### Prova (TDD: teste falhou antes da correção)
+
+- `db.test.mjs`: 2 testes novos falharam com `actual: 'published', expected: 'draft'`
+  antes da correção de `_normalizePublishStatus`.
+- `script.test.mjs`: 2 testes novos falharam (`isPublished({})` dava `true`;
+  `filterPublished` devolvia 2 em vez de 1) antes da correção de `isPublished`.
+- Banco medido: só `published` e `draft`, 0 nulos (59 publicados + 1 rascunho).
+- Fallback local com o `dados.js` real: 76/76 `published`, 0 sem status.
+- Site público (Chromium): módulo processos mostra **3** cards; o rascunho
+  "Compra por Dispensa de Licitação" **não** aparece.
+- `npm run check` exit 0 (29/29); `npm run test:e2e` exit 0 (5 passed, 2 skipped).
+
+### Efeito no painel
+
+- Registro novo sem status explícito nasce **rascunho**.
+- Edição não perde status (`DB.update` faz merge do registro atual).
+- Na prática o admin sempre envia status explícito (`getModalPublishStatus`
+  devolve `'draft'` só com o toggle desligado; sem toggle, `'published'`), então
+  o fluxo normal do painel não muda.
+
+### Riscos residuais
+
+- `localStorage` de um navegador que já tenha dados locais **sem** o campo: a
+  migração cobre. Se algum registro tiver valor estranho (não vazio), ele vira
+  rascunho — comportamento desejado.
+- `isPublished` agora exige o campo. Qualquer objeto público criado no futuro
+  fora de `DB.get` precisa ter `publish_status` explícito.
 
 ---
 
