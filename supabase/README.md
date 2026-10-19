@@ -11,15 +11,16 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **2** (`0002`, `0003`) |
-| `supabase_migrations.schema_migrations` | `20261019205209` + `20261019205211` |
+| Migrations aplicadas em produção | **3** (`0002`, `0003`, `0004`) |
+| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229` |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
-| Achado C2 | **fechado** em 2026-10-19 |
+| Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
 
 O projeto não usava migrations versionadas. O Bloco 3 é a primeira DDL
-rastreável: `0002` (escrita) e `0003` (leitura) foram aplicadas em produção pelo
-próprio MCP e ficaram registradas na tabela de histórico — que estava vazia.
+rastreável: `0002` (escrita em tabela), `0003` (leitura em tabela) e `0004`
+(Storage) foram aplicadas em produção pelo próprio MCP e ficaram registradas na
+tabela de histórico — que estava vazia.
 
 Os `0001_*` continuam sendo **snapshots por introspecção** do catálogo do
 Postgres em **2026-10-19**, e não foram executados contra produção.
@@ -34,9 +35,11 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0001_baseline_policies.sql` | 73 policies em `public` + 12 em `storage.objects` | **Não sem autorização** |
 | `migrations/0002_admin_gate.sql` | Bloco 3: `is_admin()` + 42 policies de escrita fechadas + fix N1 | **Aplicado em 2026-10-19** |
 | `migrations/0003_hardening_leitura.sql` | Bloco 3 (parte 2): 14 SELECT de conteúdo + 3 de `admin_settings` fechadas | **Aplicado em 2026-10-19** |
+| `migrations/0004_storage_gate.sql` | Bloco 3b (parte 1): 12 policies de `storage.objects` com `is_admin()` | **Aplicado em 2026-10-19** |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
 | `tests/02_admin_gate.sql` | 7 consultas de verificação do Bloco 3 | Sim — **só leitura** |
 | `tests/03_hardening_leitura.sql` | 15 medições do estado final (por papel) | Sim — **transação revertida** |
+| `tests/04_storage_rascunho_publico.sql` | objetos públicos que não deveriam existir (N5) | Sim — **só leitura** |
 
 Os números acima foram conferidos: 73 + 12 = **85 `create policy`**.
 
@@ -110,14 +113,18 @@ passam a exigir `is_admin()`, mantendo as travas de `scope = 'global'`.
 Policies: **73** no total = 59 exigindo `is_admin()` + 14 `anon` intactas.
 Zero policy de `authenticated` com `using (true)`.
 
-### O que o Bloco 3 NÃO fecha (medido)
+### O que o Bloco 3 (tabelas) NÃO fechava — e como ficou
 
-| Furo | Medição | Onde tratar |
-|---|---|---|
-| URL do objeto do rascunho `id=45` | público por bucket `public = true` | Blocos 3b / 3c |
-| Buckets `public = true` (3) | `arquivos` 59 objetos, `funcionarios-fotos` 3, `manuais-imagens` 73 | Blocos 3b / 3c |
+| Furo | Situação |
+|---|---|
+| Objeto do rascunho `id=45` servido por URL pública | **resolvido em 2026-10-19** — rascunho e objeto apagados (backup local antes) |
+| Objeto órfão em `arquivos-smader` (1,4 MB) | **resolvido** — apagado, com backup local |
+| Qualquer autenticado lista/sobrescreve/apaga arquivo | **resolvido pela `0004`** |
+| Buckets `public = true` (3) | **em aberto** — mecanismo real, é o Bloco 3b parte 2 |
 
-O banco está fechado. O rascunho ainda pode vazar por **Storage**, não por RLS.
+O banco está fechado e o Storage está fechado para escrita. O que resta é o
+**mecanismo**: bucket público não consulta policy, então um upload novo em
+rascunho nasce público. Fechar isso exige bucket privado + URL assinada.
 
 ### Aplicar e reverter
 
@@ -128,6 +135,36 @@ Rollback: aplicar `migrations/0001_baseline_policies.sql` devolve as 42 policies
 de escrita liberadas; para devolver também as 15 de leitura, ele já é o arquivo
 completo (73 policies). A ACL de `rls_auto_enable()` volta com
 `grant execute on function public.rls_auto_enable() to public, anon, authenticated;`.
+As 12 de `storage.objects` também voltam ao formato antigo por esse arquivo.
+
+---
+
+## `0004_storage_gate.sql` — Storage, parte 1
+
+Fecha quem pode **listar, sobrescrever e apagar** arquivos. As 12 policies de
+`storage.objects` eram `to authenticated` só com `bucket_id = '...'` — ou seja,
+qualquer conta autenticada mandava nos 3 buckets. Agora exigem `is_admin()`.
+
+Medido, em transação revertida e depois de aplicar:
+
+| Persona | Objetos visíveis | DELETE |
+|---|---|---|
+| `anon` | 0 | negado |
+| não-admin | 0 (era 133) | **0 linhas** |
+| admin | 133 | 57 (revertido) |
+
+Detalhe técnico que custou uma rodada: **não dá para apagar objeto por SQL**. Há
+o trigger `storage.protect_delete`, que exige a Storage API. A API, por sua vez,
+faz um `SELECT` antes de apagar (para devolver os metadados) — então apagar exige
+policy de leitura **e** de escrita. Foi assim que o objeto do `id=45` e o órfão
+saíram: policy temporária para esses dois nomes exatos, chamada da API, policy
+derrubada. Nada permanente ficou.
+
+**O que a `0004` não fecha:** o bucket continua `public = true`. URL pública não
+consulta policy, então qualquer objeto segue alcançável por
+`/storage/v1/object/public/...`. Limpeza de registro não resolve o mecanismo —
+por isso `tests/04_storage_rascunho_publico.sql` existe e precisa continuar
+retornando 0 linhas.
 
 ---
 
@@ -146,6 +183,13 @@ regressão dos Blocos 3, 3c e 7 — rode antes e depois de cada mudança de RLS.
 
 As consultas SQL equivalentes estão em `tests/01_anon_policy.sql`.
 
+### Verificar o Storage (seguro, só leitura)
+
+Rode `tests/04_storage_rascunho_publico.sql` pelo MCP. Esperado: **0 linhas** na
+segunda consulta. Qualquer linha é um arquivo público pertencente a registro não
+publicado (ou sem registro). Ele **não** cobre `manuais`, que não tem coluna de
+vínculo — as imagens ficam embutidas no HTML de `passos`.
+
 ### Reconstruir um projeto de teste
 
 Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
@@ -154,6 +198,7 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
 2. `migrations/0001_baseline_policies.sql`
 3. `migrations/0002_admin_gate.sql`
 4. `migrations/0003_hardening_leitura.sql`
+5. `migrations/0004_storage_gate.sql`
 
 Depois disso, aponte `db.js` para o projeto de teste e rode o script. Como o
 Bloco 3 já está em produção, isso serve principalmente para ensaiar os Blocos 3b
