@@ -40,6 +40,7 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `tests/02_admin_gate.sql` | 7 consultas de verificação do Bloco 3 | Sim — **só leitura** |
 | `tests/03_hardening_leitura.sql` | 15 medições do estado final (por papel) | Sim — **transação revertida** |
 | `tests/04_storage_rascunho_publico.sql` | objetos públicos que não deveriam existir (N5) | Sim — **só leitura** |
+| `functions/instagram/index.ts` | Bloco 10: proxy do feed; token só em Secrets | **Deploy pendente** |
 
 Os números acima foram conferidos: 73 + 12 = **85 `create policy`**.
 
@@ -165,6 +166,51 @@ consulta policy, então qualquer objeto segue alcançável por
 `/storage/v1/object/public/...`. Limpeza de registro não resolve o mecanismo —
 por isso `tests/04_storage_rascunho_publico.sql` existe e precisa continuar
 retornando 0 linhas.
+
+---
+
+## `functions/instagram/` — proxy do Instagram (Bloco 10)
+
+Arquivo: `functions/instagram/index.ts`.
+
+**Por que:** o token de longa duração do Instagram ficava no `localStorage` do
+navegador e viajava na query string (`...&access_token=...`). Agora ele fica em
+Supabase Secrets e nunca chega ao cliente.
+
+**O frontend manda:** `GET /functions/v1/instagram` com `apikey` +
+`Authorization: Bearer <anon key>`.
+
+**A function devolve:** `{ "data": [ ...postagens... ] }` — mesmo formato da API
+antiga, para o frontend não traduzir nada.
+
+| Config | Onde | Valor |
+|---|---|---|
+| `IG_ACCESS_TOKEN` | Supabase Secrets | token de longa duração (obrigatório) |
+| `IG_ALLOWED_ORIGINS` | Supabase Secrets | `https://dominio,http://localhost:5173` (opcional; vazio = qualquer origem) |
+
+**Cache:** 5 minutos em memória da instância (`x-cache: hit|miss`).
+**Falha:** o widget mostra "Feed do Instagram indisponível no momento." — a
+página não quebra.
+
+### Deploy — **ainda não feito**
+
+O MCP deste ambiente está configurado sem a feature `functions` e o CLI do
+Supabase não está instalado. Caminho mais curto:
+
+```bash
+supabase login
+supabase link --project-ref yiujxempodimegdoexqo
+supabase secrets set IG_ACCESS_TOKEN=...
+supabase functions deploy instagram
+```
+
+Alternativa sem CLI: Dashboard → Edge Functions → Deploy new function → colar
+`functions/instagram/index.ts` → adicionar o secret `IG_ACCESS_TOKEN`.
+
+O `verify_jwt` padrão (`true`) está correto: o frontend envia a anon key.
+
+Enquanto não for deployada, `GET /functions/v1/instagram` responde
+`404 {"code":"NOT_FOUND"}` — medido em 2026-10-19.
 
 ---
 

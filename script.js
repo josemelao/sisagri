@@ -751,52 +751,89 @@ function renderDashAvisos() {
   container.innerHTML = avisos.map(a => avisoItemHTML(a)).join("");
 }
 
-function initInstagram() {
-  const savedToken = localStorage.getItem("ig_access_token");
-  const tokenInput = document.getElementById("ig-token-input");
-  const saveBtn    = document.getElementById("ig-token-save");
+/* ------------------------------------------------------------
+   INSTAGRAM — o token NÃO fica no navegador.
 
-  if (savedToken) {
-    tokenInput.value = savedToken;
-    fetchInstagramPosts(savedToken);
-  }
+   Quem fala com o Instagram é a Edge Function `instagram`
+   (supabase/functions/instagram/index.ts), que lê o token de
+   Supabase Secrets e devolve só a lista de postagens.
+   O front nunca vê o token, e a query string nunca o carrega.
+   ------------------------------------------------------------ */
 
-  saveBtn.addEventListener("click", () => {
-    const token = tokenInput.value.trim();
-    if (!token) return;
-    localStorage.setItem("ig_access_token", token);
-    fetchInstagramPosts(token);
-  });
+const IG_TOKEN_LS_KEY = "ig_access_token"; // chave de versões antigas: só para apagar
+const IG_FUNCTION_PATH = "/functions/v1/instagram";
+
+function getInstagramProxyUrl() {
+  const base = (typeof DB_CONFIG !== "undefined" && DB_CONFIG.SUPABASE_URL) || "";
+  return base ? base.replace(/\/+$/, "") + IG_FUNCTION_PATH : "";
 }
 
-async function fetchInstagramPosts(token) {
+/** Escapa valor para dentro de atributo HTML (aspas incluídas). */
+function escapeAttr(valor) {
+  return escapeHtml(String(valor == null ? "" : valor))
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function initInstagram() {
+  // Versões antigas guardavam o token aqui. Remove de quem já tinha.
+  try {
+    if (localStorage.getItem(IG_TOKEN_LS_KEY)) {
+      localStorage.removeItem(IG_TOKEN_LS_KEY);
+      console.info("[Instagram] Token local removido: o feed agora vem do servidor.");
+    }
+  } catch (_) {
+    // localStorage indisponível (modo privado): nada a limpar.
+  }
+
+  fetchInstagramPosts();
+}
+
+async function fetchInstagramPosts() {
   const grid = document.getElementById("ig-grid");
   if (!grid) return;
+
+  const url = getInstagramProxyUrl();
+  if (!url) {
+    grid.innerHTML = `<p class="ig-empty">Feed do Instagram indisponível.</p>`;
+    return;
+  }
+
   grid.innerHTML = `<div class="ig-loading"><i class="ph-bold ph-spinner"></i> Carregando...</div>`;
+
   try {
-    const url = `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&limit=6&access_token=${token}`;
-    const res  = await fetch(url);
-    if (!res.ok) throw new Error("Token inválido ou expirado.");
-    const data = await res.json();
-    if (!data.data || data.data.length === 0) {
+    const res = await fetch(url, {
+      headers: {
+        apikey: DB_CONFIG.SUPABASE_KEY,
+        Authorization: `Bearer ${DB_CONFIG.SUPABASE_KEY}`,
+      },
+    });
+    if (!res.ok) throw new Error(`Feed indisponível (HTTP ${res.status}).`);
+
+    const payload = await res.json();
+    const posts = Array.isArray(payload?.data) ? payload.data : [];
+    if (posts.length === 0) {
       grid.innerHTML = `<p class="ig-empty">Nenhuma postagem encontrada.</p>`;
       return;
     }
-    grid.innerHTML = data.data.map(post => {
+
+    grid.innerHTML = posts.map(post => {
       const img = post.media_type === "VIDEO" ? post.thumbnail_url : post.media_url;
-      const cap = post.caption ? post.caption.slice(0, 80) + (post.caption.length > 80 ? "…" : "") : "";
+      const legenda = post.caption || "";
+      const cap = legenda.slice(0, 80) + (legenda.length > 80 ? "…" : "");
       return `
-        <a href="${post.permalink}" target="_blank" rel="noopener" class="ig-post">
-          <img src="${img}" alt="${cap}" loading="lazy" />
+        <a href="${escapeAttr(post.permalink)}" target="_blank" rel="noopener" class="ig-post">
+          <img src="${escapeAttr(img)}" alt="${escapeAttr(cap)}" loading="lazy" />
           <div class="ig-post-overlay"><i class="ph-bold ph-instagram-logo"></i></div>
         </a>`;
     }).join("");
   } catch (err) {
+    // Mensagem para o visitante nao carrega detalhe tecnico (que vai no console).
+    console.warn("[Instagram] Falha ao carregar o feed:", err);
     grid.innerHTML = `
       <div class="ig-error">
         <i class="ph-bold ph-warning-circle"></i>
-        <p>${err.message}</p>
-        <small>Verifique se o token está correto e ainda é válido.</small>
+        <p>Feed do Instagram indisponível no momento.</p>
       </div>`;
   }
 }
@@ -2699,17 +2736,6 @@ function getInstagramWidgetHTML() {
         </a>
       </div>
       <div class="side-widget-body" id="body-instagram">
-        <div class="ig-info-box">
-          <i class="ph-bold ph-lock-key"></i>
-          <div>
-            <strong>Integração via API do Instagram</strong>
-            <p>Para exibir postagens automáticas, configure o token de acesso do Instagram Basic Display API no campo abaixo e recarregue a página.</p>
-            <div class="ig-token-row">
-              <input type="text" id="ig-token-input" placeholder="Cole seu Access Token aqui..." />
-              <button id="ig-token-save">Salvar</button>
-            </div>
-          </div>
-        </div>
         <div class="ig-grid" id="ig-grid"></div>
       </div>
     </div>

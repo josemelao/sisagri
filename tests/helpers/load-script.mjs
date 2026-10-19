@@ -96,7 +96,10 @@ export function criarElemento(tag = 'div') {
   return el;
 }
 
-export function criarDocumento() {
+/**
+ * @param {object} elementos mapa id -> elemento falso, devolvido por getElementById
+ */
+export function criarDocumento(elementos = {}) {
   const doc = {
     readyState: 'loading',
     title: '',
@@ -108,7 +111,7 @@ export function criarDocumento() {
     addEventListener: () => {},
     removeEventListener: () => {},
     dispatchEvent: () => true,
-    getElementById: () => null,
+    getElementById: (id) => elementos[id] ?? null,
     getElementsByClassName: () => [],
     getElementsByTagName: () => [],
     querySelector: () => null,
@@ -140,7 +143,7 @@ export function carregarScripts(arquivos, opcoes = {}) {
     console: opcoes.console || console,
     localStorage: criarLocalStorage(opcoes.localStorage),
     sessionStorage: criarLocalStorage(),
-    document: criarDocumento(),
+    document: criarDocumento(opcoes.elementos),
     navigator: { userAgent: 'node-test', language: 'pt-BR', onLine: true },
     location: { href: 'http://localhost:5173/index.html', pathname: '/index.html', hash: '', search: '', origin: 'http://localhost:5173' },
     history: { pushState: () => {}, replaceState: () => {}, back: () => {}, forward: () => {} },
@@ -160,7 +163,7 @@ export function carregarScripts(arquivos, opcoes = {}) {
     clearTimeout,
     setInterval,
     clearInterval,
-    fetch: () => Promise.reject(new Error('fetch desligado nos testes unitarios')),
+    fetch: opcoes.fetch || (() => Promise.reject(new Error('fetch desligado nos testes unitarios'))),
     URL,
     URLSearchParams,
     TextEncoder,

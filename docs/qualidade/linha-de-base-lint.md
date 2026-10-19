@@ -18,6 +18,7 @@ documento **não** propõe correção nenhuma.
 | `tests/unit/db.test.mjs` | 18 testes de `db.js` |
 | `tests/unit/script.test.mjs` | 11 testes de `script.js` |
 | `tests/unit/admin-auth.test.mjs` | 5 testes de `DB.isAdminLoggedIn` |
+| `tests/unit/instagram.test.mjs` | 7 testes do widget/proxy do Instagram |
 | `playwright.config.mjs` | sobe o servidor e roda o Chromium |
 | `tests/e2e/publico.spec.mjs` | 5 fluxos do site, somente leitura |
 | `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
@@ -56,7 +57,7 @@ acusar `'DB' is not defined`, a config foi quebrada, não o código.
 
 ```
 npm test         ->  exit 0
-34 testes, 34 passando
+41 testes, 41 passando
 ```
 
 ### Check completo

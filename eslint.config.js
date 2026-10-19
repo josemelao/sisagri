@@ -63,7 +63,7 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
-      globals: { ...base, DB: 'readonly', dbInit: 'readonly' },
+      globals: { ...base, DB: 'readonly', dbInit: 'readonly', DB_CONFIG: 'readonly' },
     },
     rules: regrasApp,
   },

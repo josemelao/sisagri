@@ -1327,6 +1327,49 @@ Falha da function → o app degrada (não quebra a página).
 ### Rollback
 Reverter `script.js`; a function pode ficar.
 
+### Registro de execução (2026-10-19) — parcial, por desenho
+
+**Feito (código):**
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/instagram/index.ts` (novo) | proxy com cache de 5 min, CORS configurável, nunca loga a URL nem repassa o corpo de erro do Instagram |
+| `script.js` `initInstagram` | **apaga** `ig_access_token` do `localStorage` e chama o proxy |
+| `script.js` `fetchInstagramPosts` | chama `/functions/v1/instagram` com `apikey` + `Authorization`; não usa mais `graph.instagram.com` nem query string com token |
+| `script.js` `getInstagramWidgetHTML` | removeu o campo de token e o botão "Salvar" que apareciam para o visitante |
+| `script.js` `escapeAttr` (novo) | escapa `"` e `'` nos atributos do card (a legenda vem de fora) |
+
+**Medido em Chromium, com `ig_access_token` plantado no `localStorage`:**
+
+```
+input de token      : 0
+botao salvar token  : 0
+grid do feed        : 1
+token no localStorage: removido
+estado do grid      : "Feed do Instagram indisponível no momento."
+erros de JS         : nenhum
+```
+
+**TDD:** 7 testes em `tests/unit/instagram.test.mjs`, escritos antes. Falharam:
+campo de token presente, token não removido, chamada ao `graph.instagram.com`
+com `access_token` na URL, e injeção de atributo pela legenda.
+Depois: 41/41.
+
+#### PENDENTE — ações humanas (não dá para fazer daqui)
+
+1. **T10.1 — Rotacionar o token no Meta.** O token atual circulou em URL e no
+   `localStorage`: deve ser considerado comprometido. Gerar um novo e invalidar
+   o antigo.
+2. **T10.2 — Deploy da function.** Sem CLI do Supabase neste ambiente e sem a
+   feature `functions` no MCP. Passos em `supabase/README.md`.
+3. **T10.4 — Secret `IG_ACCESS_TOKEN`** no projeto.
+
+Até o deploy, `GET /functions/v1/instagram` responde `404 NOT_FOUND` (medido) e
+o widget mostra a mensagem de indisponibilidade. **O feed já não funcionava para
+visitante anônimo** — só funcionava no navegador que tinha o token no
+`localStorage` —, então não há regressão visível para o público; há ganho: o
+visitante deixou de ver um campo pedindo token.
+
 ---
 
 # BLOCO 11 — Consolidação do admin (motor de listas)
