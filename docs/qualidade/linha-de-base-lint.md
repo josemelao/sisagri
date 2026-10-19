@@ -15,10 +15,10 @@ documento **não** propõe correção nenhuma.
 | `eslint.config.js` | flat config; scripts clássicos no navegador, `sourceType: 'script'` |
 | `scripts/serve.mjs` | servidor estático sem dependência, `http://localhost:5173` |
 | `tests/helpers/load-script.mjs` | carrega `db.js`/`script.js` em `node:vm` com window/document/localStorage falsos |
-| `tests/unit/db.test.mjs` | 12 testes de `db.js` |
-| `tests/unit/script.test.mjs` | 9 testes de `script.js` |
+| `tests/unit/db.test.mjs` | 18 testes de `db.js` |
+| `tests/unit/script.test.mjs` | 11 testes de `script.js` |
 | `playwright.config.mjs` | sobe o servidor e roda o Chromium |
-| `tests/e2e/publico.spec.mjs` | 4 fluxos do site, somente leitura |
+| `tests/e2e/publico.spec.mjs` | 5 fluxos do site, somente leitura |
 | `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
 | `.github/workflows/ci.yml` | `check` + `e2e` em toda branch e PR |
 
@@ -55,7 +55,7 @@ acusar `'DB' is not defined`, a config foi quebrada, não o código.
 
 ```
 npm test         ->  exit 0
-21 testes, 21 passando
+29 testes, 29 passando
 ```
 
 ### Check completo
@@ -68,15 +68,17 @@ npm run check    ->  exit 0   (syntax + lint + test)
 
 ```
 npm run test:e2e ->  exit 0
-4 passed, 2 skipped   (16s)
+5 passed, 2 skipped   (16s)
 ```
 
-**4 fluxos verdes** no site público, todos somente leitura:
+**5 fluxos verdes** no site público, todos somente leitura:
 
 1. boot carrega, `#boot-screen` recebe `is-hidden` e o dashboard fica ativo;
 2. clicar no menu troca a página ativa e o item de menu;
 3. busca global só abre com 2+ letras (o `input` tem debounce de 300 ms);
-4. **todos os módulos** abrem sem exceção de JavaScript — este é o teste que
+4. **conteúdo publicado aparece** (`#processos-list` tem card) — guarda do
+   fail-closed: se o filtro ficar restritivo demais, o site abre vazio;
+5. **todos os módulos** abrem sem exceção de JavaScript — este é o teste que
    pega regressão de verdade (um `initXxx()` quebrado aparece aqui).
 
 **2 fluxos pulados** porque não há projeto de teste nem credenciais no
@@ -109,11 +111,13 @@ primeiro push é que valida o workflow.
 
 ## Achados dos testes de characterization
 
-Estes são comportamentos **reais de hoje** que divergem do que o plano supunha.
-Ficaram travados em teste, com o nome `DIVERGENCIA CONHECIDA`. **Nenhuma linha de
-`db.js` ou `script.js` foi alterada neste bloco** (é proibido pelo T4).
+Estes eram comportamentos **reais** que divergiam do que o plano supunha. O
+achado 1 foi corrigido em seguida (mesma data, autorização do dono). O achado 2
+continua aberto e fica para o Bloco 7.
 
-### 1. Status ausente vira `published`, não `draft`
+### 1. Status ausente publicava — CORRIGIDO (fail-closed)
+
+**Antes** (medido em 2026-10-19):
 
 ```js
 _normalizePublishStatus(undefined) // 'published'
@@ -121,16 +125,54 @@ _normalizePublishStatus(null)      // 'published'
 _normalizePublishStatus('lixo')    // 'published'
 ```
 
-O plano v2 dizia "default = rascunho". O código é **fail-open**: só o valor
-exato `'draft'` mantém rascunho; todo o resto publica.
+Só o valor exato `'draft'` mantinha rascunho. Todo o resto publicava — inclusive
+uma linha vinda do Supabase com a coluna ausente ou com valor inesperado.
 
-Impacto hoje: **nenhum medido** — a auditoria de 2026-10-19 achou 0 registros sem
-`publish_status` nas 14 tabelas. Mas é uma direção perigosa para o futuro: uma
-linha vinda do Supabase sem a coluna (ou com valor inesperado) aparece no site
-público.
+**Agora:**
 
-Decisão pendente: inverter para fail-closed (`'published'` só quando explicitamente
-`'published'`). Isso é mudança de comportamento e precisa de bloco próprio.
+```js
+_normalizePublishStatus('published') // 'published'
+_normalizePublishStatus('draft')     // 'draft'
+_normalizePublishStatus(undefined)   // 'draft'
+_normalizePublishStatus(null)        // 'draft'
+_normalizePublishStatus('lixo')      // 'draft'
+```
+
+Duas camadas mudaram, as duas com teste que falhou antes:
+
+| Arquivo | Função | Antes | Depois |
+|---|---|---|---|
+| `db.js` | `_normalizePublishStatus` | `'draft'` mantém, resto publica | só `'published'` publica |
+| `script.js` | `isPublished` | `publish_status \|\| 'published'` | `=== 'published'` |
+
+#### O detalhe que quase virou site vazio
+
+`dados.js` é um snapshot **anterior** ao campo: **76 registros, 0 com
+`publish_status`**. Inverter o default sem tratar isso deixaria o fallback local
+inteiro em rascunho — o site apareceria vazio justamente quando o Supabase
+falhasse.
+
+Por isso `db.js` ganhou `_migrarPublishStatusLegado()`, chamada **só** nos três
+caminhos locais (`localStorage` atual, `localStorage` legado `seagri_db_v1` e
+`dados.js`): registro sem status vira `'published'` **uma vez**, preservando o
+que o usuário já via. Linha vinda do Supabase **não** passa por essa migração.
+
+#### Prova executada
+
+```
+fallback local com o dados.js real: 76 registros, 76 published, 0 sem status
+site público, módulo processos: 3 cards (os 3 publicados)
+rascunho "Compra por Dispensa de Licitação" visível? NÃO
+admin: getModalPublishStatus() sempre devolve 'draft' ou 'published' explícito
+npm test: 29/29    npm run test:e2e: 5 passed, 2 skipped
+```
+
+#### O que isso muda no dia a dia do painel
+
+- Registro **novo** sem status explícito nasce rascunho (era publicado).
+- Edição de registro existente **não** perde o status: `DB.update` faz merge.
+- O admin sempre envia status explícito (`getModalPublishStatus`), então na
+  prática nada muda no fluxo normal.
 
 ### 2. `escapeHtml` não escapa aspas e lança com não-string
 

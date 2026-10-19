@@ -33,7 +33,10 @@ const MODULE_SEARCH_STATE_KEY = "smader_module_search_state_v1";
 
 function isPublished(item) {
   if (!item || typeof item !== "object") return false;
-  return (item.publish_status || "published") === "published";
+  // Fail-closed: só 'published' explícito aparece no site. Registro sem status
+  // é rascunho. O formato antigo (dados.js/localStorage sem o campo) é migrado
+  // uma vez em db.js antes de chegar aqui.
+  return item.publish_status === "published";
 }
 
 function filterPublished(list) {

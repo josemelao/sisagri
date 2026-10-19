@@ -73,6 +73,40 @@ test('getInitials: usa primeiro e ultimo de nomes compostos', () => {
 });
 
 /* ==========================================================================
+   isPublished / filterPublished  (fail-closed)
+   ========================================================================== */
+
+test('isPublished: status ausente NAO publica', () => {
+  const h = carregarApp();
+  const isPublished = h.get('isPublished');
+  assert.equal(isPublished({ id: 1 }), false);
+  assert.equal(isPublished({ id: 1, publish_status: null }), false);
+  assert.equal(isPublished({ id: 1, publish_status: '' }), false);
+  assert.equal(isPublished({ id: 1, publish_status: 'lixo' }), false);
+  assert.equal(isPublished(null), false);
+});
+
+test('isPublished: so "published" explicito publica', () => {
+  const h = carregarApp();
+  const isPublished = h.get('isPublished');
+  assert.equal(isPublished({ id: 1, publish_status: 'published' }), true);
+  assert.equal(isPublished({ id: 2, publish_status: 'draft' }), false);
+});
+
+test('filterPublished: lista mista mostra so os publicados', () => {
+  const h = carregarApp();
+  const filterPublished = h.get('filterPublished');
+  const lista = [
+    { id: 1, publish_status: 'published' },
+    { id: 2, publish_status: 'draft' },
+    { id: 3 },
+  ];
+  assert.equal(filterPublished(lista).length, 1);
+  assert.equal(filterPublished(lista)[0].id, 1);
+  assert.equal(filterPublished(null).length, 0);
+});
+
+/* ==========================================================================
    carga do app
    ========================================================================== */
 

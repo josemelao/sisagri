@@ -53,7 +53,20 @@ test.describe('app publico', () => {
     await expect(page.locator('#search-results')).not.toHaveClass(/visible/);
   });
 
-  test('4. todos os modulos abrem sem erro de JavaScript', async ({ page }) => {
+  test('4. conteudo publicado aparece (modulo processos nao fica vazio)', async ({ page }) => {
+    // Guarda do fail-closed: se o filtro de publish_status ficar restritivo
+    // demais, esta e a primeira coisa que quebra - o site abre, mas vazio.
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.locator('.nav-item[data-page="processos"]').click();
+    await expect(page.locator('#page-processos')).toHaveClass(/active/);
+
+    await expect(page.locator('#processos-list .list-card').first()).toBeVisible();
+    expect(await page.locator('#processos-list .list-card').count()).toBeGreaterThan(0);
+  });
+
+  test('5. todos os modulos abrem sem erro de JavaScript', async ({ page }) => {
     const erros = [];
     page.on('pageerror', (erro) => erros.push(erro.message));
 

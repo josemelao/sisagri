@@ -227,9 +227,11 @@ const PUBLISH_STATUS = {
 };
 
 function _normalizePublishStatus(value) {
-  return value === PUBLISH_STATUS.DRAFT
-    ? PUBLISH_STATUS.DRAFT
-    : PUBLISH_STATUS.PUBLISHED;
+  // Fail-closed: só 'published' explícito publica. Ausente, vazio ou valor
+  // desconhecido fica em rascunho — nunca aparece no site público por engano.
+  return value === PUBLISH_STATUS.PUBLISHED
+    ? PUBLISH_STATUS.PUBLISHED
+    : PUBLISH_STATUS.DRAFT;
 }
 
 function _withPublishStatus(registro) {
@@ -253,6 +255,31 @@ function _normalizeDbCollections() {
   if (!_db || typeof _db !== 'object') return;
   Object.keys(SUPABASE_TABLES).forEach((colecao) => {
     _db[colecao] = _normalizeCollectionData(colecao, _db[colecao]);
+  });
+}
+
+/**
+ * Migração de formato antigo.
+ *
+ * `dados.js` e localStorage gravados ANTES de `publish_status` existir não têm
+ * o campo. Esses registros já eram exibidos no site, então a migração os marca
+ * como 'published' uma vez, preservando o que o usuário já via.
+ *
+ * Isto vale SOMENTE para dados locais (dados.js / localStorage). Linha vinda do
+ * Supabase não passa por aqui: se vier sem status, é rascunho.
+ */
+function _migrarPublishStatusLegado(colecoes) {
+  if (!colecoes || typeof colecoes !== 'object') return;
+  Object.keys(SUPABASE_TABLES).forEach((colecao) => {
+    const lista = colecoes[colecao];
+    if (!Array.isArray(lista)) return;
+    lista.forEach((registro) => {
+      if (!registro || typeof registro !== 'object' || Array.isArray(registro)) return;
+      const status = registro.publish_status;
+      if (status === undefined || status === null || status === '') {
+        registro.publish_status = PUBLISH_STATUS.PUBLISHED;
+      }
+    });
   });
 }
 
@@ -581,6 +608,7 @@ function _initLocal() {
   if (saved) {
     try {
       _db = JSON.parse(saved);
+      _migrarPublishStatusLegado(_db);
       _ensureAppConfig();
       _normalizeDbCollections();
       _applyLocalAppConfig();
@@ -596,6 +624,7 @@ function _initLocal() {
   if (legacySaved) {
     try {
       _db = JSON.parse(legacySaved);
+      _migrarPublishStatusLegado(_db);
       _ensureAppConfig();
       _normalizeDbCollections();
       _applyLocalAppConfig();
@@ -615,6 +644,7 @@ function _initLocal() {
     return Promise.resolve();
   }
   _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
+  _migrarPublishStatusLegado(_db);
   _ensureAppConfig();
   _normalizeDbCollections();
   _applyLocalAppConfig();
