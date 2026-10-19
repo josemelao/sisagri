@@ -8,9 +8,9 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 
 Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
-  -> Blocos 0, 0.5, 1, 2, 3 (tabela) e 3c CONCLUIDOS.
+  -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c e 4 CONCLUIDOS.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
-  -> Os registros dentro dos Blocos 3 e 3c descrevem as divergencias do previsto.
+  -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
 Evidencia:
   C:\Users\PICHAU\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
@@ -33,6 +33,7 @@ Concluido:
   - Bloco 3 (tabela): APLICADO EM PRODUCAO (escrita + leitura)
   - Bloco 3c (limpeza): rascunho id=45 e orfao apagados, com backup local
   - Bloco 3b (parte 1): gate is_admin nas 12 policies de storage.objects
+  - Bloco 4 (rede de seguranca): eslint + harness vm + 21 testes + playwright
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
@@ -46,6 +47,10 @@ Commits locais (codex/fase2, sem push):
   9ae6e1b  0003 (fecha leitura de rascunho e admin_settings)
   c8a2179  docs: registro do bloco 3 aplicado
   9fe66a1  0004 (gate is_admin nas 12 policies de storage.objects)
+  5165f23  docs do 3b parte 1 e conclusao do 3c
+  0d31e24  docs: confirma upload/exclusao no painel
+  239a271  bloco 4: eslint + harness vm + 21 testes de unidade
+  c00c64d  bloco 4: playwright (4 fluxos publicos) + CI
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -60,9 +65,15 @@ Backup local (nao versionado, fora do repo):
     rascunho-id45-teste.pdf      87.377 bytes
     orfao-arquivos-smader.pdf 1.460.078 bytes
 
+Bloco 4, medido:
+  npm run check    exit 0   (0 erros de lint, 124 avisos, 21/21 testes)
+  npm run test:e2e exit 0   (4 fluxos verdes, 2 pulados sem credenciais)
+  nenhuma linha de db.js/script.js/admin.js/dados.js mudou
+
 Proxima acao sugerida:
-  Bloco 4 (rede de seguranca do codigo) antes do 3b parte 2, porque o 3b mexe em
-  script.js e o Bloco 4 e o que da rede para mexer la com seguranca.
+  Decidir PENDENTE 5 (fail-open do publish_status), que e a unica coisa
+  encontrada no Bloco 4 com peso de seguranca, antes de seguir para o Bloco 5.
+  Depois: Bloco 5 adaptado (ver PENDENTE 6) ou projeto de teste + 3b parte 2.
 
 =========================================================================
 PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
@@ -95,6 +106,20 @@ PENDENTE 3 — projeto Supabase de TESTE
 
 PENDENTE 4 — nenhum. (Teste humano do Storage: upload e exclusao confirmados
 pelo dono em 2026-10-19; o gate da 0004 nao atrapalhou o painel.)
+
+PENDENTE 5 — decisao: publish_status ausente vira PUBLICADO (fail-open)
+  db.js `_normalizePublishStatus`: so o valor exato 'draft' mantem rascunho;
+  todo o resto (undefined, null, '', valor desconhecido) vira 'published'.
+  Medido hoje: 0 registros sem status, entao o impacto atual e zero.
+  Risco futuro: linha vinda do Supabase sem a coluna aparece no site publico.
+  Teste que trava o comportamento atual: tests/unit/db.test.mjs
+  ("DIVERGENCIA CONHECIDA"). Corrigir = bloco proprio, com teste antes.
+
+PENDENTE 6 — Bloco 5 do plano esta desatualizado
+  O plano fala em `app_metadata.role` no JWT. A implementacao real e a tabela
+  public.app_admins + public.is_admin(). Antes de executar o Bloco 5, adaptar o
+  desenho: o painel deve perguntar ao banco (rpc is_admin / select em
+  app_admins), nao ler claim do JWT.
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS

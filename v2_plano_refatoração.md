@@ -866,15 +866,69 @@ git status --short   # esperado: so arquivos do bloco
 CI: workflow verde no push da branch (verificar na aba Actions).
 
 ### Checklist
-- [ ] `npm run serve` sobe o app e o boot funciona
-- [ ] `npm test` ≥ 10 testes verdes
-- [ ] `npm run test:e2e` 6 fluxos verdes
-- [ ] linha de base do lint registrada
-- [ ] CI verde
-- [ ] nenhuma linha de `db.js`/`script.js`/`admin.js` alterada (só reportagem de lint)
+- [x] `npm run serve` sobe o app e o boot funciona
+- [x] `npm test` ≥ 10 testes verdes
+- [~] `npm run test:e2e` **4 fluxos verdes + 2 pulados** (não 6 — ver registro)
+- [x] linha de base do lint registrada
+- [ ] CI verde — **não rodou**: branch sem remoto
+- [x] nenhuma linha de `db.js`/`script.js`/`admin.js` alterada (só reportagem de lint)
 
 ### Rollback
 Remover os arquivos de ferramenta. Nada disso entra no app em produção (não é referenciado pelos HTMLs).
+
+### Registro de execução (2026-10-19)
+
+**Commits:** `239a271` (eslint + harness + 21 testes) e `c00c64d` (playwright + CI).
+
+**Medido, nesta máquina:**
+
+```
+npm run syntax   -> exit 0
+npm run lint     -> exit 0    (0 erros, 124 avisos no-unused-vars)
+npm test         -> exit 0    (21 testes, 21 passando)
+npm run check    -> exit 0
+npm run test:e2e -> exit 0    (4 passed, 2 skipped, 16s)
+git diff --stat <antes do bloco>..HEAD -- db.js script.js admin.js dados.js
+                 -> vazio (nenhuma linha do app mudou)
+```
+
+**Arquivos criados:** `package.json`, `package-lock.json`, `eslint.config.js`,
+`scripts/serve.mjs`, `playwright.config.mjs`, `tests/helpers/load-script.mjs`,
+`tests/unit/db.test.mjs`, `tests/unit/script.test.mjs`,
+`tests/e2e/publico.spec.mjs`, `tests/e2e/admin.spec.mjs`,
+`.github/workflows/ci.yml`, `docs/qualidade/linha-de-base-lint.md`.
+`.gitignore` ganhou `test-results/` e `playwright-report/`.
+
+#### Desvio 1 — o plano esperava "default = rascunho"; o código publica
+
+`_normalizePublishStatus` devolve `'published'` para qualquer valor que não seja
+exatamente `'draft'`. Ou seja: **fail-open**. O teste está marcado
+`DIVERGENCIA CONHECIDA` em `tests/unit/db.test.mjs`.
+
+Hoje o impacto medido é **zero** (a auditoria achou 0 registros sem
+`publish_status`), mas a direção é errada para o futuro. Não foi corrigido
+porque o T4 proíbe mexer no app. **Decisão pendente** — a correção natural é um
+bloco próprio, com teste antes.
+
+#### Desvio 2 — `escapeHtml` não escapa aspas e lança com não-string
+
+Só trata `&`, `<`, `>`. Os usos atuais são todos em conteúdo de texto, onde
+aspas não quebram nada. O risco só aparece se alguém usar a função dentro de
+atributo. Fica para o Bloco 7 (XSS).
+
+#### Desvio 3 — 4 fluxos e2e, não 6
+
+Os dois fluxos de painel (login e listagem) existem e estão escritos, mas
+**pulam** sem `SISAGRI_ADMIN_EMAIL` / `SISAGRI_ADMIN_PASSWORD`. E os fluxos de
+**escrita** (criar/editar/apagar) foram deliberadamente **não** implementados:
+`db.js` aponta para o Supabase real, então um teste de escrita criaria dado de
+produção. Eles só entram junto com o projeto Supabase de teste — mesma
+dependência do Bloco 3b parte 2.
+
+#### Desvio 4 — CI escrito, ainda não validado
+
+O workflow está no repositório, mas a branch `codex/fase2` não tem remoto. O
+primeiro `git push` é que prova o verde na aba Actions.
 
 ---
 
