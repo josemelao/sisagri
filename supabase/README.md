@@ -369,20 +369,21 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
 12. `migrations/0009_storage_buckets_privados.sql` — **depois** da `00b`, que
     cria os buckets; deixa `arquivos` e `funcionarios` privados
 13. `migrations/0010_manuais_imagens_policy.sql` — policy de imagem de manual
-    publicado (o bucket `manuais-imagens-smader` pode seguir público no teste)
-14. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
-15. `tests/07_manuais_imagens_storage.sql` — policy de imagem de manual
+    publicado
+14. `migrations/0011_manuais_imagens_bucket_privado.sql` — deixa o bucket de
+    manuais privado; no teste atual foi aplicada em 2026-10-20
+15. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
+16. `tests/07_manuais_imagens_storage.sql` — policy de imagem de manual
 
 **Pré-requisito da `0002`:** ela revoga EXECUTE de `public.rls_auto_enable()`,
 que existe em produção mas não em projeto novo. Crie a função com a definição
 de produção antes de aplicar a `0002`; caso contrário a migration falha com
 `42883` e é revertida por inteiro.
 
-O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 11
-migrations (0001–0010) foram aplicadas; `arquivos-smader` e
-`funcionarios-fotos-smader` estão **privados**; `manuais-imagens-smader`
-segue público no teste, que tem 0 objetos reais. O T6.5 fechou verde: **232
-casos, 0 falhas**; o teste 07 também fechou com **0 falhas**. Produção tem
+O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 12
+migrations (0001–0011) foram aplicadas; os **3 buckets** estão privados, e o
+teste tem 0 objetos reais. O T6.5 fechou verde: **232 casos, 0 falhas**; o
+teste 07 também fechou com **0 falhas** após a `0011`. Produção tem
 `0008`–`0011`; código deployado (`c3f1c90`) e validado em 2026-10-20.
 
 Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte

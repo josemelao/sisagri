@@ -249,17 +249,16 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   Restam 3 de authenticated_security_definer_function_executable
   (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
   e o painel chamam essas funcoes; sem definer a RLS quebraria.
-  Os 3 buckets estao privados em producao (0009/0011); no projeto de teste,
-  arquivos/funcionarios estao privados e manuais segue publico no teste.
+  Os 3 buckets estao privados em producao e no projeto de teste (0009/0011).
   Reconferir no dashboard se o aviso de bucket publico sumiu.
   Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
   Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 
 PENDENTE 3 — projeto Supabase de TESTE
   CRIADO em 2026-10-20: zoywmvuswyosehlddmma. MCP `supabase-teste` conectado.
-  11 migrations aplicadas (0008/0009/0010 inclusive); arquivos e funcionarios
-  ja privados; manuais segue publico no teste; tests/06_matriz_rbac.sql verde
-  (232 casos) e tests/07_manuais_imagens_storage.sql verde (0 falhas).
+  12 migrations aplicadas (0008/0009/0010/0011 inclusive); os 3 buckets ja
+  estao privados; tests/06_matriz_rbac.sql verde (232 casos) e
+  tests/07_manuais_imagens_storage.sql verde (0 falhas) apos a 0011.
   Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002), tests/00b_seed_dados.sql
   (depois da 0007) e 0008 antes / 0009 depois da 00b; detalhes em supabase/README.md.
   3b parte 2 e 3c ensaiados; usar para rollback e reprodução.
