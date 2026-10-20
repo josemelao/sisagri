@@ -130,11 +130,17 @@ from pg_policies
 where schemaname = 'public' and tablename = 'admin_settings';
 
 -- ---------------------------------------------------------------------------
--- C10. anon/authenticated podem executar as funcoes de leitura de papel
---      Esperado: 2 linhas, pode_executar = true
+-- C10. So authenticated executa as funcoes de papel.
+--      anon foi revogado na 0007: as policies de anon nao usam essas funcoes.
+--      Esperado: anon = false, authenticated = true (6 linhas)
 -- ---------------------------------------------------------------------------
-select 'anon' as papel,
-       has_function_privilege('anon', 'public.meu_papel()', 'execute') as pode_executar
-union all
-select 'authenticated',
-       has_function_privilege('authenticated', 'public.meu_papel()', 'execute');
+select papel, nome,
+       has_function_privilege(papel::name, assinatura, 'execute') as pode_executar
+from (values
+  ('anon', 'is_admin', 'public.is_admin()'),
+  ('anon', 'pode_editar', 'public.pode_editar()'),
+  ('anon', 'meu_papel', 'public.meu_papel()'),
+  ('authenticated', 'is_admin', 'public.is_admin()'),
+  ('authenticated', 'pode_editar', 'public.pode_editar()'),
+  ('authenticated', 'meu_papel', 'public.meu_papel()')
+) as t(papel, nome, assinatura);
