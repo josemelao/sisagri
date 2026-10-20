@@ -17,7 +17,7 @@ documento **não** propõe correção nenhuma.
 | `tests/helpers/load-script.mjs` | carrega `db.js`/`script.js` em `node:vm` com window/document/localStorage falsos |
 | `tests/unit/db.test.mjs` | 18 testes de `db.js` |
 | `tests/unit/script.test.mjs` | 11 testes de `script.js` |
-| `tests/unit/admin-auth.test.mjs` | 5 testes de `DB.isAdminLoggedIn` |
+| `tests/unit/admin-auth.test.mjs` | 11 testes de `DB.isAdminLoggedIn`, `isStaff` e papel |
 | `tests/unit/instagram.test.mjs` | 7 testes do widget/proxy do Instagram |
 | `tests/unit/utils.test.mjs` | 12 testes de `SisUtils` (escape + `urlSegura`) |
 | `tests/unit/innerhtml-guard.test.mjs` | 12 testes da guarda de HTML cru |
@@ -46,12 +46,14 @@ npm run syntax   ->  exit 0
 
 ```
 npm run lint     ->  exit 0
-125 problemas: 0 erros, 125 avisos
+126 problemas: 0 erros, 126 avisos
 ```
 
 - **0 erro** de `no-undef` e `no-redeclare`.
-- **125 avisos** de `no-unused-vars` — funções declaradas e não chamadas (várias
-  são handlers de `onclick` no HTML, que o ESLint não enxerga).
+- **126 avisos** de `no-unused-vars` — funções declaradas e não chamadas (várias
+  são handlers de `onclick` no HTML, que o ESLint não enxerga). O Bloco 6 não
+  introduziu nenhum aviso novo (a medição anterior de 125 estava desatualizada;
+  o mesmo HEAD já media 126).
 
 Config relevante: `DB`, `dbInit` e `DB_CONFIG` entram como globais **só** em
 `script.js` e `admin.js` (declará-los em `db.js` dispara `no-redeclare`). Se o
@@ -86,7 +88,7 @@ livremente; para subir é preciso rodar `--atualizar` de propósito, e o diff do
 
 ```
 npm test         ->  exit 0
-76 testes, 76 passando
+82 testes, 82 passando
 ```
 
 ### Check completo

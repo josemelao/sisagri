@@ -1090,48 +1090,116 @@ prova de falta de permissão); `is_admin = false` derruba.
 - Consequência de segurança: um `servidor` pode escrever conteúdo que o público
   vê. É exatamente por isso que o Bloco 9 (escape na saída) vem antes do 6.
 
-- [ ] **T6.0.1 — Matriz de classificação das 14 coleções**
-  Para cada coleção: **pública** / **interna** / **restrita**. Nenhuma coleção pode ficar sem classificação.
-- [ ] **T6.0.2 — Matriz papel × coleção × ação**
-  Papéis: `anon`, `funcionario`, `editor(<área>)`, `admin`. Ações: SELECT / INSERT / UPDATE / DELETE.
-- [ ] **T6.0.3 — Campos sensíveis**
-  Existe CPF, telefone, e-mail ou dado pessoal que precise de mascaramento por papel? (`funcionarios` é o suspeito nº 1.)
-- [ ] **T6.0.4 — Aprovação explícita do dono** (sem isso, nada de SQL)
+- [x] **T6.0.1 — Matriz de classificação das 14 coleções** — aprovado em 2026-10-19
+  Todas as 14 são **públicas** quando `publish_status = 'published'`. Nenhuma
+  fica sem classificação; nenhuma policy de leitura `anon` muda.
+- [x] **T6.0.2 — Matriz papel × coleção × ação** — aprovado em 2026-10-19
+  Papéis: `anon`, `servidor`, `admin`. Ações: SELECT / INSERT / UPDATE / DELETE.
+  A matriz vale para as 14 coleções (não há exceção por coleção nem por área).
+- [x] **T6.0.3 — Campos sensíveis** — **pendência registrada**, fora do bloco
+  `funcionarios` (`cpf`, `telefone`, `email`, `matricula`), `veiculos` (`placa`,
+  `chassi`, `renavam`) e `escala_ferias` (`nome`, `cargo`) ainda viajam para
+  `anon` porque `db.js` usa `select('*')`. Mascarar exige view/colunas explícitas.
+- [x] **T6.0.4 — Aprovação explícita do dono** — 2026-10-19
 
-**Validação do T6.0:** as duas matrizes escritas em `docs/superpowers/specs/2026-XX-XX-rbac-design.md` e aprovadas. Nenhuma linha de SQL antes disso.
+**Validação do T6.0:** design em
+`docs/superpowers/specs/2026-10-19-rbac-design.md`, aprovado antes do SQL.
 
 ### Tarefas de implementação (só depois do design aprovado)
 
-- [ ] **T6.1 — `profiles` + papéis**
-  `supabase/migrations/0004_profiles.sql`: tabela `profiles(id, role, nome, ativo)`, trigger em `auth.users insert` criando `role='funcionario'` por padrão, `role` espelhado em `app_metadata`.
-  **Regra:** usuário novo nasce **sem** privilégio; promoção exige SQL explícito.
-- [ ] **T6.2 — Políticas finais por papel e área**
-  `supabase/migrations/0005_rls_papeis.sql` + função `auth_role()` / `has_area()` `security definer`.
-  A "área" de cada editor vem de `profiles.areas text[]`.
-- [ ] **T6.3 — Carregamento escopado**
-  `db.js` (`_initSupabase`, `_loadSupabaseCollection`, `DB.get`): não baixar coleção que o papel não pode ler; `DB.get` de coleção proibida → `[]`; expor `DB.can(acao, colecao)`.
-- [ ] **T6.4 — Guardas de UI**
-  `admin.js` (`initNav`, `renderSection`, `novo*`, `salvar*`) consultam `DB.can`. Menu esconde o que não pode; ação proibida não aparece.
+- [x] **T6.1 — Papel em `app_admins`** — feito em 2026-10-20
+  Desvio do plano original (que previa `profiles`): `app_admins` ganhou
+  `role text not null check (role in ('admin','servidor'))`, **sem default**.
+  Sem `areas` (fora de escopo) nem `nome` (já está em `auth.users`). A conta
+  existente foi migrada para `admin` antes do `NOT NULL`.
+  **Regra:** usuário novo nasce sem linha em `app_admins`; promoção é SQL
+  explícito.
+- [x] **T6.2 — Políticas finais por papel** — feito em 2026-10-20
+  `0006_rls_papeis.sql`: 14 INSERT e 14 UPDATE → `pode_editar()`; 14 SELECT
+  `authenticated` → `published OR pode_editar()`; DELETE continua `is_admin()`.
+  9 policies de Storage (SELECT/INSERT/UPDATE) → `pode_editar()`; DELETE segue
+  `is_admin()`. `admin_settings` e SELECT `anon` não mudam.
+- [x] **T6.3 — Carregamento e papel no app** — feito em 2026-10-20 (reduzido)
+  `db.js`: `carregarPapel()`, `isStaff()`, `podeExcluir()`; `isAdminLoggedIn`
+  preservado. `DB.can(acao, colecao)` **não** foi criado: sem área e com todas
+  as coleções públicas, não há decisão a tomar. `admin.js` recarrega as coleções
+  após o login (o servidor precisa ver rascunhos).
+- [x] **T6.4 — Guardas de UI** — feito em 2026-10-20
+  Painel abre com `isStaff()`; excluir e a seção "configurações" somem para
+  `servidor`; `confirmarDelecao`/`executarDelecao` também recusam.
 - [ ] **T6.5 — Suíte de acesso**
-  `tests/security/access-matrix.spec.mjs`: 4 personas × 14 coleções × 4 ações. Roda na CI.
+  `tests/security/access-matrix.spec.mjs`: 3 personas × 14 coleções × 4 ações.
+  **Bloqueado:** precisa de projeto Supabase de teste e de uma conta `servidor`.
 
 ### Validação (prova)
 
-- `tests/security/access-matrix.spec.mjs` verde (nenhuma célula fora da matriz aprovada)
-- sessão anônima **não faz request** das tabelas internas (verificar no Network do navegador)
-- tentativa de ação proibida via console do DevTools → **negada pelo banco** (prova de que a UI não é a garantia)
-- `funcionarios`: campos sensíveis mascarados para as personas que a matriz define
+- `tests/security/access-matrix.spec.mjs` verde (nenhuma célula fora da matriz aprovada) — **pendente (T6.5)**
+- sessão anônima **não faz request** das tabelas internas (verificar no Network do navegador) — não se aplica: todas públicas
+- tentativa de ação proibida via console do DevTools → **negada pelo banco** — provado por policy (`DELETE` com `is_admin()`)
+- `funcionarios`: campos sensíveis mascarados — **pendência registrada**, fora do bloco
 
 ### Checklist
-- [ ] matriz aprovada e versionada
-- [ ] nenhuma coleção sem classificação
-- [ ] `profiles` criada e usuário novo nasce sem privilégio
-- [ ] suíte de acesso verde
-- [ ] UI esconde, banco nega (as duas coisas provadas separadamente)
-- [ ] `publish_status` preservado em todas as políticas
+- [x] matriz aprovada e versionada (`docs/superpowers/specs/2026-10-19-rbac-design.md`)
+- [x] nenhuma coleção sem classificação
+- [x] papel criado e usuário novo nasce sem privilégio (`app_admins`, não `profiles`)
+- [ ] suíte de acesso verde (T6.5, bloqueada)
+- [x] UI esconde (`isStaff`, `podeExcluir`); banco nega (policies verificadas por SQL)
+- [x] `publish_status` preservado em todas as políticas
+
+### Registro de execução — Bloco 6 (2026-10-19/20)
+
+**Migrations aplicadas em produção:**
+
+| Versão | Nome | Conteúdo |
+|---|---|---|
+| `20261020023304` | `rbac_papel` | `app_admins.role`, backfill `admin`, `is_admin()`, `pode_editar()`, `meu_papel()` |
+| `20261020023320` | `rls_papeis` | 42 policies de conteúdo + 9 de Storage |
+
+**Medido depois de aplicar (`supabase/tests/05_rbac.sql` e consultas avulsas):**
+
+```
+app_admins        role NOT NULL | 1 admin | 0 sem papel
+funções           3 security definer, stable, search_path fixo
+INSERT/UPDATE     14 + 14 com pode_editar, 0 com is_admin
+DELETE            14 com is_admin, 0 com pode_editar
+SELECT            anon 14 intactas | authenticated 14 com pode_editar
+policies          73 em public | 12 em storage.objects
+storage           9 editáveis | 3 DELETE com is_admin
+admin_settings    3 policies, todas is_admin
+JWT admin         is_admin=true, pode_editar=true, meu_papel='admin'
+UUID sem linha    is_admin=false, pode_editar=false, meu_papel=null
+```
+
+**App:**
+
+- `db.js`: `papel`, `carregarPapel()`, `isStaff()`, `podeExcluir()`; `isAdminLoggedIn()`
+  e o contrato do Bloco 5 preservados; `adminLogout()` limpa o papel.
+- `admin.js`: login por `isStaff()`, `dbInit()` após o login (rascunhos para o
+  servidor), `aplicarPermissoesUI()` esconde excluir/configurações, guardas em
+  `confirmarDelecao`/`executarDelecao`.
+- Testes: 6 novos em `tests/unit/admin-auth.test.mjs` (admin, servidor, papel
+  inválido, erro de rede, sem sessão, logout).
+
+**Provas locais:**
+
+```
+npm run check    -> exit 0 (82 testes)
+npm run guard    -> script.js 29 | admin.js 11 | utils.js 0
+npm run test:e2e -> 8 passed, 2 skipped
+npm run lint     -> 0 erros / 126 avisos (nenhum aviso novo; baseline anterior
+                    estava em 125 por medição desatualizada)
+```
+
+**Pendências abertas:**
+
+1. Criar uma conta `servidor` e testar o fluxo humano (criar/editar sim, excluir não).
+2. T6.5: suíte de acesso real, que exige projeto Supabase de teste.
+3. Mascaramento de campos sensíveis (`cpf`, `telefone`, `email`, `placa` etc.).
+4. Promoção pelo painel (RPC `promover(user_id, role)`), quando houver demanda.
 
 ### Rollback
-Migration de reversão por arquivo; manter sempre a baseline (Bloco 2) como último recurso.
+`0005`/`0006` têm o rollback descrito no rodapé de cada arquivo; a baseline do
+Bloco 2 continua sendo o último recurso.
 
 ---
 

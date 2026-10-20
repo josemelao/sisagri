@@ -1,6 +1,44 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-19
+Atualizado em: 2026-10-20
 Branch de trabalho: codex/fase2 (base da655a0; main = producao, nada enviado ao remoto)
+
+=========================================================================
+SESSAO 2026-10-19/20 — ULTIMA ANTES DA PAUSA (leia antes de retomar)
+=========================================================================
+
+Fechado nesta sessao:
+  - Bloco 9b: saida segura (escapa texto, sanitiza link de campos[].valor).
+    Commits: 5d8ef6c (codigo) + d62215e (docs).
+  - Bloco 6: papel servidor (criar/editar, nao excluir), garantido por RLS.
+    Commit: 8370400 (codigo + migrations + testes) + commit de docs seguinte.
+    Migrations aplicadas em producao:
+      20261020023304  rbac_papel   (role em app_admins + funcoes)
+      20261020023320  rls_papeis   (42 policies de conteudo + 9 de Storage)
+    Design aprovado pelo dono:
+      docs/superpowers/specs/2026-10-19-rbac-design.md
+
+Medido no fim da sessao:
+  82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
+  check-draft-leak 15/15 | guard 29/11/0 | nada enviado ao remoto
+
+PROXIMA ACAO (amanha, nesta ordem):
+  1. Criar uma conta `servidor` no Auth (Dashboard) e promover por SQL:
+       insert into public.app_admins (user_id, role)
+       values ('<uuid>', 'servidor')
+       on conflict (user_id) do update set role = excluded.role;
+     Testar no painel: criar e editar sim; excluir nao (o botao some e o banco
+     nega). Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
+  2. Teste humano do login real do ADMIN (pendencia desde o Bloco 5). Agora o
+     login passa por isStaff() e recarrega as colecoes; confirmar que abre e
+     que o rascunho processos.id=4 aparece.
+  3. Decidir o T6.5: a suite 3 personas x 14 colecoes x 4 acoes exige projeto
+     Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2). Sem isso, so ha
+     prova por SQL (tests/05_rbac.sql), nao por persona real.
+  4. Pendencias menores, sem urgencia:
+     - info_municipio id=3 com href sem https:// (corrigir no painel)
+     - deploy da function do Instagram + rotacao do token (dono)
+     - mascaramento de cpf/telefone/email/placa para anon (exige view/colunas)
+     - promocao pelo painel (RPC security definer) - futuro
 
 =========================================================================
 LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
@@ -12,8 +50,9 @@ Plano vigente (substitui a v1):
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
      sanitizador de link) concluidos; falta 9c/9d (handlers inline, CSP).
-  -> Bloco 6 DECIDIDO em papeis (admin / servidor / publico); falta o desenho
-     da matriz e o SQL.
+  -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
+     conteudo + 9 de Storage). Falta: conta servidor real, suite T6.5 e
+     mascaramento de campos sensiveis.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
@@ -45,11 +84,14 @@ Concluido:
   - Bloco 9a: escape unico em SisUtils + guarda de innerHTML no CI
   - Bloco 9b: todo texto sai escapado; unico HTML e link sanitizado em
     campos[].valor (info_juridico / info_municipio)
+  - Bloco 6: papel servidor (criar/editar, nao excluir) garantido por RLS
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
   20261019205211  supabase/migrations/0003_hardening_leitura.sql
   20261019221229  supabase/migrations/0004_storage_gate.sql
+  20261020023304  supabase/migrations/0005_rbac_papel.sql
+  20261020023320  supabase/migrations/0006_rls_papeis.sql
 
 Commits locais (codex/fase2, sem push):
   8b053d4  auditoria + suite de vazamento
@@ -71,13 +113,17 @@ Commits locais (codex/fase2, sem push):
   550ef0d  bloco 9a: escape unico em SisUtils e guarda de innerHTML no CI
   a2cd15f  docs(bloco 9a): registra execucao e papeis do Bloco 6
   5d8ef6c  bloco 9b: escapa saida de texto e sanitiza links em campos
+  d62215e  docs(bloco 9b): registra saida segura, provas e pendencias
+  8370400  bloco 6: papel servidor (criar/editar, sem excluir) com RLS
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
             nao-admin 59 publicados / 0 rascunhos / escrita bloqueada
             admin tudo, inclusive 1 rascunho e admin_settings
+            servidor: 0 contas ainda (regra provada por SQL, falta conta real)
   storage   nao-admin ve 0 objetos (era 133) / DELETE 0 linhas
             admin ve 133 / apaga normalmente
+            servidor: upload/listagem liberados; DELETE negado
             buckets seguem public = true (mecanismo ainda aberto)
 
 Backup local (nao versionado, fora do repo):
@@ -179,6 +225,30 @@ PENDENTE 8 — RESOLVIDO em 2026-10-19 (Bloco 9b)
   PENDENCIA DE DADO: info_municipio id=3 com href sem https:// (ja era
   relativo antes); corrigir no painel, campo "Site oficial".
   FALTA: teste automatizado de XSS no admin (depende do login real).
+
+PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
+  1. CONTA SERVIDOR: criar em Auth e promover por SQL:
+       insert into public.app_admins (user_id, role)
+       values ('<uuid>', 'servidor')
+       on conflict (user_id) do update set role = excluded.role;
+     Testar no painel: criar e editar sim; excluir nao (botao some e o banco
+     nega). Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
+  2. T6.5: suite 3 personas x 14 colecoes x 4 acoes. Precisa de projeto
+     Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2).
+  3. MASCARAMENTO: funcionarios.cpf/telefone/email/matricula,
+     veiculos.placa/chassi/renavam e escala_ferias.nome/cargo ainda vao para
+     anon, porque db.js usa select('*'). Exige view/colunas explicitas.
+  4. PROMOCAO PELO PAINEL: futuro. app_admins nao tem policy de leitura;
+     precisa de RPC security definer checando is_admin().
+
+  Prova do Bloco 6 (2026-10-20):
+    app_admins.role NOT NULL, 1 admin, 0 sem papel
+    INSERT/UPDATE 14+14 com pode_editar, 0 com is_admin
+    DELETE 14 com is_admin; SELECT anon 14 intactas; SELECT auth 14 novas
+    73 policies em public | 12 em storage.objects (9 editaveis, 3 delete admin)
+    JWT admin -> true/true/'admin' | UUID sem linha -> false/false/null
+    npm run check exit 0 (82 testes) | e2e 8 passed/2 skipped
+    lint 0 erros/126 avisos (nenhum aviso novo)
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS

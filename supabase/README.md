@@ -11,8 +11,8 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **3** (`0002`, `0003`, `0004`) |
-| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229` |
+| Migrations aplicadas em produção | **5** (`0002` a `0006`) |
+| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320` |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
 | Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
@@ -36,10 +36,13 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0002_admin_gate.sql` | Bloco 3: `is_admin()` + 42 policies de escrita fechadas + fix N1 | **Aplicado em 2026-10-19** |
 | `migrations/0003_hardening_leitura.sql` | Bloco 3 (parte 2): 14 SELECT de conteúdo + 3 de `admin_settings` fechadas | **Aplicado em 2026-10-19** |
 | `migrations/0004_storage_gate.sql` | Bloco 3b (parte 1): 12 policies de `storage.objects` com `is_admin()` | **Aplicado em 2026-10-19** |
+| `migrations/0005_rbac_papel.sql` | Bloco 6: `app_admins.role`, `pode_editar()`, `meu_papel()` | **Aplicado em 2026-10-20** |
+| `migrations/0006_rls_papeis.sql` | Bloco 6: 42 policies de conteúdo + 9 de Storage por operação | **Aplicado em 2026-10-20** |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
 | `tests/02_admin_gate.sql` | 7 consultas de verificação do Bloco 3 | Sim — **só leitura** |
 | `tests/03_hardening_leitura.sql` | 15 medições do estado final (por papel) | Sim — **transação revertida** |
 | `tests/04_storage_rascunho_publico.sql` | objetos públicos que não deveriam existir (N5) | Sim — **só leitura** |
+| `tests/05_rbac.sql` | 10 verificações do Bloco 6 (papel e policies) | Sim — **só leitura** |
 | `functions/instagram/index.ts` | Bloco 10: proxy do feed; token só em Secrets | **Deploy pendente** |
 
 Os números acima foram conferidos: 73 + 12 = **85 `create policy`**.
@@ -169,6 +172,49 @@ retornando 0 linhas.
 
 ---
 
+## `0005` + `0006` — Bloco 6: papel `servidor`
+
+Design aprovado: `docs/superpowers/specs/2026-10-19-rbac-design.md`.
+
+| Papel | SELECT | INSERT/UPDATE | DELETE | Storage subir/trocar | Storage DELETE |
+|---|---|---|---|---|---|
+| `anon` | published | não | não | não (URL pública) | não |
+| `servidor` | published + rascunho | sim | **não** | sim | **não** |
+| `admin` | tudo | sim | sim | sim | sim |
+
+`0005` adiciona `app_admins.role` (`admin`/`servidor`, **sem default**) e as
+funções `pode_editar()` e `meu_papel()`. A conta existente foi migrada para
+`admin` antes do `NOT NULL`.
+
+`0006` troca o conteúdo de **42 policies** de conteúdo (INSERT/UPDATE →
+`pode_editar()`, SELECT `authenticated` → `published OR pode_editar()`) e de
+**9 de Storage**, preservando nomes e contagem (73 em `public`, 12 em
+`storage.objects`). DELETE de conteúdo e de Storage continua `is_admin()`.
+
+Provas (`tests/05_rbac.sql`): 14 INSERT + 14 UPDATE com `pode_editar()` e zero
+com `is_admin()`; 14 DELETE intactos; 14 SELECT `anon` intactos; 14 SELECT
+`authenticated` com `pode_editar()`; `admin_settings` com 3 `is_admin()`.
+Simulação de JWT: conta admin → `is_admin=true`, `pode_editar=true`,
+`meu_papel='admin'`; UUID sem linha → `false/false/null`.
+
+### Promover ou rebaixar
+
+```sql
+insert into public.app_admins (user_id, role)
+values ('<uuid-do-usuario>', 'servidor')
+on conflict (user_id) do update set role = excluded.role;
+```
+
+Conta nova nasce **sem acesso**; promoção é SQL manual (painel é futuro).
+`app_admins` tem RLS e zero policies: ninguém lê nem se autopromove pelo browser.
+
+**Pendências:** conta `servidor` para o teste humano; suíte 3 personas × 14 × 4
+(T6.5) exige projeto de teste. Campos sensíveis (`cpf`, `telefone`, `email`,
+`placa` etc.) continuam expostos a `anon` via `select('*')` — registrado como
+pendência, fora do Bloco 6.
+
+---
+
 ## `functions/instagram/` — proxy do Instagram (Bloco 10)
 
 Arquivo: `functions/instagram/index.ts`.
@@ -233,8 +279,9 @@ As consultas SQL equivalentes estão em `tests/01_anon_policy.sql`.
 
 Rode `tests/04_storage_rascunho_publico.sql` pelo MCP. Esperado: **0 linhas** na
 segunda consulta. Qualquer linha é um arquivo público pertencente a registro não
-publicado (ou sem registro). Ele **não** cobre `manuais`, que não tem coluna de
-vínculo — as imagens ficam embutidas no HTML de `passos`.
+publicado (ou sem registro). Ele **não** cobre `manuais`: cada passo guarda
+`imagem_storage_path`/`imagem_storage_bucket` em campo próprio (auditoria
+2026-10-19: 60/60 passos com imagem), mas a consulta ainda não faz esse join.
 
 ### Reconstruir um projeto de teste
 
@@ -245,6 +292,8 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
 3. `migrations/0002_admin_gate.sql`
 4. `migrations/0003_hardening_leitura.sql`
 5. `migrations/0004_storage_gate.sql`
+6. `migrations/0005_rbac_papel.sql`
+7. `migrations/0006_rls_papeis.sql`
 
 Depois disso, aponte `db.js` para o projeto de teste e rode o script. Como o
 Bloco 3 já está em produção, isso serve principalmente para ensaiar os Blocos 3b
