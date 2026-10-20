@@ -49,21 +49,19 @@ continua invisível.
 |---|---|---|
 | `funcionarios-fotos-smader` | **privado** | `SELECT` para `anon, authenticated` quando existe funcionário `published` com aquele `foto_storage_path` |
 | `arquivos-smader` | **privado** | `SELECT` para `anon, authenticated` quando existe arquivo `published` com aquele `storage_path` |
-| `manuais-imagens-smader` | **público (por ora)** | — |
+| `manuais-imagens-smader` | **privado (3c/13)** | `SELECT` para `anon, authenticated` quando manual `published` referencia o path em `passos[]` |
 
 As policies de `authenticated` já existentes (`0004`/`0006`) continuam valendo:
 `admin` e `servidor` (`pode_editar()`) assinam rascunho para pré-visualizar no
 painel. As novas policies são **aditivas** (OR), restritas a publicado.
 
-### Por que `manuais` fica de fora
+### Por que `manuais` ficou de fora do 3b2
 
-As imagens de manual não têm coluna: elas vivem dentro de `manuais.passos`
-(JSON/HTML). Não há join confiável por objeto. Fechar o bucket agora quebraria
-todas as imagens de manual. O caminho correto é uma tabela
-`manuais_imagens` (ou convenção `manuais/<manual_id>/...`) — trabalho do Bloco
-3c/13. **Risco residual registrado:** imagem inserida em manual rascunho
-continua acessível por URL. Não é o caso do achado N5 (arquivo de rascunho em
-`arquivos`), que fica fechado.
+As imagens de manual não têm coluna própria: vivem dentro de `manuais.passos`
+(JSON/HTML). Não havia join confiável por objeto. Fechar o bucket sem vínculo
+quebraria as imagens de manual. O 3c/13 resolveu com a Opção A: a policy usa
+`passos[].imagem_storage_path` e a `0011` fechou o bucket. A tabela
+`manuais_imagens` segue adiada.
 
 ## 4. Contrato de código (aditivo)
 
@@ -135,7 +133,8 @@ aplicadas; código `3cc260e` no GitHub Pages. API com a anon key: arquivo e foto
 publicados → sign 200 + download 200; path sem registro → 400. No site real:
 15/15 fotos carregadas, download `Modelo - Ofício.docx` sem falha, zero erros de
 JS. A URL pública antiga pode responder por cache; com cache-busting → 400.
-`manuais-imagens-smader` segue público.
+`manuais-imagens-smader` foi fechado no 3c/13 (`0010`/`0011`); 60/60 imagens
+validadas via URL assinada, URL pública 400 e rascunho anônimo 400.
 
 Passos previstos para essa validação de app:
 
@@ -145,7 +144,7 @@ Passos previstos para essa validação de app:
 
 ## 8. Fora de escopo
 
-- Fechar `manuais-imagens-smader`.
+- Fechar `manuais-imagens-smader` — implementado depois no 3c/13 (`0010`/`0011`).
 - Apagar objetos órfãos ou o arquivo do rascunho `id=45` (decisão #9).
 - Mascarar campos sensíveis (pendência separada do Bloco 6).
 - Rotação de chaves/URL já conhecida: registro, não tarefa.

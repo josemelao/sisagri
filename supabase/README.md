@@ -42,6 +42,8 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0007_fn_grants.sql` | Bloco 6: revoga EXECUTE de `anon` nas funções de papel | **Aplicado em 2026-10-20** |
 | `migrations/0008_storage_policies_assinatura.sql` | Bloco 3b2: 2 SELECT de Storage para objeto publicado | **Aplicada em produção em 2026-10-20** |
 | `migrations/0009_storage_buckets_privados.sql` | Bloco 3b2: `public=false` em arquivos/funcionários | **Aplicada em produção em 2026-10-20** |
+| `migrations/0010_manuais_imagens_policy.sql` | Bloco 3c/13: `SELECT` de Storage para imagem de manual publicado | **Aplicada em produção em 2026-10-20** |
+| `migrations/0011_manuais_imagens_bucket_privado.sql` | Bloco 3c/13: `public=false` em `manuais-imagens-smader` | **Aplicada em produção em 2026-10-20** |
 | `tests/00a_seed_auth.sql` | contas de teste do T6.5 (rodar antes da `0002`) | Só projeto de teste |
 | `tests/00b_seed_dados.sql` | papel servidor, buckets e seed do T6.5 (rodar após a `0007`) | Só projeto de teste |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
@@ -251,7 +253,7 @@ real no site (`https://josemelao.github.io/sisagri/`): 15/15 fotos carregadas,
 assinatura de foto e download de arquivo com 200, download `Modelo - Ofício.docx`
 sem falha; path sem registro não é assinado. A URL pública antiga pode continuar
 respondendo por cache de CDN/browser; com cache-busting retorna 400.
-`manuais-imagens-smader` segue público.
+`manuais-imagens-smader` foi fechado no 3c/13 (`0010`/`0011`).
 
 No código, `DB.createSignedUrl(s)` mantém cache **em memória** (1 h, margem de
 5 min) e `DB.get` injeta `foto_url`/`url_assinada` na cópia devolvida. A URL
@@ -259,10 +261,23 @@ assinada **nunca** vai para `_db`, `localStorage` ou `dados.js`. Uploads novos
 gravam `foto=''`/`url=''` e dependem do path; registros legados mantêm os
 campos antigos gravados, mas a interface usa `foto_url`/`url_assinada`.
 
-`manuais-imagens-smader` continua público nesta fase: as imagens vivem dentro de
-`manuais.passos`, sem coluna de vínculo própria. O risco residual (imagem de
-manual rascunho acessível por URL direta) fica para o 3c/13, que cria a tabela
-`manuais_imagens`.
+`manuais-imagens-smader` foi fechado no 3c/13 (`0010`/`0011`). A Opção A usa
+`manuais.passos[].imagem_storage_path` como vínculo, sem tabela nova; a tabela
+`manuais_imagens` segue adiada.
+
+### `0010` + `0011` — Bloco 3c/13: imagens de manuais
+
+Aplicadas em produção em 2026-10-20 (`0010` versão `20261020183947`, `0011`
+`20261020184951`). A `0010` é aditiva: o `anon` só assina imagem referenciada
+por manual `published`; `servidor`/`admin` mantêm acesso a rascunho. A `0011`
+torna o bucket privado. Validação real: 6 manuais, 60/60 imagens via
+`/object/sign/`, 0 `/object/public/`, URL pública antiga 400 e assinatura
+anônima de imagem de rascunho 400. Rollback da `0011`:
+
+```sql
+update storage.buckets set public = true
+ where id = 'manuais-imagens-smader';
+```
 
 ---
 
@@ -353,19 +368,22 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
     + 1 draft em cada uma das 14 coleções
 12. `migrations/0009_storage_buckets_privados.sql` — **depois** da `00b`, que
     cria os buckets; deixa `arquivos` e `funcionarios` privados
-13. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
+13. `migrations/0010_manuais_imagens_policy.sql` — policy de imagem de manual
+    publicado (o bucket `manuais-imagens-smader` pode seguir público no teste)
+14. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
+15. `tests/07_manuais_imagens_storage.sql` — policy de imagem de manual
 
 **Pré-requisito da `0002`:** ela revoga EXECUTE de `public.rls_auto_enable()`,
 que existe em produção mas não em projeto novo. Crie a função com a definição
 de produção antes de aplicar a `0002`; caso contrário a migration falha com
 `42883` e é revertida por inteiro.
 
-O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 10
-migrations foram aplicadas; `arquivos-smader` e `funcionarios-fotos-smader`
-estão **privados** e o T6.5 fechou verde: **232 casos, 0 falhas**. A policy de
-assinatura foi provada no teste: `anon` lista/sinaliza só o publicado;
-`servidor` vê published + draft. Produção tem `0008` e `0009`; código
-deployado (`3cc260e`) e validado em 2026-10-20.
+O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 11
+migrations (0001–0010) foram aplicadas; `arquivos-smader` e
+`funcionarios-fotos-smader` estão **privados**; `manuais-imagens-smader`
+segue público no teste, que tem 0 objetos reais. O T6.5 fechou verde: **232
+casos, 0 falhas**; o teste 07 também fechou com **0 falhas**. Produção tem
+`0008`–`0011`; código deployado (`c3f1c90`) e validado em 2026-10-20.
 
 Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte
 `db.js` para o projeto de teste em uma cópia local. O T6.5 em si não precisa de

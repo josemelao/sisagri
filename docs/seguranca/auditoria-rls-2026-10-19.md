@@ -137,6 +137,10 @@ SET search_path TO 'pg_catalog'
 
 ## 6. Storage
 
+> **Atualização 2026-10-20:** `arquivos-smader` e `funcionarios-fotos-smader`
+> foram fechados no 3b2 (`0008`/`0009`); `manuais-imagens-smader` foi fechado no
+> 3c/13 (`0010`/`0011`). A tabela abaixo é o retrato de 2026-10-19.
+
 Os 3 buckets são **`public = true`**. Objeto em bucket público é servido por URL **sem passar por policy**; a policy só controla listagem.
 
 | Bucket | Objetos | Tamanho | Público | Políticas em `storage.objects` |

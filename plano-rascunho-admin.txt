@@ -44,7 +44,7 @@ Fechado nesta sessao:
     projeto subir de plano.
   - Bloco 3b parte 2 implementado e validado NO TESTE (2026-10-20):
     - migrations 0008 (2 SELECT de Storage para publicado) e 0009 (bucket
-      privado em arquivos e funcionarios); manuais segue publico nesta fase;
+      privado em arquivos e funcionarios); manuais ficou publico nesta fase;
     - db.js: DB.createSignedUrl/createSignedUrls/resolveStorageUrls, cache so
       em memoria (1h, margem 5min), foto_url/url_assinada injetados em DB.get;
     - script.js: 4 pontos de foto + download assinado; admin.js: preview e
@@ -55,27 +55,32 @@ Fechado nesta sessao:
       e 20261020152424). Codigo deployado em 3cc260e (GitHub Pages).
       Validacao no site real: 15/15 fotos, sign/download 200, download
       "Modelo - Oficio.docx" sem falha, path sem registro negado; URL publica
-      antiga 400 com cache-busting. manuais segue publico.
-  - Bloco 3c/13 (imagens de manuais) implementado e validado localmente
-    (2026-10-20). Commit e4bf509 em codex/fase2; NAO foi enviado/push.
+      antiga 400 com cache-busting. manuais ficou publico nesta fase.
+  - Bloco 3c/13 (imagens de manuais) CONCLUIDO E VALIDADO EM PRODUCAO
+    (2026-10-20).
     - db.js/script.js/admin.js: imagem de manual usa URL assinada e mantem
       `imagem` como fallback; upload novo nao gera mais URL publica.
-    - migration 0010 criada e aplicada SOMENTE no projeto de teste; a policy
-      foi provada com 0 falhas (anon so published; servidor/admin veem draft
-      e orfao; `passos` malformado nao quebra a policy).
-    - migration 0011 criada, NAO aplicada. Producao segue sem 0010 e com
-      `manuais-imagens-smader` publico.
-    - teste 07 novo no projeto de teste; as 60 imagens reais ainda NAO foram
-      validadas no navegador.
-    - pre-requisito de producao: o hotfix e7287e4 (preview de arquivos) ainda
-      esta local e precisa ser publicado antes ou junto do 3c/13.
+    - migration 0010 aplicada em producao (versao 20261020183947) e provada:
+      anon so published; servidor/admin veem draft e orfao; `passos`
+      malformado nao quebra a policy.
+    - codigo publicado em `c3f1c90` no GitHub Pages; hotfix e7287e4 incluido.
+    - migration 0011 aplicada em producao (versao 20261020184951):
+      `manuais-imagens-smader` com public=false.
+    - validacao real no site: 6 manuais, 60/60 imagens carregadas via
+      `/object/sign/`, 0 `/object/public/`, 0 falhas; previews de arquivos
+      (Office/PDF/imagem) tambem assinados; URL publica antiga 400;
+      assinatura anonima de imagem de rascunho bloqueada (400).
+    - inventario preservado: 73 objetos reais, 60 referenciados, 13 orfaos.
+    - rollback da 0011: update storage.buckets set public = true where
+      id = 'manuais-imagens-smader';
+    - a tabela `manuais_imagens` segue adiada (Opcao A: `passos[]` e vinculo).
 
 Medido no fim da sessao:
   100 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
   check-draft-leak 15/15 | guard 29/11/0 | T6.5 232/232
-  0008 e 0009 aplicadas em producao | buckets privados (manuais publico)
-  deploy 3cc260e no ar e validado no site real
-  3c/13: commit local e4bf509 | 0010 so no teste | 0011 pendente
+  0008, 0009, 0010 e 0011 aplicadas em producao | buckets privados
+  deploy c3f1c90 no ar e validado no site real
+  3c/13: 60/60 imagens assinadas | URL publica 400 | rascunho anon 400
 
 PROXIMA ACAO (nesta ordem):
   1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
@@ -86,9 +91,9 @@ PROXIMA ACAO (nesta ordem):
   3. [FEITO 2026-10-20] T6.5 no projeto de teste: 232 casos, 0 falhas.
   4. [FEITO 2026-10-20] Bloco 3b parte 2: 0008/0009 + codigo de URL assinada
      aplicados em producao; deploy 3cc260e validado no site real.
-  5. Bloco 3c/13: commit local e4bf509 pronto; aguardando autorizacao para
-     push do hotfix e7287e4 + deploy, aplicar 0010 em producao, validar as 60
-     imagens e so depois aplicar 0011.
+  5. [FEITO 2026-10-20] Bloco 3c/13: hotfix e7287e4 + 3c/13 publicados em
+     c3f1c90; 0010 (20261020183947) e 0011 (20261020184951) aplicadas em
+     producao; 60/60 imagens validadas no site real.
   6. Pendencias menores, sem urgencia:
      - info_municipio id=3 com href sem https:// (corrigir no painel)
      - deploy da function do Instagram + rotacao do token (dono)
@@ -217,7 +222,7 @@ PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO EM PRODUCAO 2026-10-20)
     - 0008/0009 aplicadas no projeto de teste zoywmvuswyosehlddmma;
     - 0008 (20261020151915) e 0009 (20261020152424) aplicadas em PRODUCAO;
     - arquivos-smader e funcionarios-fotos-smader privados em producao;
-      manuais-imagens-smader segue publico por desenho;
+      manuais-imagens-smader foi fechado no 3c/13 (0010/0011);
     - deploy 3cc260e no GitHub Pages; validacao real: 15/15 fotos, sign e
       download 200, download "Modelo - Oficio.docx" ok; path sem registro
       negado; URL publica antiga 400 com cache-busting.
@@ -233,9 +238,10 @@ PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO EM PRODUCAO 2026-10-20)
   Rollback da 0009: update storage.buckets set public = true where id in
   ('arquivos-smader','funcionarios-fotos-smader').
 
-  Manuais: continua publico nesta fase (imagens dentro de manuais.passos, sem
-  coluna de vinculo). A tabela manuais_imagens fica para o 3c/13; o risco
-  residual esta registrado no design.
+  Manuais: fechado no 3c/13 (0010/0011) em 2026-10-20. A Opcao A usa
+  `manuais.passos[].imagem_storage_path`; a tabela manuais_imagens segue
+  adiada. Validacao: 60/60 imagens assinadas, URL publica 400, rascunho
+  anonimo 400.
 
 PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   2026-10-20: rls_policy_always_true sumiu (42 avisos). Os 3 avisos
@@ -243,19 +249,20 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   Restam 3 de authenticated_security_definer_function_executable
   (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
   e o painel chamam essas funcoes; sem definer a RLS quebraria.
-  Os 2 buckets estao privados no teste e em producao desde a 0009; reconferir
-  no dashboard se o aviso de bucket publico sumiu. manuais segue publico por
-  desenho nesta fase.
+  Os 3 buckets estao privados em producao (0009/0011); no projeto de teste,
+  arquivos/funcionarios estao privados e manuais segue publico no teste.
+  Reconferir no dashboard se o aviso de bucket publico sumiu.
   Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
   Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 
 PENDENTE 3 — projeto Supabase de TESTE
   CRIADO em 2026-10-20: zoywmvuswyosehlddmma. MCP `supabase-teste` conectado.
-  10 migrations aplicadas (0008/0009 inclusive); arquivos e funcionarios ja
-  privados; tests/06_matriz_rbac.sql verde (232 casos, 0 falhas).
+  11 migrations aplicadas (0008/0009/0010 inclusive); arquivos e funcionarios
+  ja privados; manuais segue publico no teste; tests/06_matriz_rbac.sql verde
+  (232 casos) e tests/07_manuais_imagens_storage.sql verde (0 falhas).
   Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002), tests/00b_seed_dados.sql
   (depois da 0007) e 0008 antes / 0009 depois da 00b; detalhes em supabase/README.md.
-  3b parte 2 ensaiado; usar para rollback e para o 3c.
+  3b parte 2 e 3c ensaiados; usar para rollback e reprodução.
   Rollback atual = aplicar 0001_baseline_policies.sql (73 policies de public +
   12 de storage) e devolver:
   grant execute on function public.rls_auto_enable() to public, anon, authenticated;
