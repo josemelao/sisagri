@@ -654,13 +654,17 @@ function _initLocal() {
 
 async function _initSupabase() {
   _sb = _createSupabaseClient();
-  _setDbStatus({
-    provider: 'local',
-    supabaseConfigured: !!(DB_CONFIG.SUPABASE_URL && DB_CONFIG.SUPABASE_KEY),
-    supabaseConnected: false,
-    writesReachSupabase: false,
-    lastError: '',
-  });
+  // Reinit (ex.: apos login) nao pode anunciar fallback antes de tentar
+  // carregar: mantem o status atual se a conexao ja estava provada.
+  if (_dbStatus.provider !== 'supabase') {
+    _setDbStatus({
+      provider: 'local',
+      supabaseConfigured: !!(DB_CONFIG.SUPABASE_URL && DB_CONFIG.SUPABASE_KEY),
+      supabaseConnected: false,
+      writesReachSupabase: false,
+      lastError: '',
+    });
+  }
   if (!_sb) {
     console.warn('[DB] Cliente Supabase indisponível. Usando localStorage como fallback.');
     _setDbStatus({
