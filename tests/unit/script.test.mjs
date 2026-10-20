@@ -178,3 +178,49 @@ test('getArquivoLinkMeta: URL externa sem path abre em nova aba', () => {
   assert.equal(meta.isExternal, true);
   assert.doesNotMatch(meta.attrs, /baixarArquivoStorage/);
 });
+
+/* ==========================================================================
+   getArquivoPreviewHTML — URL assinada tambem no preview (Bloco 3b parte 2)
+   ========================================================================== */
+
+test('getArquivoPreviewHTML: url_assinada tem prioridade sobre url legada', () => {
+  const h = carregarApp();
+  const html = h.get('getArquivoPreviewHTML')({
+    nome: 'Documento',
+    tipo: 'PDF',
+    url: 'https://old.example/public/doc.pdf',
+    url_assinada: 'https://signed.example/token/doc.pdf',
+  });
+
+  assert.match(html, /signed\.example/);
+  assert.doesNotMatch(html, /old\.example/);
+});
+
+test('getArquivoPreviewHTML: arquivo_data tem prioridade, mas urlSegura bloqueia data:', () => {
+  const h = carregarApp();
+  const html = h.get('getArquivoPreviewHTML')({
+    nome: 'Imagem',
+    tipo: 'JPG',
+    arquivo_data: 'data:image/png;base64,abc',
+    url: 'https://old.example/public/foto.jpg',
+    url_assinada: 'https://signed.example/token/foto.jpg',
+  });
+
+  // O Bloco 9b bloqueia data: em src; o importante e nao cair na URL publica.
+  assert.match(html, /src=""/);
+  assert.doesNotMatch(html, /old\.example|signed\.example/);
+});
+
+test('getArquivoPreviewHTML: upload novo sem url usa url_assinada', () => {
+  const h = carregarApp();
+  const html = h.get('getArquivoPreviewHTML')({
+    nome: 'Novo',
+    tipo: 'JPG',
+    url: '',
+    url_assinada: 'https://signed.example/token/novo.jpg',
+  });
+
+  assert.match(html, /signed\.example/);
+  assert.doesNotMatch(html, /object\/public/);
+});
+

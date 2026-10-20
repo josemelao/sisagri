@@ -171,7 +171,7 @@ function _detectarTipoPreview(a) {
  * O botão de download/link externo é responsabilidade de quem chama.
  */
 function getArquivoPreviewHTML(a) {
-  const url = a.url || '';
+  const url = a.arquivo_data || a.url_assinada || a.url || '';
   if (!url) return '';
 
   const tipo = _detectarTipoPreview(a);
