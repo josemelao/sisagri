@@ -1269,9 +1269,12 @@ Migrations de reversão + `git checkout -- db.js`.
   **Não migrado:** `formatDateBR`, `getFeriasStatus`, `normalizeSearchText`,
   `debounce` continuam onde estavam — não têm defeito conhecido; mover seria
   churn sem ganho.
-- [ ] **T9.2 — Escapar os pontos de A1**
-  `script.js` (`avisoItemHTML`, `renderFuncionarios`, Instagram, etc.) e `admin.js` (renders de tabela): todo dado de usuário passa por `SisUtils.escapeHtml`; atributos por `escapeAttr`.
-  Preferir `textContent`/`createElement` onde for simples.
+- [x] **T9.2 — Escapar os pontos de A1** — feito em 2026-10-19 (9b)
+  `script.js` (dashboard, funcionários, manuais, processos, arquivos, info
+  cards, veículos, sistemas, serviços, agenda/avisos/eventos, tooltip e busca) e
+  `admin.js` (tabelas, selects, previews): todo dado de usuário passa por
+  `escapeHtml`; atributos por `escapeAttr`. `campos[].valor` é o único HTML
+  permitido, via `SisUtils.htmlComLinks`.
 - [x] **T9.3 — Guarda de CI contra `innerHTML` cru** — feito em 2026-10-19 (9a)
   `scripts/check-innerhtml.mjs` + `scripts/innerhtml-baseline.json`, no
   `npm run check`. Inventário medido: `script.js` 55 atribuições / **29 com
@@ -1299,12 +1302,14 @@ node scripts/check-innerhtml.mjs   # exit 0 (nenhum ponto novo fora da allowlist
 CSP: app funciona e o console **não** registra violações.
 
 ### Checklist
-- [ ] zero definição duplicada de `escapeHtml`/`escHtml`
-- [ ] teste de XSS armazenado verde no público **e** no admin
-- [ ] `check-innerhtml.mjs` verde
+- [x] zero definição duplicada de `escapeHtml`/`escHtml`
+- [x] teste de XSS armazenado verde no público (`tests/e2e/xss.spec.mjs`)
+- [ ] teste de XSS no admin: sem fluxo automatizado (login real pendente); a
+      correção do `data-nome` foi validada por inspeção
+- [x] `check-innerhtml.mjs` verde
 - [ ] inventário de handlers inline = 0
 - [ ] CSP aplicada sem violação no console
-- [ ] Instagram com `<`, `"`, `&` no caption não quebra o grid
+- [x] Instagram com `<`, `"`, `&` no caption não quebra o grid
 
 ### Rollback
 `git checkout -- <arquivos>`; CSP volta a Report-Only.
@@ -1351,6 +1356,45 @@ e exige decisão do dono sobre quais campos aceitam HTML.
    allowlist ou converter para texto + imagens em campo próprio.
 5. T9.4 (handlers inline) continua **depois** do 9b — 176 handlers é refactor de
    vários commits.
+
+### Registro de execução — parte 9b (2026-10-19)
+
+**Decisão aplicada:** nenhum outro campo aceita formatação. O único HTML por
+desenho é o link de `campos[].valor` em `info_juridico` / `info_municipio`.
+`manuais.passos` continua exatamente como está: texto puro + imagem em campo
+separado (`imagem`, `imagem_storage_path`, `imagem_storage_bucket`).
+
+**Feito:**
+
+| Arquivo | Mudança |
+|---|---|
+| `js/core/utils.js` | `urlSegura` (bloqueia `javascript:`, `vbscript:`, `data:`, inclusive com espaço/controle no meio) e `htmlComLinks` (allowlist: só `<a href>` com `http/https/mailto/tel` ou relativo; `style` fixo no padrão de hoje) |
+| `script.js` | escape de texto e atributos em todos os renders públicos; `campos[].valor` via `htmlComLinks`; download por `data-*` (sem JS montado no `onclick`); filtros de tag/extensão por `this.dataset` |
+| `admin.js` | excluir com `data-nome` (fecha injeção no handler e conserta nome com apóstrofo); escape em tags, options, previews de ícone/foto/passo; `escUrl` nos hrefs de sistemas/acesso rápido |
+| `tests/unit/render-escape.test.mjs` (novo) | 11 testes: payload nos 7 renders públicos, link válido, `javascript:` recusado, tag dentro do link, label escapado |
+| `tests/unit/utils.test.mjs` | +3 testes de `urlSegura` |
+| `tests/e2e/xss.spec.mjs` (novo) | 3 testes no Chromium: payload em nome, link `javascript:`, tag com apóstrofo |
+
+**Provas:**
+
+```
+npm run check    -> exit 0 (76 testes)
+npm run guard    -> script.js 29 | admin.js 11 | utils.js 0 (sem sink novo)
+npm run test:e2e -> 8 passed, 2 skipped
+npm run lint     -> 0 erros / 125 avisos (mesmo baseline)
+```
+
+Payload `<img src=x onerror="window.__xss=true">` no nome de funcionário: não
+executa, aparece como texto e o card renderiza.
+
+**Sobre o guard:** ele mede *pontos com interpolação*, não pontos inseguros. Por
+isso o número não cai para 0 no 9b — o escape acontece dentro da mesma
+expressão. Chegar a 0 exige reconstruir os 40 pontos com DOM (`createElement`),
+que é o 9c/9d.
+
+**Pendência de dado (não é código):** `info_municipio` id=3 tem
+`href="cidadeocidental.go.gov.br"` sem esquema; já era relativo antes. Corrigir
+no painel, campo "Site oficial".
 
 ---
 

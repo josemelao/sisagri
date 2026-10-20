@@ -19,10 +19,12 @@ documento **não** propõe correção nenhuma.
 | `tests/unit/script.test.mjs` | 11 testes de `script.js` |
 | `tests/unit/admin-auth.test.mjs` | 5 testes de `DB.isAdminLoggedIn` |
 | `tests/unit/instagram.test.mjs` | 7 testes do widget/proxy do Instagram |
-| `tests/unit/utils.test.mjs` | 9 testes de `SisUtils` (escape único) |
+| `tests/unit/utils.test.mjs` | 12 testes de `SisUtils` (escape + `urlSegura`) |
 | `tests/unit/innerhtml-guard.test.mjs` | 12 testes da guarda de HTML cru |
+| `tests/unit/render-escape.test.mjs` | 11 testes de saída segura nos renders públicos |
 | `playwright.config.mjs` | sobe o servidor e roda o Chromium |
 | `tests/e2e/publico.spec.mjs` | 5 fluxos do site, somente leitura |
+| `tests/e2e/xss.spec.mjs` | 3 testes de payload no Chromium |
 | `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
 | `.github/workflows/ci.yml` | `check` + `e2e` em toda branch e PR |
 
@@ -69,11 +71,22 @@ js/core/utils.js  total   0 | interpolado   0
 livremente; para subir é preciso rodar `--atualizar` de propósito, e o diff do
 `scripts/innerhtml-baseline.json` fica visível na revisão.
 
+### Saída segura (Bloco 9b)
+
+- Todo texto vindo do banco sai por `escapeHtml`; atributos por `escapeAttr`.
+- **Único** HTML aceito: `<a href="...">` em `campos[].valor`
+  (`info_juridico` / `info_municipio`), via `SisUtils.htmlComLinks`.
+- `SisUtils.urlSegura` aceita `http:`, `https:`, `mailto:`, `tel:` e caminho
+  relativo; recusa `javascript:`, `vbscript:` e `data:`, inclusive com espaço
+  ou caractere de controle no meio. O `style` do link é fixo.
+- `manuais.passos` continua **texto puro + imagem em campo separado**; nenhum
+  outro campo aceita formatação.
+
 ### Testes de unidade
 
 ```
 npm test         ->  exit 0
-62 testes, 62 passando
+76 testes, 76 passando
 ```
 
 ### Check completo
@@ -86,7 +99,7 @@ npm run check    ->  exit 0   (syntax + lint + test)
 
 ```
 npm run test:e2e ->  exit 0
-5 passed, 2 skipped   (16s)
+8 passed, 2 skipped   (17s)
 ```
 
 **5 fluxos verdes** no site público, todos somente leitura:
@@ -98,6 +111,14 @@ npm run test:e2e ->  exit 0
    fail-closed: se o filtro ficar restritivo demais, o site abre vazio;
 5. **todos os módulos** abrem sem exceção de JavaScript — este é o teste que
    pega regressão de verdade (um `initXxx()` quebrado aparece aqui).
+
+**3 fluxos de XSS** (`tests/e2e/xss.spec.mjs`), com o app real no Chromium:
+
+1. nome de funcionário com `<img src=x onerror=...>`: não executa, aparece como
+   texto e o card renderiza;
+2. link `javascript:` em `campos[].valor`: sai sem `href` clicável;
+3. tag de arquivo com apóstrofo (`d'água`): o botão de filtro continua
+   funcionando, sem erro de JavaScript no console.
 
 **2 fluxos pulados** porque não há projeto de teste nem credenciais no
 ambiente: login no painel e abertura de um módulo do painel. Para rodar:
@@ -222,7 +243,10 @@ mantendo os nomes antigos para não mexer nos ~195 pontos de uso.
 
 O que **não** mudou: os 40 pontos de `innerHTML` com interpolação continuam
 existindo. Eles agora estão medidos e travados por
-`scripts/check-innerhtml.mjs` (ver abaixo); escapar cada um é o Bloco 9b.
+`scripts/check-innerhtml.mjs` (ver abaixo). O **9b** passou o escape para dentro
+de cada expressão, então o valor do guard não cai — ele conta pontos com
+interpolação, não pontos inseguros. Chegar a 0 exige reconstruir os blocos com
+DOM (`createElement`), que é o 9c/9d.
 
 ---
 

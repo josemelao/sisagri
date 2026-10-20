@@ -10,8 +10,8 @@ Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
-  -> Bloco 9 PARCIAL: 9a concluido (SisUtils + guarda de CI); falta 9b (escapar
-     os 40 pontos de innerHTML) e 9c/9d (handlers inline, CSP).
+  -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
+     sanitizador de link) concluidos; falta 9c/9d (handlers inline, CSP).
   -> Bloco 6 DECIDIDO em papeis (admin / servidor / publico); falta o desenho
      da matriz e o SQL.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
@@ -42,6 +42,9 @@ Concluido:
   - Bloco 4.1: publish_status fail-closed + migracao do formato antigo
   - Bloco 5: painel exige is_admin() do banco (rpc), nao so sessao
   - Bloco 10: token do Instagram saiu do navegador (proxy em Edge Function)
+  - Bloco 9a: escape unico em SisUtils + guarda de innerHTML no CI
+  - Bloco 9b: todo texto sai escapado; unico HTML e link sanitizado em
+    campos[].valor (info_juridico / info_municipio)
 
 Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019205209  supabase/migrations/0002_admin_gate.sql
@@ -64,6 +67,10 @@ Commits locais (codex/fase2, sem push):
   e04d279  docs do bloco 4.1
   7c48bca  bloco 5: painel exige is_admin() do banco
   4ee128e  bloco 10: token do Instagram sai do navegador (Edge Function)
+  f03a5f1  docs(bloco 10): handoff e pendencias de deploy
+  550ef0d  bloco 9a: escape unico em SisUtils e guarda de innerHTML no CI
+  a2cd15f  docs(bloco 9a): registra execucao e papeis do Bloco 6
+  5d8ef6c  bloco 9b: escapa saida de texto e sanitiza links em campos
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -104,8 +111,9 @@ PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
     - policy em storage.objects consultando publish_status por join
       (arquivos.storage_path e funcionarios.foto_storage_path existem);
     - site publico por URL assinada.
-  Excecao: manuais nao tem coluna de vinculo (imagens embutidas no HTML de
-  passos) -> precisa de convencao de caminho ou decisao explicita.
+  Manuais: cada passo tem imagem_storage_bucket/image_storage_path em campo
+  proprio (auditoria 2026-10-19: 60/60 passos com imagem) -> da para usar a
+  mesma regra das outras colecoes, sem convencao de caminho.
 
   Precisa de projeto Supabase de TESTE antes, porque mexe em script.js e nas
   URLs ja gravadas no banco.
@@ -156,6 +164,21 @@ PENDENTE 6 — RESOLVIDO em 2026-10-19 (Bloco 5)
   Prova: POST /rest/v1/rpc/is_admin sem sessao -> 200 false; /admin.html sem
   sessao mostra login sem erro de JS; 5 testes de unidade; 34/34 verdes.
   FALTA: teste humano do login real com a conta admin (sem credenciais aqui).
+
+PENDENTE 8 — RESOLVIDO em 2026-10-19 (Bloco 9b)
+  Todo texto vindo do banco agora sai escapado no site publico e no painel.
+  Unico HTML permitido: link de campos[].valor (info_juridico/info_municipio),
+  via SisUtils.htmlComLinks -> so <a href> http/https/mailto/tel/relativo.
+  passos continua igual: texto puro + imagem em campo separado.
+  js/core/utils.js ganhou urlSegura (bloqueia javascript:, vbscript:, data:).
+  admin.js: botao excluir usa data-nome; nome com apostrofo nao quebra mais.
+  Prova: npm run check exit 0 (76 testes), e2e 8 passed/2 skipped; payload
+  <img src=x onerror=...> nao executa e aparece como texto.
+  Guard segue 29/11: ele conta PONTOS com interpolacao, nao pontos inseguros;
+  o escape acontece dentro da expressao. Chegar a 0 e o 9c/9d (DOM/CSP).
+  PENDENCIA DE DADO: info_municipio id=3 com href sem https:// (ja era
+  relativo antes); corrigir no painel, campo "Site oficial".
+  FALTA: teste automatizado de XSS no admin (depende do login real).
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
