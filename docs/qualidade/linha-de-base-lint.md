@@ -19,6 +19,8 @@ documento **não** propõe correção nenhuma.
 | `tests/unit/script.test.mjs` | 11 testes de `script.js` |
 | `tests/unit/admin-auth.test.mjs` | 5 testes de `DB.isAdminLoggedIn` |
 | `tests/unit/instagram.test.mjs` | 7 testes do widget/proxy do Instagram |
+| `tests/unit/utils.test.mjs` | 9 testes de `SisUtils` (escape único) |
+| `tests/unit/innerhtml-guard.test.mjs` | 12 testes da guarda de HTML cru |
 | `playwright.config.mjs` | sobe o servidor e roda o Chromium |
 | `tests/e2e/publico.spec.mjs` | 5 fluxos do site, somente leitura |
 | `tests/e2e/admin.spec.mjs` | 2 fluxos do painel, somente leitura, com credenciais |
@@ -42,22 +44,36 @@ npm run syntax   ->  exit 0
 
 ```
 npm run lint     ->  exit 0
-124 problemas: 0 erros, 124 avisos
+125 problemas: 0 erros, 125 avisos
 ```
 
 - **0 erro** de `no-undef` e `no-redeclare`.
-- **124 avisos** de `no-unused-vars` — funções declaradas e não chamadas (várias
+- **125 avisos** de `no-unused-vars` — funções declaradas e não chamadas (várias
   são handlers de `onclick` no HTML, que o ESLint não enxerga).
 
-Config relevante: `DB` e `dbInit` entram como globais **só** em `script.js` e
-`admin.js` (declará-los em `db.js` dispara `no-redeclare`). Se o lint voltar a
-acusar `'DB' is not defined`, a config foi quebrada, não o código.
+Config relevante: `DB`, `dbInit` e `DB_CONFIG` entram como globais **só** em
+`script.js` e `admin.js` (declará-los em `db.js` dispara `no-redeclare`). Se o
+lint voltar a acusar `'DB' is not defined`, a config foi quebrada, não o código.
+
+### Guarda de HTML cru
+
+```
+npm run guard    ->  exit 0
+script.js         total  55 | interpolado  29
+admin.js          total  17 | interpolado  11
+js/core/utils.js  total   0 | interpolado   0
+```
+
+`scripts/check-innerhtml.mjs` lista toda atribuição de `innerHTML` /
+`insertAdjacentHTML` cujo valor é um template com `${...}`. O número pode cair
+livremente; para subir é preciso rodar `--atualizar` de propósito, e o diff do
+`scripts/innerhtml-baseline.json` fica visível na revisão.
 
 ### Testes de unidade
 
 ```
 npm test         ->  exit 0
-41 testes, 41 passando
+62 testes, 62 passando
 ```
 
 ### Check completo
@@ -176,20 +192,37 @@ npm test: 29/29    npm run test:e2e: 5 passed, 2 skipped
 - O admin sempre envia status explícito (`getModalPublishStatus`), então na
   prática nada muda no fluxo normal.
 
-### 2. `escapeHtml` não escapa aspas e lança com não-string
+### 2. `escapeHtml` não escapava aspas e lançava com não-string — **CORRIGIDO no Bloco 9a**
+
+Era assim (antes):
 
 ```js
-escapeHtml('"x"')   // '"x"'    <- não escapa
-escapeHtml("it's")  // "it's"   <- não escapa
+escapeHtml('"x"')   // '"x"'    <- não escapava
+escapeHtml("it's")  // "it's"   <- não escapava
 escapeHtml(null)    // TypeError
 ```
 
-Só escapa `&`, `<` e `>`. Todos os usos observados caem em **conteúdo de texto**
-de `innerHTML`, onde aspas são inofensivas. O risco aparece se alguém usar
-`escapeHtml` dentro de um atributo (`title="${...}"`, `value="${...}"`).
+Existiam **duas** cópias, com defeitos diferentes:
 
-Não é exploração conhecida hoje. Fica registrado para quando houver teste de XSS
-(Bloco 7).
+| Arquivo | Não escapava | Zerava | Lançava |
+|---|---|---|---|
+| `script.js` (`escapeHtml`) | `"` e `'` | — | `null`, `undefined`, número |
+| `admin.js` (`escHtml`) | `'` | `0`, `false` | — |
+
+Agora existe uma só, em `js/core/utils.js`, exposta como `window.SisUtils`:
+
+```js
+SisUtils.escapeHtml('"x"')   // '&quot;x&quot;'
+SisUtils.escapeHtml(null)    // ''
+SisUtils.escapeHtml(0)       // '0'
+```
+
+`script.js` e `admin.js` delegam para ela (`escapeHtml`, `escapeAttr`, `escHtml`),
+mantendo os nomes antigos para não mexer nos ~195 pontos de uso.
+
+O que **não** mudou: os 40 pontos de `innerHTML` com interpolação continuam
+existindo. Eles agora estão medidos e travados por
+`scripts/check-innerhtml.mjs` (ver abaixo); escapar cada um é o Bloco 9b.
 
 ---
 

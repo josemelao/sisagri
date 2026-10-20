@@ -10,6 +10,10 @@ Plano vigente (substitui a v1):
   C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
+  -> Bloco 9 PARCIAL: 9a concluido (SisUtils + guarda de CI); falta 9b (escapar
+     os 40 pontos de innerHTML) e 9c/9d (handlers inline, CSP).
+  -> Bloco 6 DECIDIDO em papeis (admin / servidor / publico); falta o desenho
+     da matriz e o SQL.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
@@ -80,12 +84,13 @@ Bloco 4, medido:
   nenhuma linha de db.js/script.js/admin.js/dados.js mudou
 
 Proxima acao sugerida:
-  1. Teste humano do painel (obrigatorio antes de seguir): entrar com a conta
-     admin e criar/editar um registro. Isso valida o Bloco 4.1 (fail-closed)
-     e o Bloco 5 (rpc is_admin) no fluxo real.
+  1. Bloco 9b: classificar os 40 pontos de innerHTML interpolado por tipo de
+     campo e escapar os de texto simples. DECISAO NECESSARIA DO DONO:
+     quais campos aceitam HTML por desenho (suspeito: manuais.passos, que tem
+     <img> embutido). Sem essa resposta, so os campos claramente textuais.
   2. Deploy da function + rotacao do token (PENDENTE 7).
-  3. Depois, escolher entre: Bloco 6 (RBAC por papel/area, precisa de desenho),
-     Bloco 7 (defesa de rascunho em profundidade) ou Bloco 9 (XSS/CSP).
+  3. Bloco 6 so depois do 9b: o 'servidor' podera escrever conteudo que o
+     publico ve, entao a saida precisa estar segura antes.
 
 =========================================================================
 PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)

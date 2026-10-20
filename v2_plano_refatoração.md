@@ -1072,6 +1072,24 @@ prova de falta de permissão); `is_admin = false` derruba.
 
 ### T6.0 — Design (obrigatório antes de qualquer SQL)
 
+#### Decisão do dono — 2026-10-19 (papéis)
+
+| Papel | Pode | Não pode |
+|---|---|---|
+| `admin` | tudo: criar, editar, excluir, publicar | — |
+| `servidor` | criar e editar | **excluir** |
+| público (sem login) | ver tudo que estiver **publicado** | ver rascunho |
+
+- O público continua sendo o app atual, sem login. Bloqueio por página é
+  possibilidade **futura**, fora deste bloco.
+- `servidor` **pode** publicar (criar/editar inclui o `publish_status`), mas não
+  excluir — a decisão não distingue rascunho de publicado.
+- Consequência técnica: `is_admin()` (booleano) deixa de bastar. As policies de
+  escrita precisam saber **qual operação** está sendo feita: `DELETE` exige
+  `admin`, `INSERT`/`UPDATE` aceitam `servidor` ou `admin`.
+- Consequência de segurança: um `servidor` pode escrever conteúdo que o público
+  vê. É exatamente por isso que o Bloco 9 (escape na saída) vem antes do 6.
+
 - [ ] **T6.0.1 — Matriz de classificação das 14 coleções**
   Para cada coleção: **pública** / **interna** / **restrita**. Nenhuma coleção pode ficar sem classificação.
 - [ ] **T6.0.2 — Matriz papel × coleção × ação**
@@ -1244,14 +1262,20 @@ Migrations de reversão + `git checkout -- db.js`.
 
 ### Tarefas
 
-- [ ] **T9.1 — `SisUtils` (mata M2)**
-  `escapeHtml` (com `String()` + aspas), `escapeAttr`, `formatDateBR`, `getFeriasStatus`, `normalizeSearchText`, `debounce`.
-  Carregado **antes** de `db.js` nos dois HTMLs. Substituir as implementações locais duplicadas (`escapeHtml` / `escHtml`).
+- [x] **T9.1 — `SisUtils` (mata M2)** — feito em 2026-10-19 (9a)
+  `escapeHtml` (com `String()` + aspas) e `escapeAttr`, em `js/core/utils.js`.
+  Carregado **antes de `dados.js`/`db.js`** nos dois HTMLs. `script.js`
+  (`escapeHtml`, `escapeAttr`) e `admin.js` (`escHtml`) delegam para ele.
+  **Não migrado:** `formatDateBR`, `getFeriasStatus`, `normalizeSearchText`,
+  `debounce` continuam onde estavam — não têm defeito conhecido; mover seria
+  churn sem ganho.
 - [ ] **T9.2 — Escapar os pontos de A1**
   `script.js` (`avisoItemHTML`, `renderFuncionarios`, Instagram, etc.) e `admin.js` (renders de tabela): todo dado de usuário passa por `SisUtils.escapeHtml`; atributos por `escapeAttr`.
   Preferir `textContent`/`createElement` onde for simples.
-- [ ] **T9.3 — Guarda de CI contra `innerHTML` cru**
-  `scripts/check-innerhtml.mjs`: lista toda atribuição `innerHTML` com `${...}` e falha se aparecer arquivo fora da allowlist de dívida técnica (inventário inicial: 69 em `script.js`, 34 com interpolação).
+- [x] **T9.3 — Guarda de CI contra `innerHTML` cru** — feito em 2026-10-19 (9a)
+  `scripts/check-innerhtml.mjs` + `scripts/innerhtml-baseline.json`, no
+  `npm run check`. Inventário medido: `script.js` 55 atribuições / **29 com
+  interpolação**; `admin.js` 17 / **11**. Sobe só com `--atualizar` explícito.
 - [ ] **T9.4 — Remover handlers inline (M4)**
   42 em `script.js` + 105 em `admin.js` + 18 no HTML → `data-action` + delegação.
   **Estratégia:** um módulo por commit, com teste após cada um. Inventário deve chegar a 0.
@@ -1284,6 +1308,49 @@ CSP: app funciona e o console **não** registra violações.
 
 ### Rollback
 `git checkout -- <arquivos>`; CSP volta a Report-Only.
+
+### Registro de execução — parte 9a (2026-10-19)
+
+**Feito:**
+
+| Arquivo | Mudança |
+|---|---|
+| `js/core/utils.js` (novo) | `SisUtils.escapeHtml` / `escapeAttr`: uma única implementação, escapa `& < > " '` e trata `null`/`0`/`false` |
+| `script.js` | `escapeHtml` e `escapeAttr` delegam para `SisUtils` (nomes mantidos: 25 pontos de uso intactos) |
+| `admin.js` | `escHtml` delega para `SisUtils` (173 pontos de uso intactos) |
+| `index.html`, `admin.html` | `<script src="js/core/utils.js">` antes de `dados.js` |
+| `scripts/check-innerhtml.mjs` (novo) | guarda de CI: conta `innerHTML`/`insertAdjacentHTML` com `${...}`, compara com baseline |
+| `scripts/innerhtml-baseline.json` (novo) | `script.js: 29`, `admin.js: 11`, `utils.js: 0` |
+| `package.json` | `npm run guard` dentro de `npm run check`; `syntax` cobre `utils.js` |
+
+**Provas:**
+
+```
+npm run check   -> exit 0 (62 testes)
+npm run guard   -> script.js 29 | admin.js 11 | utils.js 0
+npm run test:e2e -> 5 passed, 2 skipped
+```
+
+TDD: 21 testes novos (`utils.test.mjs` 9, `innerhtml-guard.test.mjs` 12). Os 9
+de `SisUtils` falharam antes do arquivo existir; os 2 testes de `script.test.mjs`
+que travavam o defeito ("DIVERGENCIA CONHECIDA") foram reescritos para travar a
+correção.
+
+**Por que 9a para aqui:** os 40 pontos restantes de `innerHTML` interpolado não
+são todos iguais. Alguns campos podem ser **HTML por desenho** — em especial
+`manuais.passos`, que carrega `<img>` embutido no texto (Bloco 3b parte 2). Passar
+`escapeHtml` em todos quebraria esse conteúdo. Classificar campo a campo é o 9b,
+e exige decisão do dono sobre quais campos aceitam HTML.
+
+**9b — proposta de fatiamento:**
+
+1. `script.js` conteúdo de texto simples (título, nome, sigla, categoria, descrição curta): escapar.
+2. `script.js` atributos (`href`, `src`, `alt`, `onclick`, `style`): `escapeAttr` ou remoção do handler.
+3. `admin.js` tabelas e previews.
+4. Campos HTML por desenho (`manuais.passos`): decidir entre sanitizar com
+   allowlist ou converter para texto + imagens em campo próprio.
+5. T9.4 (handlers inline) continua **depois** do 9b — 176 handlers é refactor de
+   vários commits.
 
 ---
 
