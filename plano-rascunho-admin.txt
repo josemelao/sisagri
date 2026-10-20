@@ -14,13 +14,17 @@ Fechado nesta sessao:
     Migrations aplicadas em producao:
       20261020023304  rbac_papel   (role em app_admins + funcoes)
       20261020023320  rls_papeis   (42 policies de conteudo + 9 de Storage)
+    Design aprovado pelo dono:
+      docs/superpowers/specs/2026-10-19-rbac-design.md
   - Conta servidor criada (servidor@servidor.com) e promovida em app_admins:
     UUID 9e86f3b4-c03e-45b5-a66a-c43ce524b90b, role = servidor.
   - Fix de UI do papel servidor (2026-10-20): lixeira e "Configuracoes"
     somem tambem depois de salvar no modal (render direto). Commit 45bfbfa.
     Validado pelo dono no painel local.
-    Design aprovado pelo dono:
-      docs/superpowers/specs/2026-10-19-rbac-design.md
+  - Teste humano do login real do ADMIN validado pelo dono (2026-10-20):
+    abre, mostra o rascunho processos.id=4 e o publico nao o exibe.
+  - Fix do falso fallback no login (2026-10-20): reinit de dbInit nao anuncia
+    mais status local antes de carregar. Commit 248977f.
 
 Medido no fim da sessao:
   82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
@@ -30,9 +34,8 @@ PROXIMA ACAO (nesta ordem):
   1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
      Teste no painel confirmado: criar/editar sim; excluir bloqueado.
      Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
-  2. Teste humano do login real do ADMIN (pendencia desde o Bloco 5). Agora o
-     login passa por isStaff() e recarrega as colecoes; confirmar que abre e
-     que o rascunho processos.id=4 aparece.
+  2. [FEITO 2026-10-20] Teste humano do login do ADMIN validado: abre,
+     mostra o rascunho processos.id=4 e o site publico nao o exibe.
   3. Decidir o T6.5: a suite 3 personas x 14 colecoes x 4 acoes exige projeto
      Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2). Sem isso, so ha
      prova por SQL (tests/05_rbac.sql), nao por persona real.
@@ -119,6 +122,8 @@ Commits locais (codex/fase2, sem push):
   8370400  bloco 6: papel servidor (criar/editar, sem excluir) com RLS
   f1f2698  docs(bloco 6): design aprovado, provas e pendencias
   45bfbfa  fix(bloco 6): esconde exclusao/configuracoes do servidor pos-render
+  06428fb  docs(bloco 6): conta servidor e fix de UI registrados
+  248977f  fix(bloco 6): reinit do login nao anuncia fallback antes de carregar
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -213,7 +218,8 @@ PENDENTE 6 — RESOLVIDO em 2026-10-19 (Bloco 5)
   Adaptado para rpc('is_admin'), a mesma funcao das 59 policies de RLS.
   Prova: POST /rest/v1/rpc/is_admin sem sessao -> 200 false; /admin.html sem
   sessao mostra login sem erro de JS; 5 testes de unidade; 34/34 verdes.
-  FALTA: teste humano do login real com a conta admin (sem credenciais aqui).
+  PENDENCIA ENCERRADA em 2026-10-20 pelo dono: login abre, rascunho
+  processos.id=4 aparece no painel e continua fora do site publico.
 
 PENDENTE 8 — RESOLVIDO em 2026-10-19 (Bloco 9b)
   Todo texto vindo do banco agora sai escapado no site publico e no painel.
