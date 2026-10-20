@@ -95,11 +95,10 @@ PROXIMA ACAO (nesta ordem):
      c3f1c90; 0010 (20261020183947) e 0011 (20261020184951) aplicadas em
      producao; 60/60 imagens validadas no site real.
   6. Pendencias menores, sem urgencia:
-     - info_municipio id=3 com href sem https:// (corrigir no painel)
+     - [FEITO 2026-10-20] info_municipio id=3 corrigido e validado no site.
      - deploy da function do Instagram + rotacao do token (dono)
-     - mascaramento de cpf/telefone/email/placa para anon (exige view/colunas)
      - promocao pelo painel (RPC security definer) - futuro
-     - ligar Leaked Password Protection no Auth (Dashboard)
+     - conferir no dashboard o aviso de bucket publico (producao e teste)
 
 =========================================================================
 LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
@@ -254,10 +253,11 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
   Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 
-PENDENTE 3 — projeto Supabase de TESTE
+PENDENTE 3 — projeto Supabase de TESTE (RESOLVIDO 2026-10-20)
   CRIADO em 2026-10-20: zoywmvuswyosehlddmma. MCP `supabase-teste` conectado.
   12 migrations aplicadas (0008/0009/0010/0011 inclusive); os 3 buckets ja
-  estao privados; tests/06_matriz_rbac.sql verde (232 casos) e
+  estao privados; 0011 do teste na versao 20261020194040;
+  tests/06_matriz_rbac.sql verde (232 casos) e
   tests/07_manuais_imagens_storage.sql verde (0 falhas) apos a 0011.
   Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002), tests/00b_seed_dados.sql
   (depois da 0007) e 0008 antes / 0009 depois da 00b; detalhes em supabase/README.md.
