@@ -143,6 +143,9 @@
     .admin-nav-item.active { background: var(--accent); color: #fff; }
     .admin-nav-item i { font-size: 1rem; flex-shrink: 0; }
 
+    /* Servidor nao exclui: esconde a acao mesmo quando a tabela e redesenhada. */
+    body.sem-excluir [onclick^="confirmarDelecao"] { display: none !important; }
+
     .admin-nav-divider { height: 1px; background: var(--border); margin: 12px 8px; }
 
     /* Main area */

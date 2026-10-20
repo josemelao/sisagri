@@ -84,6 +84,7 @@ function initAdmin() {
   atualizarStatusBanco();
   initNav();
   renderOverview();
+  aplicarPermissoesUI();
 }
 
 let ultimoStatusBanco = null;
@@ -339,7 +340,11 @@ function renderSection(key) {
  * isto evita que a tela ofereça uma ação que vai falhar.
  */
 function aplicarPermissoesUI() {
-  if (DB.podeExcluir()) return;
+  const podeExcluir = DB.podeExcluir();
+  // Classe no body cobre re-renders diretos (ex.: salvar no modal), que nao
+  // passam por renderSection().
+  document.body.classList.toggle('sem-excluir', !podeExcluir);
+  if (podeExcluir) return;
   document.querySelectorAll('#admin-app [onclick^="confirmarDelecao"]')
     .forEach(btn => btn.remove());
   const navConfig = document.querySelector('.admin-nav-item[data-section="configuracoes"]');
