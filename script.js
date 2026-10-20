@@ -94,7 +94,7 @@ function getArquivoLinkMeta(arquivo) {
   return {
     href,
     attrs: isDownload
-      ? `download="${nomeArquivo}" onclick='baixarArquivo(${JSON.stringify(href)}, ${JSON.stringify(nomeArquivo)}); return false;'`
+      ? `download="${escapeAttr(nomeArquivo)}" data-baixar-href="${escapeAttr(href)}" data-baixar-nome="${escapeAttr(nomeArquivo)}" onclick="baixarArquivo(this.dataset.baixarHref, this.dataset.baixarNome); return false;"`
       : 'target="_blank" rel="noopener"',
     isDownload,
     isExternal: !isDownload,
@@ -155,8 +155,8 @@ function getArquivoPreviewHTML(a) {
       <p class="detail-section-title">Pré-visualização</p>
       <div class="arquivo-preview-container">
         <img
-          src="${url}"
-          alt="${a.nome || 'Imagem'}"
+          src="${escapeAttr(urlSegura(url))}"
+          alt="${escapeAttr(a.nome || 'Imagem')}"
           class="arquivo-preview-img"
           onerror="this.closest('.arquivo-preview-container').innerHTML='<p class=\\'arquivo-preview-fallback\\'>Não foi possível carregar a imagem.</p>'"
         />
@@ -169,9 +169,9 @@ function getArquivoPreviewHTML(a) {
       <p class="detail-section-title">Pré-visualização</p>
       <div class="arquivo-preview-container">
         <iframe
-          src="${url}"
+          src="${escapeAttr(urlSegura(url))}"
           class="arquivo-preview-pdf"
-          title="${a.nome || 'PDF'}"
+          title="${escapeAttr(a.nome || 'PDF')}"
           loading="lazy"
         ></iframe>
         <p class="arquivo-preview-pdf-aviso">
@@ -188,9 +188,9 @@ function getArquivoPreviewHTML(a) {
       <p class="detail-section-title">Pré-visualização</p>
       <div class="arquivo-preview-container">
         <iframe
-          src="${viewerUrl}"
+          src="${escapeAttr(viewerUrl)}"
           class="arquivo-preview-pdf"
-          title="${a.nome || 'Documento'}"
+          title="${escapeAttr(a.nome || 'Documento')}"
           loading="lazy"
           allowfullscreen
         ></iframe>
@@ -450,14 +450,14 @@ function renderFerias() {
         ${(() => {
           const func = getPublishedFuncionarioById(f.funcionario_id);
           return func && func.foto
-            ? `<img src="${func.foto}" class="ferias-avatar ferias-avatar--foto" alt="${f.nome}" />`
-            : `<div class="ferias-avatar">${getInitials(f.nome)}</div>`;
+            ? `<img src="${escapeAttr(urlSegura(func.foto))}" class="ferias-avatar ferias-avatar--foto" alt="${escapeAttr(f.nome)}" />`
+            : `<div class="ferias-avatar">${escapeHtml(getInitials(f.nome))}</div>`;
         })()}
         <div class="ferias-info">
-          <span class="ferias-nome">${f.nome}</span>
-          <span class="ferias-cargo">${f.cargo}</span>
+          <span class="ferias-nome">${escapeHtml(f.nome)}</span>
+          <span class="ferias-cargo">${escapeHtml(f.cargo)}</span>
           <span class="ferias-periodo">
-            <i class="ph-bold ph-calendar-blank"></i>${periodo}
+            <i class="ph-bold ph-calendar-blank"></i>${escapeHtml(periodo)}
           </span>
           ${barraHTML}
         </div>
@@ -481,9 +481,9 @@ function renderAcessoRapido() {
         </div>`;
     }
     return `
-      <a href="${a.url}" target="_blank" rel="noopener" class="acesso-btn" style="--ac:${a.cor}">
-        <i class="ph-bold ${a.icone}"></i>
-        <span>${a.titulo}</span>
+      <a href="${escapeAttr(urlSegura(a.url))}" target="_blank" rel="noopener" class="acesso-btn" style="--ac:${escapeAttr(a.cor)}">
+        <i class="ph-bold ${escapeAttr(a.icone)}"></i>
+        <span>${escapeHtml(a.titulo)}</span>
       </a>`;
   }).join("");
 }
@@ -727,16 +727,16 @@ function positionTooltip(tip, cell) {
 function avisoItemHTML(a) {
   const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
   return `
-    <div class="aviso-item aviso-item--${a.tipo}" onclick="navigateTo('agenda'); setTimeout(() => openAviso(${a.id}), 120)">
-      <div class="aviso-icon" style="color:${tipo.cor}">
-        <i class="ph-bold ${tipo.icone}"></i>
+    <div class="aviso-item aviso-item--${escapeAttr(a.tipo)}" onclick="navigateTo('agenda'); setTimeout(() => openAviso(${escapeAttr(a.id)}), 120)">
+      <div class="aviso-icon" style="color:${escapeAttr(tipo.cor)}">
+        <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
       </div>
       <div class="aviso-body">
         <div class="aviso-titulo">
-          <span class="aviso-tag" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">${tipo.label}</span>
-          ${a.titulo}
+          <span class="aviso-tag" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">${escapeHtml(tipo.label)}</span>
+          ${escapeHtml(a.titulo)}
         </div>
-        ${a.desc ? `<p class="aviso-desc">${a.desc}</p>` : ""}
+        ${a.desc ? `<p class="aviso-desc">${escapeHtml(a.desc)}</p>` : ""}
       </div>
     </div>`;
 }
@@ -771,6 +771,16 @@ function getInstagramProxyUrl() {
 /** Escapa valor para dentro de atributo HTML (mesma regra de `escapeHtml`). */
 function escapeAttr(valor) {
   return window.SisUtils.escapeAttr(valor);
+}
+
+/** Devolve '' para URL com esquema executavel (javascript:, data:, vbscript:). */
+function urlSegura(valor) {
+  return window.SisUtils.urlSegura(valor);
+}
+
+/** HTML seguro: so `<a href>` sobrevive; o resto vira texto. */
+function htmlComLinks(valor) {
+  return window.SisUtils.htmlComLinks(valor);
 }
 
 function initInstagram() {
@@ -952,8 +962,8 @@ function openFuncionario(id) {
   if (!f) return;
 
   const avatarHTML = f.foto
-    ? `<img src="${f.foto}" class="detail-avatar-large detail-avatar-foto" alt="${f.nome}" />`
-    : `<div class="detail-avatar-large">${getInitials(f.nome)}</div>`;
+    ? `<img src="${escapeAttr(urlSegura(f.foto))}" class="detail-avatar-large detail-avatar-foto" alt="${escapeAttr(f.nome)}" />`
+    : `<div class="detail-avatar-large">${escapeHtml(getInitials(f.nome))}</div>`;
   const lotacao = f.lotacao || f.setor || "";
   const camposInfo = [
     ["Matrí­cula", f.matricula],
@@ -969,20 +979,20 @@ function openFuncionario(id) {
 
   document.getElementById("func-detail-content").innerHTML = `
     ${avatarHTML}
-    <div class="detail-name">${f.nome}</div>
-    <div class="detail-role">${f.cargo}</div>
-    <span class="detail-badge">${lotacao}</span>
+    <div class="detail-name">${escapeHtml(f.nome)}</div>
+    <div class="detail-role">${escapeHtml(f.cargo)}</div>
+    <span class="detail-badge">${escapeHtml(lotacao)}</span>
     <hr class="detail-divider">
     <p class="detail-section-title">Informações do funcionário</p>
     <div class="detail-info-grid">${camposInfo.map(([label, valor]) => `
       <div class="detail-info-item">
-        <label>${label}</label>
-        <span>${valor}</span>
+        <label>${escapeHtml(label)}</label>
+        <span>${escapeHtml(valor)}</span>
       </div>
     `).join("")}</div>
     <hr class="detail-divider">
     <p class="detail-section-title">O que essa pessoa faz</p>
-    <p class="detail-desc">${f.descricao || "Sem descrição cadastrada."}</p>
+    <p class="detail-desc">${escapeHtml(f.descricao || "Sem descrição cadastrada.")}</p>
   `;
 
   openDetail("func-detail-overlay");
@@ -1032,19 +1042,19 @@ function renderFuncionarios(lista) {
   animateGridReflow(container, () => {
     container.innerHTML = lista.map(f => {
       const avatarHTML = f.foto
-        ? `<img src="${f.foto}" class="list-card-avatar func-foto" alt="${f.nome}" />`
-        : `<div class="list-card-avatar">${getInitials(f.nome)}</div>`;
+        ? `<img src="${escapeAttr(urlSegura(f.foto))}" class="list-card-avatar func-foto" alt="${escapeAttr(f.nome)}" />`
+        : `<div class="list-card-avatar">${escapeHtml(getInitials(f.nome))}</div>`;
       const lotacao = f.lotacao || f.setor || f.departamento || "";
       return `
-        <div class="list-card" data-id="${f.id}" data-reflow-id="func-${f.id}" onclick="openFuncionario(${f.id})">
+        <div class="list-card" data-id="${escapeAttr(f.id)}" data-reflow-id="func-${escapeAttr(f.id)}" onclick="openFuncionario(${escapeAttr(f.id)})">
           <div class="list-card-header">
             ${avatarHTML}
             <div>
-              <div class="list-card-title">${f.nome}</div>
-              <div class="list-card-sub">${f.cargo}</div>
+              <div class="list-card-title">${escapeHtml(f.nome)}</div>
+              <div class="list-card-sub">${escapeHtml(f.cargo)}</div>
             </div>
           </div>
-          <span class="list-card-tag">${lotacao}</span>
+          <span class="list-card-tag">${escapeHtml(lotacao)}</span>
         </div>
       `;
     }).join("");
@@ -1096,17 +1106,17 @@ function renderManuais(lista) {
     const ic  = m.icone || 'ph-book-open';
     const cor = m.cor   || 'var(--accent)';
     return `
-    <div class="list-card" data-reflow-id="manual-${m.id}" onclick="openManual(${m.id})">
+    <div class="list-card" data-reflow-id="manual-${escapeAttr(m.id)}" onclick="openManual(${escapeAttr(m.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="color:${cor}">
-          <i class="ph-bold ${ic}"></i>
+        <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
+          <i class="ph-bold ${escapeAttr(ic)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${m.titulo}</div>
-          <div class="list-card-sub">${m.passos.length} etapas</div>
+          <div class="list-card-title">${escapeHtml(m.titulo)}</div>
+          <div class="list-card-sub">${(m.passos || []).length} etapas</div>
         </div>
       </div>
-      <span class="list-card-tag">${m.categoria}</span>
+      <span class="list-card-tag">${escapeHtml(m.categoria)}</span>
     </div>`;
   }).join("");
   });
@@ -1143,7 +1153,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     const stepsHTML = m.passos.map((p, i) => `
       <div class="manual-step">
         <div class="step-number">${i + 1}</div>
-        <div class="step-text">${typeof p === 'string' ? p : p.texto}</div>
+        <div class="step-text">${escapeHtml(typeof p === 'string' ? p : (p || {}).texto)}</div>
       </div>
     `).join("");
     contentHTML = `<div class="manual-content-switch"><div class="manual-steps">${stepsHTML}</div></div>`;
@@ -1170,10 +1180,10 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
           </div>
 
           <div class="manual-passo-body">
-            <p class="manual-passo-texto">${texto}</p>
+            <p class="manual-passo-texto">${escapeHtml(texto)}</p>
             ${imagem ? `
               <div class="manual-passo-img-container">
-                <img src="${imagem}" class="manual-passo-img" alt="Ilustração do passo ${passoAtivo + 1}" />
+                <img src="${escapeAttr(urlSegura(imagem))}" class="manual-passo-img" alt="Ilustração do passo ${passoAtivo + 1}" />
               </div>
             ` : `
               <div class="manual-passo-no-img">
@@ -1207,20 +1217,20 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
       const arquivo = getPublishedArquivoById(arquivoId);
       if (arquivo) {
         const linkMeta = getArquivoLinkMeta(arquivo);
-        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
+        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${escapeHtml(nome)}</span>`;
         return `
-          <a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-            <i class="ph-bold ph-download-simple"></i>${nome}
+          <a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+            <i class="ph-bold ph-download-simple"></i>${escapeHtml(nome)}
           </a>`;
       }
     }
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
+    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${escapeHtml(nome)}</span>`;
   }).join("");
 
   container.innerHTML = `
     <div class="manual-transition-scope">
-    <span class="detail-badge">${m.categoria}</span>
-    <div class="detail-name" style="margin-top:10px">${m.titulo}</div>
+    <span class="detail-badge">${escapeHtml(m.categoria)}</span>
+    <div class="detail-name" style="margin-top:10px">${escapeHtml(m.titulo)}</div>
 
     ${tabsHTML}
 
@@ -1234,7 +1244,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
 
     <hr class="detail-divider">
     <p class="detail-section-title">Observações</p>
-    <div class="obs-box">${m.observacoes}</div>
+    <div class="obs-box">${escapeHtml(m.observacoes)}</div>
     </div>
   `;
   animateManualPanelContent(container, modo, passoAtivo);
@@ -1300,17 +1310,17 @@ function renderProcessos(lista) {
     const ic  = p.icone || 'ph-flow-arrow';
     const cor = p.cor   || 'var(--accent)';
     return `
-    <div class="list-card" data-reflow-id="processo-${p.id}" onclick="openProcesso(${p.id})">
+    <div class="list-card" data-reflow-id="processo-${escapeAttr(p.id)}" onclick="openProcesso(${escapeAttr(p.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="color:${cor}">
-          <i class="ph-bold ${ic}"></i>
+        <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
+          <i class="ph-bold ${escapeAttr(ic)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${p.titulo}</div>
-          <div class="list-card-sub">${p.etapas.length} etapas</div>
+          <div class="list-card-title">${escapeHtml(p.titulo)}</div>
+          <div class="list-card-sub">${(p.etapas || []).length} etapas</div>
         </div>
       </div>
-      <span class="list-card-tag">${p.categoria}</span>
+      <span class="list-card-tag">${escapeHtml(p.categoria)}</span>
     </div>`;
   }).join("");
   });
@@ -1329,8 +1339,8 @@ function openProcesso(id) {
     const chips = (e.manuais_ids || []).map(mid => {
       const m = getPublishedManualById(mid);
       if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="openManualFilho(${m.id})" title="Ver manual">
-        <i class="ph-bold ph-book-open"></i>${m.titulo}
+      return `<button class="etapa-manual-chip" onclick="openManualFilho(${escapeAttr(m.id)})" title="Ver manual">
+        <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
         <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
       </button>`;
     }).join('');
@@ -1342,16 +1352,16 @@ function openProcesso(id) {
           <div class="timeline-line"></div>
         </div>
         <div class="timeline-content">
-          <strong>${e.titulo}</strong>
-          <p>${e.descricao}</p>
+          <strong>${escapeHtml(e.titulo)}</strong>
+          <p>${escapeHtml(e.descricao)}</p>
           ${chips ? `<div class="etapa-manuais-row">${chips}</div>` : ''}
         </div>
       </div>`;
   }).join("");
 
   document.getElementById("processo-detail-content").innerHTML = `
-    <span class="detail-badge">${p.categoria}</span>
-    <div class="detail-name" style="margin-top:10px">${p.titulo}</div>
+    <span class="detail-badge">${escapeHtml(p.categoria)}</span>
+    <div class="detail-name" style="margin-top:10px">${escapeHtml(p.titulo)}</div>
     <hr class="detail-divider">
     <p class="detail-section-title">Fluxo do processo</p>
     <div class="timeline">${timelineHTML}</div>
@@ -1413,7 +1423,7 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
     content = `<div class="manual-content-switch"><div class="manual-steps">${m.passos.map((p, i) => `
       <div class="manual-step">
         <div class="step-number">${i + 1}</div>
-        <div class="step-text">${typeof p === 'string' ? p : p.texto}</div>
+        <div class="step-text">${escapeHtml(typeof p === 'string' ? p : (p || {}).texto)}</div>
       </div>`).join('')}</div></div>`;
   } else {
     const passo  = m.passos[passoAtivo];
@@ -1435,9 +1445,9 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
             <strong>Passo ${passoAtivo+1} de ${total}</strong>
           </div>
           <div class="manual-passo-body">
-            <p class="manual-passo-texto">${texto}</p>
+            <p class="manual-passo-texto">${escapeHtml(texto)}</p>
             ${imagem
-              ? `<div class="manual-passo-img-container"><img src="${imagem}" class="manual-passo-img"/></div>`
+              ? `<div class="manual-passo-img-container"><img src="${escapeAttr(urlSegura(imagem))}" class="manual-passo-img"/></div>`
               : `<div class="manual-passo-no-img"><i class="ph-bold ph-image-square"></i><span>Nenhuma imagem para este passo.</span></div>`}
           </div>
           <div class="manual-passo-footer">
@@ -1460,12 +1470,12 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
       const a = getPublishedArquivoById(aid);
       if (a) {
         const linkMeta = getArquivoLinkMeta(a);
-        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
-        return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-          <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
+        if (!linkMeta.href) return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${escapeHtml(nome)}</span>`;
+        return `<a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+          <i class="ph-bold ph-download-simple"></i>${escapeHtml(nome)}</a>`;
       }
     }
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
+    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${escapeHtml(nome)}</span>`;
   }).join('');
 
   painel.innerHTML = `
@@ -1478,12 +1488,12 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
-    <span class="detail-badge">${m.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${m.titulo}</div>
+    <span class="detail-badge">${escapeHtml(m.categoria)}</span>
+    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${escapeHtml(m.titulo)}</div>
     <hr class="detail-divider">
     ${tabs}${content}
     ${docs ? `<hr class="detail-divider"><p class="detail-section-title">Documentos necessários</p><div class="docs-list">${docs}</div>` : ''}
-    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${m.observacoes}</div>` : ''}
+    ${m.observacoes ? `<hr class="detail-divider"><p class="detail-section-title">Observações</p><div class="obs-box">${escapeHtml(m.observacoes)}</div>` : ''}
     </div>
   `;
   animateManualPanelContent(painel, modo, passoAtivo);
@@ -1665,8 +1675,8 @@ function renderTagFilter() {
   const todasTags = [...new Set(arquivos.flatMap(a => a.tags))].sort();
 
   container.innerHTML = todasTags.map(tag => `
-    <button class="tag-filter-btn ${tagsAtivas.has(tag) ? "active" : ""}" data-tag="${tag}" onclick="toggleTag('${tag}')">
-      ${tag}
+    <button class="tag-filter-btn ${tagsAtivas.has(tag) ? "active" : ""}" data-tag="${escapeAttr(tag)}" onclick="toggleTag(this.dataset.tag)">
+      ${escapeHtml(tag)}
     </button>
   `).join("");
 }
@@ -1786,8 +1796,8 @@ function renderExtensaoFilter() {
   });
 
   container.innerHTML = ordenados.map(grupo => `
-    <button class="tag-filter-btn ${extensoesAtivas.has(grupo) ? "active" : ""}" data-ext="${grupo}" onclick="toggleExtensao('${grupo}')">
-      ${getArquivoExtensaoLabel(grupo)}
+    <button class="tag-filter-btn ${extensoesAtivas.has(grupo) ? "active" : ""}" data-ext="${escapeAttr(grupo)}" onclick="toggleExtensao(this.dataset.ext)">
+      ${escapeHtml(getArquivoExtensaoLabel(grupo))}
     </button>
   `).join("");
 }
@@ -1977,7 +1987,7 @@ function buildArquivoCardTagsHTML(tags = []) {
   const hiddenCount = Math.max(0, normalizedTags.length - visibleTags.length);
 
   const visibleHTML = visibleTags.map((tag) =>
-    `<span class="arquivo-tag ${tagsAtivas.has(tag) ? 'highlight' : ''}">${tag}</span>`
+    `<span class="arquivo-tag ${tagsAtivas.has(tag) ? 'highlight' : ''}">${escapeHtml(tag)}</span>`
   ).join("");
 
   const moreHTML = hiddenCount > 0
@@ -2181,14 +2191,14 @@ function renderArquivos() {
     const tagsHTML = buildArquivoCardTagsHTML(a.tags);
 
     return `
-      <div class="list-card arquivo-card" data-reflow-id="arquivo-${a.id}" onclick="openArquivo(${a.id})">
+      <div class="list-card arquivo-card" data-reflow-id="arquivo-${escapeAttr(a.id)}" onclick="openArquivo(${escapeAttr(a.id)})">
         <div class="list-card-header">
-          <div class="list-card-avatar icon-avatar" style="color:${cor}">
-            <i class="ph-bold ${icone}"></i>
+          <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
+            <i class="ph-bold ${escapeAttr(icone)}"></i>
           </div>
           <div style="min-width:0;flex:1">
-            <div class="list-card-title arquivo-nome-clamp">${a.nome}</div>
-            <div class="list-card-sub">${getArquivoExtensaoLabel(extensaoGrupo)}${temArquivo ? ' · <span class="arquivo-disponivel">disponível</span>' : ''}</div>
+            <div class="list-card-title arquivo-nome-clamp">${escapeHtml(a.nome)}</div>
+            <div class="list-card-sub">${escapeHtml(getArquivoExtensaoLabel(extensaoGrupo))}${temArquivo ? ' · <span class="arquivo-disponivel">disponível</span>' : ''}</div>
           </div>
         </div>
         <div class="arquivo-tags-row">${tagsHTML}</div>
@@ -2230,19 +2240,19 @@ function openArquivo(id) {
   const icone = tipoIcone[a.tipo] || "ph-file";
 
   const tagsHTML = (a.tags || []).map(t =>
-    `<span class="doc-tag"><i class="ph-bold ph-tag"></i>${t}</span>`
+    `<span class="doc-tag"><i class="ph-bold ph-tag"></i>${escapeHtml(t)}</span>`
   ).join("");
 
   const linkMeta = getArquivoLinkMeta(a);
   let acaoHTML = '';
   if (linkMeta.isDownload) {
     acaoHTML = `
-      <a href="${linkMeta.href}" ${linkMeta.attrs} class="sistema-btn">
+      <a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="sistema-btn">
         <i class="ph-bold ph-download-simple"></i> Baixar arquivo
       </a>`;
   } else if (linkMeta.isExternal) {
     acaoHTML = `
-      <a href="${linkMeta.href}" ${linkMeta.attrs} class="sistema-btn">
+      <a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="sistema-btn">
         <i class="ph-bold ph-arrow-square-out"></i> Abrir link externo
       </a>`;
   } else {
@@ -2250,17 +2260,17 @@ function openArquivo(id) {
   }
 
   document.getElementById("arquivo-detail-content").innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb,${cor} 12%,transparent);color:${cor}">
-      <i class="ph-bold ${icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb,${escapeAttr(cor)} 12%,transparent);color:${escapeAttr(cor)}">
+      <i class="ph-bold ${escapeAttr(icone)}"></i>
     </div>
-    <div class="detail-name">${a.nome}</div>
-    <span class="detail-badge">${a.tipo}</span>
+    <div class="detail-name">${escapeHtml(a.nome)}</div>
+    <span class="detail-badge">${escapeHtml(a.tipo)}</span>
     <hr class="detail-divider">
     <p class="detail-section-title">Informações</p>
     <div class="detail-info-grid">
       <div class="detail-info-item">
         <label>Tipo</label>
-        <span>${a.tipo}</span>
+        <span>${escapeHtml(a.tipo)}</span>
       </div>
       <div class="detail-info-item">
         <label>Origem</label>
@@ -2269,12 +2279,12 @@ function openArquivo(id) {
       ${a.arquivo_nome ? `
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Nome original do arquivo</label>
-        <span>${a.arquivo_nome}</span>
+        <span>${escapeHtml(a.arquivo_nome)}</span>
       </div>` : ''}
       ${linkMeta.isExternal ? `
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Link externo</label>
-        <span style="word-break:break-all;font-size:.8rem">${linkMeta.href}</span>
+        <span style="word-break:break-all;font-size:.8rem">${escapeHtml(linkMeta.href)}</span>
       </div>` : ''}
     </div>
     ${tagsHTML ? `
@@ -2906,11 +2916,11 @@ function camposGridHTML(campos) {
     const isFullWidth = !!(c && (c.full_width || c.fullWidth || c.linha_inteira || c.texto_longo || c.bloco_texto));
     const fullWidthStyle = isFullWidth ? ' style="grid-column:1/-1"' : "";
     const spanStyle = isFullWidth ? ' style="white-space:pre-wrap"' : "";
-    const labelHTML = c?.label ? `<label>${c.label}</label>` : "";
+    const labelHTML = c?.label ? `<label>${escapeHtml(c.label)}</label>` : "";
     return `
       <div class="detail-info-item"${fullWidthStyle}>
         ${labelHTML}
-        <span${spanStyle}>${c?.valor || ""}</span>
+        <span${spanStyle}>${htmlComLinks(c?.valor)}</span>
       </div>
     `;
   }).join("");
@@ -2919,16 +2929,16 @@ function camposGridHTML(campos) {
 /** Abre um overlay genérico de informações (campos simples) */
 function openInfoCard({ overlayId, contentId, item, badgeLabel }) {
   document.getElementById(contentId).innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb,${item.cor} 12%,transparent);color:${item.cor}">
-      <i class="ph-bold ${item.icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
+      <i class="ph-bold ${escapeAttr(item.icone)}"></i>
     </div>
-    <div class="detail-name">${item.titulo}</div>
-    ${item.nome_completo ? `<div class="detail-role">${item.nome_completo}</div>` : ""}
-    <span class="detail-badge">${badgeLabel}</span>
+    <div class="detail-name">${escapeHtml(item.titulo)}</div>
+    ${item.nome_completo ? `<div class="detail-role">${escapeHtml(item.nome_completo)}</div>` : ""}
+    <span class="detail-badge">${escapeHtml(badgeLabel)}</span>
     ${item.atribuicao ? `
       <hr class="detail-divider">
       <p class="detail-section-title">Atribuição / O que fazem</p>
-      <p class="detail-desc">${item.atribuicao}</p>` : ""}
+      <p class="detail-desc">${escapeHtml(item.atribuicao)}</p>` : ""}
     <hr class="detail-divider">
     <div class="detail-info-grid">${camposGridHTML(item.campos)}</div>
   `;
@@ -2943,14 +2953,14 @@ function renderJuridico(lista = infoJuridico) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="juridico-${item.id}" onclick="openJuridico(${item.id})">
+    <div class="list-card" data-reflow-id="juridico-${escapeAttr(item.id)}" onclick="openJuridico(${escapeAttr(item.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${item.cor} 12%,transparent);color:${item.cor}">
-          <i class="ph-bold ${item.icone}"></i>
+        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
+          <i class="ph-bold ${escapeAttr(item.icone)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${item.titulo}</div>
-          <div class="list-card-sub">${item.campos.length} informações</div>
+          <div class="list-card-title">${escapeHtml(item.titulo)}</div>
+          <div class="list-card-sub">${(item.campos || []).length} informações</div>
         </div>
       </div>
       <span class="list-card-tag">Secretaria</span>
@@ -2973,17 +2983,17 @@ function renderMunicipio(lista = infoMunicipio) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="municipio-${item.id}" onclick="openMunicipio(${item.id})">
+    <div class="list-card" data-reflow-id="municipio-${escapeAttr(item.id)}" onclick="openMunicipio(${escapeAttr(item.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${item.cor} 12%,transparent);color:${item.cor}">
-          <i class="ph-bold ${item.icone}"></i>
+        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
+          <i class="ph-bold ${escapeAttr(item.icone)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${item.titulo}</div>
-          <div class="list-card-sub">${item.campos.length} informações</div>
+          <div class="list-card-title">${escapeHtml(item.titulo)}</div>
+          <div class="list-card-sub">${(item.campos || []).length} informações</div>
         </div>
       </div>
-      <span class="list-card-tag">${item.tag}</span>
+      <span class="list-card-tag">${escapeHtml(item.tag)}</span>
     </div>
   `).join("");
   });
@@ -3003,14 +3013,14 @@ function renderOrgaos(lista = infoOrgaos) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="orgao-${item.id}" onclick="openOrgao(${item.id})">
+    <div class="list-card" data-reflow-id="orgao-${escapeAttr(item.id)}" onclick="openOrgao(${escapeAttr(item.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${item.cor} 12%,transparent);color:${item.cor}">
-          <i class="ph-bold ${item.icone}"></i>
+        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
+          <i class="ph-bold ${escapeAttr(item.icone)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${item.titulo}</div>
-          <div class="list-card-sub">${item.nome_completo}</div>
+          <div class="list-card-title">${escapeHtml(item.titulo)}</div>
+          <div class="list-card-sub">${escapeHtml(item.nome_completo)}</div>
         </div>
       </div>
       <span class="list-card-tag">Externo</span>
@@ -3072,19 +3082,19 @@ function renderVeiculos(lista = veiculos) {
   }
 
   const situacaoBadge = (s) => s === "Em operação"
-    ? `<span class="list-card-tag" style="background:#e6f4ea;color:#2d6a4f">${s}</span>`
-    : `<span class="list-card-tag" style="background:#fff3e0;color:#7a4f00">${s}</span>`;
+    ? `<span class="list-card-tag" style="background:#e6f4ea;color:#2d6a4f">${escapeHtml(s)}</span>`
+    : `<span class="list-card-tag" style="background:#fff3e0;color:#7a4f00">${escapeHtml(s)}</span>`;
 
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(v => `
-    <div class="list-card" data-reflow-id="veiculo-${v.id}" onclick="openVeiculo(${v.id})">
+    <div class="list-card" data-reflow-id="veiculo-${escapeAttr(v.id)}" onclick="openVeiculo(${escapeAttr(v.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb, ${v.cor} 12%, transparent);color:${v.cor}">
-          <i class="ph-bold ${v.icone}"></i>
+        <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb, ${escapeAttr(v.cor)} 12%, transparent);color:${escapeAttr(v.cor)}">
+          <i class="ph-bold ${escapeAttr(v.icone)}"></i>
         </div>
         <div>
-          <div class="list-card-title">${v.nome}</div>
-          <div class="list-card-sub">${v.marca} ${v.modelo} · ${v.ano}</div>
+          <div class="list-card-title">${escapeHtml(v.nome)}</div>
+          <div class="list-card-sub">${escapeHtml(v.marca)} ${escapeHtml(v.modelo)} · ${escapeHtml(v.ano)}</div>
         </div>
       </div>
       ${situacaoBadge(v.situacao)}
@@ -3108,12 +3118,12 @@ function openVeiculo(id) {
     const itens = v.motorista_ids.map(mid => {
       const f = getPublishedFuncionarioById(mid);
       return f
-        ? `<span style="display:flex;align-items:center;gap:6px"><i class="ph-bold ph-user"></i>${f.nome} <small style="color:var(--text-muted)">${f.cargo}</small></span>`
+        ? `<span style="display:flex;align-items:center;gap:6px"><i class="ph-bold ph-user"></i>${escapeHtml(f.nome)} <small style="color:var(--text-muted)">${escapeHtml(f.cargo)}</small></span>`
         : '';
     }).filter(Boolean).join('');
     motoristasHTML = itens || '—';
   } else {
-    motoristasHTML = v.motorista || '—';
+    motoristasHTML = escapeHtml(v.motorista || '—');
   }
 
   // Arquivos vinculados
@@ -3134,37 +3144,37 @@ function openVeiculo(id) {
     const icone = tipoIcone[a.tipo] || "ph-file";
     const linkMeta = getArquivoLinkMeta(a);
     if (linkMeta.isDownload) {
-      return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="veiculo-arquivo-link">
-        <i class="ph-bold ${icone}"></i>${a.nome}
+      return `<a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="veiculo-arquivo-link">
+        <i class="ph-bold ${escapeAttr(icone)}"></i>${escapeHtml(a.nome)}
         <i class="ph-bold ph-download-simple" style="font-size:.7rem;opacity:.6;margin-left:auto"></i>
       </a>`;
     } else if (linkMeta.isExternal) {
-      return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="veiculo-arquivo-link">
-        <i class="ph-bold ${icone}"></i>${a.nome}
+      return `<a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="veiculo-arquivo-link">
+        <i class="ph-bold ${escapeAttr(icone)}"></i>${escapeHtml(a.nome)}
         <i class="ph-bold ph-arrow-square-out" style="font-size:.7rem;opacity:.6;margin-left:auto"></i>
       </a>`;
     }
     return `<span class="veiculo-arquivo-link veiculo-arquivo-indisponivel">
-      <i class="ph-bold ${icone}"></i>${a.nome}
+      <i class="ph-bold ${escapeAttr(icone)}"></i>${escapeHtml(a.nome)}
     </span>`;
   }).filter(Boolean);
 
   document.getElementById("veiculo-detail-content").innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb, ${v.cor} 12%, transparent);color:${v.cor};font-size:2rem">
-      <i class="ph-bold ${v.icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb, ${escapeAttr(v.cor)} 12%, transparent);color:${escapeAttr(v.cor)};font-size:2rem">
+      <i class="ph-bold ${escapeAttr(v.icone)}"></i>
     </div>
-    <div class="detail-name">${v.nome}</div>
-    <div class="detail-role">${v.marca} ${v.modelo} · ${v.ano}</div>
-    <span class="detail-badge" style="${situacaoStyle}">${v.situacao}</span>
+    <div class="detail-name">${escapeHtml(v.nome)}</div>
+    <div class="detail-role">${escapeHtml(v.marca)} ${escapeHtml(v.modelo)} · ${escapeHtml(v.ano)}</div>
+    <span class="detail-badge" style="${situacaoStyle}">${escapeHtml(v.situacao)}</span>
     <hr class="detail-divider">
     <p class="detail-section-title">Identificação do veículo</p>
     <div class="detail-info-grid">
-      <div class="detail-info-item"><label>Placa</label><span>${v.placa}</span></div>
-      <div class="detail-info-item"><label>Nº Patrimônio</label><span>${v.patrimonio}</span></div>
-      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${v.chassi}</span></div>
-      <div class="detail-info-item"><label>RENAVAM</label><span>${v.renavam}</span></div>
-      <div class="detail-info-item"><label>Cor</label><span>${v.cor_veiculo}</span></div>
-      <div class="detail-info-item"><label>Combustível</label><span>${v.combustivel}</span></div>
+      <div class="detail-info-item"><label>Placa</label><span>${escapeHtml(v.placa)}</span></div>
+      <div class="detail-info-item"><label>Nº Patrimônio</label><span>${escapeHtml(v.patrimonio)}</span></div>
+      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${escapeHtml(v.chassi)}</span></div>
+      <div class="detail-info-item"><label>RENAVAM</label><span>${escapeHtml(v.renavam)}</span></div>
+      <div class="detail-info-item"><label>Cor</label><span>${escapeHtml(v.cor_veiculo)}</span></div>
+      <div class="detail-info-item"><label>Combustível</label><span>${escapeHtml(v.combustivel)}</span></div>
     </div>
     <hr class="detail-divider">
     <p class="detail-section-title">Operação</p>
@@ -3173,14 +3183,14 @@ function openVeiculo(id) {
         <label>Motorista(s) habilitado(s)</label>
         <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">${motoristasHTML}</div>
       </div>
-      <div class="detail-info-item" style="grid-column:1/-1"><label>Localização atual</label><span>${v.localizacao}</span></div>
+      <div class="detail-info-item" style="grid-column:1/-1"><label>Localização atual</label><span>${escapeHtml(v.localizacao)}</span></div>
     </div>
     ${arquivosLinks.length ? `
     <hr class="detail-divider">
     <p class="detail-section-title">Documentos do veículos</p>
     <div class="veiculo-arquivos-list">${arquivosLinks.join('')}</div>` : ''}
     <hr class="detail-divider">
-    <div class="obs-box">${v.obs}</div>
+    <div class="obs-box">${escapeHtml(v.obs)}</div>
   `;
   openDetail("veiculo-detail-overlay");
 }
@@ -3235,20 +3245,20 @@ function renderSistemas(lista = sistemas) {
   }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(s => `
-    <div class="sistema-card list-card" data-reflow-id="sistema-${s.id}" onclick="openSistema(${s.id})">
+    <div class="sistema-card list-card" data-reflow-id="sistema-${escapeAttr(s.id)}" onclick="openSistema(${escapeAttr(s.id)})">
       <div class="list-card-header">
-        <div class="list-card-avatar icon-avatar" style="color:${s.cor}">
-          <i class="ph-bold ${s.icone}"></i>
+        <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(s.cor)}">
+          <i class="ph-bold ${escapeAttr(s.icone)}"></i>
         </div>
         <div style="flex:1">
-          <div class="list-card-title">${s.nome}</div>
-          <div class="list-card-sub">${s.nome_completo}</div>
+          <div class="list-card-title">${escapeHtml(s.nome)}</div>
+          <div class="list-card-sub">${escapeHtml(s.nome_completo)}</div>
         </div>
       </div>
-      <p class="sistema-desc">${s.descricao}</p>
+      <p class="sistema-desc">${escapeHtml(s.descricao)}</p>
       <div class="sistema-footer">
-        <span class="list-card-tag">${s.orgao}</span>
-        <a href="${s.url}" target="_blank" rel="noopener" class="sistema-btn" onclick="event.stopPropagation()">
+        <span class="list-card-tag">${escapeHtml(s.orgao)}</span>
+        <a href="${escapeAttr(urlSegura(s.url))}" target="_blank" rel="noopener" class="sistema-btn" onclick="event.stopPropagation()">
           <i class="ph-bold ph-arrow-square-out"></i> Acessar
         </a>
       </div>
@@ -3271,8 +3281,8 @@ function openSistema(id) {
   const manuaisChips = (s.manuais_ids || []).map(mid => {
     const m = getPublishedManualById(mid);
     if (!m) return '';
-    return `<button class="etapa-manual-chip" onclick="openSistemaFilho('manual',${m.id})">
-      <i class="ph-bold ph-book-open"></i>${m.titulo}
+    return `<button class="etapa-manual-chip" onclick="openSistemaFilho('manual',${escapeAttr(m.id)})">
+      <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
   }).filter(Boolean).join('');
@@ -3281,8 +3291,8 @@ function openSistema(id) {
   const processosChips = (s.processos_ids || []).map(pid => {
     const p = getPublishedProcessoById(pid);
     if (!p) return '';
-    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openSistemaFilho('processo',${p.id})">
-      <i class="ph-bold ph-flow-arrow"></i>${p.titulo}
+    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openSistemaFilho('processo',${escapeAttr(p.id)})">
+      <i class="ph-bold ph-flow-arrow"></i>${escapeHtml(p.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
   }).filter(Boolean).join('');
@@ -3299,21 +3309,21 @@ function openSistema(id) {
   ` : '';
 
   document.getElementById("sistema-detail-content").innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb,${s.cor} 12%,transparent);color:${s.cor}">
-      <i class="ph-bold ${s.icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb,${escapeAttr(s.cor)} 12%,transparent);color:${escapeAttr(s.cor)}">
+      <i class="ph-bold ${escapeAttr(s.icone)}"></i>
     </div>
-    <div class="detail-name">${s.nome}</div>
-    <div class="detail-role">${s.nome_completo}</div>
-    <span class="detail-badge">${s.orgao}</span>
+    <div class="detail-name">${escapeHtml(s.nome)}</div>
+    <div class="detail-role">${escapeHtml(s.nome_completo)}</div>
+    <span class="detail-badge">${escapeHtml(s.orgao)}</span>
     <hr class="detail-divider">
     <p class="detail-section-title">Descrição</p>
-    <p class="detail-desc">${s.descricao}</p>
+    <p class="detail-desc">${escapeHtml(s.descricao)}</p>
     <hr class="detail-divider">
     <p class="detail-section-title">Acesso</p>
     <p class="detail-desc" style="display:flex;align-items:flex-start;gap:6px">
-      <i class="ph-bold ph-key" style="margin-top:2px;flex-shrink:0"></i>${s.acesso}
+      <i class="ph-bold ph-key" style="margin-top:2px;flex-shrink:0"></i>${escapeHtml(s.acesso)}
     </p>
-    <a href="${s.url}" target="_blank" rel="noopener" class="sistema-btn" style="margin-top:14px;display:inline-flex">
+    <a href="${escapeAttr(urlSegura(s.url))}" target="_blank" rel="noopener" class="sistema-btn" style="margin-top:14px;display:inline-flex">
       <i class="ph-bold ph-arrow-square-out"></i> Acessar sistema
     </a>
     ${linksSection}
@@ -3357,8 +3367,8 @@ function _renderProcessoEmPainel(p, cfg) {
     const chips = (e.manuais_ids || []).map(mid => {
       const m = getPublishedManualById(mid);
       if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="${cfg.chipOnclick}(${m.id},${p.id})" title="Ver manual">
-        <i class="ph-bold ph-book-open"></i>${m.titulo}
+      return `<button class="etapa-manual-chip" onclick="${cfg.chipOnclick}(${escapeAttr(m.id)},${escapeAttr(p.id)})" title="Ver manual">
+        <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
         <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
       </button>`;
     }).join('');
@@ -3370,8 +3380,8 @@ function _renderProcessoEmPainel(p, cfg) {
           <div class="timeline-line"></div>
         </div>
         <div class="timeline-content">
-          <strong>${e.titulo}</strong>
-          <p>${e.descricao}</p>
+          <strong>${escapeHtml(e.titulo)}</strong>
+          <p>${escapeHtml(e.descricao)}</p>
           ${chips ? `<div class="etapa-manuais-row">${chips}</div>` : ''}
         </div>
       </div>`;
@@ -3390,8 +3400,8 @@ function _renderProcessoEmPainel(p, cfg) {
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
-    <span class="detail-badge">${p.categoria}</span>
-    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${p.titulo}</div>
+    <span class="detail-badge">${escapeHtml(p.categoria)}</span>
+    <div class="detail-name" style="margin-top:10px;font-size:1.3rem">${escapeHtml(p.titulo)}</div>
     <hr class="detail-divider">
     <p class="detail-section-title">Fluxo do processo</p>
     <div class="timeline">${timeline}</div>
@@ -3496,19 +3506,19 @@ function renderServicos(lista = servicos) {
   container.innerHTML = lista.map(s => {
     const cat = catCores[s.categoria] || { bg: "var(--accent-light)", fg: "var(--accent)" };
     return `
-      <div class="list-card servico-card" data-reflow-id="servico-${s.id}" onclick="openServico(${s.id})">
+      <div class="list-card servico-card" data-reflow-id="servico-${escapeAttr(s.id)}" onclick="openServico(${escapeAttr(s.id)})">
         <div class="list-card-header">
           <div class="list-card-avatar icon-avatar"
-               style="background:color-mix(in srgb,${s.cor} 12%,transparent);color:${s.cor}">
-            <i class="ph-bold ${s.icone}"></i>
+               style="background:color-mix(in srgb,${escapeAttr(s.cor)} 12%,transparent);color:${escapeAttr(s.cor)}">
+            <i class="ph-bold ${escapeAttr(s.icone)}"></i>
           </div>
           <div>
-            <div class="list-card-title">${s.nome}</div>
-            <div class="list-card-sub">${s.publico}</div>
+            <div class="list-card-title">${escapeHtml(s.nome)}</div>
+            <div class="list-card-sub">${escapeHtml(s.publico)}</div>
           </div>
         </div>
-        <p class="servico-desc-preview">${s.descricao}</p>
-        <span class="list-card-tag" style="background:${cat.bg};color:${cat.fg}">${s.categoria}</span>
+        <p class="servico-desc-preview">${escapeHtml(s.descricao)}</p>
+        <span class="list-card-tag" style="background:${escapeAttr(cat.bg)};color:${escapeAttr(cat.fg)}">${escapeHtml(s.categoria)}</span>
       </div>
     `;
   }).join("");
@@ -3535,42 +3545,42 @@ function openServico(id) {
       const arquivo = getPublishedArquivoById(arquivoId);
       if (arquivo) {
         const linkMeta = getArquivoLinkMeta(arquivo);
-        if (linkMeta.href) return `<a href="${linkMeta.href}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
-          <i class="ph-bold ph-download-simple"></i>${nome}</a>`;
+        if (linkMeta.href) return `<a href="${escapeAttr(urlSegura(linkMeta.href))}" ${linkMeta.attrs} class="doc-tag doc-tag-link" style="text-decoration:none">
+          <i class="ph-bold ph-download-simple"></i>${escapeHtml(nome)}</a>`;
       }
     }
 
-    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${nome}</span>`;
+    return `<span class="doc-tag"><i class="ph-bold ph-file-text"></i>${escapeHtml(nome)}</span>`;
   }).join("");
 
   const processosChips = (s.processos_ids || []).map(pid => {
     const p = getPublishedProcessoById(pid);
     if (!p) return '';
-    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openServicoFilho('processo',${p.id})">
-      <i class="ph-bold ph-flow-arrow"></i>${p.titulo}
+    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openServicoFilho('processo',${escapeAttr(p.id)})">
+      <i class="ph-bold ph-flow-arrow"></i>${escapeHtml(p.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
   }).join("");
 
   document.getElementById("servico-detail-content").innerHTML = `
     <div class="detail-avatar-large"
-         style="background:color-mix(in srgb,${s.cor} 12%,transparent);color:${s.cor};font-size:1.8rem">
-      <i class="ph-bold ${s.icone}"></i>
+         style="background:color-mix(in srgb,${escapeAttr(s.cor)} 12%,transparent);color:${escapeAttr(s.cor)};font-size:1.8rem">
+      <i class="ph-bold ${escapeAttr(s.icone)}"></i>
     </div>
-    <div class="detail-name">${s.nome}</div>
-    <span class="detail-badge" style="background:${cat.bg};color:${cat.fg}">${s.categoria}</span>
+    <div class="detail-name">${escapeHtml(s.nome)}</div>
+    <span class="detail-badge" style="background:${escapeAttr(cat.bg)};color:${escapeAttr(cat.fg)}">${escapeHtml(s.categoria)}</span>
 
     <hr class="detail-divider">
     <p class="detail-section-title">Descrição do serviço</p>
-    <p class="detail-desc">${s.descricao}</p>
+    <p class="detail-desc">${escapeHtml(s.descricao)}</p>
 
     <hr class="detail-divider">
     <p class="detail-section-title">Público-alvo</p>
-    <p class="detail-desc">${s.publico}</p>
+    <p class="detail-desc">${escapeHtml(s.publico)}</p>
 
     <hr class="detail-divider">
     <p class="detail-section-title">Como solicitar</p>
-    <p class="detail-desc">${s.como_solicitar}</p>
+    <p class="detail-desc">${escapeHtml(s.como_solicitar)}</p>
 
     <hr class="detail-divider">
     <p class="detail-section-title">Documentos necessários</p>
@@ -3583,12 +3593,12 @@ function openServico(id) {
 
     <hr class="detail-divider">
     <p class="detail-section-title">Prazo estimado</p>
-    <p class="detail-desc">${s.prazo}</p>
+    <p class="detail-desc">${escapeHtml(s.prazo)}</p>
 
     <hr class="detail-divider">
     <div class="detail-ausencia">
       <strong><i class="ph-bold ph-note"></i> Observações</strong>
-      <p>${s.obs}</p>
+      <p>${escapeHtml(s.obs)}</p>
     </div>
   `;
 
@@ -3700,29 +3710,29 @@ function eventoItemHTML(e, mostrarData = true) {
     ? ` <span class="evento-duracao">até ${new Date(e.data_fim+"T00:00:00").getDate()}/${MESES_PT[new Date(e.data_fim+"T00:00:00").getMonth()].slice(0,3)}</span>`
     : "";
   const horaMeta = e.tipo === 'prazo'
-    ? (e.hora_fim ? `<span><i class="ph-bold ph-clock"></i> ${e.hora_fim}</span>` : "")
+    ? (e.hora_fim ? `<span><i class="ph-bold ph-clock"></i> ${escapeHtml(e.hora_fim)}</span>` : "")
     : [e.hora, e.hora_fim].filter(Boolean).length
-      ? `<span><i class="ph-bold ph-clock"></i> ${[e.hora, e.hora_fim].filter(Boolean).join(" - ")}</span>`
+      ? `<span><i class="ph-bold ph-clock"></i> ${escapeHtml([e.hora, e.hora_fim].filter(Boolean).join(" - "))}</span>`
       : "";
 
   return `
-    <div class="evento-item" onclick="navigateTo('agenda'); setTimeout(() => openEvento(${e.id}), 120)">
+    <div class="evento-item" onclick="navigateTo('agenda'); setTimeout(() => openEvento(${escapeAttr(e.id)}), 120)">
       ${mostrarData ? `
-      <div class="evento-date-badge" style="color:${tipo.cor};background:color-mix(in srgb,${tipo.cor} 10%,transparent)">
-        <span class="evento-dia">${dia}</span>
-        <span class="evento-mes">${mes}</span>
+      <div class="evento-date-badge" style="color:${escapeAttr(tipo.cor)};background:color-mix(in srgb,${escapeAttr(tipo.cor)} 10%,transparent)">
+        <span class="evento-dia">${escapeHtml(dia)}</span>
+        <span class="evento-mes">${escapeHtml(mes)}</span>
       </div>` : ""}
       <div class="evento-body">
         <div class="evento-titulo">
           ${isHoje ? '<span class="evento-hoje-tag">Hoje</span>' : ""}
-          ${e.titulo}${duracao}
+          ${escapeHtml(e.titulo)}${duracao}
         </div>
         <div class="evento-meta">
-          <span style="color:${tipo.cor}"><i class="ph-bold ${tipo.icone}"></i> ${tipo.label}</span>
-          <span><i class="ph-bold ph-map-pin"></i> ${e.local}</span>
+          <span style="color:${escapeAttr(tipo.cor)}"><i class="ph-bold ${escapeAttr(tipo.icone)}"></i> ${escapeHtml(tipo.label)}</span>
+          <span><i class="ph-bold ph-map-pin"></i> ${escapeHtml(e.local)}</span>
           ${horaMeta}
         </div>
-        ${e.desc ? `<p class="evento-desc">${e.desc}</p>` : ""}
+        ${e.desc ? `<p class="evento-desc">${escapeHtml(e.desc)}</p>` : ""}
       </div>
     </div>`;
 }
@@ -3824,17 +3834,17 @@ function initCalTooltip(grid) {
     const evs = JSON.parse(cell.dataset.eventos);
     tip.innerHTML = evs.map(ev => {
       const tipo = tipoEvento[ev.tipo] || tipoEvento.evento;
-      const horas = [ev.hora, ev.hora_fim].filter(Boolean).map(h => `<span class="cal-tip-hora">${h}</span>`).join("");
+      const horas = [ev.hora, ev.hora_fim].filter(Boolean).map(h => `<span class="cal-tip-hora">${escapeHtml(h)}</span>`).join("");
       const multi = ev.multi ? `<span class="cal-tip-multi">Multi-dia</span>` : "";
       return `
         <div class="cal-tip-item">
-          <span class="cal-tip-dot" style="background:${tipo.cor}"></span>
+          <span class="cal-tip-dot" style="background:${escapeAttr(tipo.cor)}"></span>
           <div class="cal-tip-info">
-            <span class="cal-tip-titulo">${ev.titulo}</span>
+            <span class="cal-tip-titulo">${escapeHtml(ev.titulo)}</span>
             <span class="cal-tip-meta">
-              <span class="cal-tip-tag" style="--ct:${tipo.cor}">${tipo.label}</span>
+              <span class="cal-tip-tag" style="--ct:${escapeAttr(tipo.cor)}">${escapeHtml(tipo.label)}</span>
               ${horas}${multi}
-              ${ev.local ? `· ${ev.local}` : ""}
+              ${ev.local ? `· ${escapeHtml(ev.local)}` : ""}
             </span>
           </div>
         </div>`;
@@ -3968,24 +3978,24 @@ function renderAvisos(lista = avisos) {
     container.innerHTML = lista.map(a => {
       const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
       return `
-        <div class="agenda-card card" data-reflow-id="aviso-${a.id}" onclick="openAviso(${a.id})" style="cursor:pointer">
+        <div class="agenda-card card" data-reflow-id="aviso-${escapeAttr(a.id)}" onclick="openAviso(${escapeAttr(a.id)})" style="cursor:pointer">
           <div class="agenda-card-header">
-            <div class="agenda-date-badge" style="color:${tipo.cor};background:color-mix(in srgb,${tipo.cor} 10%,transparent)">
-              <i class="ph-bold ${tipo.icone}"></i>
+            <div class="agenda-date-badge" style="color:${escapeAttr(tipo.cor)};background:color-mix(in srgb,${escapeAttr(tipo.cor)} 10%,transparent)">
+              <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
             </div>
             <div class="agenda-card-meta">
               <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                <span class="agenda-tag" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">
-                  <i class="ph-bold ${tipo.icone}"></i> ${tipo.label}
+                <span class="agenda-tag" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">
+                  <i class="ph-bold ${escapeAttr(tipo.icone)}"></i> ${escapeHtml(tipo.label)}
                 </span>
               </div>
-              <strong class="agenda-card-titulo">${a.titulo}</strong>
+              <strong class="agenda-card-titulo">${escapeHtml(a.titulo)}</strong>
             </div>
           </div>
           <div class="agenda-card-local">
-            ${a.local ? `<i class="ph-bold ph-map-pin"></i>${a.local}` : `<i class="ph-bold ph-info"></i>Comunicado interno`}
+            ${a.local ? `<i class="ph-bold ph-map-pin"></i>${escapeHtml(a.local)}` : `<i class="ph-bold ph-info"></i>Comunicado interno`}
           </div>
-          ${a.desc ? `<p class="agenda-card-desc">${a.desc}</p>` : ""}
+          ${a.desc ? `<p class="agenda-card-desc">${escapeHtml(a.desc)}</p>` : ""}
         </div>
       `;
     }).join("");
@@ -3999,23 +4009,23 @@ function openAviso(id) {
   const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
 
   document.getElementById("aviso-detail-content").innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">
-      <i class="ph-bold ${tipo.icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">
+      <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
     </div>
-    <div class="detail-name">${a.titulo}</div>
-    <span class="detail-badge" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">${tipo.label}</span>
+    <div class="detail-name">${escapeHtml(a.titulo)}</div>
+    <span class="detail-badge" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">${escapeHtml(tipo.label)}</span>
     <hr class="detail-divider">
     <p class="detail-section-title">Local / contexto</p>
     <div class="detail-info-grid">
       <div class="detail-info-item" style="grid-column:1/-1">
         <label>Referência</label>
-        <span>${a.local || "Comunicado interno"}</span>
+        <span>${escapeHtml(a.local || "Comunicado interno")}</span>
       </div>
     </div>
     ${a.desc ? `
       <hr class="detail-divider">
       <p class="detail-section-title">Descrição</p>
-      <p class="detail-desc">${a.desc}</p>` : ""}
+      <p class="detail-desc">${escapeHtml(a.desc)}</p>` : ""}
   `;
 
   openDetail("aviso-detail-overlay");
@@ -4099,37 +4109,37 @@ function _agendaEventoCardHTML(e, isHistorico = false) {
   const baseDate = timing.dataBadge ? new Date(timing.dataBadge + "T00:00:00") : new Date();
   const dia  = String(baseDate.getDate()).padStart(2,"0");
   const mes  = MESES_PT[baseDate.getMonth()].slice(0,3);
-  const periodoHTML = formatEventoPeriodo(e);
+  const periodoHTML = escapeHtml(formatEventoPeriodo(e));
   const horarioLinha = e.tipo === 'prazo'
-    ? (e.hora_fim ? ` · <i class="ph-bold ph-clock"></i>${e.hora_fim}` : "")
+    ? (e.hora_fim ? ` · <i class="ph-bold ph-clock"></i>${escapeHtml(e.hora_fim)}` : "")
     : [e.hora, e.hora_fim].filter(Boolean).length
-      ? ` · <i class="ph-bold ph-clock"></i>${[e.hora, e.hora_fim].filter(Boolean).join(" - ")}`
+      ? ` · <i class="ph-bold ph-clock"></i>${escapeHtml([e.hora, e.hora_fim].filter(Boolean).join(" - "))}`
       : "";
 
   return `
-    <div class="agenda-card card${isHistorico ? " agenda-card--passado" : ""}" data-reflow-id="evento-${e.id}" onclick="openEvento(${e.id})" style="cursor:pointer">
+    <div class="agenda-card card${isHistorico ? " agenda-card--passado" : ""}" data-reflow-id="evento-${escapeAttr(e.id)}" onclick="openEvento(${escapeAttr(e.id)})" style="cursor:pointer">
       <div class="agenda-card-header">
-        <div class="agenda-date-badge" style="color:${isHistorico ? 'var(--text-muted)' : tipo.cor};background:color-mix(in srgb,${isHistorico ? '#8a9482' : tipo.cor} 10%,transparent)">
-          <span class="evento-dia">${dia}</span>
-          <span class="evento-mes">${mes}</span>
+        <div class="agenda-date-badge" style="color:${isHistorico ? 'var(--text-muted)' : escapeAttr(tipo.cor)};background:color-mix(in srgb,${isHistorico ? '#8a9482' : escapeAttr(tipo.cor)} 10%,transparent)">
+          <span class="evento-dia">${escapeHtml(dia)}</span>
+          <span class="evento-mes">${escapeHtml(mes)}</span>
         </div>
         <div class="agenda-card-meta">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <span class="agenda-tag" style="background:color-mix(in srgb,${isHistorico ? '#8a9482' : tipo.cor} 12%,transparent);color:${isHistorico ? 'var(--text-muted)' : tipo.cor}">
-              <i class="ph-bold ${tipo.icone}"></i> ${tipo.label}
+            <span class="agenda-tag" style="background:color-mix(in srgb,${isHistorico ? '#8a9482' : escapeAttr(tipo.cor)} 12%,transparent);color:${isHistorico ? 'var(--text-muted)' : escapeAttr(tipo.cor)}">
+              <i class="ph-bold ${escapeAttr(tipo.icone)}"></i> ${escapeHtml(tipo.label)}
             </span>
             ${timing.emAndamento ? '<span class="evento-hoje-tag">Em andamento</span>' : ""}
             ${isHistorico ? '<span class="agenda-passado-tag">Encerrado</span>' : ""}
           </div>
-          <strong class="agenda-card-titulo">${e.titulo}</strong>
+          <strong class="agenda-card-titulo">${escapeHtml(e.titulo)}</strong>
         </div>
       </div>
       <div class="agenda-card-local">
         <i class="ph-bold ph-calendar-blank"></i>${periodoHTML}
         ${horarioLinha}
-        ${e.local ? ` &nbsp;·&nbsp;<i class="ph-bold ph-map-pin"></i>${e.local}` : ""}
+        ${e.local ? ` &nbsp;·&nbsp;<i class="ph-bold ph-map-pin"></i>${escapeHtml(e.local)}` : ""}
       </div>
-      ${e.desc ? `<p class="agenda-card-desc">${e.desc}</p>` : ""}
+      ${e.desc ? `<p class="agenda-card-desc">${escapeHtml(e.desc)}</p>` : ""}
     </div>
   `;
 }
@@ -4140,35 +4150,35 @@ function openEvento(id) {
 
   const tipo  = tipoEvento[e.tipo] || tipoEvento.evento;
   const timing = getEventoTiming(e);
-  const periodoLabel = formatEventoPeriodo(e);
+  const periodoLabel = escapeHtml(formatEventoPeriodo(e));
 
   const statusBadge = timing.emAndamento
     ? `<span class="detail-badge" style="background:#e8f5ee;color:#2d6a4f">Em andamento</span>`
     : timing.encerrado
       ? `<span class="detail-badge" style="background:var(--surface-2);color:var(--text-muted)">Encerrado</span>`
-      : `<span class="detail-badge" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">${tipo.label}</span>`;
+      : `<span class="detail-badge" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">${escapeHtml(tipo.label)}</span>`;
 
   document.getElementById("evento-detail-content").innerHTML = `
-    <div class="detail-avatar-large" style="background:color-mix(in srgb,${tipo.cor} 12%,transparent);color:${tipo.cor}">
-      <i class="ph-bold ${tipo.icone}"></i>
+    <div class="detail-avatar-large" style="background:color-mix(in srgb,${escapeAttr(tipo.cor)} 12%,transparent);color:${escapeAttr(tipo.cor)}">
+      <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
     </div>
-    <div class="detail-name">${e.titulo}</div>
+    <div class="detail-name">${escapeHtml(e.titulo)}</div>
     ${statusBadge}
     <hr class="detail-divider">
     <p class="detail-section-title">Data e local</p>
     <div class="detail-info-grid">
       <div class="detail-info-item" style="grid-column:1/-1">
-        <label>${timing.isPrazo ? 'Prazo final' : 'Perí­odo'}</label>
+        <label>${timing.isPrazo ? 'Prazo final' : 'Período'}</label>
         <span>${periodoLabel}</span>
       </div>
-      ${!timing.isPrazo && e.hora ? `<div class="detail-info-item"><label>Hora inicial</label><span>${e.hora}</span></div>` : ""}
-      ${e.hora_fim ? `<div class="detail-info-item"><label>${timing.isPrazo ? 'Hora final' : 'Hora final'}</label><span>${e.hora_fim}</span></div>` : ""}
-      ${e.local ? `<div class="detail-info-item"><label>Local</label><span>${e.local}</span></div>` : ""}
+      ${!timing.isPrazo && e.hora ? `<div class="detail-info-item"><label>Hora inicial</label><span>${escapeHtml(e.hora)}</span></div>` : ""}
+      ${e.hora_fim ? `<div class="detail-info-item"><label>Hora final</label><span>${escapeHtml(e.hora_fim)}</span></div>` : ""}
+      ${e.local ? `<div class="detail-info-item"><label>Local</label><span>${escapeHtml(e.local)}</span></div>` : ""}
     </div>
     ${e.desc ? `
       <hr class="detail-divider">
       <p class="detail-section-title">Descrição</p>
-      <p class="detail-desc">${e.desc}</p>` : ""}
+      <p class="detail-desc">${escapeHtml(e.desc)}</p>` : ""}
   `;
   openDetail("evento-detail-overlay");
 }

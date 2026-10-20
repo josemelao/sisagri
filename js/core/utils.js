@@ -47,5 +47,65 @@
     return escapeHtml(valor);
   }
 
-  global.SisUtils = { escapeHtml, escapeAttr };
+  /**
+   * Barra esquemas que executam codigo quando viram `href`/`src`.
+   * Nao mexe em URL normal (`https:`, `mailto:`, caminho relativo).
+   *
+   * @param {unknown} valor
+   * @returns {string} a URL original, ou '' se o esquema for perigoso
+   */
+  function urlSegura(valor) {
+    const texto = valor === null || valor === undefined ? '' : String(valor).trim();
+    if (!texto) return '';
+    // O navegador ignora espacos/controle ao ler o esquema ("java\tscript:").
+    const semControle = texto.replace(/[\u0000-\u0020]+/g, '');
+    if (/^(javascript|vbscript|data):/i.test(semControle)) return '';
+    return texto;
+  }
+
+  /**
+   * Unico ponto do app que aceita um pouquinho de HTML: campos de informacao
+   * que hoje carregam link (info_juridico / info_municipio).
+   *
+   * Aceita SOMENTE `<a href="...">texto</a>` com esquema http/https/mailto/tel
+   * (ou caminho relativo). Todo o resto — inclusive tag dentro do texto — vira
+   * texto literal. O `style` e fixo: o visual de hoje nao muda.
+   *
+   * @param {unknown} valor
+   * @returns {string} HTML seguro
+   */
+  function htmlComLinks(valor) {
+    if (valor === null || valor === undefined) return '';
+    const texto = String(valor);
+    const reLink = /<a\s+([^>]*?)>([\s\S]*?)<\/a\s*>/gi;
+
+    let saida = '';
+    let ultimo = 0;
+    let achado;
+
+    while ((achado = reLink.exec(texto)) !== null) {
+      saida += escapeHtml(texto.slice(ultimo, achado.index));
+
+      const atributos = achado[1] || '';
+      const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(atributos);
+      const bruto = href ? (href[1] ?? href[2] ?? href[3] ?? '') : '';
+      const url = urlSegura(bruto);
+
+      const temEsquema = /^[a-z][a-z0-9+.-]*:/i.test(url);
+      const esquemaPermitido = !temEsquema || /^(https?|mailto|tel):/i.test(url);
+
+      if (url && esquemaPermitido) {
+        saida += `<a href="${escapeAttr(url)}" style="text-decoration: underline;">${escapeHtml(achado[2])}</a>`;
+      } else {
+        saida += escapeHtml(achado[0]);
+      }
+
+      ultimo = achado.index + achado[0].length;
+    }
+
+    saida += escapeHtml(texto.slice(ultimo));
+    return saida;
+  }
+
+  global.SisUtils = { escapeHtml, escapeAttr, urlSegura, htmlComLinks };
 })(typeof window !== 'undefined' ? window : globalThis);

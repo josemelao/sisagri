@@ -414,6 +414,11 @@ function escHtml(str) {
   return window.SisUtils.escapeHtml(str);
 }
 
+/** Devolve '' para URL com esquema executavel (javascript:, data:, vbscript:). */
+function escUrl(valor) {
+  return window.SisUtils.urlSegura(valor);
+}
+
 const ARQUIVOS_LIST_STATE = {
   query: '',
   page: 1,
@@ -1096,9 +1101,9 @@ function tagsInputHTML(tags, fieldName) {
     <div class="arquivo-tags-checkboxes" id="tags-wrap-${fieldName}">
       ${tagsOrdenadas.map(tag => `
         <label class="tag-checkbox-label">
-          <input type="checkbox" value="${tag}" ${selecionadas.includes(tag) ? 'checked' : ''} />
+          <input type="checkbox" value="${escHtml(tag)}" ${selecionadas.includes(tag) ? 'checked' : ''} />
           <span class="tag-checkbox-bullet"></span>
-          <span class="tag-checkbox-text">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>
+          <span class="tag-checkbox-text">${escHtml(tag.charAt(0).toUpperCase() + tag.slice(1))}</span>
         </label>
       `).join('')}
     </div>
@@ -1222,7 +1227,7 @@ function selecionarIcone(fieldId, icone) {
   const cor = document.getElementById('cor-val-' + fieldId).value;
   document.getElementById('icon-val-' + fieldId).value = icone;
   // Atualiza preview
-  document.getElementById('icon-preview-' + fieldId).innerHTML = `<i class="ph-bold ${icone}"></i>`;
+  document.getElementById('icon-preview-' + fieldId).innerHTML = `<i class="ph-bold ${escHtml(icone)}"></i>`;
   // Atualiza botões do grid
   document.querySelectorAll(`#icon-picker-${fieldId} .icon-opt`).forEach(btn => {
     const isActive = btn.querySelector('i').classList.contains(icone);
@@ -1303,7 +1308,7 @@ function renderFuncionarios() {
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('funcionarios', f)}
                 <button class="btn btn-ghost btn-sm" onclick="editarFuncionario(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('funcionarios',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" onclick="confirmarDelecao('funcionarios',${f.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
@@ -1370,7 +1375,7 @@ function previewFoto(input) {
   document.getElementById('f-remover-foto').value = '0';
   const previewUrl = URL.createObjectURL(file);
   document.getElementById('foto-preview').innerHTML = `
-      <img src="${previewUrl}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);margin-bottom:8px" />`;
+      <img src="${escHtml(previewUrl)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);margin-bottom:8px" />`;
 }
 
 function removerFoto() {
@@ -1483,7 +1488,7 @@ function renderManuais() {
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('manuais', m)}
                 <button class="btn btn-ghost btn-sm" onclick="editarManual(${m.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('manuais',${m.id},'${escHtml(m.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(m.titulo)}" onclick="confirmarDelecao('manuais',${m.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
@@ -1514,7 +1519,7 @@ function formManual(m = {}) {
           <label style="font-size:0.65rem;margin-bottom:4px;display:block">IMAGEM (OPCIONAL)</label>
           <div style="display:flex;gap:10px;align-items:center">
             <div class="passo-img-preview" style="width:60px;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-              ${imagem ? `<img src="${imagem}" style="width:100%;height:100%;object-fit:cover" />` : `<i class="ph ph-image" style="opacity:0.3"></i>`}
+              ${imagem ? `<img src="${escHtml(imagem)}" style="width:100%;height:100%;object-fit:cover" />` : `<i class="ph ph-image" style="opacity:0.3"></i>`}
             </div>
             <input type="file" accept="image/*" onchange="previewPassoImagem(this)" style="font-size:0.7rem;flex:1" />
             <input type="hidden" name="passo_imagem_${i}" value="${escHtml(imagem)}" />
@@ -1586,7 +1591,7 @@ function getArquivosOptions(selectedId) {
     : (selectedId ? [selectedId] : []);
   return arquivos.map(a => {
     const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
-    return `<option value="${a.id}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+    return `<option value="${escHtml(a.id)}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
   }).join('');
 }
 
@@ -1679,7 +1684,7 @@ function previewPassoImagem(input) {
     hiddenInput.value = e.target.result;
     if (storagePathInput) storagePathInput.value = '';
     if (storageBucketInput) storageBucketInput.value = '';
-    previewDiv.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" />`;
+    previewDiv.innerHTML = `<img src="${escHtml(e.target.result)}" style="width:100%;height:100%;object-fit:cover" />`;
   };
   reader.readAsDataURL(file);
 }
@@ -1819,7 +1824,7 @@ function renderProcessos() {
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('processos', p)}
                 <button class="btn btn-ghost btn-sm" onclick="editarProcesso(${p.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('processos',${p.id},'${escHtml(p.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(p.titulo)}" onclick="confirmarDelecao('processos',${p.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -1958,7 +1963,7 @@ function renderArquivos() {
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('arquivos', a)}
                 <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('arquivos',${a.id},'${escHtml(a.nome)}')"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.nome)}" onclick="confirmarDelecao('arquivos',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2163,7 +2168,7 @@ function renderVeiculos() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('veiculos', v)}
             <button class="btn btn-ghost btn-sm" onclick="editarVeiculo(${v.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('veiculos',${v.id},'${escHtml(v.nome)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(v.nome)}" onclick="confirmarDelecao('veiculos',${v.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2187,7 +2192,7 @@ function getArquivosVeiculoOptions(selectedIds = []) {
   if (!lista.length) return '<option value="" disabled>Nenhum arquivo com tag "ve\u00EDculos" cadastrado</option>';
   return lista.map(a => {
     const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
-    return `<option value="${a.id}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
+    return `<option value="${escHtml(a.id)}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
   }).join('');
 }
 
@@ -2332,11 +2337,11 @@ function renderSistemas() {
         <tr>
           <td><strong>${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
-          <td class="td-truncate"><a href="${escHtml(s.url)}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></td>
+          <td class="td-truncate"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('sistemas', s)}
             <button class="btn btn-ghost btn-sm" onclick="editarSistema(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('sistemas',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" onclick="confirmarDelecao('sistemas',${s.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2541,7 +2546,7 @@ function renderServicos() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('servicos', s)}
             <button class="btn btn-ghost btn-sm" onclick="editarServico(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('servicos',${s.id},'${escHtml(s.nome)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" onclick="confirmarDelecao('servicos',${s.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2680,7 +2685,7 @@ function renderAvisos() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('avisos',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" onclick="confirmarDelecao('avisos',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2771,7 +2776,7 @@ function renderAgendaEventos() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('agendaEventos', e)}
             <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('agendaEventos',${e.id},'${escHtml(e.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(e.titulo)}" onclick="confirmarDelecao('agendaEventos',${e.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -2926,7 +2931,7 @@ function renderEscalaFerias() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('escalaFerias', f)}
             <button class="btn btn-ghost btn-sm" onclick="editarFerias(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('escalaFerias',${f.id},'${escHtml(f.nome)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" onclick="confirmarDelecao('escalaFerias',${f.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -3005,12 +3010,12 @@ function renderAcessoRapido() {
       <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(a => `
         <tr>
           <td><strong>${escHtml(a.titulo)}</strong></td>
-          <td class="td-truncate"><a href="${escHtml(a.url)}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></td>
+          <td class="td-truncate"><a href="${escHtml(escUrl(a.url))}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></td>
           <td>${escHtml(a.icone)}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('acessoRapido', a)}
             <button class="btn btn-ghost btn-sm" onclick="editarAcesso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('acessoRapido',${a.id},'${escHtml(a.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" onclick="confirmarDelecao('acessoRapido',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum atalho encontrado para o filtro informado.</td></tr>`}
@@ -3083,7 +3088,7 @@ function renderInfoSimples(colecao, titulo, heading) {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl(colecao, item)}
             <button class="btn btn-ghost btn-sm" onclick="editarInfoSimples('${colecao}',${item.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('${colecao}',${item.id},'${escHtml(item.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(item.titulo)}" onclick="confirmarDelecao('${colecao}',${item.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="3" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum bloco encontrado para o filtro informado.</td></tr>`}
@@ -3220,7 +3225,7 @@ function renderInfoOrgaos() {
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('infoOrgaos', o)}
             <button class="btn btn-ghost btn-sm" onclick="editarOrgao(${o.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmarDelecao('infoOrgaos',${o.id},'${escHtml(o.titulo)}')"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(o.titulo)}" onclick="confirmarDelecao('infoOrgaos',${o.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum orgao encontrado para o filtro informado.</td></tr>`}

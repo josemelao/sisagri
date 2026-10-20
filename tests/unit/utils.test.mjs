@@ -79,6 +79,37 @@ test('escapeAttr: valor nulo vira string vazia', () => {
 });
 
 /* ==========================================================================
+   urlSegura
+   ========================================================================== */
+
+test('urlSegura: bloqueia javascript: e variacoes', () => {
+  const { SisUtils } = carregarUtils().window;
+
+  assert.equal(SisUtils.urlSegura('javascript:alert(1)'), '');
+  assert.equal(SisUtils.urlSegura('JavaScript:alert(1)'), '');
+  assert.equal(SisUtils.urlSegura(' java\tscript:alert(1)'), '');
+  assert.equal(SisUtils.urlSegura('vbscript:msgbox(1)'), '');
+  assert.equal(SisUtils.urlSegura('data:text/html,<script>alert(1)</script>'), '');
+});
+
+test('urlSegura: mantem URL normal', () => {
+  const { SisUtils } = carregarUtils().window;
+
+  assert.equal(SisUtils.urlSegura('https://exemplo.gov.br/x'), 'https://exemplo.gov.br/x');
+  assert.equal(SisUtils.urlSegura('http://exemplo.br'), 'http://exemplo.br');
+  assert.equal(SisUtils.urlSegura('mailto:a@b.br'), 'mailto:a@b.br');
+  assert.equal(SisUtils.urlSegura('/arquivos/x.pdf'), '/arquivos/x.pdf');
+});
+
+test('urlSegura: nulo vira string vazia', () => {
+  const { SisUtils } = carregarUtils().window;
+
+  assert.equal(SisUtils.urlSegura(null), '');
+  assert.equal(SisUtils.urlSegura(undefined), '');
+  assert.equal(SisUtils.urlSegura('   '), '');
+});
+
+/* ==========================================================================
    script.js usa a versao unica
    ========================================================================== */
 
