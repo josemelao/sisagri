@@ -25,12 +25,14 @@ async function fazerLogin() {
   const senha = document.getElementById('login-senha').value;
   if (await DB.adminLogin(email, senha)) {
     // Autenticou, mas autenticação não é permissão: só entra quem o banco
-    // confirma em app_admins. Conta sem permissão já é deslogada aqui.
-    if (!(await DB.isAdminLoggedIn())) {
+    // confirma como admin ou servidor em app_admins.
+    if (!(await DB.isStaff())) {
       document.getElementById('login-error').textContent =
         'Sua conta não tem permissão de acesso ao painel. Fale com o administrador.';
       return;
     }
+    // Recarrega com a sessão ativa para o servidor enxergar rascunhos.
+    await dbInit();
     mostrarAdmin();
     initAdmin();
   } else {
@@ -59,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     instalarFeedbackAcoesAdmin();
     atualizarStatusBanco();
     window.addEventListener('db:status-changed', handleDbStatusChanged);
-    if (await DB.isAdminLoggedIn()) {
+    if (await DB.isStaff()) {
       mostrarAdmin();
       initAdmin();
       return;
@@ -329,6 +331,19 @@ function renderSection(key) {
     case 'infoOrgaos':     renderInfoOrgaos(); break;
     case 'configuracoes':  carregarConfigDashboard(); break;
   }
+  aplicarPermissoesUI();
+}
+
+/**
+ * Esconde o que o papel não pode fazer. A garantia é do banco (RLS);
+ * isto evita que a tela ofereça uma ação que vai falhar.
+ */
+function aplicarPermissoesUI() {
+  if (DB.podeExcluir()) return;
+  document.querySelectorAll('#admin-app [onclick^="confirmarDelecao"]')
+    .forEach(btn => btn.remove());
+  const navConfig = document.querySelector('.admin-nav-item[data-section="configuracoes"]');
+  if (navConfig) navConfig.style.display = 'none';
 }
 
 function carregarConfigDashboard() {
@@ -386,6 +401,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 function confirmarDelecao(colecao, id, nome, callback) {
+  if (!DB.podeExcluir()) {
+    toast('Sua conta não tem permissão para excluir.', 'error');
+    return;
+  }
   abrirModal(`
     <h2 class="modal-title">Confirmar exclusão</h2>
     <div class="confirm-box">
@@ -401,6 +420,11 @@ function confirmarDelecao(colecao, id, nome, callback) {
 }
 
 function executarDelecao(colecao, id) {
+  if (!DB.podeExcluir()) {
+    toast('Sua conta não tem permissão para excluir.', 'error');
+    fecharModal();
+    return;
+  }
   DB.delete(colecao, id);
   fecharModal();
   toast('Registro excluído com sucesso.');

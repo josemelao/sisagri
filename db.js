@@ -976,6 +976,9 @@ const DB = {
    */
   motivoUltimoAcesso: 'sem_sessao',
 
+  /** Papel do usuário logado: 'admin', 'servidor' ou null (Bloco 6). */
+  papel: null,
+
   async isAdminLoggedIn() {
     if (!_sb) {
       DB.motivoUltimoAcesso = 'sem_sessao';
@@ -1020,6 +1023,63 @@ const DB = {
     return true;
   },
 
+  /**
+   * Lê o papel do usuário logado direto do banco (`rpc('meu_papel')`).
+   * Fonte de verdade é `public.app_admins`, a mesma das policies.
+   * Erro de rede NÃO derruba a sessão; sessão sem papel é 'sem_permissao'.
+   */
+  async carregarPapel() {
+    DB.papel = null;
+    if (!_sb) {
+      DB.motivoUltimoAcesso = 'sem_sessao';
+      return null;
+    }
+
+    const { data: sessao, error } = await _sb.auth.getSession();
+    if (error) {
+      console.error('[DB] Falha ao verificar sessão:', error);
+      DB.motivoUltimoAcesso = 'erro';
+      return null;
+    }
+    if (!sessao?.session) {
+      DB.motivoUltimoAcesso = 'sem_sessao';
+      return null;
+    }
+
+    let resposta;
+    try {
+      resposta = await _sb.rpc('meu_papel');
+    } catch (e) {
+      console.error('[DB] Falha ao consultar o papel:', e);
+      DB.motivoUltimoAcesso = 'erro';
+      return null;
+    }
+
+    const { data, error: erroPapel } = resposta || {};
+    if (erroPapel) {
+      console.error('[DB] Falha ao consultar o papel:', erroPapel);
+      DB.motivoUltimoAcesso = 'erro';
+      return null;
+    }
+
+    DB.papel = (data === 'admin' || data === 'servidor') ? data : null;
+    DB.motivoUltimoAcesso = DB.papel ? 'ok' : 'sem_permissao';
+    return DB.papel;
+  },
+
+  /** true para admin e servidor. Sessão válida sem papel é encerrada. */
+  async isStaff() {
+    const papel = await DB.carregarPapel();
+    if (papel) return true;
+    if (DB.motivoUltimoAcesso === 'sem_permissao') await DB.adminLogout();
+    return false;
+  },
+
+  /** Só admin exclui; o banco garante o mesmo (DELETE usa is_admin()). */
+  podeExcluir() {
+    return DB.papel === 'admin';
+  },
+
   /** Tenta fazer login com email e senha */
   async adminLogin(email, senha) {
     if (!_sb) return false;
@@ -1032,6 +1092,7 @@ const DB = {
   },
 
   async adminLogout() {
+    DB.papel = null;
     if (!_sb) return;
     const { error } = await _sb.auth.signOut();
     if (error) {

@@ -14,7 +14,8 @@ import { carregarScripts } from '../helpers/load-script.mjs';
  *
  * @param {object} cenario
  * @param {object|null} cenario.sessao   valor de data.session
- * @param {boolean|Error} cenario.isAdmin valor de data do rpc, ou Error
+ * @param {boolean|Error} cenario.isAdmin valor de data do rpc is_admin, ou Error
+ * @param {object} cenario.rpcs          respostas por nome de rpc (Bloco 6)
  * @param {boolean} cenario.erroSessao    getSession devolve error
  */
 function carregar(cenario = {}) {
@@ -33,6 +34,13 @@ function carregar(cenario = {}) {
     },
     rpc: async (nome) => {
       chamadas.rpc.push(nome);
+      if (cenario.rpcs && Object.prototype.hasOwnProperty.call(cenario.rpcs, nome)) {
+        const valor = cenario.rpcs[nome];
+        if (valor instanceof Error) {
+          return { data: null, error: { message: valor.message } };
+        }
+        return { data: valor, error: null };
+      }
       if (cenario.isAdmin instanceof Error) {
         return { data: null, error: { message: cenario.isAdmin.message } };
       }
@@ -85,4 +93,74 @@ test('isAdminLoggedIn: erro no getSession devolve false', async () => {
   const { h } = carregar({ erroSessao: true });
 
   assert.equal(await h.get('DB').isAdminLoggedIn(), false);
+});
+
+/* ------------------------------------------------------------------ */
+/* Bloco 6 — papel servidor                                            */
+/* ------------------------------------------------------------------ */
+
+test('isStaff: servidor entra no painel, mas nao pode excluir', async () => {
+  const { h, chamadas } = carregar({ sessao: SESSAO, rpcs: { meu_papel: 'servidor' } });
+  const DB = h.get('DB');
+
+  assert.equal(await DB.isStaff(), true);
+  assert.deepEqual(chamadas.rpc, ['meu_papel']);
+  assert.equal(DB.papel, 'servidor');
+  assert.equal(DB.podeExcluir(), false);
+  assert.equal(chamadas.signOut, 0, 'servidor nao pode ser deslogado');
+  assert.equal(DB.motivoUltimoAcesso, 'ok');
+});
+
+test('isStaff: admin pode excluir', async () => {
+  const { h, chamadas } = carregar({ sessao: SESSAO, rpcs: { meu_papel: 'admin' } });
+  const DB = h.get('DB');
+
+  assert.equal(await DB.isStaff(), true);
+  assert.equal(DB.papel, 'admin');
+  assert.equal(DB.podeExcluir(), true);
+  assert.equal(chamadas.signOut, 0);
+});
+
+test('isStaff: papel desconhecido falha fechado e encerra a sessao', async () => {
+  const { h, chamadas } = carregar({ sessao: SESSAO, rpcs: { meu_papel: 'root' } });
+  const DB = h.get('DB');
+
+  assert.equal(await DB.isStaff(), false);
+  assert.equal(DB.papel, null);
+  assert.equal(DB.podeExcluir(), false);
+  assert.equal(DB.motivoUltimoAcesso, 'sem_permissao');
+  assert.equal(chamadas.signOut, 1, 'sessao sem papel nao pode ficar orfa');
+});
+
+test('isStaff: erro de rede nao derruba a sessao', async () => {
+  const { h, chamadas } = carregar({
+    sessao: SESSAO,
+    rpcs: { meu_papel: new Error('rpc indisponivel') },
+  });
+  const DB = h.get('DB');
+
+  assert.equal(await DB.isStaff(), false);
+  assert.equal(DB.papel, null);
+  assert.equal(DB.motivoUltimoAcesso, 'erro');
+  assert.equal(chamadas.signOut, 0, 'erro de rede nao e prova de falta de papel');
+});
+
+test('isStaff: sem sessao nao consulta o banco', async () => {
+  const { h, chamadas } = carregar({ sessao: null });
+
+  assert.equal(await h.get('DB').isStaff(), false);
+  assert.equal(chamadas.rpc.length, 0);
+  assert.equal(chamadas.signOut, 0);
+});
+
+test('adminLogout limpa o papel em memoria', async () => {
+  const { h } = carregar({ sessao: SESSAO, rpcs: { meu_papel: 'admin' } });
+  const DB = h.get('DB');
+
+  await DB.isStaff();
+  assert.equal(DB.papel, 'admin');
+
+  await DB.adminLogout();
+  assert.equal(DB.papel, null);
+  assert.equal(DB.podeExcluir(), false);
 });
