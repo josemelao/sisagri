@@ -1,6 +1,6 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
 Atualizado em: 2026-10-20
-Branch de trabalho: codex/fase2 (base da655a0; main = producao, nada enviado ao remoto)
+Branch de trabalho: codex/fase2 (base da655a0; main = producao; deploy 3cc260e em 2026-10-20)
 
 =========================================================================
 SESSAO 2026-10-19/20 — ULTIMA ANTES DA PAUSA (leia antes de retomar)
@@ -51,17 +51,17 @@ Fechado nesta sessao:
       re-assinatura depois de salvar; uploads novos gravam foto/url vazios;
     - testes: 93 testes (11 novos), T6.5 232/232; policy provada no teste:
       anon so ve objeto publicado, servidor ve published + draft;
-    - 0008 JA APLICADA em producao em 2026-10-20 (aditiva; buckets seguem
-      publicos). Assinatura real validada com a anon key: arquivo e foto
-      publicados sign 200/download 200; path sem registro 400.
-      Falta: deploy do codigo -> validar no site -> 0009.
+    - 0008/0009 aplicadas em producao em 2026-10-20 (versoes 20261020151915
+      e 20261020152424). Codigo deployado em 3cc260e (GitHub Pages).
+      Validacao no site real: 15/15 fotos, sign/download 200, download
+      "Modelo - Oficio.docx" sem falha, path sem registro negado; URL publica
+      antiga 400 com cache-busting. manuais segue publico.
 
 Medido no fim da sessao:
   93 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
   check-draft-leak 15/15 | guard 29/11/0 | T6.5 232/232
-  0008 aplicada em producao (aditiva); 0009 so no teste | buckets de producao
-  ainda publicos
-  nada enviado ao remoto
+  0008 e 0009 aplicadas em producao | buckets privados (manuais publico)
+  deploy 3cc260e no ar e validado no site real
 
 PROXIMA ACAO (nesta ordem):
   1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
@@ -70,9 +70,8 @@ PROXIMA ACAO (nesta ordem):
   2. [FEITO 2026-10-20] Teste humano do login do ADMIN validado: abre,
      mostra o rascunho processos.id=4 e o site publico nao o exibe.
   3. [FEITO 2026-10-20] T6.5 no projeto de teste: 232 casos, 0 falhas.
-  4. [FEITO NO TESTE 2026-10-20] Bloco 3b parte 2: 0008/0009 + codigo de URL
-     assinada. Bloqueante agora: deploy do codigo em producao. So depois:
-     aplicar 0008 (policy) antes e 0009 (bucket privado) por ultimo.
+  4. [FEITO 2026-10-20] Bloco 3b parte 2: 0008/0009 + codigo de URL assinada
+     aplicados em producao; deploy 3cc260e validado no site real.
   5. Pendencias menores, sem urgencia:
      - info_municipio id=3 com href sem https:// (corrigir no painel)
      - deploy da function do Instagram + rotacao do token (dono)
@@ -107,7 +106,8 @@ ONDE PARAMOS
 =========================================================================
 
 Concluido:
-  - branch codex/fase2 criada; .gitignore commitado; nada enviado ao remoto
+  - branch codex/fase2 criada; .gitignore commitado (na epoca nada enviado ao
+    remoto; deploy feito em 2026-10-20, commit 3cc260e)
   - MCP do Supabase autenticado (escrita confirmada; current_user = postgres)
   - Bloco 0 (dono, dashboard): signup desabilitado -> 422 signup_disabled
   - Bloco 0.5 (N4): senha vazada trocada; login confirmado em 2026-10-19 19:44
@@ -169,7 +169,8 @@ O que esta fechado, medido:
   storage   nao-admin ve 0 objetos (era 133) / DELETE 0 linhas
             admin ve 133 / apaga normalmente
             servidor: upload/listagem liberados; DELETE negado
-            buckets seguem public = true (mecanismo ainda aberto)
+            buckets seguiam public = true neste marco (corrigido no 3b2:
+            privados desde 2026-10-20; manuais publico)
 
 Backup local (nao versionado, fora do repo):
   C:\Users\PICHAU\Desktop\SisAgri-backup-storage\
@@ -191,27 +192,27 @@ Proxima acao sugerida:
      publico ve, entao a saida precisa estar segura antes.
 
 =========================================================================
-PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO NO TESTE; producao pendente)
+PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO EM PRODUCAO 2026-10-20)
 =========================================================================
 
   Estado em 2026-10-20:
-    - codigo pronto e testado (93 testes, T6.5 232/232);
-    - 0008 e 0009 aplicadas no projeto de teste zoywmvuswyosehlddmma;
-    - arquivos-smader e funcionarios-fotos-smader privados NO TESTE;
-    - 0008 aplicada em PRODUCAO (aditiva, versao 20261020151915); buckets de
-      producao ainda public = true; 0009 NAO aplicada em producao;
-    - assinatura real em producao validada com a anon key: arquivo e foto
-      publicados sign 200/download 200; path sem registro 400.
+    - codigo testado (93 testes, T6.5 232/232);
+    - 0008/0009 aplicadas no projeto de teste zoywmvuswyosehlddmma;
+    - 0008 (20261020151915) e 0009 (20261020152424) aplicadas em PRODUCAO;
+    - arquivos-smader e funcionarios-fotos-smader privados em producao;
+      manuais-imagens-smader segue publico por desenho;
+    - deploy 3cc260e no GitHub Pages; validacao real: 15/15 fotos, sign e
+      download 200, download "Modelo - Oficio.docx" ok; path sem registro
+      negado; URL publica antiga 400 com cache-busting.
   Achado N5 explicado: URL publica NAO consulta policy, entao upload em
   rascunho nascia publico.
 
-  Ordem obrigatoria em producao (sem janela quebrada):
-    1. [FEITO 2026-10-20] aplicar 0008_storage_policies_assinatura.sql
-       (aditiva; bucket segue publico; createSignedUrl exige SELECT mesmo em
-       bucket publico);
-    2. deploy do codigo (db.js/script.js/admin.js) que usa URL assinada;
-    3. validar foto e download no site real;
-    4. aplicar 0009_storage_buckets_privados.sql (public = false).
+  Ordem executada em producao (sem janela quebrada):
+    1. [FEITO 2026-10-20] 0008_storage_policies_assinatura.sql (aditiva;
+       createSignedUrl exige SELECT mesmo em bucket publico);
+    2. [FEITO 2026-10-20] deploy do codigo (db.js/script.js/admin.js);
+    3. [FEITO 2026-10-20] validar foto e download no site real;
+    4. [FEITO 2026-10-20] 0009_storage_buckets_privados.sql (public = false).
   Rollback da 0009: update storage.buckets set public = true where id in
   ('arquivos-smader','funcionarios-fotos-smader').
 
@@ -225,9 +226,9 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   Restam 3 de authenticated_security_definer_function_executable
   (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
   e o painel chamam essas funcoes; sem definer a RLS quebraria.
-  No teste os 2 buckets ja estao privados; em producao o aviso de bucket
-  publico com listagem continua ate a 0009. manuais segue publico por desenho
-  nesta fase.
+  Os 2 buckets estao privados no teste e em producao desde a 0009; reconferir
+  no dashboard se o aviso de bucket publico sumiu. manuais segue publico por
+  desenho nesta fase.
   Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
   Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 

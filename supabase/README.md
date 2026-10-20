@@ -11,9 +11,9 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **7** (`0002` a `0008`) |
-| Migrations criadas, aplicadas **só no teste** | **1** (`0009`) |
-| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320`, `20261020130953`, `20261020151915` |
+| Migrations aplicadas em produção | **8** (`0002` a `0009`) |
+| Migrations criadas e ainda **não aplicadas** em produção | **0** |
+| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320`, `20261020130953`, `20261020151915`, `20261020152424` |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
 | Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
@@ -41,7 +41,7 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0006_rls_papeis.sql` | Bloco 6: 42 policies de conteúdo + 9 de Storage por operação | **Aplicado em 2026-10-20** |
 | `migrations/0007_fn_grants.sql` | Bloco 6: revoga EXECUTE de `anon` nas funções de papel | **Aplicado em 2026-10-20** |
 | `migrations/0008_storage_policies_assinatura.sql` | Bloco 3b2: 2 SELECT de Storage para objeto publicado | **Aplicada em produção em 2026-10-20** |
-| `migrations/0009_storage_buckets_privados.sql` | Bloco 3b2: `public=false` em arquivos/funcionários | **Aplicada só no teste** |
+| `migrations/0009_storage_buckets_privados.sql` | Bloco 3b2: `public=false` em arquivos/funcionários | **Aplicada em produção em 2026-10-20** |
 | `tests/00a_seed_auth.sql` | contas de teste do T6.5 (rodar antes da `0002`) | Só projeto de teste |
 | `tests/00b_seed_dados.sql` | papel servidor, buckets e seed do T6.5 (rodar após a `0007`) | Só projeto de teste |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
@@ -232,8 +232,8 @@ de 1 h, com policy que só libera o objeto cujo registro está `published`.
 
 | Migration | O que faz | Quando aplicar |
 |---|---|---|
-| `0008_storage_policies_assinatura.sql` | 2 policies `SELECT` aditivas (`arquivos`, `funcionarios`) | **Aplicada em produção em 2026-10-20**; buckets ainda públicos |
-| `0009_storage_buckets_privados.sql` | `public=false` nos 2 buckets | **Depois** do código validado |
+| `0008_storage_policies_assinatura.sql` | 2 policies `SELECT` aditivas (`arquivos`, `funcionarios`) | **Aplicada em produção em 2026-10-20** |
+| `0009_storage_buckets_privados.sql` | `public=false` nos 2 buckets | **Aplicada em produção em 2026-10-20**, após validar o código |
 
 `createSignedUrl` exige `SELECT` em `storage.objects` **mesmo com o bucket
 público**. Por isso a `0008` vem antes: sem ela, o código novo cairia no
@@ -245,17 +245,19 @@ update storage.buckets set public = true
  where id in ('arquivos-smader', 'funcionarios-fotos-smader');
 ```
 
-**Estado em 2026-10-20:** a `0008` já está aplicada em produção (versão
-`20261020151915`). A assinatura real foi validada pela API com a anon key:
-arquivo e foto publicados retornaram URL assinada e download 200; path sem
-registro retornou 400. Os buckets de produção seguem públicos até o deploy do
-código novo e a `0009`.
+**Estado em 2026-10-20:** `0008` e `0009` aplicadas em produção (versões
+`20261020151915` e `20261020152424`). Código deployado em `3cc260e`. Validação
+real no site (`https://josemelao.github.io/sisagri/`): 15/15 fotos carregadas,
+assinatura de foto e download de arquivo com 200, download `Modelo - Ofício.docx`
+sem falha; path sem registro não é assinado. A URL pública antiga pode continuar
+respondendo por cache de CDN/browser; com cache-busting retorna 400.
+`manuais-imagens-smader` segue público.
 
 No código, `DB.createSignedUrl(s)` mantém cache **em memória** (1 h, margem de
 5 min) e `DB.get` injeta `foto_url`/`url_assinada` na cópia devolvida. A URL
 assinada **nunca** vai para `_db`, `localStorage` ou `dados.js`. Uploads novos
-gravam `foto=''`/`url=''` e dependem do path; registros legados mantêm a URL
-antiga como fallback até a `0009`.
+gravam `foto=''`/`url=''` e dependem do path; registros legados mantêm os
+campos antigos gravados, mas a interface usa `foto_url`/`url_assinada`.
 
 `manuais-imagens-smader` continua público nesta fase: as imagens vivem dentro de
 `manuais.passos`, sem coluna de vínculo própria. O risco residual (imagem de
@@ -362,8 +364,8 @@ O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 10
 migrations foram aplicadas; `arquivos-smader` e `funcionarios-fotos-smader`
 estão **privados** e o T6.5 fechou verde: **232 casos, 0 falhas**. A policy de
 assinatura foi provada no teste: `anon` lista/sinaliza só o publicado;
-`servidor` vê published + draft. Produção já tem a `0008`; falta o deploy do
-código novo e a `0009`.
+`servidor` vê published + draft. Produção tem `0008` e `0009`; código
+deployado (`3cc260e`) e validado em 2026-10-20.
 
 Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte
 `db.js` para o projeto de teste em uma cópia local. O T6.5 em si não precisa de

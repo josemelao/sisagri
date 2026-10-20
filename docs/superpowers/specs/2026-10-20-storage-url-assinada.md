@@ -1,7 +1,7 @@
 # Storage com URL assinada — design do Bloco 3b parte 2
 
 **Data:** 2026-10-20
-**Status:** aprovado; código testado; 0008 aplicada em produção; 0009 pendente
+**Status:** aprovado e implantado em produção em 2026-10-20 (`0008` + `0009` + deploy `3cc260e`)
 **Escopo:** `funcionarios-fotos-smader` e `arquivos-smader` privados, com URL
 assinada emitida para o que está publicado. `manuais-imagens-smader` fica
 público nesta fase, com risco residual registrado.
@@ -98,9 +98,11 @@ Normalização:
    exige `SELECT` para assinar **mesmo em bucket público**; sem esta etapa o
    código novo cairia no fallback. **[Feito em produção em 2026-10-20.]**
 2. **Publicar o código** com URL assinada. Ele funciona nos dois modelos.
+   **[Feito: commit `3cc260e`.]**
 3. **Validar no projeto de teste** (`zoywmvuswyosehlddmma`) aplicando a `0009`
-   (bucket privado) e exercitando foto e download.
-4. **Aplicar a `0009` em produção**.
+   (bucket privado) e exercitando foto e download. **[Feito via policy/SQL no
+   teste.]**
+4. **Aplicar a `0009` em produção**. **[Feito em 2026-10-20.]**
 5. Reverter é barato: `update storage.buckets set public = true` + (opcional)
    `drop policy`.
 
@@ -124,13 +126,16 @@ Normalização:
 - `npm run check`: **93 testes**, 0 erros de lint, guard 29/11/0.
 - E2E local: 8 passed / 2 skipped (mesmo baseline).
 
-Ainda pendente (precisa da anon/publishable key do projeto de teste): abrir o app
-apontado para o teste e confirmar foto e download ponta a ponta no navegador.
+A validação ponta a ponta no **projeto de teste** segue pendente (precisa da
+anon/publishable key e de um objeto real); a validação ponta a ponta foi feita
+em **produção** após o deploy.
 
-**Produção (2026-10-20):** `0008` aplicada (versão `20261020151915`). Assinatura
-real pela API com a anon key: `arquivos/...Modelo-Oficio.docx` e
-`funcionarios/...foto-1.jpg` → sign 200 e download 200; path sem registro → 400.
-Buckets ainda públicos; `0009` pendente do deploy do código.
+**Produção (2026-10-20):** `0008` (`20261020151915`) e `0009` (`20261020152424`)
+aplicadas; código `3cc260e` no GitHub Pages. API com a anon key: arquivo e foto
+publicados → sign 200 + download 200; path sem registro → 400. No site real:
+15/15 fotos carregadas, download `Modelo - Ofício.docx` sem falha, zero erros de
+JS. A URL pública antiga pode responder por cache; com cache-busting → 400.
+`manuais-imagens-smader` segue público.
 
 Passos previstos para essa validação de app:
 
