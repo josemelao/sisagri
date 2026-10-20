@@ -14,6 +14,11 @@ Fechado nesta sessao:
     Migrations aplicadas em producao:
       20261020023304  rbac_papel   (role em app_admins + funcoes)
       20261020023320  rls_papeis   (42 policies de conteudo + 9 de Storage)
+  - Conta servidor criada (servidor@servidor.com) e promovida em app_admins:
+    UUID 9e86f3b4-c03e-45b5-a66a-c43ce524b90b, role = servidor.
+  - Fix de UI do papel servidor (2026-10-20): lixeira e "Configuracoes"
+    somem tambem depois de salvar no modal (render direto). Commit 45bfbfa.
+    Validado pelo dono no painel local.
     Design aprovado pelo dono:
       docs/superpowers/specs/2026-10-19-rbac-design.md
 
@@ -21,13 +26,10 @@ Medido no fim da sessao:
   82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
   check-draft-leak 15/15 | guard 29/11/0 | nada enviado ao remoto
 
-PROXIMA ACAO (amanha, nesta ordem):
-  1. Criar uma conta `servidor` no Auth (Dashboard) e promover por SQL:
-       insert into public.app_admins (user_id, role)
-       values ('<uuid>', 'servidor')
-       on conflict (user_id) do update set role = excluded.role;
-     Testar no painel: criar e editar sim; excluir nao (o botao some e o banco
-     nega). Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
+PROXIMA ACAO (nesta ordem):
+  1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
+     Teste no painel confirmado: criar/editar sim; excluir bloqueado.
+     Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
   2. Teste humano do login real do ADMIN (pendencia desde o Bloco 5). Agora o
      login passa por isStaff() e recarrega as colecoes; confirmar que abre e
      que o rascunho processos.id=4 aparece.
@@ -115,6 +117,8 @@ Commits locais (codex/fase2, sem push):
   5d8ef6c  bloco 9b: escapa saida de texto e sanitiza links em campos
   d62215e  docs(bloco 9b): registra saida segura, provas e pendencias
   8370400  bloco 6: papel servidor (criar/editar, sem excluir) com RLS
+  f1f2698  docs(bloco 6): design aprovado, provas e pendencias
+  45bfbfa  fix(bloco 6): esconde exclusao/configuracoes do servidor pos-render
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -227,12 +231,10 @@ PENDENTE 8 — RESOLVIDO em 2026-10-19 (Bloco 9b)
   FALTA: teste automatizado de XSS no admin (depende do login real).
 
 PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
-  1. CONTA SERVIDOR: criar em Auth e promover por SQL:
-       insert into public.app_admins (user_id, role)
-       values ('<uuid>', 'servidor')
-       on conflict (user_id) do update set role = excluded.role;
-     Testar no painel: criar e editar sim; excluir nao (botao some e o banco
-     nega). Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
+  1. CONTA SERVIDOR: FEITO em 2026-10-20.
+     servidor@servidor.com | UUID 9e86f3b4-c03e-45b5-a66a-c43ce524b90b
+     role = servidor (validado: is_admin false, pode_editar true, meu_papel
+     servidor). Rebaixar = insert com 'admin'; remover = delete da linha.
   2. T6.5: suite 3 personas x 14 colecoes x 4 acoes. Precisa de projeto
      Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2).
   3. MASCARAMENTO: funcionarios.cpf/telefone/email/matricula,
@@ -249,6 +251,8 @@ PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
     JWT admin -> true/true/'admin' | UUID sem linha -> false/false/null
     npm run check exit 0 (82 testes) | e2e 8 passed/2 skipped
     lint 0 erros/126 avisos (nenhum aviso novo)
+    Fix de UI (45bfbfa): body.sem-excluir cobre re-render direto; boot
+    aplica permissoes. Validado pelo dono no painel local.
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
