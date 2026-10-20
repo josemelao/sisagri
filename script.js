@@ -1161,6 +1161,12 @@ function openManual(id) {
   openDetail("manual-detail-overlay");
 }
 
+/** Prioriza a URL assinada da imagem do passo; cai na URL legada quando existir. */
+function getManualPassoImagemUrl(passo) {
+  if (!passo || typeof passo !== 'object') return '';
+  return passo.imagem_url_assinada || passo.imagem || '';
+}
+
 /** Renderiza o conteúdo do manual baseado no modo (resumido ou completo) */
 function renderManualDetail(m, modo, passoAtivo = 0) {
   const container = document.getElementById("manual-detail-content");
@@ -1191,7 +1197,7 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
     // Paginação horizontal para modo completo
     const passo = m.passos[passoAtivo];
     const texto = typeof passo === 'string' ? passo : passo.texto;
-    const imagem = (typeof passo === 'object' && passo.imagem) ? passo.imagem : "";
+    const imagem = getManualPassoImagemUrl(passo);
 
     contentHTML = `
       <div class="manual-content-switch"><div class="manual-completo">
@@ -1458,7 +1464,7 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
   } else {
     const passo  = m.passos[passoAtivo];
     const texto  = typeof passo === 'string' ? passo : passo.texto;
-    const imagem = typeof passo === 'object' && passo.imagem ? passo.imagem : '';
+    const imagem = getManualPassoImagemUrl(passo);
     const total  = m.passos.length;
     content = `
       <div class="manual-content-switch"><div class="manual-completo">

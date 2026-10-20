@@ -15,9 +15,10 @@
 -- Este teste compara `storage.objects` com as colunas de vínculo que existem
 -- no banco: `arquivos.storage_path` e `funcionarios.foto_storage_path`.
 --
--- `manuais` **não tem coluna de vínculo** — as imagens são embutidas no HTML de
--- `passos`. Para essa tabela não há como provar o vínculo por SQL, então as 73
--- imagens do bucket `manuais-imagens-smader` não são cobertas aqui.
+-- `manuais` passou a ter vínculo em `passos[].imagem_storage_path` no Bloco
+-- 3c/13. A autorização desse bucket é coberta por
+-- `07_manuais_imagens_storage.sql`; este guarda continua focado nos buckets
+-- públicos de arquivos e funcionários.
 --
 -- Também importante: este teste prova o estado dos REGISTROS. Ele não prova o
 -- MECANISMO. Enquanto os buckets forem `public = true`, um upload novo em

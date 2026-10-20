@@ -1534,7 +1534,7 @@ function renderManuais() {
 function formManual(m = {}) {
   const passosHTML = (m.passos || []).map((p, i) => {
     const texto = typeof p === 'string' ? p : p.texto;
-    const imagem = typeof p === 'object' ? p.imagem : '';
+    const imagem = typeof p === 'object' ? (p.imagem_url_assinada || p.imagem || '') : '';
     const imagemStoragePath = typeof p === 'object' ? (p.imagem_storage_path || '') : '';
     const imagemStorageBucket = typeof p === 'object' ? (p.imagem_storage_bucket || '') : '';
     return `

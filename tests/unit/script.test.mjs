@@ -8,11 +8,11 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { carregarScripts } from '../helpers/load-script.mjs';
+import { carregarScripts, criarElemento } from '../helpers/load-script.mjs';
 
-function carregarApp() {
+function carregarApp(opcoes = {}) {
   // utils primeiro (escapeHtml), depois db.js (script.js consome o global DB).
-  return carregarScripts(['js/core/utils.js', 'db.js', 'script.js'], { supabase: false });
+  return carregarScripts(['js/core/utils.js', 'db.js', 'script.js'], { supabase: false, ...opcoes });
 }
 
 /* ==========================================================================
@@ -222,5 +222,51 @@ test('getArquivoPreviewHTML: upload novo sem url usa url_assinada', () => {
 
   assert.match(html, /signed\.example/);
   assert.doesNotMatch(html, /object\/public/);
+});
+
+/* ==========================================================================
+   Imagens de manual com URL assinada (Bloco 3c/13)
+   ========================================================================== */
+
+test('getManualPassoImagemUrl: prioriza imagem_url_assinada e cai em imagem', () => {
+  const h = carregarApp();
+  const getUrl = h.get('getManualPassoImagemUrl');
+
+  assert.equal(
+    getUrl({ imagem: 'https://old.example/public.jpg', imagem_url_assinada: 'https://signed.example/token.jpg' }),
+    'https://signed.example/token.jpg'
+  );
+  assert.equal(getUrl({ imagem: 'https://old.example/public.jpg' }), 'https://old.example/public.jpg');
+  assert.equal(getUrl({ imagem_url_assinada: 'https://signed.example/token.jpg' }), 'https://signed.example/token.jpg');
+  assert.equal(getUrl({}), '');
+  assert.equal(getUrl('texto'), '');
+  assert.equal(getUrl(null), '');
+});
+
+test('renderManualDetail: usa imagem_url_assinada e nao a URL publica antiga', () => {
+  const container = criarElemento('div');
+  const h = carregarApp({ elementos: { 'manual-detail-content': container } });
+
+  h.get('renderManualDetail')(
+    {
+      id: 1,
+      titulo: 'Manual',
+      categoria: 'Categoria',
+      observacoes: '',
+      documentos: [],
+      passos: [
+        {
+          texto: 'Passo com imagem',
+          imagem: 'https://old.example/object/public/manuais/1.jpg',
+          imagem_url_assinada: 'https://signed.example/object/sign/manuais/1.jpg?token=abc',
+        },
+      ],
+    },
+    'completo',
+    0
+  );
+
+  assert.match(container.innerHTML, /signed\.example\/object\/sign\/manuais\/1\.jpg/);
+  assert.doesNotMatch(container.innerHTML, /object\/public\/manuais\/1\.jpg/);
 });
 

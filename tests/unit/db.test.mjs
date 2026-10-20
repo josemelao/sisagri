@@ -309,6 +309,71 @@ test('DB.resolveStorageUrls + DB.get: injeta url_assinada em arquivos', async ()
   assert.equal(h.run('_db.arquivos[0].url_assinada'), undefined);
 });
 
+test('DB.resolveStorageUrls + DB.get: injeta imagem_url_assinada nos passos de manuais', async () => {
+  const { cliente, chamadas } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  h.run(`_db = { manuais: [
+    {
+      id: 1,
+      titulo: 'Manual',
+      publish_status: 'published',
+      passos: [
+        { texto: 'Com imagem', imagem: 'https://old.example/public.jpg', imagem_storage_path: 'manuais/1.jpg', imagem_storage_bucket: 'manuais-imagens-smader' },
+        { texto: 'Externa', imagem: 'https://external.example/x.jpg' },
+        'Passo antigo em texto'
+      ]
+    }
+  ] }`);
+
+  await DB.resolveStorageUrls();
+  const lista = DB.get('manuais');
+  const passos = lista[0].passos;
+
+  assert.match(passos[0].imagem_url_assinada, /manuais\/1\.jpg/);
+  assert.equal(passos[0].imagem, 'https://old.example/public.jpg');
+  assert.equal(passos[1].imagem_url_assinada, undefined);
+  assert.equal(passos[2], 'Passo antigo em texto');
+  assert.equal(h.run('_db.manuais[0].passos[0].imagem_url_assinada'), undefined, 'a URL assinada nao pode ir para _db');
+
+  h.run('_persistLocal()');
+  const salvo = h.localStorage.getItem('smader_db_v1') || '';
+  assert.ok(!salvo.includes('imagem_url_assinada'), 'a URL assinada nao pode ir para o localStorage');
+
+  assert.ok(
+    chamadas.some((c) => c.tipo === 'varios' && c.bucket === 'manuais-imagens-smader' && c.paths.includes('manuais/1.jpg')),
+    'resolveStorageUrls sem argumento deve assinar os paths dos passos'
+  );
+});
+
+test('DB.uploadManualImageStorage: devolve path e bucket, sem URL publica', async () => {
+  const uploads = [];
+  const cliente = {
+    storage: {
+      from: (bucket) => ({
+        getPublicUrl: (path) => ({
+          data: { publicUrl: `https://fake.example/object/public/${bucket}/${path}` },
+        }),
+        upload: async (path, file) => {
+          uploads.push({ bucket, path, name: file.name });
+          return { error: null };
+        },
+      }),
+    },
+  };
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  const out = await DB.uploadManualImageStorage({ name: 'foto de teste.jpg' });
+
+  assert.equal(out.url, '', 'bucket privado nao deve gerar URL publica');
+  assert.equal(out.storage_bucket, 'manuais-imagens-smader');
+  assert.match(out.storage_path, /^manuais\/\d+-foto-de-teste\.jpg$/);
+  assert.equal(uploads.length, 1);
+  assert.equal(uploads[0].bucket, 'manuais-imagens-smader');
+});
+
 /* ==========================================================================
    dbInit / modo local
    ========================================================================== */

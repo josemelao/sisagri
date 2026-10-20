@@ -54,12 +54,6 @@ function _sanitizeStorageFileName(nome = 'arquivo') {
     .replace(/^-|-$/g, '') || 'arquivo';
 }
 
-function _getStoragePublicUrl(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
-  if (!_sb || !path) return '';
-  const { data } = _sb.storage.from(bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET).getPublicUrl(path);
-  return data?.publicUrl || '';
-}
-
 /* ============================================================
    URL assinada (Bloco 3b parte 2)
    ------------------------------------------------------------
@@ -109,6 +103,17 @@ function _decorateRuntimeUrls(colecao, item) {
     const bucket = item.storage_bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET;
     const url = _getCachedSignedUrl(bucket, item.storage_path);
     if (url) item.url_assinada = url;
+  }
+  if (colecao === 'manuais' && Array.isArray(item.passos)) {
+    item.passos = item.passos.map((passo) => {
+      if (!passo || typeof passo !== 'object') return passo;
+      const path = passo.imagem_storage_path;
+      if (!path) return passo;
+      const bucket = passo.imagem_storage_bucket || STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET;
+      const url = _getCachedSignedUrl(bucket, path);
+      if (!url) return passo;
+      return { ...passo, imagem_url_assinada: url };
+    });
   }
   return item;
 }
@@ -842,18 +847,34 @@ const DB = {
 
   /**
    * Preenche o cache de URLs assinadas para as colecoes com Storage.
-   * Sem `colecao`, resolve funcionarios e arquivos.
+   * Sem `colecao`, resolve funcionarios, arquivos e manuais.
    */
   async resolveStorageUrls(colecao) {
     if (!_sb || !_db) return;
-    const colecoes = colecao ? [colecao] : ['funcionarios', 'arquivos'];
+    const colecoes = colecao ? [colecao] : ['funcionarios', 'arquivos', 'manuais'];
 
     await Promise.all(colecoes.map(async (nome) => {
       const lista = Array.isArray(_db[nome]) ? _db[nome] : [];
       const porBucket = new Map();
+      const adicionarPath = (bucket, path) => {
+        if (!bucket || !path) return;
+        if (!porBucket.has(bucket)) porBucket.set(bucket, []);
+        porBucket.get(bucket).push(path);
+      };
 
       lista.forEach((registro) => {
         if (!registro) return;
+        if (nome === 'manuais') {
+          const passos = Array.isArray(registro.passos) ? registro.passos : [];
+          passos.forEach((passo) => {
+            if (!passo || typeof passo !== 'object' || !passo.imagem_storage_path) return;
+            adicionarPath(
+              passo.imagem_storage_bucket || STORAGE_CONFIG.MANUAIS_IMAGENS_BUCKET,
+              passo.imagem_storage_path
+            );
+          });
+          return;
+        }
         const path = nome === 'funcionarios'
           ? registro.foto_storage_path
           : registro.storage_path;
@@ -861,8 +882,7 @@ const DB = {
         const bucket = nome === 'funcionarios'
           ? (registro.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET)
           : (registro.storage_bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET);
-        if (!porBucket.has(bucket)) porBucket.set(bucket, []);
-        porBucket.get(bucket).push(path);
+        adicionarPath(bucket, path);
       });
 
       await Promise.all(
@@ -1053,7 +1073,7 @@ const DB = {
     });
     if (error) throw error;
     return {
-      url: _getStoragePublicUrl(path, bucket),
+      url: '',
       storage_path: path,
       storage_bucket: bucket,
     };
