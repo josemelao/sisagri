@@ -11,8 +11,9 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **6** (`0002` a `0007`) |
-| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320`, `20261020130953` |
+| Migrations aplicadas em produção | **7** (`0002` a `0008`) |
+| Migrations criadas, aplicadas **só no teste** | **1** (`0009`) |
+| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320`, `20261020130953`, `20261020151915` |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
 | Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
@@ -39,6 +40,8 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0005_rbac_papel.sql` | Bloco 6: `app_admins.role`, `pode_editar()`, `meu_papel()` | **Aplicado em 2026-10-20** |
 | `migrations/0006_rls_papeis.sql` | Bloco 6: 42 policies de conteúdo + 9 de Storage por operação | **Aplicado em 2026-10-20** |
 | `migrations/0007_fn_grants.sql` | Bloco 6: revoga EXECUTE de `anon` nas funções de papel | **Aplicado em 2026-10-20** |
+| `migrations/0008_storage_policies_assinatura.sql` | Bloco 3b2: 2 SELECT de Storage para objeto publicado | **Aplicada em produção em 2026-10-20** |
+| `migrations/0009_storage_buckets_privados.sql` | Bloco 3b2: `public=false` em arquivos/funcionários | **Aplicada só no teste** |
 | `tests/00a_seed_auth.sql` | contas de teste do T6.5 (rodar antes da `0002`) | Só projeto de teste |
 | `tests/00b_seed_dados.sql` | papel servidor, buckets e seed do T6.5 (rodar após a `0007`) | Só projeto de teste |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
@@ -219,6 +222,48 @@ pendência, fora do Bloco 6.
 
 ---
 
+## `0008` + `0009` — Bloco 3b parte 2: URL assinada
+
+Design: `docs/superpowers/specs/2026-10-20-storage-url-assinada.md`.
+
+O problema: URL pública (`/object/public/...`) não consulta RLS. Todo upload em
+rascunho nascia acessível (achado N5). A solução é bucket privado + URL assinada
+de 1 h, com policy que só libera o objeto cujo registro está `published`.
+
+| Migration | O que faz | Quando aplicar |
+|---|---|---|
+| `0008_storage_policies_assinatura.sql` | 2 policies `SELECT` aditivas (`arquivos`, `funcionarios`) | **Aplicada em produção em 2026-10-20**; buckets ainda públicos |
+| `0009_storage_buckets_privados.sql` | `public=false` nos 2 buckets | **Depois** do código validado |
+
+`createSignedUrl` exige `SELECT` em `storage.objects` **mesmo com o bucket
+público**. Por isso a `0008` vem antes: sem ela, o código novo cairia no
+fallback legado. A `0008` não muda nada visível (é aditiva). A `0009` é a única
+que quebra a URL antiga; o rollback é imediato:
+
+```sql
+update storage.buckets set public = true
+ where id in ('arquivos-smader', 'funcionarios-fotos-smader');
+```
+
+**Estado em 2026-10-20:** a `0008` já está aplicada em produção (versão
+`20261020151915`). A assinatura real foi validada pela API com a anon key:
+arquivo e foto publicados retornaram URL assinada e download 200; path sem
+registro retornou 400. Os buckets de produção seguem públicos até o deploy do
+código novo e a `0009`.
+
+No código, `DB.createSignedUrl(s)` mantém cache **em memória** (1 h, margem de
+5 min) e `DB.get` injeta `foto_url`/`url_assinada` na cópia devolvida. A URL
+assinada **nunca** vai para `_db`, `localStorage` ou `dados.js`. Uploads novos
+gravam `foto=''`/`url=''` e dependem do path; registros legados mantêm a URL
+antiga como fallback até a `0009`.
+
+`manuais-imagens-smader` continua público nesta fase: as imagens vivem dentro de
+`manuais.passos`, sem coluna de vínculo própria. O risco residual (imagem de
+manual rascunho acessível por URL direta) fica para o 3c/13, que cria a tabela
+`manuais_imagens`.
+
+---
+
 ## `functions/instagram/` — proxy do Instagram (Bloco 10)
 
 Arquivo: `functions/instagram/index.ts`.
@@ -301,17 +346,24 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
 7. `migrations/0005_rbac_papel.sql`
 8. `migrations/0006_rls_papeis.sql`
 9. `migrations/0007_fn_grants.sql`
-10. `tests/00b_seed_dados.sql` — papel `servidor`, os 3 buckets e 1 published
+10. `migrations/0008_storage_policies_assinatura.sql` — policies da URL assinada
+11. `tests/00b_seed_dados.sql` — papel `servidor`, os 3 buckets e 1 published
     + 1 draft em cada uma das 14 coleções
-11. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
+12. `migrations/0009_storage_buckets_privados.sql` — **depois** da `00b`, que
+    cria os buckets; deixa `arquivos` e `funcionarios` privados
+13. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
 
 **Pré-requisito da `0002`:** ela revoga EXECUTE de `public.rls_auto_enable()`,
 que existe em produção mas não em projeto novo. Crie a função com a definição
 de produção antes de aplicar a `0002`; caso contrário a migration falha com
 `42883` e é revertida por inteiro.
 
-O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 8 migrations
-foram aplicadas e o T6.5 fechou verde: **232 casos, 0 falhas**.
+O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 10
+migrations foram aplicadas; `arquivos-smader` e `funcionarios-fotos-smader`
+estão **privados** e o T6.5 fechou verde: **232 casos, 0 falhas**. A policy de
+assinatura foi provada no teste: `anon` lista/sinaliza só o publicado;
+`servidor` vê published + draft. Produção já tem a `0008`; falta o deploy do
+código novo e a `0009`.
 
 Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte
 `db.js` para o projeto de teste em uma cópia local. O T6.5 em si não precisa de

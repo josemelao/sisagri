@@ -118,3 +118,63 @@ test('script.js carrega sem tocar no DOM real e expoe os handlers globais', () =
   assert.equal(typeof h.window.DB, 'object');
   assert.equal(typeof h.window.dbInit, 'function');
 });
+
+/* ==========================================================================
+   getArquivoLinkMeta — download com URL assinada (Bloco 3b parte 2)
+   ========================================================================== */
+
+test('getArquivoLinkMeta: url_assinada tem prioridade sobre url legada', () => {
+  const h = carregarApp();
+  const meta = h.get('getArquivoLinkMeta')({
+    nome: 'A',
+    storage_path: 'a/p.pdf',
+    storage_bucket: 'arquivos-smader',
+    url: 'https://old.example/public',
+    url_assinada: 'https://signed.example/token',
+  });
+
+  assert.equal(meta.href, 'https://signed.example/token');
+  assert.equal(meta.isDownload, true);
+  assert.match(meta.attrs, /data-storage-path="a\/p\.pdf"/);
+  assert.match(meta.attrs, /baixarArquivoStorage/);
+});
+
+test('getArquivoLinkMeta: path sem URL assinada ainda gera link de download', () => {
+  const h = carregarApp();
+  const meta = h.get('getArquivoLinkMeta')({
+    nome: 'A',
+    storage_path: 'a/p.pdf',
+    storage_bucket: 'arquivos-smader',
+    url: '',
+  });
+
+  assert.equal(meta.href, '#');
+  assert.equal(meta.isDownload, true);
+  assert.match(meta.attrs, /data-storage-path="a\/p\.pdf"/);
+});
+
+test('getArquivoLinkMeta: arquivo_data local continua tendo prioridade', () => {
+  const h = carregarApp();
+  const meta = h.get('getArquivoLinkMeta')({
+    nome: 'A',
+    arquivo_data: 'data:text/plain;base64,abc',
+    url_assinada: 'https://signed.example/token',
+  });
+
+  assert.equal(meta.href, 'data:text/plain;base64,abc');
+  assert.equal(meta.isDownload, true);
+  assert.match(meta.attrs, /data-baixar-href="data:text\/plain;base64,abc"/);
+});
+
+test('getArquivoLinkMeta: URL externa sem path abre em nova aba', () => {
+  const h = carregarApp();
+  const meta = h.get('getArquivoLinkMeta')({
+    nome: 'A',
+    url: 'https://example.com/doc',
+  });
+
+  assert.equal(meta.href, 'https://example.com/doc');
+  assert.equal(meta.isDownload, false);
+  assert.equal(meta.isExternal, true);
+  assert.doesNotMatch(meta.attrs, /baixarArquivoStorage/);
+});

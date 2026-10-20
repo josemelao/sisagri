@@ -60,6 +60,59 @@ function _getStoragePublicUrl(path, bucket = STORAGE_CONFIG.ARQUIVOS_BUCKET) {
   return data?.publicUrl || '';
 }
 
+/* ============================================================
+   URL assinada (Bloco 3b parte 2)
+   ------------------------------------------------------------
+   Cache SOMENTE em memoria. URL assinada nunca vai para _db,
+   localStorage ou dados.js: ela expira e viraria lixo persistido.
+   ============================================================ */
+const SIGNED_URL_TTL = 3600;
+const SIGNED_URL_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+const _signedUrlCache = new Map();
+
+function _signedUrlCacheKey(bucket, path) {
+  return `${bucket}/${path}`;
+}
+
+function _getCachedSignedUrl(bucket, path) {
+  if (!bucket || !path) return '';
+  const item = _signedUrlCache.get(_signedUrlCacheKey(bucket, path));
+  if (!item) return '';
+  if (item.expiresAt - Date.now() <= SIGNED_URL_REFRESH_MARGIN_MS) return '';
+  return item.url;
+}
+
+function _storeSignedUrl(bucket, path, url, expiresIn) {
+  if (!bucket || !path || !url) return;
+  _signedUrlCache.set(_signedUrlCacheKey(bucket, path), {
+    url,
+    expiresAt: Date.now() + (Number(expiresIn) || SIGNED_URL_TTL) * 1000,
+  });
+}
+
+function _absoluteSignedUrl(url) {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = (_sb && _sb.supabaseUrl) || DB_CONFIG.SUPABASE_URL || '';
+  if (!base) return url;
+  return `${String(base).replace(/\/+$/, '')}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function _decorateRuntimeUrls(colecao, item) {
+  if (!item || typeof item !== 'object') return item;
+  if (colecao === 'funcionarios' && item.foto_storage_path) {
+    const bucket = item.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET;
+    const url = _getCachedSignedUrl(bucket, item.foto_storage_path);
+    if (url) item.foto_url = url;
+  }
+  if (colecao === 'arquivos' && item.storage_path) {
+    const bucket = item.storage_bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET;
+    const url = _getCachedSignedUrl(bucket, item.storage_path);
+    if (url) item.url_assinada = url;
+  }
+  return item;
+}
+
 function _ensureAppConfig() {
   if (!_db || typeof _db !== 'object') _db = {};
   if (!_db.layoutConfig || typeof _db.layoutConfig !== 'object' || Array.isArray(_db.layoutConfig)) {
@@ -291,7 +344,7 @@ function _normalizeSupabaseRow(colecao, row) {
         ...row,
         setor: row.setor || row.lotacao || '',
         lotacao: row.lotacao || row.setor || '',
-        foto: row.foto || _getStoragePublicUrl(row.foto_storage_path, row.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET) || '',
+        foto: row.foto || '',
         foto_storage_path: row.foto_storage_path || '',
         foto_storage_bucket: row.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET,
       };
@@ -357,7 +410,7 @@ function _normalizeSupabaseRow(colecao, row) {
       return {
         ...row,
         tags: Array.isArray(row.tags) ? row.tags : [],
-        url: row.url || _getStoragePublicUrl(row.storage_path, row.storage_bucket) || '',
+        url: row.url || '',
         arquivo_data: row.arquivo_data || '',
         arquivo_nome: row.arquivo_nome || '',
         storage_path: row.storage_path || '',
@@ -691,6 +744,13 @@ async function _initSupabase() {
       _ensureAppConfig();
       _persistLocalAppConfig();
     }
+    // Buckets privados: assina em memoria o que a sessao pode ler. Se falhar,
+    // o app cai no fallback legado (foto/url) ou no placeholder; nunca quebra o boot.
+    try {
+      await DB.resolveStorageUrls();
+    } catch (e) {
+      console.warn('[DB] Falha ao assinar URLs do Storage:', e);
+    }
     _persistLocal();
     _setDbStatus({
       provider: 'supabase',
@@ -721,13 +781,94 @@ const DB = {
   /** Retorna uma cópia de uma coleção */
   get(colecao) {
     if (!_db || !_db[colecao]) return [];
-    return JSON.parse(JSON.stringify(_normalizeCollectionData(colecao, _db[colecao])));
+    const lista = JSON.parse(JSON.stringify(_normalizeCollectionData(colecao, _db[colecao])));
+    return lista.map(item => _decorateRuntimeUrls(colecao, item));
   },
 
   /** Retorna um registro pelo id */
   getById(colecao, id) {
     const lista = DB.get(colecao);
     return lista.find(r => r.id === id) || null;
+  },
+
+  /** Cria (ou reutiliza do cache) uma URL assinada de um objeto do Storage. */
+  async createSignedUrl(bucket, path, expiresIn = SIGNED_URL_TTL) {
+    if (!_sb || !bucket || !path) return '';
+    const cached = _getCachedSignedUrl(bucket, path);
+    if (cached) return cached;
+    try {
+      const { data, error } = await _sb.storage.from(bucket).createSignedUrl(path, expiresIn);
+      if (error || !data?.signedUrl) return '';
+      const url = _absoluteSignedUrl(data.signedUrl);
+      _storeSignedUrl(bucket, path, url, expiresIn);
+      return url;
+    } catch (erro) {
+      console.warn('[DB] Falha ao assinar URL do Storage:', erro);
+      return '';
+    }
+  },
+
+  /** Cria URLs assinadas em lote (ate 100 por chamada). */
+  async createSignedUrls(bucket, paths, expiresIn = SIGNED_URL_TTL) {
+    const resultado = {};
+    if (!_sb || !bucket || !Array.isArray(paths)) return resultado;
+
+    const unicos = [...new Set(paths.filter(Boolean))];
+    const faltando = [];
+    unicos.forEach((path) => {
+      const cached = _getCachedSignedUrl(bucket, path);
+      if (cached) resultado[path] = cached;
+      else faltando.push(path);
+    });
+
+    try {
+      for (let i = 0; i < faltando.length; i += 100) {
+        const lote = faltando.slice(i, i + 100);
+        const { data, error } = await _sb.storage.from(bucket).createSignedUrls(lote, expiresIn);
+        if (error || !Array.isArray(data)) continue;
+        data.forEach((item) => {
+          if (!item?.path || !item?.signedUrl) return;
+          const url = _absoluteSignedUrl(item.signedUrl);
+          _storeSignedUrl(bucket, item.path, url, expiresIn);
+          resultado[item.path] = url;
+        });
+      }
+    } catch (erro) {
+      console.warn('[DB] Falha ao assinar URLs do Storage em lote:', erro);
+    }
+
+    return resultado;
+  },
+
+  /**
+   * Preenche o cache de URLs assinadas para as colecoes com Storage.
+   * Sem `colecao`, resolve funcionarios e arquivos.
+   */
+  async resolveStorageUrls(colecao) {
+    if (!_sb || !_db) return;
+    const colecoes = colecao ? [colecao] : ['funcionarios', 'arquivos'];
+
+    await Promise.all(colecoes.map(async (nome) => {
+      const lista = Array.isArray(_db[nome]) ? _db[nome] : [];
+      const porBucket = new Map();
+
+      lista.forEach((registro) => {
+        if (!registro) return;
+        const path = nome === 'funcionarios'
+          ? registro.foto_storage_path
+          : registro.storage_path;
+        if (!path) return;
+        const bucket = nome === 'funcionarios'
+          ? (registro.foto_storage_bucket || STORAGE_CONFIG.FUNCIONARIOS_FOTOS_BUCKET)
+          : (registro.storage_bucket || STORAGE_CONFIG.ARQUIVOS_BUCKET);
+        if (!porBucket.has(bucket)) porBucket.set(bucket, []);
+        porBucket.get(bucket).push(path);
+      });
+
+      await Promise.all(
+        [...porBucket.entries()].map(([bucket, paths]) => DB.createSignedUrls(bucket, paths))
+      );
+    }));
   },
 
   /** Insere um novo registro (gera id automático) */
@@ -894,7 +1035,7 @@ const DB = {
     });
     if (error) throw error;
     return {
-      url: _getStoragePublicUrl(path, bucket),
+      url: '',
       storage_path: path,
       storage_bucket: bucket,
       arquivo_nome: file.name || 'arquivo',
@@ -929,7 +1070,7 @@ const DB = {
     });
     if (error) throw error;
     return {
-      url: _getStoragePublicUrl(path, bucket),
+      url: '',
       storage_path: path,
       storage_bucket: bucket,
     };

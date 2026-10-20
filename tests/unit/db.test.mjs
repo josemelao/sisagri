@@ -169,6 +169,147 @@ test('DB.get: normaliza "draft" ao ler, sem perder o valor', async () => {
 });
 
 /* ==========================================================================
+   URL assinada do Storage (Bloco 3b parte 2)
+   ========================================================================== */
+
+function clienteStorageFake(opcoes = {}) {
+  const chamadas = [];
+  const cliente = {
+    storage: {
+      from: (bucket) => ({
+        getPublicUrl: (path) => ({
+          data: { publicUrl: `https://fake.supabase.co/storage/v1/object/public/${bucket}/${path}` },
+        }),
+        createSignedUrl: async (path, expiresIn) => {
+          chamadas.push({ tipo: 'um', bucket, path, expiresIn });
+          if (opcoes.erro) return { data: null, error: { message: 'negado' } };
+          return {
+            data: { signedUrl: `https://fake.supabase.co/storage/v1/object/sign/${bucket}/${path}?token=abc` },
+            error: null,
+          };
+        },
+        createSignedUrls: async (paths, expiresIn) => {
+          chamadas.push({ tipo: 'varios', bucket, paths: [...paths], expiresIn });
+          if (opcoes.erro) return { data: null, error: { message: 'negado' } };
+          return {
+            data: paths.map((path) => ({
+              path,
+              signedUrl: `https://fake.supabase.co/storage/v1/object/sign/${bucket}/${path}?token=abc`,
+              error: null,
+            })),
+            error: null,
+          };
+        },
+      }),
+    },
+  };
+  return { cliente, chamadas };
+}
+
+function dbComStorage(cliente) {
+  const h = carregarDb({ cliente });
+  h.run('_sb = window.__clienteFake');
+  return h;
+}
+
+test('DB.createSignedUrl: assina e reutiliza o cache', async () => {
+  const { cliente, chamadas } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  const url1 = await DB.createSignedUrl('arquivos-smader', 'a/b.pdf', 3600);
+  const url2 = await DB.createSignedUrl('arquivos-smader', 'a/b.pdf', 3600);
+
+  assert.match(url1, /a\/b\.pdf/);
+  assert.equal(url2, url1);
+  assert.equal(chamadas.length, 1, 'a segunda chamada deveria vir do cache');
+});
+
+test('DB.createSignedUrl: sem bucket/path devolve vazio', async () => {
+  const { cliente } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  assert.equal(await DB.createSignedUrl('', 'a/b.pdf'), '');
+  assert.equal(await DB.createSignedUrl('arquivos-smader', ''), '');
+});
+
+test('DB.createSignedUrl: erro da Storage vira string vazia (fail-closed)', async () => {
+  const { cliente } = clienteStorageFake({ erro: true });
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  assert.equal(await DB.createSignedUrl('arquivos-smader', 'a/b.pdf'), '');
+});
+
+test('DB.createSignedUrls: assina em lote e ignora paths vazios', async () => {
+  const { cliente, chamadas } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  const out = await DB.createSignedUrls('funcionarios-fotos-smader', ['x.jpg', '', 'y.jpg']);
+
+  assert.match(out['x.jpg'], /x\.jpg/);
+  assert.match(out['y.jpg'], /y\.jpg/);
+  assert.equal(chamadas.length, 1);
+  assert.equal(chamadas[0].paths.length, 2);
+});
+
+test('_normalizeSupabaseRow: nao gera mais URL publica a partir do path', () => {
+  const { cliente } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const func = h.get('_normalizeSupabaseRow')('funcionarios', {
+    id: 1,
+    foto_storage_path: 'funcionarios/x.jpg',
+    foto_storage_bucket: 'funcionarios-fotos-smader',
+  });
+  const arq = h.get('_normalizeSupabaseRow')('arquivos', {
+    id: 1,
+    storage_path: 'arquivos/x.pdf',
+    storage_bucket: 'arquivos-smader',
+  });
+
+  assert.equal(func.foto, '');
+  assert.equal(arq.url, '');
+});
+
+test('DB.resolveStorageUrls + DB.get: injeta foto_url sem persistir', async () => {
+  const { cliente } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  h.run(`_db = { funcionarios: [
+    { id: 1, nome: 'Publicado', publish_status: 'published', foto_storage_path: 'f/1.jpg', foto_storage_bucket: 'funcionarios-fotos-smader' }
+  ] }`);
+
+  await DB.resolveStorageUrls('funcionarios');
+  const lista = DB.get('funcionarios');
+
+  assert.match(lista[0].foto_url, /f\/1\.jpg/);
+  assert.equal(h.run('_db.funcionarios[0].foto_url'), undefined, 'a URL assinada nao pode ir para _db');
+
+  h.run('_persistLocal()');
+  const salvo = h.localStorage.getItem('smader_db_v1') || '';
+  assert.ok(!salvo.includes('foto_url'), 'a URL assinada nao pode ir para o localStorage');
+});
+
+test('DB.resolveStorageUrls + DB.get: injeta url_assinada em arquivos', async () => {
+  const { cliente } = clienteStorageFake();
+  const h = dbComStorage(cliente);
+  const DB = h.get('DB');
+
+  h.run(`_db = { arquivos: [
+    { id: 1, nome: 'A', publish_status: 'published', storage_path: 'a/p.pdf', storage_bucket: 'arquivos-smader' }
+  ] }`);
+
+  await DB.resolveStorageUrls('arquivos');
+  const lista = DB.get('arquivos');
+
+  assert.match(lista[0].url_assinada, /a\/p\.pdf/);
+  assert.equal(h.run('_db.arquivos[0].url_assinada'), undefined);
+});
+
+/* ==========================================================================
    dbInit / modo local
    ========================================================================== */
 

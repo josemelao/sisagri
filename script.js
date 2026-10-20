@@ -85,16 +85,43 @@ async function baixarArquivo(url, nomeArquivo = "arquivo") {
   }
 }
 
+/**
+ * Download de arquivo do Storage: renova a URL assinada no clique (o cache do
+ * DB devolve a mesma enquanto ela ainda vale) e cai para o href atual se falhar.
+ */
+async function baixarArquivoStorage(el) {
+  let href = el.dataset.baixarHref || "";
+  const bucket = el.dataset.storageBucket || "";
+  const path = el.dataset.storagePath || "";
+  const nome = el.dataset.baixarNome || "arquivo";
+
+  if (path && !href.startsWith("data:")) {
+    const assinada = await DB.createSignedUrl(bucket, path);
+    if (assinada) href = assinada;
+  }
+
+  if (!href || href === "#") {
+    console.warn("[Arquivos] Não foi possível obter a URL do arquivo.", { bucket, path });
+    return;
+  }
+
+  await baixarArquivo(href, nome);
+}
+
 function getArquivoLinkMeta(arquivo) {
   if (!arquivo) return { href: "", attrs: "", isDownload: false, isExternal: false };
-  const href = arquivo.arquivo_data || arquivo.url || "";
-  if (!href) return { href: "", attrs: "", isDownload: false, isExternal: false };
-  const isDownload = !!(arquivo.arquivo_data || arquivo.storage_path);
+  const storageBucket = arquivo.storage_bucket || "arquivos-smader";
+  const storagePath = arquivo.storage_path || "";
+  const href = arquivo.arquivo_data || arquivo.url_assinada || arquivo.url || "";
+  const isDownload = !!(arquivo.arquivo_data || storagePath);
+  if (!href && !(storagePath && isDownload)) {
+    return { href: "", attrs: "", isDownload: false, isExternal: false };
+  }
   const nomeArquivo = arquivo.arquivo_nome || arquivo.nome || "arquivo";
   return {
-    href,
+    href: href || "#",
     attrs: isDownload
-      ? `download="${escapeAttr(nomeArquivo)}" data-baixar-href="${escapeAttr(href)}" data-baixar-nome="${escapeAttr(nomeArquivo)}" onclick="baixarArquivo(this.dataset.baixarHref, this.dataset.baixarNome); return false;"`
+      ? `download="${escapeAttr(nomeArquivo)}" data-baixar-href="${escapeAttr(href)}" data-baixar-nome="${escapeAttr(nomeArquivo)}" data-storage-bucket="${escapeAttr(storageBucket)}" data-storage-path="${escapeAttr(storagePath)}" onclick="baixarArquivoStorage(this); return false;"`
       : 'target="_blank" rel="noopener"',
     isDownload,
     isExternal: !isDownload,
@@ -449,8 +476,9 @@ function renderFerias() {
       <div class="ferias-item${emCurso ? " ferias-item--ativo" : ""}">
         ${(() => {
           const func = getPublishedFuncionarioById(f.funcionario_id);
-          return func && func.foto
-            ? `<img src="${escapeAttr(urlSegura(func.foto))}" class="ferias-avatar ferias-avatar--foto" alt="${escapeAttr(f.nome)}" />`
+          const foto = func ? (func.foto_url || func.foto) : "";
+          return foto
+            ? `<img src="${escapeAttr(urlSegura(foto))}" class="ferias-avatar ferias-avatar--foto" alt="${escapeAttr(f.nome)}" />`
             : `<div class="ferias-avatar">${escapeHtml(getInitials(f.nome))}</div>`;
         })()}
         <div class="ferias-info">
@@ -961,8 +989,9 @@ function openFuncionario(id) {
   const f = getPublishedFuncionarioById(id);
   if (!f) return;
 
-  const avatarHTML = f.foto
-    ? `<img src="${escapeAttr(urlSegura(f.foto))}" class="detail-avatar-large detail-avatar-foto" alt="${escapeAttr(f.nome)}" />`
+  const foto = f.foto_url || f.foto;
+  const avatarHTML = foto
+    ? `<img src="${escapeAttr(urlSegura(foto))}" class="detail-avatar-large detail-avatar-foto" alt="${escapeAttr(f.nome)}" />`
     : `<div class="detail-avatar-large">${escapeHtml(getInitials(f.nome))}</div>`;
   const lotacao = f.lotacao || f.setor || "";
   const camposInfo = [
@@ -1041,8 +1070,9 @@ function renderFuncionarios(lista) {
 
   animateGridReflow(container, () => {
     container.innerHTML = lista.map(f => {
-      const avatarHTML = f.foto
-        ? `<img src="${escapeAttr(urlSegura(f.foto))}" class="list-card-avatar func-foto" alt="${escapeAttr(f.nome)}" />`
+      const foto = f.foto_url || f.foto;
+      const avatarHTML = foto
+        ? `<img src="${escapeAttr(urlSegura(foto))}" class="list-card-avatar func-foto" alt="${escapeAttr(f.nome)}" />`
         : `<div class="list-card-avatar">${escapeHtml(getInitials(f.nome))}</div>`;
       const lotacao = f.lotacao || f.setor || f.departamento || "";
       return `

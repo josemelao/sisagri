@@ -42,10 +42,25 @@ Fechado nesta sessao:
     "available on Pro Plans and up"). ACEITO pelo dono em 2026-10-20; o aviso
     auth_leaked_password_protection fica como esperado. Reavaliar so se o
     projeto subir de plano.
+  - Bloco 3b parte 2 implementado e validado NO TESTE (2026-10-20):
+    - migrations 0008 (2 SELECT de Storage para publicado) e 0009 (bucket
+      privado em arquivos e funcionarios); manuais segue publico nesta fase;
+    - db.js: DB.createSignedUrl/createSignedUrls/resolveStorageUrls, cache so
+      em memoria (1h, margem 5min), foto_url/url_assinada injetados em DB.get;
+    - script.js: 4 pontos de foto + download assinado; admin.js: preview e
+      re-assinatura depois de salvar; uploads novos gravam foto/url vazios;
+    - testes: 93 testes (11 novos), T6.5 232/232; policy provada no teste:
+      anon so ve objeto publicado, servidor ve published + draft;
+    - 0008 JA APLICADA em producao em 2026-10-20 (aditiva; buckets seguem
+      publicos). Assinatura real validada com a anon key: arquivo e foto
+      publicados sign 200/download 200; path sem registro 400.
+      Falta: deploy do codigo -> validar no site -> 0009.
 
 Medido no fim da sessao:
-  82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
+  93 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
   check-draft-leak 15/15 | guard 29/11/0 | T6.5 232/232
+  0008 aplicada em producao (aditiva); 0009 so no teste | buckets de producao
+  ainda publicos
   nada enviado ao remoto
 
 PROXIMA ACAO (nesta ordem):
@@ -55,9 +70,10 @@ PROXIMA ACAO (nesta ordem):
   2. [FEITO 2026-10-20] Teste humano do login do ADMIN validado: abre,
      mostra o rascunho processos.id=4 e o site publico nao o exibe.
   3. [FEITO 2026-10-20] T6.5 no projeto de teste: 232 casos, 0 falhas.
-     Proximo bloqueante: Bloco 3b parte 2 (bucket privado + URL assinada),
-     agora que existe projeto de teste para ensaiar.
-  4. Pendencias menores, sem urgencia:
+  4. [FEITO NO TESTE 2026-10-20] Bloco 3b parte 2: 0008/0009 + codigo de URL
+     assinada. Bloqueante agora: deploy do codigo em producao. So depois:
+     aplicar 0008 (policy) antes e 0009 (bucket privado) por ultimo.
+  5. Pendencias menores, sem urgencia:
      - info_municipio id=3 com href sem https:// (corrigir no painel)
      - deploy da function do Instagram + rotacao do token (dono)
      - mascaramento de cpf/telefone/email/placa para anon (exige view/colunas)
@@ -175,23 +191,33 @@ Proxima acao sugerida:
      publico ve, entao a saida precisa estar segura antes.
 
 =========================================================================
-PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
+PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO NO TESTE; producao pendente)
 =========================================================================
 
-  Os 3 buckets continuam public = true. URL publica NAO consulta policy, entao
-  todo upload novo em rascunho nasce publico. Isso e o achado N5.
+  Estado em 2026-10-20:
+    - codigo pronto e testado (93 testes, T6.5 232/232);
+    - 0008 e 0009 aplicadas no projeto de teste zoywmvuswyosehlddmma;
+    - arquivos-smader e funcionarios-fotos-smader privados NO TESTE;
+    - 0008 aplicada em PRODUCAO (aditiva, versao 20261020151915); buckets de
+      producao ainda public = true; 0009 NAO aplicada em producao;
+    - assinatura real em producao validada com a anon key: arquivo e foto
+      publicados sign 200/download 200; path sem registro 400.
+  Achado N5 explicado: URL publica NAO consulta policy, entao upload em
+  rascunho nascia publico.
 
-  Desenho recomendado (viabilidade ja conferida):
-    - bucket privado;
-    - policy em storage.objects consultando publish_status por join
-      (arquivos.storage_path e funcionarios.foto_storage_path existem);
-    - site publico por URL assinada.
-  Manuais: cada passo tem imagem_storage_bucket/image_storage_path em campo
-  proprio (auditoria 2026-10-19: 60/60 passos com imagem) -> da para usar a
-  mesma regra das outras colecoes, sem convencao de caminho.
+  Ordem obrigatoria em producao (sem janela quebrada):
+    1. [FEITO 2026-10-20] aplicar 0008_storage_policies_assinatura.sql
+       (aditiva; bucket segue publico; createSignedUrl exige SELECT mesmo em
+       bucket publico);
+    2. deploy do codigo (db.js/script.js/admin.js) que usa URL assinada;
+    3. validar foto e download no site real;
+    4. aplicar 0009_storage_buckets_privados.sql (public = false).
+  Rollback da 0009: update storage.buckets set public = true where id in
+  ('arquivos-smader','funcionarios-fotos-smader').
 
-  Precisa de projeto Supabase de TESTE antes, porque mexe em script.js e nas
-  URLs ja gravadas no banco.
+  Manuais: continua publico nesta fase (imagens dentro de manuais.passos, sem
+  coluna de vinculo). A tabela manuais_imagens fica para o 3c/13; o risco
+  residual esta registrado no design.
 
 PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   2026-10-20: rls_policy_always_true sumiu (42 avisos). Os 3 avisos
@@ -199,16 +225,19 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   Restam 3 de authenticated_security_definer_function_executable
   (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
   e o painel chamam essas funcoes; sem definer a RLS quebraria.
-  O aviso de bucket publico com listagem continua valido ate o 3b parte 2.
+  No teste os 2 buckets ja estao privados; em producao o aviso de bucket
+  publico com listagem continua ate a 0009. manuais segue publico por desenho
+  nesta fase.
   Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
   Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 
 PENDENTE 3 — projeto Supabase de TESTE
   CRIADO em 2026-10-20: zoywmvuswyosehlddmma. MCP `supabase-teste` conectado.
-  8 migrations aplicadas; tests/06_matriz_rbac.sql verde (232 casos, 0 falhas).
-  Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002) e
-  tests/00b_seed_dados.sql (depois da 0007); detalhes em supabase/README.md.
-  Usar para ensaiar o 3b parte 2 e o rollback.
+  10 migrations aplicadas (0008/0009 inclusive); arquivos e funcionarios ja
+  privados; tests/06_matriz_rbac.sql verde (232 casos, 0 falhas).
+  Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002), tests/00b_seed_dados.sql
+  (depois da 0007) e 0008 antes / 0009 depois da 00b; detalhes em supabase/README.md.
+  3b parte 2 ensaiado; usar para rollback e para o 3c.
   Rollback atual = aplicar 0001_baseline_policies.sql (73 policies de public +
   12 de storage) e devolver:
   grant execute on function public.rls_auto_enable() to public, anon, authenticated;

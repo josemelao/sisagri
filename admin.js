@@ -1352,8 +1352,9 @@ function renderFuncionarios() {
 let funcionarioFotoUploadPendente = null;
 function formFuncionario(f = {}) {
   funcionarioFotoUploadPendente = null;
-  const fotoPreview = f.foto
-    ? `<img src="${escHtml(f.foto)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:8px" />`
+  const foto = f.foto_url || f.foto;
+  const fotoPreview = foto
+    ? `<img src="${escHtml(foto)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:8px" />`
     : `<div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.8rem;margin-bottom:8px"><i class="ph-bold ph-user"></i></div>`;
 
   return `
@@ -1371,7 +1372,7 @@ function formFuncionario(f = {}) {
           <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('f-foto-file').click()">
             <i class="ph-bold ph-upload-simple"></i> Escolher foto
           </button>
-          ${f.foto ? `<button type="button" class="btn btn-danger btn-sm" onclick="removerFoto()"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
+          ${foto ? `<button type="button" class="btn btn-danger btn-sm" onclick="removerFoto()"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
         </div>
         <span class="form-hint">JPG, PNG ou WebP. Recomendado: até 500kb.</span>
       </div>
@@ -1470,6 +1471,7 @@ async function salvarFuncionario(id) {
     });
   }
   funcionarioFotoUploadPendente = null;
+  await DB.resolveStorageUrls('funcionarios').catch(() => {});
   fecharModal();
   toast('Funcionário salvo com sucesso.');
   renderFuncionarios();
@@ -2154,6 +2156,7 @@ async function salvarArquivo(id) {
     });
   }
   arquivoUploadPendente = null;
+  await DB.resolveStorageUrls('arquivos').catch(() => {});
   fecharModal(); toast('Arquivo salvo.'); renderArquivos();
 }
 
