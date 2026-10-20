@@ -408,8 +408,10 @@ function executarDelecao(colecao, id) {
   renderOverview();
 }
 
+/* Escape unico, definido em `js/core/utils.js` (carregado antes de db.js).
+   A versao antiga nao escapava apostrofo e zerava 0/false. */
 function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return window.SisUtils.escapeHtml(str);
 }
 
 const ARQUIVOS_LIST_STATE = {

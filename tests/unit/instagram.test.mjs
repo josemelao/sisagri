@@ -18,7 +18,7 @@ function carregar(opcoes = {}) {
       return { ok: true, status: 200, json: async () => ({ data: [] }) };
     });
 
-  const h = carregarScripts(['db.js', 'script.js'], {
+  const h = carregarScripts(['js/core/utils.js', 'db.js', 'script.js'], {
     supabase: false,
     fetch: fetchFalso,
     elementos: { 'ig-grid': criarElemento('div') },

@@ -5,11 +5,12 @@
   "description": "SisAgri / SMADER - frontend vanilla (HTML + CSS + JS) com Supabase e fallback local. Este package.json existe apenas para ferramentas de qualidade; o app nao e compilado.",
   "scripts": {
     "serve": "node scripts/serve.mjs",
-    "syntax": "node --check db.js && node --check script.js && node --check admin.js && node --check dados.js",
+    "syntax": "node --check js/core/utils.js && node --check db.js && node --check script.js && node --check admin.js && node --check dados.js",
     "lint": "eslint .",
     "test": "node --test \"tests/unit/**/*.test.mjs\"",
+    "guard": "node scripts/check-innerhtml.mjs",
     "test:e2e": "playwright test",
-    "check": "npm run syntax && npm run lint && npm test"
+    "check": "npm run syntax && npm run lint && npm run guard && npm test"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

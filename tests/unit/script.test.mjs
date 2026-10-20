@@ -11,8 +11,8 @@ import assert from 'node:assert/strict';
 import { carregarScripts } from '../helpers/load-script.mjs';
 
 function carregarApp() {
-  // db.js primeiro: script.js consome o global DB.
-  return carregarScripts(['db.js', 'script.js'], { supabase: false });
+  // utils primeiro (escapeHtml), depois db.js (script.js consome o global DB).
+  return carregarScripts(['js/core/utils.js', 'db.js', 'script.js'], { supabase: false });
 }
 
 /* ==========================================================================
@@ -33,24 +33,24 @@ test('escapeHtml: o & e escapado antes, sem dupla escapada nos outros', () => {
   assert.equal(escapeHtml('&lt;'), '&amp;lt;');
 });
 
-test('DIVERGENCIA CONHECIDA: escapeHtml NAO escapa aspas', () => {
-  // Risco de injecao quando o valor cai dentro de um atributo HTML.
-  // Hoje todos os usos observados sao em conteudo de texto, entao nao explora.
-  // NAO corrigido neste bloco (T4 proibe mexer no app). Decisao pendente.
+test('escapeHtml: escapa aspas (corrigido no Bloco 9a)', () => {
+  // Antes a versao de script.js deixava aspas passarem, o que permitia
+  // quebrar atributo HTML. Agora usa a implementacao unica de SisUtils.
   const h = carregarApp();
   const escapeHtml = h.get('escapeHtml');
-  assert.equal(escapeHtml('"duplas"'), '"duplas"');
-  assert.equal(escapeHtml("'simples'"), "'simples'");
+  assert.equal(escapeHtml('"duplas"'), '&quot;duplas&quot;');
+  assert.equal(escapeHtml("'simples'"), '&#39;simples&#39;');
 });
 
-test('DIVERGENCIA CONHECIDA: escapeHtml lanca em valor nao-string', () => {
-  // `str.replace` direto: null/undefined/number explodem em vez de virar ''.
-  // Assercao por mensagem (nao por TypeError) porque o erro vem do realm do vm.
+test('escapeHtml: valor nulo/vazio nao lanca (corrigido no Bloco 9a)', () => {
+  // Antes `str.replace` direto explodia em null/undefined e zerava 0/false.
   const h = carregarApp();
   const escapeHtml = h.get('escapeHtml');
-  assert.throws(() => escapeHtml(null), /replace/);
-  assert.throws(() => escapeHtml(undefined), /replace/);
-  assert.throws(() => escapeHtml(42), /replace/);
+  assert.equal(escapeHtml(null), '');
+  assert.equal(escapeHtml(undefined), '');
+  assert.equal(escapeHtml(0), '0');
+  assert.equal(escapeHtml(false), 'false');
+  assert.equal(escapeHtml(42), '42');
 });
 
 /* ==========================================================================

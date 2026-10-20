@@ -768,11 +768,9 @@ function getInstagramProxyUrl() {
   return base ? base.replace(/\/+$/, "") + IG_FUNCTION_PATH : "";
 }
 
-/** Escapa valor para dentro de atributo HTML (aspas incluídas). */
+/** Escapa valor para dentro de atributo HTML (mesma regra de `escapeHtml`). */
 function escapeAttr(valor) {
-  return escapeHtml(String(valor == null ? "" : valor))
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return window.SisUtils.escapeAttr(valor);
 }
 
 function initInstagram() {
@@ -2614,8 +2612,10 @@ function highlightMatch(text, query) {
     + escapeHtml(text.slice(idx + query.length));
 }
 
+/* Escape unico, definido em `js/core/utils.js` (carregado antes de db.js).
+   Nao reimplemente aqui: a versao antiga nao escapava aspas e quebrava em null. */
 function escapeHtml(str) {
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return window.SisUtils.escapeHtml(str);
 }
 
 /** Renderiza a lista de resultados no dropdown */
