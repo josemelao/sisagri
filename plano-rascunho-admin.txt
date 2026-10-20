@@ -56,12 +56,26 @@ Fechado nesta sessao:
       Validacao no site real: 15/15 fotos, sign/download 200, download
       "Modelo - Oficio.docx" sem falha, path sem registro negado; URL publica
       antiga 400 com cache-busting. manuais segue publico.
+  - Bloco 3c/13 (imagens de manuais) implementado e validado localmente
+    (2026-10-20). Commit e4bf509 em codex/fase2; NAO foi enviado/push.
+    - db.js/script.js/admin.js: imagem de manual usa URL assinada e mantem
+      `imagem` como fallback; upload novo nao gera mais URL publica.
+    - migration 0010 criada e aplicada SOMENTE no projeto de teste; a policy
+      foi provada com 0 falhas (anon so published; servidor/admin veem draft
+      e orfao; `passos` malformado nao quebra a policy).
+    - migration 0011 criada, NAO aplicada. Producao segue sem 0010 e com
+      `manuais-imagens-smader` publico.
+    - teste 07 novo no projeto de teste; as 60 imagens reais ainda NAO foram
+      validadas no navegador.
+    - pre-requisito de producao: o hotfix e7287e4 (preview de arquivos) ainda
+      esta local e precisa ser publicado antes ou junto do 3c/13.
 
 Medido no fim da sessao:
-  93 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
+  100 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
   check-draft-leak 15/15 | guard 29/11/0 | T6.5 232/232
   0008 e 0009 aplicadas em producao | buckets privados (manuais publico)
   deploy 3cc260e no ar e validado no site real
+  3c/13: commit local e4bf509 | 0010 so no teste | 0011 pendente
 
 PROXIMA ACAO (nesta ordem):
   1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
@@ -72,7 +86,10 @@ PROXIMA ACAO (nesta ordem):
   3. [FEITO 2026-10-20] T6.5 no projeto de teste: 232 casos, 0 falhas.
   4. [FEITO 2026-10-20] Bloco 3b parte 2: 0008/0009 + codigo de URL assinada
      aplicados em producao; deploy 3cc260e validado no site real.
-  5. Pendencias menores, sem urgencia:
+  5. Bloco 3c/13: commit local e4bf509 pronto; aguardando autorizacao para
+     push do hotfix e7287e4 + deploy, aplicar 0010 em producao, validar as 60
+     imagens e so depois aplicar 0011.
+  6. Pendencias menores, sem urgencia:
      - info_municipio id=3 com href sem https:// (corrigir no painel)
      - deploy da function do Instagram + rotacao do token (dono)
      - mascaramento de cpf/telefone/email/placa para anon (exige view/colunas)
