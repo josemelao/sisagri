@@ -25,6 +25,14 @@ Fechado nesta sessao:
     abre, mostra o rascunho processos.id=4 e o publico nao o exibe.
   - Fix do falso fallback no login (2026-10-20): reinit de dbInit nao anuncia
     mais status local antes de carregar. Commit 248977f.
+  - Migration 0007 (2026-10-20): revoga EXECUTE de anon nas funcoes de papel
+    (is_admin/pode_editar/meu_papel); authenticated mantem. Commit 6e7d37e.
+    Advisors: os 3 avisos anon sumiram; restam 3 de authenticated, que sao
+    intencionais (as policies precisam das funcoes).
+  - Fotos legadas migradas (2026-10-20): 12 funcionarios tinham foto base64
+    na coluna foto; o urlSegura do 9b bloqueia data:, e a imagem quebrava.
+    Subiram para funcionarios-fotos-smader pelo console do painel (dono).
+    Banco: 0 base64, 15/15 com URL e path; 12 URLs testadas 200. Sem codigo.
 
 Medido no fim da sessao:
   82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
@@ -44,6 +52,7 @@ PROXIMA ACAO (nesta ordem):
      - deploy da function do Instagram + rotacao do token (dono)
      - mascaramento de cpf/telefone/email/placa para anon (exige view/colunas)
      - promocao pelo painel (RPC security definer) - futuro
+     - ligar Leaked Password Protection no Auth (Dashboard)
 
 =========================================================================
 LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
@@ -97,6 +106,7 @@ Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261019221229  supabase/migrations/0004_storage_gate.sql
   20261020023304  supabase/migrations/0005_rbac_papel.sql
   20261020023320  supabase/migrations/0006_rls_papeis.sql
+  20261020130953  supabase/migrations/0007_fn_grants.sql
 
 Commits locais (codex/fase2, sem push):
   8b053d4  auditoria + suite de vazamento
@@ -124,6 +134,7 @@ Commits locais (codex/fase2, sem push):
   45bfbfa  fix(bloco 6): esconde exclusao/configuracoes do servidor pos-render
   06428fb  docs(bloco 6): conta servidor e fix de UI registrados
   248977f  fix(bloco 6): reinit do login nao anuncia fallback antes de carregar
+  6e7d37e  fix(bloco 6): revoga execute anonimo das funcoes de papel
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
@@ -174,9 +185,13 @@ PENDENTE 1 — Bloco 3b parte 2 (o mecanismo)
   URLs ja gravadas no banco.
 
 PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
-  verificar se os avisos rls_policy_always_true (42) e
-  anon/authenticated_security_definer_function_executable sumiram.
+  2026-10-20: rls_policy_always_true sumiu (42 avisos). Os 3 avisos
+  anon_security_definer_function_executable sumiram apos a 0007.
+  Restam 3 de authenticated_security_definer_function_executable
+  (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
+  e o painel chamam essas funcoes; sem definer a RLS quebraria.
   O aviso de bucket publico com listagem continua valido ate o 3b parte 2.
+  FALTA (dono): ligar Leaked Password Protection em Authentication.
 
 PENDENTE 3 — projeto Supabase de TESTE
   nao existe. Necessario para ensaiar 3b parte 2 e para exercitar rollback.
