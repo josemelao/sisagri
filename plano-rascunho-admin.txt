@@ -33,10 +33,20 @@ Fechado nesta sessao:
     na coluna foto; o urlSegura do 9b bloqueia data:, e a imagem quebrava.
     Subiram para funcionarios-fotos-smader pelo console do painel (dono).
     Banco: 0 base64, 15/15 com URL e path; 12 URLs testadas 200. Sem codigo.
+  - Projeto de teste criado em 2026-10-20: zoywmvuswyosehlddmma. MCP
+    `supabase-teste` conectado. 8 migrations aplicadas (0001 schema+policies,
+    0002 a 0007), contas de teste, 3 buckets e seed T6.5. Suite nova
+    tests/06_matriz_rbac.sql: 232 casos, 0 falhas (4 personas x 14 colecoes
+    x 4 acoes + admin_settings). Seed reproduzivel: tests/00a e 00b.
+  - Leaked Password Protection: BLOQUEADO pelo plano Free (toggle responde
+    "available on Pro Plans and up"). ACEITO pelo dono em 2026-10-20; o aviso
+    auth_leaked_password_protection fica como esperado. Reavaliar so se o
+    projeto subir de plano.
 
 Medido no fim da sessao:
   82 testes | 0 erros de lint (126 avisos) | e2e 8 passed / 2 skipped
-  check-draft-leak 15/15 | guard 29/11/0 | nada enviado ao remoto
+  check-draft-leak 15/15 | guard 29/11/0 | T6.5 232/232
+  nada enviado ao remoto
 
 PROXIMA ACAO (nesta ordem):
   1. [FEITO 2026-10-20] Conta `servidor` criada e promovida (ver acima).
@@ -44,9 +54,9 @@ PROXIMA ACAO (nesta ordem):
      Rebaixar = mesmo insert com 'admin'; remover = delete da linha.
   2. [FEITO 2026-10-20] Teste humano do login do ADMIN validado: abre,
      mostra o rascunho processos.id=4 e o site publico nao o exibe.
-  3. Decidir o T6.5: a suite 3 personas x 14 colecoes x 4 acoes exige projeto
-     Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2). Sem isso, so ha
-     prova por SQL (tests/05_rbac.sql), nao por persona real.
+  3. [FEITO 2026-10-20] T6.5 no projeto de teste: 232 casos, 0 falhas.
+     Proximo bloqueante: Bloco 3b parte 2 (bucket privado + URL assinada),
+     agora que existe projeto de teste para ensaiar.
   4. Pendencias menores, sem urgencia:
      - info_municipio id=3 com href sem https:// (corrigir no painel)
      - deploy da function do Instagram + rotacao do token (dono)
@@ -65,8 +75,7 @@ Plano vigente (substitui a v1):
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
      sanitizador de link) concluidos; falta 9c/9d (handlers inline, CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
-     conteudo + 9 de Storage). Falta: conta servidor real, suite T6.5 e
-     mascaramento de campos sensiveis.
+     conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
@@ -191,10 +200,15 @@ PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
   (is_admin/pode_editar/meu_papel): ACEITOS por desenho, porque as policies
   e o painel chamam essas funcoes; sem definer a RLS quebraria.
   O aviso de bucket publico com listagem continua valido ate o 3b parte 2.
-  FALTA (dono): ligar Leaked Password Protection em Authentication.
+  Leaked Password Protection: BLOQUEADO pelo plano Free ("available on Pro
+  Plans and up"). ACEITO pelo dono em 2026-10-20; reavaliar so se subir de plano.
 
 PENDENTE 3 — projeto Supabase de TESTE
-  nao existe. Necessario para ensaiar 3b parte 2 e para exercitar rollback.
+  CRIADO em 2026-10-20: zoywmvuswyosehlddmma. MCP `supabase-teste` conectado.
+  8 migrations aplicadas; tests/06_matriz_rbac.sql verde (232 casos, 0 falhas).
+  Setup reproduzivel: tests/00a_seed_auth.sql (antes da 0002) e
+  tests/00b_seed_dados.sql (depois da 0007); detalhes em supabase/README.md.
+  Usar para ensaiar o 3b parte 2 e o rollback.
   Rollback atual = aplicar 0001_baseline_policies.sql (73 policies de public +
   12 de storage) e devolver:
   grant execute on function public.rls_auto_enable() to public, anon, authenticated;
@@ -256,8 +270,7 @@ PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
      servidor@servidor.com | UUID 9e86f3b4-c03e-45b5-a66a-c43ce524b90b
      role = servidor (validado: is_admin false, pode_editar true, meu_papel
      servidor). Rebaixar = insert com 'admin'; remover = delete da linha.
-  2. T6.5: suite 3 personas x 14 colecoes x 4 acoes. Precisa de projeto
-     Supabase de TESTE (mesmo bloqueio do Bloco 3b parte 2).
+  2. T6.5: FEITO em 2026-10-20 no projeto de teste (232 casos, 0 falhas).
   3. MASCARAMENTO: funcionarios.cpf/telefone/email/matricula,
      veiculos.placa/chassi/renavam e escala_ferias.nome/cargo ainda vao para
      anon, porque db.js usa select('*'). Exige view/colunas explicitas.
