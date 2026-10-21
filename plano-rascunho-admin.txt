@@ -26,6 +26,43 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 9c GRUPO 3 CONCLUIDO + 3 CORRECOES
+(commits locais a82e957, 6a85171, 292f79e)
+=========================================================================
+
+  - admin.js: 56 handlers inline de modais/formularios -> `data-acao` +
+    tabelas ACOES_ADMIN_CLIQUE/INPUT/CHANGE. Cobertos: abrir/fechar modais,
+    salvar, excluir, listas dinamicas (add/remove), preview de imagem,
+    seletores de icone/cor, multi-select, inputs de arquivo e toggles.
+  - no-inline-handlers.test.mjs passou a incluir admin.js. Restam 18
+    handlers inline no HTML (11 em index.html, 7 em admin.html) = grupo 4.
+  - Testes: tests/unit/admin-acoes-delegadas.test.mjs ampliado.
+  - Medido em 2026-10-21: npm run check exit 0 (151 testes, 0 erros de
+    lint, 24 warnings) | e2e 10 passed / 2 skipped | check-draft-leak 15/15.
+
+  Validacao manual do dono (grupo 3) achou 3 bugs; todos corrigidos:
+  1) itens 4 e 7 (mesma causa): quando o index caia no fallback local,
+     `_initLocal` nao assinava as URLs do Storage. A imagem do manual e o
+     preview do arquivo dependem de `imagem_url_assinada`/`url_assinada`;
+     o download continuava porque assina no clique. Fix 292f79e: `dbInit`
+     chama `DB.resolveStorageUrls()` depois dos dois caminhos (Supabase ou
+     local); no caminho normal e cache, no fallback assina os paths locais.
+  2) item 5: manual aninhado voltava para "Resumido" ao trocar de passo.
+     Regressao do grupo 1 (470182b): `_renderManualNoPainel` lia
+     `dataset.modo || "resumido"` e os botoes de passo nao tinham
+     `data-modo`. Fix 6a85171: paginacao e Anterior/Proximo levam
+     `data-modo="completo"` + defesa para `manual-painel-passo`.
+  - Prova em navegador headless: processo -> manual -> Completo -> Proximo
+    permanece em Completo ("Passo 2 de 13"); com `**/rest/v1/**` bloqueado
+    (fallback), imagem do manual e preview do arquivo aparecem.
+  - Validado manualmente pelo dono: itens 4, 5 e 7 + regressao de manuais
+    (resumido/completo, passos, download) OK.
+  - Observacao: preview de .docx usa Office Online (externo); o campo
+    `tipo` do arquivo nao e inferido pelo upload (arquivo id=64 ficou
+    "PDF" com nome .docx). Nao e bug destes itens; anotado para o futuro.
+  - Proximo: grupo 4 (18 handlers no HTML) e depois 9d (CSP).
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 9c GRUPO 2 CONCLUIDO (commit local 71db11a)
 =========================================================================
 
@@ -256,9 +293,10 @@ Plano vigente (substitui a v1):
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
-     sanitizador de link) concluidos; 9c grupos 1 (script.js, 470182b) e 2
-     (admin.js tabelas/listas, 71db11a) concluidos e validados; falta 9c
-     grupos 3-4 (admin.js modais/formularios e HTML) e 9d (CSP).
+     sanitizador de link) concluidos; 9c grupos 1 (script.js, 470182b), 2
+     (admin.js tabelas/listas, 71db11a) e 3 (admin.js modais/formularios,
+     a82e957 + fixes 6a85171/292f79e) concluidos e validados; falta 9c
+     grupo 4 (18 handlers no HTML) e 9d (CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
