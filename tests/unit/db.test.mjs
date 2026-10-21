@@ -410,3 +410,52 @@ test('_initLocal: migra a chave legada seagri_db_v1', async () => {
   assert.ok(h.localStorage.getItem('smader_db_v1'), 'deveria gravar na chave nova');
   assert.equal(h.localStorage.getItem('seagri_db_v1'), null, 'deveria remover a chave antiga');
 });
+
+test('dbInit: no fallback local ainda assina as URLs do Storage', async () => {
+  const { cliente, chamadas } = clienteStorageFake();
+  // Simula o Supabase fora do ar: _initSupabase lanca e o app cai em _initLocal.
+  const clienteComFalha = {
+    auth: { getSession: async () => ({ data: { session: null }, error: null }) },
+    from: () => { throw new Error('offline'); },
+    storage: cliente.storage,
+  };
+
+  const h = carregarDb({
+    dadosIniciais: {
+      manuais: [{
+        id: 1,
+        titulo: 'Manual local',
+        publish_status: 'published',
+        passos: [{
+          texto: 'Passo com imagem',
+          imagem: '',
+          imagem_storage_path: 'manuais/1.jpg',
+          imagem_storage_bucket: 'manuais-imagens-smader',
+        }],
+      }],
+      arquivos: [{
+        id: 1,
+        nome: 'Arquivo local',
+        publish_status: 'published',
+        storage_path: 'arquivos/a.pdf',
+        storage_bucket: 'arquivos-smader',
+      }],
+    },
+  });
+  h.window.supabase = { createClient: () => clienteComFalha };
+
+  await h.get('dbInit')();
+
+  const DB = h.get('DB');
+  assert.equal(DB.getStatus().provider, 'local');
+  assert.match(DB.get('manuais')[0].passos[0].imagem_url_assinada, /manuais\/1\.jpg/);
+  assert.match(DB.get('arquivos')[0].url_assinada, /arquivos\/a\.pdf/);
+  assert.ok(
+    chamadas.some((c) => c.bucket === 'manuais-imagens-smader' && c.paths.includes('manuais/1.jpg')),
+    'o fallback deve assinar a imagem do manual'
+  );
+  assert.ok(
+    chamadas.some((c) => c.bucket === 'arquivos-smader' && c.paths.includes('arquivos/a.pdf')),
+    'o fallback deve assinar o arquivo'
+  );
+});

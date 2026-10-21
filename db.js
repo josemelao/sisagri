@@ -887,10 +887,24 @@ function _enviarParaSupabase(colecao, tipo, id, registro, opcoes = {}) {
  * O script.js chama DB.init().then(() => renderApp()).
  */
 async function dbInit() {
-  if (DB_CONFIG.USE_SUPABASE) {
-    return _initSupabase();
+  const pronto = DB_CONFIG.USE_SUPABASE
+    ? await _initSupabase()
+    : await _initLocal();
+
+  // No fallback local o _initSupabase nao chega a assinar as URLs do Storage.
+  // Sem isso, manual/arquivo carregam do localStorage com path, mas sem
+  // imagem_url_assinada/url_assinada (bucket privado) e o publico nao ve
+  // imagem nem preview. Assinar aqui cobre os dois caminhos; no caminho
+  // Supabase as URLs ja estao no cache e a chamada e praticamente gratuita.
+  if (_sb) {
+    try {
+      await DB.resolveStorageUrls();
+    } catch (erro) {
+      console.warn('[DB] Falha ao assinar URLs do Storage no boot:', erro);
+    }
   }
-  return _initLocal();
+
+  return pronto;
 }
 
 function _initLocal() {
