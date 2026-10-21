@@ -110,4 +110,18 @@ test.describe('app publico', () => {
       expect(url, `tabela ${tabela} pediu sem o filtro de publicado`).toContain('publish_status=eq.published');
     }
   });
+
+  test('7. delegacao: card de processo usa data-acao e abre o detalhe', async ({ page }) => {
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.locator('.nav-item[data-page="processos"]').click();
+    const card = page.locator('#processos-list .list-card').first();
+    await expect(card).toBeVisible();
+    await expect(card).toHaveAttribute('data-acao', 'abrir-processo');
+
+    await card.click();
+    await expect(page.locator('#processo-detail-overlay')).toHaveClass(/open/);
+    await expect(page.locator('#processo-detail-content .detail-name')).toBeVisible();
+  });
 });

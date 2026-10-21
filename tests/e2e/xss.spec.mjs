@@ -70,7 +70,7 @@ test.describe('saida segura', () => {
     expect(resultado.ruim).not.toContain('href="javascript:');
   });
 
-  test('filtro de tags com aspas nao quebra o onclick', async ({ page }) => {
+  test('filtro de tags com aspas nao quebra a delegacao', async ({ page }) => {
     const erros = [];
     page.on('pageerror', (erro) => erros.push(erro.message));
 

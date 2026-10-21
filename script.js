@@ -121,7 +121,7 @@ function getArquivoLinkMeta(arquivo) {
   return {
     href: href || "#",
     attrs: isDownload
-      ? `download="${escapeAttr(nomeArquivo)}" data-baixar-href="${escapeAttr(href)}" data-baixar-nome="${escapeAttr(nomeArquivo)}" data-storage-bucket="${escapeAttr(storageBucket)}" data-storage-path="${escapeAttr(storagePath)}" onclick="baixarArquivoStorage(this); return false;"`
+      ? `download="${escapeAttr(nomeArquivo)}" data-baixar-href="${escapeAttr(href)}" data-baixar-nome="${escapeAttr(nomeArquivo)}" data-storage-bucket="${escapeAttr(storageBucket)}" data-storage-path="${escapeAttr(storagePath)}" data-acao="baixar-arquivo-storage"`
       : 'target="_blank" rel="noopener"',
     isDownload,
     isExternal: !isDownload,
@@ -377,6 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initSearch();
     initMobile();
     initLightbox();
+    initAcoesDelegadas();
     modulosInicializados.add("dashboard");
     setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experi\u00eancia.");
     return waitForInitialPaint();
@@ -755,7 +756,7 @@ function positionTooltip(tip, cell) {
 function avisoItemHTML(a) {
   const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
   return `
-    <div class="aviso-item aviso-item--${escapeAttr(a.tipo)}" onclick="navigateTo('agenda'); setTimeout(() => openAviso(${escapeAttr(a.id)}), 120)">
+    <div class="aviso-item aviso-item--${escapeAttr(a.tipo)}" data-acao="abrir-aviso-agenda" data-id="${escapeAttr(a.id)}">
       <div class="aviso-icon" style="color:${escapeAttr(tipo.cor)}">
         <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
       </div>
@@ -1076,7 +1077,7 @@ function renderFuncionarios(lista) {
         : `<div class="list-card-avatar">${escapeHtml(getInitials(f.nome))}</div>`;
       const lotacao = f.lotacao || f.setor || f.departamento || "";
       return `
-        <div class="list-card" data-id="${escapeAttr(f.id)}" data-reflow-id="func-${escapeAttr(f.id)}" onclick="openFuncionario(${escapeAttr(f.id)})">
+        <div class="list-card" data-id="${escapeAttr(f.id)}" data-reflow-id="func-${escapeAttr(f.id)}" data-acao="abrir-funcionario">
           <div class="list-card-header">
             ${avatarHTML}
             <div>
@@ -1136,7 +1137,7 @@ function renderManuais(lista) {
     const ic  = m.icone || 'ph-book-open';
     const cor = m.cor   || 'var(--accent)';
     return `
-    <div class="list-card" data-reflow-id="manual-${escapeAttr(m.id)}" onclick="openManual(${escapeAttr(m.id)})">
+    <div class="list-card" data-reflow-id="manual-${escapeAttr(m.id)}" data-acao="abrir-manual" data-id="${escapeAttr(m.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
           <i class="ph-bold ${escapeAttr(ic)}"></i>
@@ -1174,10 +1175,10 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
   // Tabs de navegação entre modos
   const tabsHTML = `
     <div class="manual-tabs">
-      <button class="manual-tab ${modo === 'resumido' ? 'active' : ''}" onclick="switchManualMode(${m.id}, 'resumido')">
+      <button class="manual-tab ${modo === 'resumido' ? 'active' : ''}" data-acao="manual-modo" data-id="${escapeAttr(m.id)}" data-modo="resumido">
         <i class="ph-bold ph-list-numbers"></i> Resumido
       </button>
-      <button class="manual-tab ${modo === 'completo' ? 'active' : ''}" onclick="switchManualMode(${m.id}, 'completo')">
+      <button class="manual-tab ${modo === 'completo' ? 'active' : ''}" data-acao="manual-modo" data-id="${escapeAttr(m.id)}" data-modo="completo">
         <i class="ph-bold ph-presentation"></i> Completo
       </button>
     </div>
@@ -1201,13 +1202,10 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
 
     contentHTML = `
       <div class="manual-content-switch"><div class="manual-completo">
-        ${buildManualPaginationHTML(
-          m.passos.length,
-          passoAtivo,
-          i => `switchManualPasso(${m.id}, ${i})`,
-          `switchManualPasso(${m.id}, ${passoAtivo - 1})`,
-          `switchManualPasso(${m.id}, ${passoAtivo + 1})`
-        )}
+        ${buildManualPaginationHTML(m.passos.length, passoAtivo, {
+          acao: "manual-passo",
+          id: m.id,
+        })}
 
         <div class="manual-passo-card">
           <div class="manual-passo-header">
@@ -1230,10 +1228,10 @@ function renderManualDetail(m, modo, passoAtivo = 0) {
           </div>
 
           <div class="manual-passo-footer">
-            <button class="btn-passo" ${passoAtivo === 0 ? 'disabled' : ''} onclick="switchManualPasso(${m.id}, ${passoAtivo - 1})">
+            <button class="btn-passo" ${passoAtivo === 0 ? 'disabled' : ''} data-acao="manual-passo" data-id="${escapeAttr(m.id)}" data-passo="${passoAtivo - 1}">
               <i class="ph-bold ph-arrow-left"></i> Anterior
             </button>
-            <button class="btn-passo btn-passo-primary" ${passoAtivo === m.passos.length - 1 ? 'disabled' : ''} onclick="switchManualPasso(${m.id}, ${passoAtivo + 1})">
+            <button class="btn-passo btn-passo-primary" ${passoAtivo === m.passos.length - 1 ? 'disabled' : ''} data-acao="manual-passo" data-id="${escapeAttr(m.id)}" data-passo="${passoAtivo + 1}">
               Próximo <i class="ph-bold ph-arrow-right"></i>
             </button>
           </div>
@@ -1346,7 +1344,7 @@ function renderProcessos(lista) {
     const ic  = p.icone || 'ph-flow-arrow';
     const cor = p.cor   || 'var(--accent)';
     return `
-    <div class="list-card" data-reflow-id="processo-${escapeAttr(p.id)}" onclick="openProcesso(${escapeAttr(p.id)})">
+    <div class="list-card" data-reflow-id="processo-${escapeAttr(p.id)}" data-acao="abrir-processo" data-id="${escapeAttr(p.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
           <i class="ph-bold ${escapeAttr(ic)}"></i>
@@ -1375,7 +1373,7 @@ function openProcesso(id) {
     const chips = (e.manuais_ids || []).map(mid => {
       const m = getPublishedManualById(mid);
       if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="openManualFilho(${escapeAttr(m.id)})" title="Ver manual">
+      return `<button class="etapa-manual-chip" data-acao="abrir-manual-filho" data-id="${escapeAttr(m.id)}" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
         <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
       </button>`;
@@ -1428,9 +1426,7 @@ function openManualFilho(id) {
  * @param {object} cfg         — configuração do contexto:
  *   {
  *     panelId:     string  — ID do elemento DOM do painel
- *     selfFn:      string  — nome desta função wrapper (para onclicks)
- *     voltarFn:    string  — função chamada no botão Voltar
- *     fecharFn:    string  — função chamada no botão X
+ *     painel:      string  — chave em PAINEIS_MANUAIS (ex.: 'sistema-neto')
  *     voltarLabel: string  — texto do botão Voltar
  *     processoId:  number  — opcional, apenas para painéis neto
  *   }
@@ -1439,17 +1435,17 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
   const painel = document.getElementById(cfg.panelId);
   if (!painel) return;
 
-  // processoId: presente apenas nos netos — inserido nos callbacks de passo
-  const pid = cfg.processoId !== undefined ? `,${cfg.processoId}` : '';
+  const processoAttr = cfg.processoId !== undefined ? ` data-processo-id="${escapeAttr(cfg.processoId)}"` : '';
+  const detalhe = cfg.painel.startsWith('sistema') ? 'sistema' : cfg.painel.startsWith('servico') ? 'servico' : 'processo';
 
   const tabs = `
     <div class="manual-tabs" style="margin:0 0 16px">
       <button class="manual-tab ${modo==='resumido'?'active':''}"
-              onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'resumido'${pid},0)">
+              data-acao="manual-painel-modo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-modo="resumido" data-passo="0">
         <i class="ph-bold ph-list-numbers"></i> Resumido
       </button>
       <button class="manual-tab ${modo==='completo'?'active':''}"
-              onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},0)">
+              data-acao="manual-painel-modo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-modo="completo" data-passo="0">
         <i class="ph-bold ph-presentation"></i> Completo
       </button>
     </div>`;
@@ -1468,13 +1464,12 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
     const total  = m.passos.length;
     content = `
       <div class="manual-content-switch"><div class="manual-completo">
-        ${buildManualPaginationHTML(
-          total,
-          passoAtivo,
-          i => `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${i})`,
-          `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo-1})`,
-          `${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo+1})`
-        )}
+        ${buildManualPaginationHTML(total, passoAtivo, {
+          acao: "manual-painel-passo",
+          id: m.id,
+          painel: cfg.painel,
+          processoId: cfg.processoId,
+        })}
         <div class="manual-passo-card">
           <div class="manual-passo-header">
             <span class="step-number">${passoAtivo+1}</span>
@@ -1488,10 +1483,10 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
           </div>
           <div class="manual-passo-footer">
             <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo-1})">
+                    data-acao="manual-painel-passo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo-1}">
               <i class="ph-bold ph-arrow-left"></i> Anterior</button>
             <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    onclick="${cfg.selfFn}(manuais.find(x=>x.id===${m.id}),'completo'${pid},${passoAtivo+1})">
+                    data-acao="manual-painel-passo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo+1}">
               Próximo <i class="ph-bold ph-arrow-right"></i></button>
           </div>
         </div>
@@ -1517,10 +1512,10 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
   painel.innerHTML = `
     <div class="manual-transition-scope">
     <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="${cfg.voltarFn}()">
+      <button class="manual-filho-back" data-acao="painel-voltar" data-painel="${escapeAttr(cfg.painel)}">
         <i class="ph-bold ph-arrow-left"></i> ${cfg.voltarLabel}
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="${cfg.fecharFn}()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" data-acao="painel-fechar" data-detalhe="${escapeAttr(detalhe)}">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -1538,9 +1533,7 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
 function renderManualFilho(m, modo, passoAtivo) {
   _renderManualEmPainel(m, modo, passoAtivo, {
     panelId:     'manual-filho-panel',
-    selfFn:      'renderManualFilho',
-    voltarFn:    'fecharManualFilho',
-    fecharFn:    'fecharProcessoCompleto',
+    painel:      'manual-filho',
     voltarLabel: 'Voltar ao processo',
   });
 }
@@ -1711,7 +1704,7 @@ function renderTagFilter() {
   const todasTags = [...new Set(arquivos.flatMap(a => a.tags))].sort();
 
   container.innerHTML = todasTags.map(tag => `
-    <button class="tag-filter-btn ${tagsAtivas.has(tag) ? "active" : ""}" data-tag="${escapeAttr(tag)}" onclick="toggleTag(this.dataset.tag)">
+    <button class="tag-filter-btn ${tagsAtivas.has(tag) ? "active" : ""}" data-tag="${escapeAttr(tag)}" data-acao="toggle-tag">
       ${escapeHtml(tag)}
     </button>
   `).join("");
@@ -1832,7 +1825,7 @@ function renderExtensaoFilter() {
   });
 
   container.innerHTML = ordenados.map(grupo => `
-    <button class="tag-filter-btn ${extensoesAtivas.has(grupo) ? "active" : ""}" data-ext="${escapeAttr(grupo)}" onclick="toggleExtensao(this.dataset.ext)">
+    <button class="tag-filter-btn ${extensoesAtivas.has(grupo) ? "active" : ""}" data-ext="${escapeAttr(grupo)}" data-acao="toggle-extensao">
       ${escapeHtml(getArquivoExtensaoLabel(grupo))}
     </button>
   `).join("");
@@ -1909,7 +1902,7 @@ function renderArquivosPagination(totalItens) {
       Página ${arquivosPaginaAtual} de ${totalPaginas} · ${totalItens} resultado${totalItens === 1 ? "" : "s"}
     </div>
     <button class="arquivos-page-btn" ${arquivosPaginaAtual === 1 ? "disabled" : ""}
-      onclick="goToArquivosPage(${arquivosPaginaAtual - 1})">
+      data-acao="arquivos-pagina" data-pagina="${arquivosPaginaAtual - 1}">
       <i class="ph-bold ph-caret-left"></i>
       Anterior
     </button>
@@ -1917,11 +1910,11 @@ function renderArquivosPagination(totalItens) {
       ${itens.map(item => item === "..."
         ? `<span class="arquivos-page-ellipsis">...</span>`
         : `<button class="arquivos-page-btn arquivos-page-btn--number ${item === arquivosPaginaAtual ? "is-active" : ""}"
-            onclick="goToArquivosPage(${item})">${item}</button>`
+            data-acao="arquivos-pagina" data-pagina="${item}">${item}</button>`
       ).join("")}
     </div>
     <button class="arquivos-page-btn" ${arquivosPaginaAtual === totalPaginas ? "disabled" : ""}
-      onclick="goToArquivosPage(${arquivosPaginaAtual + 1})">
+      data-acao="arquivos-pagina" data-pagina="${arquivosPaginaAtual + 1}">
       Próxima
       <i class="ph-bold ph-caret-right"></i>
     </button>
@@ -2045,20 +2038,24 @@ function getManualPaginationWindow(total, passoAtivo) {
   });
 }
 
-function buildManualPaginationHTML(total, passoAtivo, onSelect, onPrev, onNext) {
+function buildManualPaginationHTML(total, passoAtivo, opts = {}) {
   const paginas = getManualPaginationWindow(total, passoAtivo);
+  const acao = opts.acao || "manual-passo";
+  const painelAttr = opts.painel ? ` data-painel="${escapeAttr(opts.painel)}"` : "";
+  const processoAttr = opts.processoId !== undefined ? ` data-processo-id="${escapeAttr(opts.processoId)}"` : "";
+  const attrs = `data-acao="${acao}" data-id="${escapeAttr(opts.id)}"${painelAttr}${processoAttr}`;
   return `
     <div class="manual-paginacao">
-      <button class="pag-arrow" ${passoAtivo === 0 ? "disabled" : ""} onclick="${onPrev}" aria-label="Passo anterior">
+      <button class="pag-arrow" ${passoAtivo === 0 ? "disabled" : ""} ${attrs} data-passo="${passoAtivo - 1}" aria-label="Passo anterior">
         <i class="ph-bold ph-caret-left"></i>
       </button>
       <div class="manual-paginacao-track">
         ${paginas.map((pagina, i) => pagina
-          ? `<button class="pag-dot manual-pag-item ${pagina === passoAtivo + 1 ? "active" : ""}" data-reflow-id="manual-page-${pagina}" onclick="${onSelect(pagina - 1)}" title="Passo ${pagina}">${pagina}</button>`
+          ? `<button class="pag-dot manual-pag-item ${pagina === passoAtivo + 1 ? "active" : ""}" data-reflow-id="manual-page-${pagina}" ${attrs} data-passo="${pagina - 1}" title="Passo ${pagina}">${pagina}</button>`
           : `<span class="pag-placeholder manual-pag-item" data-reflow-id="manual-gap-${i}"></span>`
         ).join("")}
       </div>
-      <button class="pag-arrow" ${passoAtivo === total - 1 ? "disabled" : ""} onclick="${onNext}" aria-label="Próximo passo">
+      <button class="pag-arrow" ${passoAtivo === total - 1 ? "disabled" : ""} ${attrs} data-passo="${passoAtivo + 1}" aria-label="Próximo passo">
         <i class="ph-bold ph-caret-right"></i>
       </button>
     </div>
@@ -2205,7 +2202,7 @@ function renderArquivos() {
         <i class="ph-bold ${filtroAtivo ? "ph-funnel-x" : "ph-folder-open"}"></i>
         <p>${filtroAtivo ? "Nenhum arquivo encontrado com os filtros atuais." : "Nenhum arquivo cadastrado no momento."}</p>
         <span>${filtroAtivo ? "Tente ajustar a busca ou limpar os filtros para voltar à listagem completa." : "Quando novos arquivos forem cadastrados, eles aparecerão aqui."}</span>
-        ${filtroAtivo ? `<button onclick="limparFiltros()">Limpar filtros</button>` : ""}
+        ${filtroAtivo ? `<button data-acao="limpar-filtros">Limpar filtros</button>` : ""}
       </div>`;
     if (paginacao) {
       paginacao.innerHTML = "";
@@ -2227,7 +2224,7 @@ function renderArquivos() {
     const tagsHTML = buildArquivoCardTagsHTML(a.tags);
 
     return `
-      <div class="list-card arquivo-card" data-reflow-id="arquivo-${escapeAttr(a.id)}" onclick="openArquivo(${escapeAttr(a.id)})">
+      <div class="list-card arquivo-card" data-reflow-id="arquivo-${escapeAttr(a.id)}" data-acao="abrir-arquivo" data-id="${escapeAttr(a.id)}">
         <div class="list-card-header">
           <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(cor)}">
             <i class="ph-bold ${escapeAttr(icone)}"></i>
@@ -2989,7 +2986,7 @@ function renderJuridico(lista = infoJuridico) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="juridico-${escapeAttr(item.id)}" onclick="openJuridico(${escapeAttr(item.id)})">
+    <div class="list-card" data-reflow-id="juridico-${escapeAttr(item.id)}" data-acao="abrir-juridico" data-id="${escapeAttr(item.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
           <i class="ph-bold ${escapeAttr(item.icone)}"></i>
@@ -3019,7 +3016,7 @@ function renderMunicipio(lista = infoMunicipio) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="municipio-${escapeAttr(item.id)}" onclick="openMunicipio(${escapeAttr(item.id)})">
+    <div class="list-card" data-reflow-id="municipio-${escapeAttr(item.id)}" data-acao="abrir-municipio" data-id="${escapeAttr(item.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
           <i class="ph-bold ${escapeAttr(item.icone)}"></i>
@@ -3049,7 +3046,7 @@ function renderOrgaos(lista = infoOrgaos) {
   if (lista.length === 0) { container.innerHTML = `<p class="modulo-vazio">Nenhum resultado.</p>`; return; }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(item => `
-    <div class="list-card" data-reflow-id="orgao-${escapeAttr(item.id)}" onclick="openOrgao(${escapeAttr(item.id)})">
+    <div class="list-card" data-reflow-id="orgao-${escapeAttr(item.id)}" data-acao="abrir-orgao" data-id="${escapeAttr(item.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb,${escapeAttr(item.cor)} 12%,transparent);color:${escapeAttr(item.cor)}">
           <i class="ph-bold ${escapeAttr(item.icone)}"></i>
@@ -3123,7 +3120,7 @@ function renderVeiculos(lista = veiculos) {
 
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(v => `
-    <div class="list-card" data-reflow-id="veiculo-${escapeAttr(v.id)}" onclick="openVeiculo(${escapeAttr(v.id)})">
+    <div class="list-card" data-reflow-id="veiculo-${escapeAttr(v.id)}" data-acao="abrir-veiculo" data-id="${escapeAttr(v.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="background:color-mix(in srgb, ${escapeAttr(v.cor)} 12%, transparent);color:${escapeAttr(v.cor)}">
           <i class="ph-bold ${escapeAttr(v.icone)}"></i>
@@ -3281,7 +3278,7 @@ function renderSistemas(lista = sistemas) {
   }
   animateGridReflow(container, () => {
   container.innerHTML = lista.map(s => `
-    <div class="sistema-card list-card" data-reflow-id="sistema-${escapeAttr(s.id)}" onclick="openSistema(${escapeAttr(s.id)})">
+    <div class="sistema-card list-card" data-reflow-id="sistema-${escapeAttr(s.id)}" data-acao="abrir-sistema" data-id="${escapeAttr(s.id)}">
       <div class="list-card-header">
         <div class="list-card-avatar icon-avatar" style="color:${escapeAttr(s.cor)}">
           <i class="ph-bold ${escapeAttr(s.icone)}"></i>
@@ -3294,7 +3291,7 @@ function renderSistemas(lista = sistemas) {
       <p class="sistema-desc">${escapeHtml(s.descricao)}</p>
       <div class="sistema-footer">
         <span class="list-card-tag">${escapeHtml(s.orgao)}</span>
-        <a href="${escapeAttr(urlSegura(s.url))}" target="_blank" rel="noopener" class="sistema-btn" onclick="event.stopPropagation()">
+        <a href="${escapeAttr(urlSegura(s.url))}" target="_blank" rel="noopener" class="sistema-btn" data-acao="ignorar">
           <i class="ph-bold ph-arrow-square-out"></i> Acessar
         </a>
       </div>
@@ -3317,7 +3314,7 @@ function openSistema(id) {
   const manuaisChips = (s.manuais_ids || []).map(mid => {
     const m = getPublishedManualById(mid);
     if (!m) return '';
-    return `<button class="etapa-manual-chip" onclick="openSistemaFilho('manual',${escapeAttr(m.id)})">
+    return `<button class="etapa-manual-chip" data-acao="abrir-sistema-filho" data-tipo="manual" data-id="${escapeAttr(m.id)}">
       <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
@@ -3327,7 +3324,7 @@ function openSistema(id) {
   const processosChips = (s.processos_ids || []).map(pid => {
     const p = getPublishedProcessoById(pid);
     if (!p) return '';
-    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openSistemaFilho('processo',${escapeAttr(p.id)})">
+    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" data-acao="abrir-sistema-filho" data-tipo="processo" data-id="${escapeAttr(p.id)}">
       <i class="ph-bold ph-flow-arrow"></i>${escapeHtml(p.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
@@ -3388,9 +3385,7 @@ function openSistemaFilho(tipo, id) {
 function renderSistemaFilhoManual(m, modo, passoAtivo) {
   _renderManualEmPainel(m, modo, passoAtivo, {
     panelId:     'sistema-filho-panel',
-    selfFn:      'renderSistemaFilhoManual',
-    voltarFn:    'fecharSistemaFilho',
-    fecharFn:    'fecharSistemaCompleto',
+    painel:      'sistema-filho',
     voltarLabel: 'Voltar ao sistema',
   });
 }
@@ -3403,7 +3398,7 @@ function _renderProcessoEmPainel(p, cfg) {
     const chips = (e.manuais_ids || []).map(mid => {
       const m = getPublishedManualById(mid);
       if (!m) return '';
-      return `<button class="etapa-manual-chip" onclick="${cfg.chipOnclick}(${escapeAttr(m.id)},${escapeAttr(p.id)})" title="Ver manual">
+      return `<button class="etapa-manual-chip" data-acao="abrir-manual-contexto" data-contexto="${escapeAttr(cfg.contexto)}" data-id="${escapeAttr(m.id)}" data-processo-id="${escapeAttr(p.id)}" title="Ver manual">
         <i class="ph-bold ph-book-open"></i>${escapeHtml(m.titulo)}
         <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
       </button>`;
@@ -3429,10 +3424,10 @@ function _renderProcessoEmPainel(p, cfg) {
   painel.innerHTML = `
     ${scopeStart}
     <div class="manual-filho-header">
-      <button class="manual-filho-back" onclick="${cfg.voltarFn}()">
+      <button class="manual-filho-back" data-acao="painel-voltar" data-painel="${escapeAttr(cfg.painel)}">
         <i class="ph-bold ph-arrow-left"></i> ${cfg.voltarLabel}
       </button>
-      <button class="detail-close" style="position:static;width:32px;height:32px" onclick="${cfg.fecharFn}()">
+      <button class="detail-close" style="position:static;width:32px;height:32px" data-acao="painel-fechar" data-detalhe="${escapeAttr(cfg.contexto)}">
         <i class="ph-bold ph-x"></i>
       </button>
     </div>
@@ -3447,9 +3442,8 @@ function _renderProcessoEmPainel(p, cfg) {
 function renderSistemaFilhoProcesso(p) {
   _renderProcessoEmPainel(p, {
     panelId: 'sistema-filho-panel',
-    chipOnclick: 'abrirManualNoSistemaFilho',
-    voltarFn: 'fecharSistemaFilho',
-    fecharFn: 'fecharSistemaCompleto',
+    painel: 'sistema-filho',
+    contexto: 'sistema',
     voltarLabel: 'Voltar ao sistema',
     wrapScope: false,
   });
@@ -3542,7 +3536,7 @@ function renderServicos(lista = servicos) {
   container.innerHTML = lista.map(s => {
     const cat = catCores[s.categoria] || { bg: "var(--accent-light)", fg: "var(--accent)" };
     return `
-      <div class="list-card servico-card" data-reflow-id="servico-${escapeAttr(s.id)}" onclick="openServico(${escapeAttr(s.id)})">
+      <div class="list-card servico-card" data-reflow-id="servico-${escapeAttr(s.id)}" data-acao="abrir-servico" data-id="${escapeAttr(s.id)}">
         <div class="list-card-header">
           <div class="list-card-avatar icon-avatar"
                style="background:color-mix(in srgb,${escapeAttr(s.cor)} 12%,transparent);color:${escapeAttr(s.cor)}">
@@ -3592,7 +3586,7 @@ function openServico(id) {
   const processosChips = (s.processos_ids || []).map(pid => {
     const p = getPublishedProcessoById(pid);
     if (!p) return '';
-    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" onclick="openServicoFilho('processo',${escapeAttr(p.id)})">
+    return `<button class="etapa-manual-chip" style="background:color-mix(in srgb,#7a5c3d 10%,transparent);color:#7a5c3d;border-color:color-mix(in srgb,#7a5c3d 25%,transparent)" data-acao="abrir-servico-filho" data-tipo="processo" data-id="${escapeAttr(p.id)}">
       <i class="ph-bold ph-flow-arrow"></i>${escapeHtml(p.titulo)}
       <i class="ph-bold ph-arrow-right" style="font-size:.65rem;opacity:.6"></i>
     </button>`;
@@ -3660,9 +3654,8 @@ function openServicoFilho(tipo, id) {
 function renderServicoFilhoProcesso(p) {
   _renderProcessoEmPainel(p, {
     panelId: 'servico-filho-panel',
-    chipOnclick: 'abrirManualNoServicoFilho',
-    voltarFn: 'fecharServicoFilho',
-    fecharFn: 'fecharServicoCompleto',
+    painel: 'servico-filho',
+    contexto: 'servico',
     voltarLabel: 'Voltar ao servi\u00e7o',
     wrapScope: true,
   });
@@ -3671,9 +3664,7 @@ function renderServicoFilhoProcesso(p) {
 function renderServicoFilhoManual(m, modo, passoAtivo) {
   _renderManualEmPainel(m, modo, passoAtivo, {
     panelId:     'servico-filho-panel',
-    selfFn:      'renderServicoFilhoManual',
-    voltarFn:    'fecharServicoFilho',
-    fecharFn:    'fecharServicoCompleto',
+    painel:      'servico-filho',
     voltarLabel: 'Voltar ao servi\u00e7o',
   });
 }
@@ -3700,9 +3691,7 @@ function abrirManualNoServicoFilho(manualId, processoId) {
 function renderSistemaNetoManual(m, modo, processoId, passoAtivo = 0) {
   _renderManualEmPainel(m, modo, passoAtivo, {
     panelId:     'sistema-neto-panel',
-    selfFn:      'renderSistemaNetoManual',
-    voltarFn:    'fecharSistemaNetoFilho',
-    fecharFn:    'fecharSistemaCompleto',
+    painel:      'sistema-neto',
     voltarLabel: 'Voltar ao processo',
     processoId,
   });
@@ -3715,9 +3704,7 @@ function fecharSistemaNetoFilho() {
 function renderServicoNetoManual(m, modo, processoId, passoAtivo = 0) {
   _renderManualEmPainel(m, modo, passoAtivo, {
     panelId:     'servico-neto-panel',
-    selfFn:      'renderServicoNetoManual',
-    voltarFn:    'fecharServicoNetoFilho',
-    fecharFn:    'fecharServicoCompleto',
+    painel:      'servico-neto',
     voltarLabel: 'Voltar ao processo',
     processoId,
   });
@@ -3752,7 +3739,7 @@ function eventoItemHTML(e, mostrarData = true) {
       : "";
 
   return `
-    <div class="evento-item" onclick="navigateTo('agenda'); setTimeout(() => openEvento(${escapeAttr(e.id)}), 120)">
+    <div class="evento-item" data-acao="abrir-evento-agenda" data-id="${escapeAttr(e.id)}">
       ${mostrarData ? `
       <div class="evento-date-badge" style="color:${escapeAttr(tipo.cor)};background:color-mix(in srgb,${escapeAttr(tipo.cor)} 10%,transparent)">
         <span class="evento-dia">${escapeHtml(dia)}</span>
@@ -4014,7 +4001,7 @@ function renderAvisos(lista = avisos) {
     container.innerHTML = lista.map(a => {
       const tipo = tipoAviso[a.tipo] || tipoAviso.aviso;
       return `
-        <div class="agenda-card card" data-reflow-id="aviso-${escapeAttr(a.id)}" onclick="openAviso(${escapeAttr(a.id)})" style="cursor:pointer">
+        <div class="agenda-card card" data-reflow-id="aviso-${escapeAttr(a.id)}" data-acao="abrir-aviso" data-id="${escapeAttr(a.id)}" style="cursor:pointer">
           <div class="agenda-card-header">
             <div class="agenda-date-badge" style="color:${escapeAttr(tipo.cor)};background:color-mix(in srgb,${escapeAttr(tipo.cor)} 10%,transparent)">
               <i class="ph-bold ${escapeAttr(tipo.icone)}"></i>
@@ -4153,7 +4140,7 @@ function _agendaEventoCardHTML(e, isHistorico = false) {
       : "";
 
   return `
-    <div class="agenda-card card${isHistorico ? " agenda-card--passado" : ""}" data-reflow-id="evento-${escapeAttr(e.id)}" onclick="openEvento(${escapeAttr(e.id)})" style="cursor:pointer">
+    <div class="agenda-card card${isHistorico ? " agenda-card--passado" : ""}" data-reflow-id="evento-${escapeAttr(e.id)}" data-acao="abrir-evento" data-id="${escapeAttr(e.id)}" style="cursor:pointer">
       <div class="agenda-card-header">
         <div class="agenda-date-badge" style="color:${isHistorico ? 'var(--text-muted)' : escapeAttr(tipo.cor)};background:color-mix(in srgb,${isHistorico ? '#8a9482' : escapeAttr(tipo.cor)} 10%,transparent)">
           <span class="evento-dia">${escapeHtml(dia)}</span>
@@ -4667,6 +4654,115 @@ function closeLightbox() {
   if (!overlay) return;
   overlay.classList.remove("open");
   document.body.style.overflow = "";
+}
+
+/* ============================================================
+   ACOES DELEGADAS — um unico listener para os templates publicos
+   ------------------------------------------------------------
+   Os cards/botoes carregam `data-acao` + `data-*`; nenhum handler
+   inline e emitido. A acao e resolvida por uma tabela fechada, entao
+   dado de usuario nunca vira codigo executavel.
+   ============================================================ */
+
+const PAINEIS_MANUAIS = {
+  "manual-filho": renderManualFilho,
+  "sistema-filho": renderSistemaFilhoManual,
+  "sistema-neto": renderSistemaNetoManual,
+  "servico-filho": renderServicoFilhoManual,
+  "servico-neto": renderServicoNetoManual,
+};
+
+const PAINEIS_VOLTAR = {
+  "manual-filho": fecharManualFilho,
+  "sistema-filho": fecharSistemaFilho,
+  "sistema-neto": fecharSistemaNetoFilho,
+  "servico-filho": fecharServicoFilho,
+  "servico-neto": fecharServicoNetoFilho,
+};
+
+const DETALHES = {
+  processo: "processo-detail-overlay",
+  sistema: "sistema-detail-overlay",
+  servico: "servico-detail-overlay",
+};
+
+function _renderManualNoPainel(el, passo) {
+  const render = PAINEIS_MANUAIS[el.dataset.painel];
+  if (!render) return;
+  const m = manuais.find((item) => String(item.id) === String(el.dataset.id));
+  if (!m) return;
+  const modo = el.dataset.modo || "resumido";
+  if (el.dataset.painel.endsWith("-neto")) {
+    render(m, modo, el.dataset.processoId, passo);
+  } else {
+    render(m, modo, passo);
+  }
+}
+
+const ACOES_CLIQUE = {
+  "baixar-arquivo-storage": (el, evento) => {
+    evento.preventDefault();
+    return baixarArquivoStorage(el);
+  },
+  "abrir-aviso-agenda": (el) => {
+    navigateTo("agenda");
+    setTimeout(() => openAviso(el.dataset.id), 120);
+  },
+  "abrir-evento-agenda": (el) => {
+    navigateTo("agenda");
+    setTimeout(() => openEvento(el.dataset.id), 120);
+  },
+  "abrir-funcionario": (el) => openFuncionario(el.dataset.id),
+  "abrir-manual": (el) => openManual(el.dataset.id),
+  "abrir-processo": (el) => openProcesso(el.dataset.id),
+  "abrir-arquivo": (el) => openArquivo(el.dataset.id),
+  "abrir-juridico": (el) => openJuridico(el.dataset.id),
+  "abrir-municipio": (el) => openMunicipio(el.dataset.id),
+  "abrir-orgao": (el) => openOrgao(el.dataset.id),
+  "abrir-veiculo": (el) => openVeiculo(el.dataset.id),
+  "abrir-sistema": (el) => openSistema(el.dataset.id),
+  "abrir-servico": (el) => openServico(el.dataset.id),
+  "abrir-aviso": (el) => openAviso(el.dataset.id),
+  "abrir-evento": (el) => openEvento(el.dataset.id),
+  "abrir-manual-filho": (el) => openManualFilho(el.dataset.id),
+  "abrir-manual-contexto": (el) => {
+    const abrir = el.dataset.contexto === "sistema"
+      ? abrirManualNoSistemaFilho
+      : abrirManualNoServicoFilho;
+    abrir(el.dataset.id, el.dataset.processoId);
+  },
+  "abrir-sistema-filho": (el) => openSistemaFilho(el.dataset.tipo, el.dataset.id),
+  "abrir-servico-filho": (el) => openServicoFilho(el.dataset.tipo, el.dataset.id),
+  "manual-modo": (el) => window.switchManualMode(el.dataset.id, el.dataset.modo),
+  "manual-passo": (el) => window.switchManualPasso(el.dataset.id, Number(el.dataset.passo)),
+  "manual-painel-modo": (el) => _renderManualNoPainel(el, Number(el.dataset.passo) || 0),
+  "manual-painel-passo": (el) => _renderManualNoPainel(el, Number(el.dataset.passo)),
+  "painel-voltar": (el) => {
+    const voltar = PAINEIS_VOLTAR[el.dataset.painel];
+    if (voltar) voltar();
+  },
+  "painel-fechar": (el) => {
+    const overlay = DETALHES[el.dataset.detalhe];
+    if (overlay) closeDetail(overlay);
+  },
+  "toggle-tag": (el) => toggleTag(el.dataset.tag),
+  "toggle-extensao": (el) => toggleExtensao(el.dataset.ext),
+  "arquivos-pagina": (el) => goToArquivosPage(Number(el.dataset.pagina)),
+  "limpar-filtros": () => limparFiltros(),
+  "ignorar": () => {},
+};
+
+function despacharAcaoClique(evento) {
+  const alvo = evento.target && typeof evento.target.closest === "function"
+    ? evento.target.closest("[data-acao]")
+    : null;
+  if (!alvo || alvo.disabled) return;
+  const acao = ACOES_CLIQUE[alvo.dataset.acao];
+  if (acao) acao(alvo, evento);
+}
+
+function initAcoesDelegadas() {
+  document.addEventListener("click", despacharAcaoClique);
 }
 
 /* ============================================================

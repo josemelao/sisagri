@@ -144,7 +144,7 @@ test('getArquivoLinkMeta: url_assinada tem prioridade sobre url legada', () => {
   assert.equal(meta.href, 'https://signed.example/token');
   assert.equal(meta.isDownload, true);
   assert.match(meta.attrs, /data-storage-path="a\/p\.pdf"/);
-  assert.match(meta.attrs, /baixarArquivoStorage/);
+  assert.match(meta.attrs, /data-acao="baixar-arquivo-storage"/);
 });
 
 test('getArquivoLinkMeta: path sem URL assinada ainda gera link de download', () => {
