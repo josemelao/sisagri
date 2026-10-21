@@ -337,7 +337,7 @@ function aplicarPermissoesUI() {
   // passam por renderSection().
   document.body.classList.toggle('sem-excluir', !podeExcluir);
   if (podeExcluir) return;
-  document.querySelectorAll('#admin-app [onclick^="confirmarDelecao"]')
+  document.querySelectorAll('#admin-app [data-acao="confirmar-delecao"]')
     .forEach(btn => btn.remove());
   const navConfig = document.querySelector('.admin-nav-item[data-section="configuracoes"]');
   if (navConfig) navConfig.style.display = 'none';
@@ -1031,7 +1031,7 @@ function renderInlinePublishStatusControl(colecao, item = {}) {
         <input
           type="checkbox"
           ${isPublished ? 'checked' : ''}
-          onchange="toggleInlinePublishStatus('${colecao}', ${item.id}, this.checked)"
+          data-acao="toggle-publish-inline" data-colecao="${colecao}" data-id="${item.id}"
         />
         <span class="inline-publish-toggle__slider"></span>
       </span>
@@ -1321,16 +1321,16 @@ function renderFuncionarios() {
         <input
           id="funcionarios-search"
           value="${escHtml(FUNCIONARIOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaFuncionarios(this)"
+          data-acao="buscar-funcionarios"
           placeholder="Buscar por nome, cargo ou lotacao..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaFuncionarios(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaFuncionarios(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoFuncionario()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-funcionario"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap">
       <table>
@@ -1344,8 +1344,8 @@ function renderFuncionarios() {
               <td>${escHtml(f.departamento || '')}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('funcionarios', f)}
-                <button class="btn btn-ghost btn-sm" onclick="editarFuncionario(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" onclick="confirmarDelecao('funcionarios',${f.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm" data-acao="editar-funcionario" data-id="${f.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="funcionarios" data-id="${f.id}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
@@ -1504,16 +1504,16 @@ function renderManuais() {
         <input
           id="manuais-search"
           value="${escHtml(MANUAIS_LIST_STATE.query)}"
-          oninput="atualizarBuscaManuais(this)"
+          data-acao="buscar-manuais"
           placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaManuais(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaManuais(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoManual()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-manual"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap">
       <table>
@@ -1526,8 +1526,8 @@ function renderManuais() {
               <td>${(m.passos||[]).length}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('manuais', m)}
-                <button class="btn btn-ghost btn-sm" onclick="editarManual(${m.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(m.titulo)}" onclick="confirmarDelecao('manuais',${m.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm" data-acao="editar-manual" data-id="${m.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(m.titulo)}" data-acao="confirmar-delecao" data-colecao="manuais" data-id="${m.id}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
@@ -1842,16 +1842,16 @@ function renderProcessos() {
         <input
           id="processos-search"
           value="${escHtml(PROCESSOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaProcessos(this)"
+          data-acao="buscar-processos"
           placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaProcessos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaProcessos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoProcesso()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-processo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Etapas</th><th>A&#231;&#245;es</th></tr></thead>
@@ -1862,8 +1862,8 @@ function renderProcessos() {
           <td>${(p.etapas||[]).length}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('processos', p)}
-                <button class="btn btn-ghost btn-sm" onclick="editarProcesso(${p.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(p.titulo)}" onclick="confirmarDelecao('processos',${p.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm" data-acao="editar-processo" data-id="${p.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(p.titulo)}" data-acao="confirmar-delecao" data-colecao="processos" data-id="${p.id}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -1981,16 +1981,16 @@ function renderArquivos() {
         <input
           id="arquivos-search"
           value="${escHtml(ARQUIVOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaArquivos(this)"
+          data-acao="buscar-arquivos"
           placeholder="Buscar por nome, tipo ou tag..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaArquivos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaArquivos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoArquivo()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-arquivo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table class="admin-table-arquivos">
       <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>Ações</th></tr></thead>
@@ -2001,8 +2001,8 @@ function renderArquivos() {
           <td class="admin-col-arquivo-tags">${(a.tags||[]).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('arquivos', a)}
-                <button class="btn btn-ghost btn-sm" onclick="editarArquivo(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.nome)}" onclick="confirmarDelecao('arquivos',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm" data-acao="editar-arquivo" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.nome)}" data-acao="confirmar-delecao" data-colecao="arquivos" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2185,16 +2185,16 @@ function renderVeiculos() {
         <input
           id="veiculos-search"
           value="${escHtml(VEICULOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaVeiculos(this)"
+          data-acao="buscar-veiculos"
           placeholder="Buscar por nome, modelo, placa..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaVeiculos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaVeiculos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoVeiculo()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-veiculo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrim&#244;nio</th><th>Situa&#231;&#227;o</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2207,8 +2207,8 @@ function renderVeiculos() {
           <td><span class="badge" style="${v.situacao==='Em operação'?'background:#e6f4ea;color:#2d6a4f':'background:#fff3e0;color:#7a4f00'}">${escHtml(v.situacao)}</span></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('veiculos', v)}
-            <button class="btn btn-ghost btn-sm" onclick="editarVeiculo(${v.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(v.nome)}" onclick="confirmarDelecao('veiculos',${v.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-veiculo" data-id="${v.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(v.nome)}" data-acao="confirmar-delecao" data-colecao="veiculos" data-id="${v.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2360,16 +2360,16 @@ function renderSistemas() {
         <input
           id="sistemas-search"
           value="${escHtml(SISTEMAS_LIST_STATE.query)}"
-          oninput="atualizarBuscaSistemas(this)"
+          data-acao="buscar-sistemas"
           placeholder="Buscar por nome, orgao ou url..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaSistemas(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaSistemas(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoSistema()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-sistema"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>&#211;rg&#227;o</th><th>URL</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2380,8 +2380,8 @@ function renderSistemas() {
           <td class="td-truncate"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('sistemas', s)}
-            <button class="btn btn-ghost btn-sm" onclick="editarSistema(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" onclick="confirmarDelecao('sistemas',${s.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-sistema" data-id="${s.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="sistemas" data-id="${s.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2565,16 +2565,16 @@ function renderServicos() {
         <input
           id="servicos-search"
           value="${escHtml(SERVICOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaServicos(this)"
+          data-acao="buscar-servicos"
           placeholder="Buscar por nome, categoria ou publico..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaServicos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaServicos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoServico()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-servico"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>Categoria</th><th>P&#250;blico</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2585,8 +2585,8 @@ function renderServicos() {
           <td class="td-truncate">${escHtml(s.publico)}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('servicos', s)}
-            <button class="btn btn-ghost btn-sm" onclick="editarServico(${s.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" onclick="confirmarDelecao('servicos',${s.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-servico" data-id="${s.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="servicos" data-id="${s.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2704,16 +2704,16 @@ function renderAvisos() {
         <input
           id="avisos-search"
           value="${escHtml(AVISOS_LIST_STATE.query)}"
-          oninput="atualizarBuscaAvisos(this)"
+          data-acao="buscar-avisos"
           placeholder="Buscar por titulo, tipo ou local..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAvisos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAvisos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoAviso()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-aviso"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2724,8 +2724,8 @@ function renderAvisos() {
           <td>${escHtml(a.local||'ï¿½')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
-            <button class="btn btn-ghost btn-sm" onclick="editarAviso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" onclick="confirmarDelecao('avisos',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-aviso" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="avisos" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2790,16 +2790,16 @@ function renderAgendaEventos() {
         <input
           id="agenda-search"
           value="${escHtml(AGENDA_LIST_STATE.query)}"
-          oninput="atualizarBuscaAgenda(this)"
+          data-acao="buscar-agenda"
           placeholder="Buscar por titulo, tipo, local..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAgenda(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAgenda(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoEvento()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-evento"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2815,8 +2815,8 @@ function renderAgendaEventos() {
           <td>${escHtml(e.local||'ï¿½')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('agendaEventos', e)}
-            <button class="btn btn-ghost btn-sm" onclick="editarEvento(${e.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(e.titulo)}" onclick="confirmarDelecao('agendaEventos',${e.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-evento" data-id="${e.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(e.titulo)}" data-acao="confirmar-delecao" data-colecao="agendaEventos" data-id="${e.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -2949,13 +2949,13 @@ function renderEscalaFerias() {
       <h1 class="admin-section-title">Escala de F&#233;rias</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="escala-search" value="${escHtml(ESCALA_LIST_STATE.query)}" oninput="atualizarBuscaEscala(this)" placeholder="Buscar por funcionario, cargo..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <input id="escala-search" value="${escHtml(ESCALA_LIST_STATE.query)}" data-acao="buscar-escala" placeholder="Buscar por funcionario, cargo..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaEscala(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaEscala(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novaFerias()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-escala"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Funcion&#225;rio</th><th>Cargo</th><th>In&#237;cio</th><th>Fim</th><th>Status</th><th>A&#231;&#245;es</th></tr></thead>
@@ -2970,8 +2970,8 @@ function renderEscalaFerias() {
           <td><span class="badge" style="${status==='em_curso'?'background:#e6f4ea;color:#2d6a4f':''}">${escHtml(status)}</span></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('escalaFerias', f)}
-            <button class="btn btn-ghost btn-sm" onclick="editarFerias(${f.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" onclick="confirmarDelecao('escalaFerias',${f.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-ferias" data-id="${f.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="escalaFerias" data-id="${f.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -3036,13 +3036,13 @@ function renderAcessoRapido() {
       <h1 class="admin-section-title">Acesso R&#225;pido</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="acesso-search" value="${escHtml(ACESSO_LIST_STATE.query)}" oninput="atualizarBuscaAcesso(this)" placeholder="Buscar por titulo, url ou icone..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <input id="acesso-search" value="${escHtml(ACESSO_LIST_STATE.query)}" data-acao="buscar-acesso" placeholder="Buscar por titulo, url ou icone..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAcesso(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaAcesso(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoAcesso()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-acesso"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">Configure os bot&#245;es de acesso r&#225;pido do dashboard. M&#225;ximo recomendado: 6 bot&#245;es.</p>
     <div class="admin-table-wrap"><table>
@@ -3054,8 +3054,8 @@ function renderAcessoRapido() {
           <td>${escHtml(a.icone)}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('acessoRapido', a)}
-            <button class="btn btn-ghost btn-sm" onclick="editarAcesso(${a.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" onclick="confirmarDelecao('acessoRapido',${a.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-acesso" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="acessoRapido" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum atalho encontrado para o filtro informado.</td></tr>`}
@@ -3111,13 +3111,13 @@ function renderInfoSimples(colecao, titulo, heading) {
       <h1 class="admin-section-title">${heading}</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="infosimples-search-${colecao}" value="${escHtml(state.query)}" oninput="atualizarBuscaInfoSimples('${colecao}', this)" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <input id="infosimples-search-${colecao}" value="${escHtml(state.query)}" data-acao="buscar-info-simples" data-colecao="${colecao}" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoSimples('${colecao}', -1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoSimples('${colecao}', 1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoInfoSimples('${colecao}')"><i class="ph-bold ph-plus"></i> Novo bloco</button>
+      <button class="btn btn-primary" data-acao="novo-info-simples" data-colecao="${colecao}"><i class="ph-bold ph-plus"></i> Novo bloco</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
@@ -3127,8 +3127,8 @@ function renderInfoSimples(colecao, titulo, heading) {
           <td>${(item.campos||[]).length} campos</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl(colecao, item)}
-            <button class="btn btn-ghost btn-sm" onclick="editarInfoSimples('${colecao}',${item.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(item.titulo)}" onclick="confirmarDelecao('${colecao}',${item.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-info-simples" data-colecao="${colecao}" data-id="${item.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(item.titulo)}" data-acao="confirmar-delecao" data-colecao="${colecao}" data-id="${item.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="3" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum bloco encontrado para o filtro informado.</td></tr>`}
@@ -3247,13 +3247,13 @@ function renderInfoOrgaos() {
       <h1 class="admin-section-title">&#211;rg&#227;os Externos</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="orgaos-search" value="${escHtml(INFO_ORGAOS_LIST_STATE.query)}" oninput="atualizarBuscaInfoOrgaos(this)" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <input id="orgaos-search" value="${escHtml(INFO_ORGAOS_LIST_STATE.query)}" data-acao="buscar-info-orgaos" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
         <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoOrgaos(-1)" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
         <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" onclick="mudarPaginaInfoOrgaos(1)" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
       </div>
-      <button class="btn btn-primary" onclick="novoOrgao()"><i class="ph-bold ph-plus"></i> Novo</button>
+      <button class="btn btn-primary" data-acao="novo-orgao"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
@@ -3264,8 +3264,8 @@ function renderInfoOrgaos() {
           <td>${(o.campos||[]).length}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('infoOrgaos', o)}
-            <button class="btn btn-ghost btn-sm" onclick="editarOrgao(${o.id})"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(o.titulo)}" onclick="confirmarDelecao('infoOrgaos',${o.id},this.dataset.nome)"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm" data-acao="editar-orgao" data-id="${o.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
+            <button class="btn btn-danger btn-sm" data-nome="${escHtml(o.titulo)}" data-acao="confirmar-delecao" data-colecao="infoOrgaos" data-id="${o.id}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum orgao encontrado para o filtro informado.</td></tr>`}
@@ -3349,3 +3349,104 @@ async function salvarOrgao(id) {
 
 
 
+
+/* ============================================================
+   ACOES DELEGADAS — um unico listener para os templates do admin
+   ------------------------------------------------------------
+   Os botoes/inputs das tabelas carregam `data-acao` + `data-*` e
+   nenhum handler inline e emitido. A acao e resolvida por tabela
+   fechada, entao dado de usuario nunca vira codigo executavel.
+   ============================================================ */
+
+const ACOES_ADMIN_CLIQUE = {
+  'pagina-funcionarios': (el) => mudarPaginaFuncionarios(Number(el.dataset.delta)),
+  'novo-funcionario': () => novoFuncionario(),
+  'editar-funcionario': (el) => editarFuncionario(Number(el.dataset.id)),
+
+  'pagina-manuais': (el) => mudarPaginaManuais(Number(el.dataset.delta)),
+  'novo-manual': () => novoManual(),
+  'editar-manual': (el) => editarManual(Number(el.dataset.id)),
+
+  'pagina-processos': (el) => mudarPaginaProcessos(Number(el.dataset.delta)),
+  'novo-processo': () => novoProcesso(),
+  'editar-processo': (el) => editarProcesso(Number(el.dataset.id)),
+
+  'pagina-arquivos': (el) => mudarPaginaArquivos(Number(el.dataset.delta)),
+  'novo-arquivo': () => novoArquivo(),
+  'editar-arquivo': (el) => editarArquivo(Number(el.dataset.id)),
+
+  'pagina-veiculos': (el) => mudarPaginaVeiculos(Number(el.dataset.delta)),
+  'novo-veiculo': () => novoVeiculo(),
+  'editar-veiculo': (el) => editarVeiculo(Number(el.dataset.id)),
+
+  'pagina-sistemas': (el) => mudarPaginaSistemas(Number(el.dataset.delta)),
+  'novo-sistema': () => novoSistema(),
+  'editar-sistema': (el) => editarSistema(Number(el.dataset.id)),
+
+  'pagina-servicos': (el) => mudarPaginaServicos(Number(el.dataset.delta)),
+  'novo-servico': () => novoServico(),
+  'editar-servico': (el) => editarServico(Number(el.dataset.id)),
+
+  'pagina-avisos': (el) => mudarPaginaAvisos(Number(el.dataset.delta)),
+  'novo-aviso': () => novoAviso(),
+  'editar-aviso': (el) => editarAviso(Number(el.dataset.id)),
+
+  'pagina-agenda': (el) => mudarPaginaAgenda(Number(el.dataset.delta)),
+  'novo-evento': () => novoEvento(),
+  'editar-evento': (el) => editarEvento(Number(el.dataset.id)),
+
+  'pagina-escala': (el) => mudarPaginaEscala(Number(el.dataset.delta)),
+  'novo-escala': () => novaFerias(),
+  'editar-ferias': (el) => editarFerias(Number(el.dataset.id)),
+
+  'pagina-acesso': (el) => mudarPaginaAcesso(Number(el.dataset.delta)),
+  'novo-acesso': () => novoAcesso(),
+  'editar-acesso': (el) => editarAcesso(Number(el.dataset.id)),
+
+  'pagina-info-simples': (el) => mudarPaginaInfoSimples(el.dataset.colecao, Number(el.dataset.delta)),
+  'novo-info-simples': (el) => novoInfoSimples(el.dataset.colecao),
+  'editar-info-simples': (el) => editarInfoSimples(el.dataset.colecao, Number(el.dataset.id)),
+
+  'pagina-info-orgaos': (el) => mudarPaginaInfoOrgaos(Number(el.dataset.delta)),
+  'novo-orgao': () => novoOrgao(),
+  'editar-orgao': (el) => editarOrgao(Number(el.dataset.id)),
+
+  'confirmar-delecao': (el) => confirmarDelecao(el.dataset.colecao, Number(el.dataset.id), el.dataset.nome),
+};
+
+const ACOES_ADMIN_INPUT = {
+  'buscar-funcionarios': (el) => atualizarBuscaFuncionarios(el),
+  'buscar-manuais': (el) => atualizarBuscaManuais(el),
+  'buscar-processos': (el) => atualizarBuscaProcessos(el),
+  'buscar-arquivos': (el) => atualizarBuscaArquivos(el),
+  'buscar-veiculos': (el) => atualizarBuscaVeiculos(el),
+  'buscar-sistemas': (el) => atualizarBuscaSistemas(el),
+  'buscar-servicos': (el) => atualizarBuscaServicos(el),
+  'buscar-avisos': (el) => atualizarBuscaAvisos(el),
+  'buscar-agenda': (el) => atualizarBuscaAgenda(el),
+  'buscar-escala': (el) => atualizarBuscaEscala(el),
+  'buscar-acesso': (el) => atualizarBuscaAcesso(el),
+  'buscar-info-simples': (el) => atualizarBuscaInfoSimples(el.dataset.colecao, el),
+  'buscar-info-orgaos': (el) => atualizarBuscaInfoOrgaos(el),
+};
+
+const ACOES_ADMIN_CHANGE = {
+  'toggle-publish-inline': (el) => toggleInlinePublishStatus(el.dataset.colecao, Number(el.dataset.id), el.checked),
+};
+
+function despacharAcaoAdmin(evento, tabela) {
+  const alvo = evento.target && typeof evento.target.closest === 'function'
+    ? evento.target.closest('[data-acao]')
+    : null;
+  if (!alvo || alvo.disabled) return;
+  const acao = tabela[alvo.dataset.acao];
+  if (acao) acao(alvo, evento);
+}
+
+function initAcoesDelegadasAdmin() {
+  document.addEventListener('click', (evento) => despacharAcaoAdmin(evento, ACOES_ADMIN_CLIQUE));
+  document.addEventListener('input', (evento) => despacharAcaoAdmin(evento, ACOES_ADMIN_INPUT));
+  document.addEventListener('change', (evento) => despacharAcaoAdmin(evento, ACOES_ADMIN_CHANGE));
+}
+
+initAcoesDelegadasAdmin();
