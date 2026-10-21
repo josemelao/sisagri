@@ -530,12 +530,6 @@ function atualizarBuscaArquivos(inputEl) {
 function mudarPaginaArquivos(delta) {
   ARQUIVOS_LISTA.setPage(ARQUIVOS_LISTA.getState().pagina + Number(delta || 0));
 }
-const MANUAIS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function filtrarManuaisLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return items;
@@ -546,35 +540,22 @@ function filtrarManuaisLista(items, query) {
   });
 }
 
+const MANUAIS_LISTA = window.SisListas.createListController({
+  colecao: 'manuais',
+  pageSize: 12,
+  filter: filtrarManuaisLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarManuais,
+  searchInputId: 'manuais-search',
+});
+
 function atualizarBuscaManuais(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  MANUAIS_LIST_STATE.query = String(value || '');
-  MANUAIS_LIST_STATE.page = 1;
-  renderManuais();
-
-  const nextInput = document.getElementById('manuais-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  MANUAIS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaManuais(delta) {
-  MANUAIS_LIST_STATE.page += delta;
-  renderManuais();
+  MANUAIS_LISTA.setPage(MANUAIS_LISTA.getState().pagina + Number(delta || 0));
 }
-const PROCESSOS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function filtrarProcessosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return items;
@@ -585,28 +566,21 @@ function filtrarProcessosLista(items, query) {
   });
 }
 
+const PROCESSOS_LISTA = window.SisListas.createListController({
+  colecao: 'processos',
+  pageSize: 12,
+  filter: filtrarProcessosLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarProcessos,
+  searchInputId: 'processos-search',
+});
+
 function atualizarBuscaProcessos(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  PROCESSOS_LIST_STATE.query = String(value || '');
-  PROCESSOS_LIST_STATE.page = 1;
-  renderProcessos();
-
-  const nextInput = document.getElementById('processos-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  PROCESSOS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaProcessos(delta) {
-  PROCESSOS_LIST_STATE.page += delta;
-  renderProcessos();
+  PROCESSOS_LISTA.setPage(PROCESSOS_LISTA.getState().pagina + Number(delta || 0));
 }
 function filtrarFuncionariosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
@@ -633,12 +607,6 @@ function atualizarBuscaFuncionarios(inputEl) {
 function mudarPaginaFuncionarios(delta) {
   FUNCIONARIOS_LISTA.setPage(FUNCIONARIOS_LISTA.getState().pagina + Number(delta || 0));
 }
-const VEICULOS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function filtrarVeiculosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return items;
@@ -648,35 +616,22 @@ function filtrarVeiculosLista(items, query) {
   });
 }
 
+const VEICULOS_LISTA = window.SisListas.createListController({
+  colecao: 'veiculos',
+  pageSize: 12,
+  filter: filtrarVeiculosLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarVeiculos,
+  searchInputId: 'veiculos-search',
+});
+
 function atualizarBuscaVeiculos(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  VEICULOS_LIST_STATE.query = String(value || '');
-  VEICULOS_LIST_STATE.page = 1;
-  renderVeiculos();
-
-  const nextInput = document.getElementById('veiculos-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  VEICULOS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaVeiculos(delta) {
-  VEICULOS_LIST_STATE.page += delta;
-  renderVeiculos();
+  VEICULOS_LISTA.setPage(VEICULOS_LISTA.getState().pagina + Number(delta || 0));
 }
-const SISTEMAS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function filtrarSistemasLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return items;
@@ -686,35 +641,22 @@ function filtrarSistemasLista(items, query) {
   });
 }
 
+const SISTEMAS_LISTA = window.SisListas.createListController({
+  colecao: 'sistemas',
+  pageSize: 12,
+  filter: filtrarSistemasLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarSistemas,
+  searchInputId: 'sistemas-search',
+});
+
 function atualizarBuscaSistemas(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  SISTEMAS_LIST_STATE.query = String(value || '');
-  SISTEMAS_LIST_STATE.page = 1;
-  renderSistemas();
-
-  const nextInput = document.getElementById('sistemas-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  SISTEMAS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaSistemas(delta) {
-  SISTEMAS_LIST_STATE.page += delta;
-  renderSistemas();
+  SISTEMAS_LISTA.setPage(SISTEMAS_LISTA.getState().pagina + Number(delta || 0));
 }
-const SERVICOS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function filtrarServicosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return items;
@@ -724,28 +666,21 @@ function filtrarServicosLista(items, query) {
   });
 }
 
+const SERVICOS_LISTA = window.SisListas.createListController({
+  colecao: 'servicos',
+  pageSize: 12,
+  filter: filtrarServicosLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarServicos,
+  searchInputId: 'servicos-search',
+});
+
 function atualizarBuscaServicos(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  SERVICOS_LIST_STATE.query = String(value || '');
-  SERVICOS_LIST_STATE.page = 1;
-  renderServicos();
-
-  const nextInput = document.getElementById('servicos-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  SERVICOS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaServicos(delta) {
-  SERVICOS_LIST_STATE.page += delta;
-  renderServicos();
+  SERVICOS_LISTA.setPage(SERVICOS_LISTA.getState().pagina + Number(delta || 0));
 }
 function filtrarAvisosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
@@ -1457,11 +1392,10 @@ async function salvarFuncionario(id) {
    MANUAIS
    ============================================================ */
 function renderManuais() {
-  const lista = DB.get('manuais');
-  const listaFiltrada = filtrarManuaisLista(lista, MANUAIS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, MANUAIS_LIST_STATE.page, MANUAIS_LIST_STATE.pageSize);
-  MANUAIS_LIST_STATE.page = paginacao.page;
+  MANUAIS_LISTA.setItems(DB.get('manuais'));
+}
 
+function pintarManuais(estado) {
   const sec = document.getElementById('section-manuais');
   renderAdminSectionWithTableAnimation(sec, `
     <div class="admin-section-header">
@@ -1470,15 +1404,15 @@ function renderManuais() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="manuais-search"
-          value="${escHtml(MANUAIS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-manuais"
           placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-manual"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
@@ -1486,7 +1420,7 @@ function renderManuais() {
       <table>
         <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Passos</th><th>A&#231;&#245;es</th></tr></thead>
         <tbody>
-          ${paginacao.pageItems.length ? paginacao.pageItems.map(m => `
+          ${estado.itens.length ? estado.itens.map(m => `
             <tr>
               <td><strong class="td-truncate">${escHtml(m.titulo)}</strong></td>
               <td><span class="badge">${escHtml(m.categoria)}</span></td>
@@ -1796,11 +1730,10 @@ async function salvarManual(id) {
    PROCESSOS
    ============================================================ */
 function renderProcessos() {
-  const lista = DB.get('processos');
-  const listaFiltrada = filtrarProcessosLista(lista, PROCESSOS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, PROCESSOS_LIST_STATE.page, PROCESSOS_LIST_STATE.pageSize);
-  PROCESSOS_LIST_STATE.page = paginacao.page;
+  PROCESSOS_LISTA.setItems(DB.get('processos'));
+}
 
+function pintarProcessos(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-processos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Processos</h1>
@@ -1808,21 +1741,21 @@ function renderProcessos() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="processos-search"
-          value="${escHtml(PROCESSOS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-processos"
           placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-processo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Etapas</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(p => `
+      <tbody>${estado.itens.length ? estado.itens.map(p => `
         <tr>
           <td><strong class="td-truncate">${escHtml(p.titulo)}</strong></td>
           <td><span class="badge">${escHtml(p.categoria)}</span></td>
@@ -2138,11 +2071,10 @@ async function salvarArquivo(id) {
    VEÍCULOS
    ============================================================ */
 function renderVeiculos() {
-  const lista = DB.get('veiculos');
-  const listaFiltrada = filtrarVeiculosLista(lista, VEICULOS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, VEICULOS_LIST_STATE.page, VEICULOS_LIST_STATE.pageSize);
-  VEICULOS_LIST_STATE.page = paginacao.page;
+  VEICULOS_LISTA.setItems(DB.get('veiculos'));
+}
 
+function pintarVeiculos(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-veiculos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Ve&#237;culos</h1>
@@ -2150,21 +2082,21 @@ function renderVeiculos() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="veiculos-search"
-          value="${escHtml(VEICULOS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-veiculos"
           placeholder="Buscar por nome, modelo, placa..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-veiculo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrim&#244;nio</th><th>Situa&#231;&#227;o</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(v => `
+      <tbody>${estado.itens.length ? estado.itens.map(v => `
         <tr>
           <td><strong>${escHtml(v.nome)}</strong></td>
           <td>${escHtml(v.marca)} ${escHtml(v.modelo)} (${escHtml(v.ano)})</td>
@@ -2313,11 +2245,10 @@ async function salvarVeiculo(id) {
    SISTEMAS
    ============================================================ */
 function renderSistemas() {
-  const lista = DB.get('sistemas');
-  const listaFiltrada = filtrarSistemasLista(lista, SISTEMAS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, SISTEMAS_LIST_STATE.page, SISTEMAS_LIST_STATE.pageSize);
-  SISTEMAS_LIST_STATE.page = paginacao.page;
+  SISTEMAS_LISTA.setItems(DB.get('sistemas'));
+}
 
+function pintarSistemas(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-sistemas'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Sistemas</h1>
@@ -2325,21 +2256,21 @@ function renderSistemas() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="sistemas-search"
-          value="${escHtml(SISTEMAS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-sistemas"
           placeholder="Buscar por nome, orgao ou url..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-sistema"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>&#211;rg&#227;o</th><th>URL</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(s => `
+      <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
           <td><strong>${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
@@ -2518,11 +2449,10 @@ async function salvarSistema(id) {
    SERVIÇOS
    ============================================================ */
 function renderServicos() {
-  const lista = DB.get('servicos');
-  const listaFiltrada = filtrarServicosLista(lista, SERVICOS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, SERVICOS_LIST_STATE.page, SERVICOS_LIST_STATE.pageSize);
-  SERVICOS_LIST_STATE.page = paginacao.page;
+  SERVICOS_LISTA.setItems(DB.get('servicos'));
+}
 
+function pintarServicos(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-servicos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Servi&#231;os</h1>
@@ -2530,21 +2460,21 @@ function renderServicos() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="servicos-search"
-          value="${escHtml(SERVICOS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-servicos"
           placeholder="Buscar por nome, categoria ou publico..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-servico"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>Nome</th><th>Categoria</th><th>P&#250;blico</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(s => `
+      <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
           <td><strong class="td-truncate">${escHtml(s.nome)}</strong></td>
           <td><span class="badge">${escHtml(s.categoria)}</span></td>
