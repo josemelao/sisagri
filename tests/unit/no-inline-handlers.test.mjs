@@ -13,10 +13,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const ARQUIVOS = ['script.js'];
+const ARQUIVOS = ['script.js', 'admin.js'];
 const HANDLER_INLINE = /\bon(click|change|input|submit)\s*=/g;
 
-test('Bloco 9c: script.js nao tem handlers inline', () => {
+test('Bloco 9c: script.js e admin.js nao tem handlers inline', () => {
   for (const arquivo of ARQUIVOS) {
     const codigo = fs.readFileSync(path.join(RAIZ, arquivo), 'utf8');
     const achados = codigo.match(HANDLER_INLINE) || [];

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { carregarScripts, criarElemento } from '../helpers/load-script.mjs';
 
 function carregar() {
-  return carregarScripts(['db.js', 'admin.js'], {
+  return carregarScripts(['js/core/utils.js', 'db.js', 'admin.js'], {
     supabase: false,
     elementos: {
       'login-email': criarElemento('input'),
@@ -123,4 +123,195 @@ test('admin delegacao: acao desconhecida ou botao desabilitado nao disparam nada
 
   despachar(h, alvo({ acao: 'acao-inexistente' }), 'ACOES_ADMIN_CLIQUE');
   assert.equal(h.window.__chamada, undefined);
+});
+
+/* ------------------------------------------------------------------ */
+/* Grupo 3 — modais e formularios                                      */
+/* ------------------------------------------------------------------ */
+
+test('admin delegacao: salvar-modal resolve a funcao pela chave e passa o id', () => {
+  const h = carregar();
+  h.run(`
+    SALVAR_MODAL.funcionario = (id) => { globalThis.__chamada = ['funcionario', id]; };
+    SALVAR_MODAL.infoSimples = (colecao, id) => { globalThis.__chamada = ['info', colecao, id]; };
+  `);
+
+  despachar(h, alvo({ acao: 'salvar-modal', salvar: 'funcionario', id: '5' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['funcionario', 5]);
+
+  despachar(h, alvo({ acao: 'salvar-modal', salvar: 'infoSimples', id: '2', colecao: 'infoJuridico' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['info', 'infoJuridico', 2]);
+
+  despachar(h, alvo({ acao: 'salvar-modal', salvar: 'inexistente', id: '2' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['info', 'infoJuridico', 2], 'chave desconhecida nao muda nada');
+});
+
+test('admin delegacao: salvar-modal de registro novo manda id 0', () => {
+  const h = carregar();
+  h.run('SALVAR_MODAL.manual = (id) => { globalThis.__chamada = ["manual", id]; };');
+
+  despachar(h, alvo({ acao: 'salvar-modal', salvar: 'manual' }), 'ACOES_ADMIN_CLIQUE');
+
+  assert.deepEqual(chamada(h), ['manual', 0]);
+});
+
+test('admin delegacao: executar-delecao entrega colecao e id numerico', () => {
+  const h = carregar();
+  h.run('executarDelecao = (colecao, id) => { globalThis.__chamada = [colecao, id]; };');
+
+  despachar(h, alvo({ acao: 'executar-delecao', colecao: 'veiculos', id: '11' }), 'ACOES_ADMIN_CLIQUE');
+
+  assert.deepEqual(chamada(h), ['veiculos', 11]);
+});
+
+test('admin delegacao: add-dyn-item entrega campo, placeholder e booleano', () => {
+  const h = carregar();
+  h.run('addDynItem = (field, ph, txt) => { globalThis.__chamada = [field, ph, txt]; };');
+
+  despachar(h, alvo({ acao: 'add-dyn-item', field: 'passos', placeholder: 'Item...', textarea: 'true' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['passos', 'Item...', true]);
+
+  despachar(h, alvo({ acao: 'add-dyn-item', field: 'tags', placeholder: '', textarea: 'false' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['tags', '', false]);
+});
+
+test('admin delegacao: limpar-multi-select usa o alvo ou o elemento anterior', () => {
+  const h = carregar();
+  h.run(`
+    clearAdminMultiSelect = (alvo) => { globalThis.__chamada = [alvo === null ? 'nulo' : 'elemento']; };
+    globalThis.__select = { id: 's-manuais' };
+    globalThis.__pedido = null;
+    document.getElementById = (id) => { globalThis.__pedido = id; return globalThis.__select; };
+  `);
+
+  despachar(h, alvo({ acao: 'limpar-multi-select', alvo: 's-manuais' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['elemento']);
+  assert.equal(h.run('globalThis.__pedido'), 's-manuais');
+
+  const previo = { anterior: true };
+  const botao = alvo({ acao: 'limpar-multi-select' });
+  botao.previousElementSibling = previo;
+  despachar(h, botao, 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['elemento']);
+});
+
+test('admin delegacao: abrir-input-arquivo clica no input indicado', () => {
+  const h = carregar();
+  h.run(`
+    globalThis.__cliques = 0;
+    globalThis.__pedido = null;
+    document.getElementById = (id) => {
+      globalThis.__pedido = id;
+      return { click: () => { globalThis.__cliques += 1; } };
+    };
+  `);
+
+  despachar(h, alvo({ acao: 'abrir-input-arquivo', input: 'f-foto-file' }), 'ACOES_ADMIN_CLIQUE');
+
+  assert.equal(h.run('globalThis.__cliques'), 1);
+  assert.equal(h.run('globalThis.__pedido'), 'f-foto-file');
+});
+
+test('admin delegacao: previews e toggles de formulario chegam pelo change', () => {
+  const h = carregar();
+  h.run(`
+    toggleDocTipo = (el) => { globalThis.__chamada = ['doc', el.value]; };
+    toggleDynValorInput = (el) => { globalThis.__chamada = ['dyn', !!el.checked]; };
+    previewFoto = (el) => { globalThis.__chamada = ['foto', el.id]; };
+    processarArquivoUpload = (el) => { globalThis.__chamada = ['upload', el.id]; };
+    handlePublishStatusToggle = (el) => { globalThis.__chamada = ['publish', !!el.checked]; };
+  `);
+
+  const select = alvo({ acao: 'toggle-doc-tipo' });
+  select.value = 'arquivo';
+  despachar(h, select, 'ACOES_ADMIN_CHANGE');
+  assert.deepEqual(chamada(h), ['doc', 'arquivo']);
+
+  const check = alvo({ acao: 'toggle-dyn-valor' });
+  check.checked = true;
+  despachar(h, check, 'ACOES_ADMIN_CHANGE');
+  assert.deepEqual(chamada(h), ['dyn', true]);
+
+  const foto = alvo({ acao: 'preview-foto' });
+  foto.id = 'f-1';
+  despachar(h, foto, 'ACOES_ADMIN_CHANGE');
+  assert.deepEqual(chamada(h), ['foto', 'f-1']);
+
+  const up = alvo({ acao: 'processar-arquivo-upload' });
+  up.id = 'a-file-input';
+  despachar(h, up, 'ACOES_ADMIN_CHANGE');
+  assert.deepEqual(chamada(h), ['upload', 'a-file-input']);
+
+  const pub = alvo({ acao: 'toggle-publish-modal' });
+  pub.checked = true;
+  despachar(h, pub, 'ACOES_ADMIN_CHANGE');
+  assert.deepEqual(chamada(h), ['publish', true]);
+});
+
+test('admin delegacao: selecionar-icone/cor usam o field e o valor', () => {
+  const h = carregar();
+  h.run(`
+    selecionarIcone = (field, valor) => { globalThis.__chamada = ['icone', field, valor]; };
+    selecionarCor = (field, valor) => { globalThis.__chamada = ['cor', field, valor]; };
+  `);
+
+  despachar(h, alvo({ acao: 'selecionar-icone', field: 'manual', valor: 'ph-leaf' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['icone', 'manual', 'ph-leaf']);
+
+  despachar(h, alvo({ acao: 'selecionar-cor', field: 'manual', valor: '#2d6a4f' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['cor', 'manual', '#2d6a4f']);
+});
+
+test('admin delegacao: botoes de dyn e acoes simples nao dependem de argumentos', () => {
+  const h = carregar();
+  h.run(`
+    fecharModal = () => { globalThis.__chamada = ['fechar']; };
+    addManualPasso = () => { globalThis.__chamada = ['passo']; };
+    addDocumento = () => { globalThis.__chamada = ['doc']; };
+    addEtapa = () => { globalThis.__chamada = ['etapa']; };
+    addServicoDocumento = () => { globalThis.__chamada = ['sdoc']; };
+    addCampo = () => { globalThis.__chamada = ['campo']; };
+    addOrgCampo = () => { globalThis.__chamada = ['orgcampo']; };
+    removerFoto = () => { globalThis.__chamada = ['remover-foto']; };
+    removerArquivoUpload = () => { globalThis.__chamada = ['remover-arquivo']; };
+    removeDynItem = (el) => { globalThis.__chamada = ['dyn-remove', el.dataset.acao]; };
+  `);
+
+  const casos = [
+    ['fechar-modal', 'fechar'],
+    ['add-manual-passo', 'passo'],
+    ['add-documento', 'doc'],
+    ['add-etapa', 'etapa'],
+    ['add-servico-documento', 'sdoc'],
+    ['add-campo', 'campo'],
+    ['add-org-campo', 'orgcampo'],
+    ['remover-foto', 'remover-foto'],
+    ['remover-arquivo-upload', 'remover-arquivo'],
+  ];
+  for (const [acao, esperado] of casos) {
+    despachar(h, alvo({ acao }), 'ACOES_ADMIN_CLIQUE');
+    assert.deepEqual(chamada(h), [esperado], acao);
+  }
+
+  despachar(h, alvo({ acao: 'remover-dyn-item' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['dyn-remove', 'remover-dyn-item']);
+});
+
+test('admin delegacao: renderPublishStatusActions emite data-acao, nao handler', () => {
+  const h = carregar();
+  const render = h.get('renderPublishStatusActions');
+
+  const html = render('funcionario', { id: 5 });
+  assert.ok(html.includes('data-acao="salvar-modal"'));
+  assert.ok(html.includes('data-salvar="funcionario"'));
+  assert.ok(html.includes('data-id="5"'));
+  assert.ok(html.includes('data-acao="fechar-modal"'));
+  assert.ok(html.includes('data-acao="toggle-publish-modal"'));
+  assert.ok(!/on(click|change)=/.test(html), 'nao deve emitir handler inline');
+
+  const novo = render('manual', {});
+  assert.ok(novo.includes('data-id="0"'), 'registro novo usa id 0');
+
+  const info = render('infoSimples', { id: 3 }, { colecao: 'infoJuridico' });
+  assert.ok(info.includes('data-colecao="infoJuridico"'));
 });

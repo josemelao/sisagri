@@ -422,8 +422,8 @@ function confirmarDelecao(colecao, id, nome, callback) {
     <div class="confirm-box">
       <p class="confirm-msg">Tem certeza que deseja excluir <strong>${escHtml(nome)}</strong>? Esta ação não pode ser desfeita.</p>
       <div class="confirm-actions">
-        <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-        <button class="btn btn-danger" onclick="executarDelecao('${colecao}',${id})">
+        <button class="btn btn-ghost" data-acao="fechar-modal">Cancelar</button>
+        <button class="btn btn-danger" data-acao="executar-delecao" data-colecao="${colecao}" data-id="${id}">
           <i class="ph-bold ph-trash"></i> Excluir
         </button>
       </div>
@@ -997,9 +997,12 @@ function isSelectedOptionValue(selectedValues, value) {
   return Array.isArray(selectedValues) && selectedValues.some(item => String(item) === target);
 }
 
-function renderPublishStatusActions(saveAction, item = {}) {
+function renderPublishStatusActions(saveAcao, item = {}, dadosExtras = {}) {
   const publishStatus = item.publish_status === 'draft' ? 'draft' : 'published';
   const isPublished = publishStatus === 'published';
+  const dadosAttr = Object.entries(dadosExtras)
+    .map(([chave, valor]) => `data-${chave}="${escHtml(valor)}"`)
+    .join(' ');
   return `
     <div class="modal-actions-row">
       <div class="publish-status-control">
@@ -1009,14 +1012,14 @@ function renderPublishStatusActions(saveAction, item = {}) {
             type="checkbox"
             id="publish-status-toggle"
             ${isPublished ? 'checked' : ''}
-            onchange="handlePublishStatusToggle(this)"
+            data-acao="toggle-publish-modal"
           />
           <span class="publish-status-slider"></span>
         </label>
       </div>
       <div class="modal-actions-buttons">
-        <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="${saveAction}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
+        <button class="btn btn-ghost" data-acao="fechar-modal">Cancelar</button>
+        <button class="btn btn-primary" data-acao="salvar-modal" data-salvar="${escHtml(saveAcao)}" ${dadosAttr} data-id="${item.id || 0}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
       </div>
     </div>`;
 }
@@ -1071,11 +1074,11 @@ function dynListHTML(items, fieldName, placeholder = 'Item...', isTextarea = fal
         <div class="dyn-item">
           <${tag} name="${fieldName}_${i}" ${rows} placeholder="${escHtml(placeholder)}">${isTextarea ? escHtml(item) : ''}</${tag}>
           ${!isTextarea ? `<input style="display:none" value="${escHtml(item)}">` : ''}
-          <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
+          <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
         </div>
       `).join('')}
     </div>
-    <button type="button" class="dyn-add" onclick="addDynItem('${fieldName}','${escHtml(placeholder)}',${isTextarea})">
+    <button type="button" class="dyn-add" data-acao="add-dyn-item" data-field="${fieldName}" data-placeholder="${escHtml(placeholder)}" data-textarea="${isTextarea}">
       <i class="ph-bold ph-plus"></i> Adicionar
     </button>
   `;
@@ -1088,11 +1091,11 @@ function dynListInputHTML(items, fieldName, placeholder = 'Item...') {
       ${(items || []).map((item, i) => `
         <div class="dyn-item">
           <input name="${fieldName}_${i}" value="${escHtml(item)}" placeholder="${escHtml(placeholder)}" />
-          <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
+          <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
         </div>
       `).join('')}
     </div>
-    <button type="button" class="dyn-add" onclick="addDynItem('${fieldName}','${escHtml(placeholder)}',false)">
+    <button type="button" class="dyn-add" data-acao="add-dyn-item" data-field="${fieldName}" data-placeholder="${escHtml(placeholder)}" data-textarea="false">
       <i class="ph-bold ph-plus"></i> Adicionar
     </button>
   `;
@@ -1104,9 +1107,9 @@ function addDynItem(fieldName, placeholder, isTextarea) {
   const div = document.createElement('div');
   div.className = 'dyn-item';
   if (isTextarea) {
-    div.innerHTML = `<textarea name="${fieldName}_${i}" rows="2" placeholder="${escHtml(placeholder)}"></textarea><button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
+    div.innerHTML = `<textarea name="${fieldName}_${i}" rows="2" placeholder="${escHtml(placeholder)}"></textarea><button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>`;
   } else {
-    div.innerHTML = `<input name="${fieldName}_${i}" placeholder="${escHtml(placeholder)}" /><button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
+    div.innerHTML = `<input name="${fieldName}_${i}" placeholder="${escHtml(placeholder)}" /><button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>`;
   }
   list.appendChild(div);
 }
@@ -1236,7 +1239,7 @@ function iconPickerHTML(iconeAtual, corAtual, fieldId) {
             <button type="button"
               class="icon-opt ${o.icone === ic ? 'active' : ''}"
               title="${o.label}"
-              onclick="selecionarIcone('${fieldId}','${o.icone}')"
+              data-acao="selecionar-icone" data-field="${fieldId}" data-valor="${o.icone}"
               style="${o.icone === ic ? `background:color-mix(in srgb,${cor} 18%,transparent);color:${cor};border-color:${cor}` : ''}">
               <i class="ph-bold ${o.icone}"></i>
             </button>
@@ -1248,7 +1251,7 @@ function iconPickerHTML(iconeAtual, corAtual, fieldId) {
               class="cor-opt ${c === cor ? 'active' : ''}"
               title="${c}"
               style="background:${c}"
-              onclick="selecionarCor('${fieldId}','${c}')">
+              data-acao="selecionar-cor" data-field="${fieldId}" data-valor="${c}">
               ${c === cor ? '<i class="ph-bold ph-check" style="color:#fff;font-size:.7rem"></i>' : ''}
             </button>
           `).join('')}
@@ -1371,16 +1374,16 @@ function formFuncionario(f = {}) {
       <div class="form-group full" style="align-items:center">
         <label>Foto do funcionário</label>
         <div id="foto-preview">${fotoPreview}</div>
-        <input type="file" id="f-foto-file" accept="image/*" style="display:none" onchange="previewFoto(this)" />
+        <input type="file" id="f-foto-file" accept="image/*" style="display:none" data-acao="preview-foto" />
         <input type="hidden" id="f-foto" value="${escHtml(f.foto||'')}" />
         <input type="hidden" id="f-foto-storage-path" value="${escHtml(f.foto_storage_path||'')}" />
         <input type="hidden" id="f-foto-storage-bucket" value="${escHtml(f.foto_storage_bucket||'')}" />
         <input type="hidden" id="f-remover-foto" value="0" />
         <div style="display:flex;gap:8px;margin-top:4px">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('f-foto-file').click()">
+          <button type="button" class="btn btn-ghost btn-sm" data-acao="abrir-input-arquivo" data-input="f-foto-file">
             <i class="ph-bold ph-upload-simple"></i> Escolher foto
           </button>
-          ${foto ? `<button type="button" class="btn btn-danger btn-sm" onclick="removerFoto()"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
+          ${foto ? `<button type="button" class="btn btn-danger btn-sm" data-acao="remover-foto"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
         </div>
         <span class="form-hint">JPG, PNG ou WebP. Recomendado: até 500kb.</span>
       </div>
@@ -1397,7 +1400,7 @@ function formFuncionario(f = {}) {
       <div class="form-group"><label>Departamento</label><input id="f-departamento" value="${escHtml(f.departamento||'')}" /></div>
       <div class="form-group full"><label>Descrição (o que essa pessoa faz)</label><textarea id="f-descricao">${escHtml(f.descricao||'')}</textarea></div>
     </div>
-    ${renderPublishStatusActions(`salvarFuncionario(${f.id||0})`, f)}
+    ${renderPublishStatusActions('funcionario', f)}
   `;
 }
 
@@ -1552,7 +1555,7 @@ function formManual(m = {}) {
             <label style="font-size:0.65rem;margin-bottom:4px;display:block">TEXTO DO PASSO ${i+1}</label>
             <textarea name="passo_texto_${i}" placeholder="Descreva o passo..." rows="2" style="width:100%">${escHtml(texto)}</textarea>
           </div>
-          <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
+          <button type="button" class="dyn-remove" data-acao="remover-dyn-item" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
         </div>
         <div style="width:100%">
           <label style="font-size:0.65rem;margin-bottom:4px;display:block">IMAGEM (OPCIONAL)</label>
@@ -1560,7 +1563,7 @@ function formManual(m = {}) {
             <div class="passo-img-preview" style="width:60px;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
               ${imagem ? `<img src="${escHtml(imagem)}" style="width:100%;height:100%;object-fit:cover" />` : `<i class="ph ph-image" style="opacity:0.3"></i>`}
             </div>
-            <input type="file" accept="image/*" onchange="previewPassoImagem(this)" style="font-size:0.7rem;flex:1" />
+            <input type="file" accept="image/*" data-acao="preview-passo-imagem" style="font-size:0.7rem;flex:1" />
             <input type="hidden" name="passo_imagem_${i}" value="${escHtml(imagem)}" />
             <input type="hidden" name="passo_imagem_storage_path_${i}" value="${escHtml(imagemStoragePath)}" />
             <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="${escHtml(imagemStorageBucket)}" />
@@ -1579,12 +1582,12 @@ function formManual(m = {}) {
     return `
       <div class="dyn-item doc-item" style="flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
         <div style="display:flex;gap:8px;align-items:center">
-          <select name="doc_tipo_${i}" class="doc-tipo-select" onchange="toggleDocTipo(this)" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
+          <select name="doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
             <option value="texto" ${!isVinculado ? 'selected' : ''}>Texto</option>
             <option value="arquivo" ${isVinculado ? 'selected' : ''}>Arquivo</option>
           </select>
           <input name="doc_nome_${i}" value="${escHtml(nome)}" placeholder="Nome do documento..." style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" ${isVinculado ? 'disabled' : ''} class="doc-nome-input" />
-          <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
+          <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
         </div>
         <div class="doc-arquivo-selector" style="display:${isVinculado ? 'flex' : 'none'};gap:8px;align-items:center">
           <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
@@ -1608,17 +1611,17 @@ function formManual(m = {}) {
       <div class="form-group full">
         <label>Passos (Texto + Imagem)</label>
         <div class="dyn-list" id="dyn-passos">${passosHTML}</div>
-        <button type="button" class="dyn-add" onclick="addManualPasso()"><i class="ph-bold ph-plus"></i> Adicionar passo</button>
+        <button type="button" class="dyn-add" data-acao="add-manual-passo"><i class="ph-bold ph-plus"></i> Adicionar passo</button>
       </div>
       <div class="form-group full">
         <label>Documentos necessários</label>
         <div class="dyn-list" id="dyn-documentos">${docsHTML}</div>
-        <button type="button" class="dyn-add" onclick="addDocumento()"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
+        <button type="button" class="dyn-add" data-acao="add-documento"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
         <p class="form-hint" style="margin-top:8px">Escolha "Texto" para digitar manualmente ou "Arquivo" para vincular um arquivo já cadastrado.</p>
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="m-observacoes">${escHtml(m.observacoes||'')}</textarea></div>
     </div>
-    ${renderPublishStatusActions(`salvarManual(${m.id||0})`, m)}
+    ${renderPublishStatusActions('manual', m)}
   `;
   return html;
 }
@@ -1642,12 +1645,12 @@ function addDocumento() {
   div.style.cssText = 'flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)';
   div.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center">
-      <select name="doc_tipo_${i}" class="doc-tipo-select" onchange="toggleDocTipo(this)" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
+      <select name="doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
         <option value="texto" selected>Texto</option>
         <option value="arquivo">Arquivo</option>
       </select>
       <input name="doc_nome_${i}" value="" placeholder="Nome do documento..." style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" />
-      <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
+      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>
     <div class="doc-arquivo-selector" style="display:none;gap:8px;align-items:center">
       <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
@@ -1688,7 +1691,7 @@ function addManualPasso() {
         <label style="font-size:0.65rem;margin-bottom:4px;display:block">TEXTO DO PASSO ${i+1}</label>
         <textarea name="passo_texto_${i}" placeholder="Descreva o passo..." rows="2" style="width:100%"></textarea>
       </div>
-      <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
+      <button type="button" class="dyn-remove" data-acao="remover-dyn-item" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
     </div>
     <div style="width:100%">
       <label style="font-size:0.65rem;margin-bottom:4px;display:block">IMAGEM (OPCIONAL)</label>
@@ -1696,7 +1699,7 @@ function addManualPasso() {
         <div class="passo-img-preview" style="width:60px;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
           <i class="ph ph-image" style="opacity:0.3"></i>
         </div>
-        <input type="file" accept="image/*" onchange="previewPassoImagem(this)" style="font-size:0.7rem;flex:1" />
+        <input type="file" accept="image/*" data-acao="preview-passo-imagem" style="font-size:0.7rem;flex:1" />
         <input type="hidden" name="passo_imagem_${i}" value="" />
         <input type="hidden" name="passo_imagem_storage_path_${i}" value="" />
         <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="" />
@@ -1899,10 +1902,10 @@ function formProcesso(p = {}) {
       <div class="form-group full">
         <label>Etapas</label>
         <div class="dyn-list" id="dyn-etapas">${etapasHTML}</div>
-        <button type="button" class="dyn-add" onclick="addEtapa()"><i class="ph-bold ph-plus"></i> Adicionar etapa</button>
+        <button type="button" class="dyn-add" data-acao="add-etapa"><i class="ph-bold ph-plus"></i> Adicionar etapa</button>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarProcesso(${p.id||0})`, p)}`;
+    ${renderPublishStatusActions('processo', p)}`;
 }
 
 function addEtapa() {
@@ -1950,7 +1953,7 @@ function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
         <div style="flex:1;min-width:0;width:100%">
           <input name="etapa_titulo_${i}" value="${escHtml(titulo)}" placeholder="Título da etapa..." style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
         </div>
-        <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
+        <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
       </div>
       <textarea name="etapa_desc_${i}" placeholder="Descrição da etapa..." rows="2" style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(descricao)}</textarea>
       <div style="width:100%;min-width:0">
@@ -1958,7 +1961,7 @@ function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
         <select name="etapa_manuais_${i}" multiple style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.8rem;outline:none;min-height:60px;max-height:100px">
           ${getManuaisOptions(manuais_ids)}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect(this.previousElementSibling)">Limpar sele&ccedil;&atilde;o</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select">Limpar sele&ccedil;&atilde;o</button>
         <p style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">Segure Ctrl (ou Cmd) para selecionar múltiplos manuais.</p>
       </div>
     </div>`;
@@ -2024,7 +2027,7 @@ function formArquivo(a = {}) {
     ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
          <i class="ph-bold ph-file-check"></i>
          <span>${escHtml(nomeArquivoAtual)}</span>
-         <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" onclick="removerArquivoUpload()"><i class="ph-bold ph-trash"></i></button>
+         <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
        </div>`
     : `<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Nenhum arquivo carregado.</div>`;
 
@@ -2042,13 +2045,13 @@ function formArquivo(a = {}) {
       <div class="form-group full">
         <label>Upload de arquivo <span style="font-weight:400;color:var(--text-muted)">(recomendado)</span></label>
         ${arquivoStatus}
-        <input type="file" id="a-file-input" style="display:none" onchange="processarArquivoUpload(this)" />
+        <input type="file" id="a-file-input" style="display:none" data-acao="processar-arquivo-upload" />
         <input type="hidden" id="a-arquivo-data" value="${escHtml(a.arquivo_data || '')}" />
         <input type="hidden" id="a-arquivo-nome" value="${escHtml(nomeArquivoAtual)}" />
         <input type="hidden" id="a-storage-path" value="${escHtml(a.storage_path || '')}" />
         <input type="hidden" id="a-storage-bucket" value="${escHtml(a.storage_bucket || '')}" />
         <input type="hidden" id="a-remover-arquivo" value="0" />
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="document.getElementById('a-file-input').click()">
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="abrir-input-arquivo" data-input="a-file-input">
           <i class="ph-bold ph-upload-simple"></i> ${temArquivo ? 'Substituir arquivo' : 'Escolher arquivo'}
         </button>
         <span class="form-hint">O arquivo ficará disponível para download. Máx. recomendado: 10MB.</span>
@@ -2065,7 +2068,7 @@ function formArquivo(a = {}) {
         ${tagsInputHTML(a.tags||[], 'arquivo')}
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarArquivo(${a.id||0})`, a)}`;
+    ${renderPublishStatusActions('arquivo', a)}`;
   return html;
 }
 
@@ -2089,7 +2092,7 @@ function processarArquivoUpload(input) {
     status.outerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
       <i class="ph-bold ph-file-check"></i>
       <span>${escHtml(file.name)}</span>
-      <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" onclick="removerArquivoUpload()"><i class="ph-bold ph-trash"></i></button>
+      <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
     </div>`;
   }
   toast('Arquivo selecionado. Clique em Salvar para enviar.');
@@ -2268,7 +2271,7 @@ function formVeiculo(v = {}) {
         <select id="v-motorista-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
           ${getMotoristaOptions(v.motorista_ids || [])}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearVeiculoMultiSelect('v-motorista-ids')">Limpar seleção</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-motorista-ids">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos motoristas.</p>
       </div>
       <div class="form-group full"><label>Localização atual</label><input id="v-localizacao" value="${escHtml(v.localizacao||'')}" /></div>
@@ -2277,12 +2280,12 @@ function formVeiculo(v = {}) {
         <select id="v-arquivo-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
           ${getArquivosVeiculoOptions(v.arquivo_ids || [])}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearVeiculoMultiSelect('v-arquivo-ids')">Limpar seleção</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-arquivo-ids">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
       </div>
       <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||v.observacoes||'')}</textarea></div>
     </div>
-    ${renderPublishStatusActions(`salvarVeiculo(${v.id||0})`, v)}`;
+    ${renderPublishStatusActions('veiculo', v)}`;
 }
 
 function novoVeiculo()     { abrirModal(formVeiculo()); }
@@ -2412,14 +2415,14 @@ function renderServicoDocumentosFields(documentos = []) {
         return `
           <div class="dyn-item doc-item" style="flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
             <div style="display:flex;gap:8px;align-items:center;width:100%">
-              <select name="sv_doc_tipo_${i}" class="doc-tipo-select" onchange="toggleDocTipo(this)" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
+              <select name="sv_doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
                 <option value="texto" ${tipo === 'texto' ? 'selected' : ''}>Texto</option>
                 <option value="arquivo" ${tipo === 'arquivo' ? 'selected' : ''}>Arquivo</option>
               </select>
               <div style="flex:1;min-width:0;width:100%">
                 <input name="sv_doc_nome_${i}" value="${escHtml(nome)}" placeholder="Nome do documento..." style="width:100%;min-width:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" ${tipo === 'arquivo' ? 'disabled' : ''} />
               </div>
-              <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
+              <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
             </div>
             <div class="doc-arquivo-selector" style="display:${tipo === 'arquivo' ? 'flex' : 'none'};gap:8px;align-items:center;width:100%">
               <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
@@ -2433,7 +2436,7 @@ function renderServicoDocumentosFields(documentos = []) {
           </div>`;
       }).join('')}
     </div>
-    <button type="button" class="dyn-add" onclick="addServicoDocumento()"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
+    <button type="button" class="dyn-add" data-acao="add-servico-documento"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
   `;
 }
 
@@ -2445,14 +2448,14 @@ function addServicoDocumento() {
   div.style.cssText = 'flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)';
   div.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;width:100%">
-      <select name="sv_doc_tipo_${i}" class="doc-tipo-select" onchange="toggleDocTipo(this)" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
+      <select name="sv_doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
         <option value="texto" selected>Texto</option>
         <option value="arquivo">Arquivo</option>
       </select>
       <div style="flex:1;min-width:0;width:100%">
         <input name="sv_doc_nome_${i}" value="" placeholder="Nome do documento..." style="width:100%;min-width:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" />
       </div>
-      <button type="button" class="dyn-remove" onclick="removeDynItem(this.closest('.dyn-item'))"><i class="ph-bold ph-minus"></i></button>
+      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>
     <div class="doc-arquivo-selector" style="display:none;gap:8px;align-items:center;width:100%">
       <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
@@ -2509,7 +2512,7 @@ function formSistema(s = {}) {
         <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('s-manuais')">Limpar seleção</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
       <div class="form-group full">
@@ -2517,11 +2520,11 @@ function formSistema(s = {}) {
         <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('processos', s.processos_ids || [])}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('s-processos')">Limpar seleção</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarSistema(${s.id||0})`, s)}`;
+    ${renderPublishStatusActions('sistema', s)}`;
 }
 
 function novoSistema()     { abrirModal(formSistema()); }
@@ -2611,7 +2614,7 @@ function formServico(s = {}) {
       <div class="form-group full"><label>Nome</label><input id="sv-nome" value="${escHtml(s.nome||'')}" /></div>
       <div class="form-group">
         <label>Categoria</label>
-        <select id="sv-categoria" onchange="toggleServicoCategoriaOutro()">${SERVICO_CATEGORIAS_PADRAO.map(c => `<option ${categoriaSelect === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <select id="sv-categoria" data-acao="toggle-servico-categoria">${SERVICO_CATEGORIAS_PADRAO.map(c => `<option ${categoriaSelect === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
       </div>
       <div class="form-group" id="sv-categoria-outra-wrap" style="display:${categoriaSelect === 'Outro' ? 'flex' : 'none'};flex-direction:column">
         <label>Qual categoria?</label>
@@ -2633,13 +2636,13 @@ function formServico(s = {}) {
         <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
           ${getSistemaLinksOptions('processos', s.processos_ids || [])}
         </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearAdminMultiSelect('sv-processos')">Limpar seleção</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
         <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
       </div>
       <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
       <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
     </div>
-    ${renderPublishStatusActions(`salvarServico(${s.id||0})`, s)}`;
+    ${renderPublishStatusActions('servico', s)}`;
 }
 
 async function salvarServico(id) {
@@ -2748,7 +2751,7 @@ function formAviso(a = {}) {
       <div class="form-group"><label>Local</label><input id="av-local" value="${escHtml(a.local||'')}" /></div>
       <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||a.descricao||'')}</textarea></div>
     </div>
-    ${renderPublishStatusActions(`salvarAviso(${a.id||0})`, a)}`;
+    ${renderPublishStatusActions('aviso', a)}`;
 }
 
 function novoAviso()     { abrirModal(formAviso()); }
@@ -2834,7 +2837,7 @@ function formEvento(e = {}) {
       <div class="form-group full"><label>Título</label><input id="ev-titulo" value="${escHtml(e.titulo||'')}" /></div>
       <div class="form-group">
         <label>Tipo</label>
-        <select id="ev-tipo" onchange="toggleEventoTipoFields()">${tipos.map(t=>`<option ${(e.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}</select>
+        <select id="ev-tipo" data-acao="toggle-evento-tipo">${tipos.map(t=>`<option ${(e.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}</select>
       </div>
       <div class="form-group" id="ev-data-group"><label>Data início</label><input type="date" id="ev-data" value="${escHtml(e.data||'')}" /></div>
       <div class="form-group" id="ev-data-fim-group"><label id="ev-data-fim-label">Data fim</label><input type="date" id="ev-data-fim" value="${escHtml(e.data_fim||'')}" /></div>
@@ -2846,7 +2849,7 @@ function formEvento(e = {}) {
         <p class="form-hint">Para o tipo prazo, use apenas data final e hora final. O evento ficará "em andamento" até esse momento e depois passará para "encerrado".</p>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarEvento(${e.id||0})`, e)}`;
+    ${renderPublishStatusActions('evento', e)}`;
 }
 
 function toggleEventoTipoFields() {
@@ -2986,7 +2989,7 @@ function formFerias(f = {}) {
     <div class="form-grid">
       <div class="form-group full">
         <label>Funcionário</label>
-        <select id="fer-func" onchange="preencherDadosFunc()">
+        <select id="fer-func" data-acao="preencher-dados-func">
           <option value="">— Selecione —</option>
           ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
         </select>
@@ -3001,7 +3004,7 @@ function formFerias(f = {}) {
         </div>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarFerias(${f.id||0})`, f)}`;
+    ${renderPublishStatusActions('ferias', f)}`;
 }
 
 async function salvarFerias(id) {
@@ -3078,7 +3081,7 @@ function formAcesso(a = {}) {
         ${iconPickerHTML(a.icone, a.cor, 'acesso')}
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarAcesso(${a.id||0})`, a)}`;
+    ${renderPublishStatusActions('acesso', a)}`;
 }
 
 function novoAcesso()     { abrirModal(formAcesso()); }
@@ -3141,8 +3144,8 @@ function formInfoSimples(colecao, item = {}) {
       <input class="js-campo-label" name="campo_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
       <input class="js-campo-valor js-valor-input" name="campo_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? 'display:none;' : ''}flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
       <textarea class="js-campo-valor-multi js-valor-textarea" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? '' : 'display:none;'}flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(c.valor)}</textarea>
-      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" onchange="toggleDynValorInput(this)" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
-      <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" data-acao="toggle-dyn-valor" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
+      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
   return `
@@ -3161,10 +3164,10 @@ function formInfoSimples(colecao, item = {}) {
       <div class="form-group full">
         <label>Campos (label → valor)</label>
         <div class="dyn-list" id="dyn-campos">${camposHTML}</div>
-        <button type="button" class="dyn-add" onclick="addCampo()"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
+        <button type="button" class="dyn-add" data-acao="add-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarInfoSimples('${colecao}',${item.id||0})`, item)}`;
+    ${renderPublishStatusActions('infoSimples', item, { colecao })}`;
 }
 
 function addCampo() {
@@ -3177,8 +3180,8 @@ function addCampo() {
     <input class="js-campo-label" name="campo_label_${i}" placeholder="Label..." style="width:40%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
     <input class="js-campo-valor js-valor-input" name="campo_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
     <textarea class="js-campo-valor-multi js-valor-textarea" placeholder="Valor..." style="display:none;flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical"></textarea>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" onchange="toggleDynValorInput(this)" /> Linha inteira</label>
-    <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
+    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-campo-full" data-acao="toggle-dyn-valor" /> Linha inteira</label>
+    <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>`;
   list.appendChild(div);
 }
 
@@ -3278,8 +3281,8 @@ function formOrgao(o = {}) {
       <input class="js-org-label" name="oc_label_${i}" value="${escHtml(c.label)}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
       <input class="js-org-valor js-valor-input" name="oc_valor_${i}" value="${escHtml(c.valor)}" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? 'display:none;' : ''}flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
       <textarea class="js-org-valor-multi js-valor-textarea" placeholder="Valor..." style="${c.full_width || c.fullWidth || c.linha_inteira ? '' : 'display:none;'}flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(c.valor)}</textarea>
-      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" onchange="toggleDynValorInput(this)" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
-      <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" data-acao="toggle-dyn-valor" ${c.full_width || c.fullWidth || c.linha_inteira ? 'checked' : ''} /> Linha inteira</label>
+      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
   return `
@@ -3295,10 +3298,10 @@ function formOrgao(o = {}) {
       <div class="form-group full">
         <label>Campos de contato</label>
         <div class="dyn-list" id="dyn-orgcampos">${camposHTML}</div>
-        <button type="button" class="dyn-add" onclick="addOrgCampo()"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
+        <button type="button" class="dyn-add" data-acao="add-org-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
       </div>
     </div>
-    ${renderPublishStatusActions(`salvarOrgao(${o.id||0})`, o)}`;
+    ${renderPublishStatusActions('orgao', o)}`;
 }
 
 function addOrgCampo() {
@@ -3310,8 +3313,8 @@ function addOrgCampo() {
     <input class="js-org-label" name="oc_label_${i}" placeholder="Label..." style="width:35%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
     <input class="js-org-valor js-valor-input" name="oc_valor_${i}" placeholder="Valor..." style="flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
     <textarea class="js-org-valor-multi js-valor-textarea" placeholder="Valor..." style="display:none;flex:1;min-height:72px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical"></textarea>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" onchange="toggleDynValorInput(this)" /> Linha inteira</label>
-    <button type="button" class="dyn-remove" onclick="removeDynItem(this)"><i class="ph-bold ph-minus"></i></button>`;
+    <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-muted);white-space:nowrap"><input type="checkbox" class="js-org-full" data-acao="toggle-dyn-valor" /> Linha inteira</label>
+    <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>`;
   list.appendChild(div);
 }
 
@@ -3357,6 +3360,24 @@ async function salvarOrgao(id) {
    nenhum handler inline e emitido. A acao e resolvida por tabela
    fechada, entao dado de usuario nunca vira codigo executavel.
    ============================================================ */
+
+/* De-para do botao Salvar dos modais: a chave vai em `data-salvar` e os
+   dados do registro nos `data-*`. Mantem a tabela fechada (nada de codigo). */
+const SALVAR_MODAL = {
+  funcionario: salvarFuncionario,
+  manual: salvarManual,
+  processo: salvarProcesso,
+  arquivo: salvarArquivo,
+  veiculo: salvarVeiculo,
+  sistema: salvarSistema,
+  servico: salvarServico,
+  aviso: salvarAviso,
+  evento: salvarEvento,
+  ferias: salvarFerias,
+  acesso: salvarAcesso,
+  infoSimples: salvarInfoSimples,
+  orgao: salvarOrgao,
+};
 
 const ACOES_ADMIN_CLIQUE = {
   'pagina-funcionarios': (el) => mudarPaginaFuncionarios(Number(el.dataset.delta)),
@@ -3412,6 +3433,37 @@ const ACOES_ADMIN_CLIQUE = {
   'editar-orgao': (el) => editarOrgao(Number(el.dataset.id)),
 
   'confirmar-delecao': (el) => confirmarDelecao(el.dataset.colecao, Number(el.dataset.id), el.dataset.nome),
+
+  // Modais e formularios (grupo 3)
+  'fechar-modal': () => fecharModal(),
+  'executar-delecao': (el) => executarDelecao(el.dataset.colecao, Number(el.dataset.id)),
+  'salvar-modal': (el) => {
+    const salvar = SALVAR_MODAL[el.dataset.salvar];
+    if (!salvar) return;
+    const id = Number(el.dataset.id) || 0;
+    if (el.dataset.colecao) salvar(el.dataset.colecao, id);
+    else salvar(id);
+  },
+  'remover-dyn-item': (el) => removeDynItem(el),
+  'add-dyn-item': (el) => addDynItem(el.dataset.field, el.dataset.placeholder, el.dataset.textarea === 'true'),
+  'add-manual-passo': () => addManualPasso(),
+  'add-documento': () => addDocumento(),
+  'add-etapa': () => addEtapa(),
+  'add-servico-documento': () => addServicoDocumento(),
+  'add-campo': () => addCampo(),
+  'add-org-campo': () => addOrgCampo(),
+  'limpar-multi-select': (el) => {
+    const alvo = el.dataset.alvo ? document.getElementById(el.dataset.alvo) : el.previousElementSibling;
+    clearAdminMultiSelect(alvo);
+  },
+  'abrir-input-arquivo': (el) => {
+    const input = document.getElementById(el.dataset.input);
+    if (input) input.click();
+  },
+  'remover-foto': () => removerFoto(),
+  'remover-arquivo-upload': () => removerArquivoUpload(),
+  'selecionar-icone': (el) => selecionarIcone(el.dataset.field, el.dataset.valor),
+  'selecionar-cor': (el) => selecionarCor(el.dataset.field, el.dataset.valor),
 };
 
 const ACOES_ADMIN_INPUT = {
@@ -3432,6 +3484,17 @@ const ACOES_ADMIN_INPUT = {
 
 const ACOES_ADMIN_CHANGE = {
   'toggle-publish-inline': (el) => toggleInlinePublishStatus(el.dataset.colecao, Number(el.dataset.id), el.checked),
+
+  // Modais e formularios (grupo 3)
+  'toggle-publish-modal': (el) => handlePublishStatusToggle(el),
+  'preview-foto': (el) => previewFoto(el),
+  'preview-passo-imagem': (el) => previewPassoImagem(el),
+  'processar-arquivo-upload': (el) => processarArquivoUpload(el),
+  'toggle-doc-tipo': (el) => toggleDocTipo(el),
+  'toggle-dyn-valor': (el) => toggleDynValorInput(el),
+  'toggle-evento-tipo': () => toggleEventoTipoFields(),
+  'toggle-servico-categoria': () => toggleServicoCategoriaOutro(),
+  'preencher-dados-func': () => preencherDadosFunc(),
 };
 
 function despacharAcaoAdmin(evento, tabela) {
