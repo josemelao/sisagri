@@ -93,6 +93,14 @@ test('isPublished: so "published" explicito publica', () => {
   assert.equal(isPublished({ id: 2, publish_status: 'draft' }), false);
 });
 
+test('isPublished: o campo operacional "status" NAO publica (escala_ferias)', () => {
+  const h = carregarApp();
+  const isPublished = h.get('isPublished');
+  assert.equal(isPublished({ id: 1, status: 'ativo', publish_status: 'draft' }), false);
+  assert.equal(isPublished({ id: 2, status: 'published' }), false);
+  assert.equal(isPublished({ id: 3, status: 'ferias', publish_status: 'published' }), true);
+});
+
 test('filterPublished: lista mista mostra so os publicados', () => {
   const h = carregarApp();
   const filterPublished = h.get('filterPublished');

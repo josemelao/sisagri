@@ -273,6 +273,28 @@ function _isSupabaseCollection(colecao) {
   return !!SUPABASE_TABLES[colecao];
 }
 
+/**
+ * Bloco 7 (T7.1): decide, uma vez por boot, se a sessao atual pode ver rascunho.
+ * Sem sessao -> nao. Sessao sem `pode_editar` -> nao. Erro de rede/RPC -> nao
+ * (fail-closed). O painel admin chama `dbInit()` de novo apos o login, entao a
+ * mesma resolucao passa a devolver `true` para admin/servidor.
+ */
+let _podeVerRascunhos = false;
+
+async function _resolverPodeVerRascunhos() {
+  if (!_sb) return false;
+  try {
+    const { data: sessao, error: erroSessao } = await _sb.auth.getSession();
+    if (erroSessao || !sessao?.session) return false;
+    const { data: podeEditar, error: erroRpc } = await _sb.rpc('pode_editar');
+    if (erroRpc) return false;
+    return podeEditar === true;
+  } catch (e) {
+    console.warn('[DB] Falha ao verificar permissao de rascunho; aplicando filtro publico.', e);
+    return false;
+  }
+}
+
 function _createSupabaseClient() {
   const factory = window.supabase?.createClient;
   if (!factory || !DB_CONFIG.SUPABASE_URL || !DB_CONFIG.SUPABASE_KEY) return null;
@@ -629,7 +651,12 @@ async function _loadSupabaseCollection(colecao, options = {}) {
   const columns = (colecao === 'arquivos')
     ? 'id,nome,tipo,tags,url,arquivo_nome,storage_path,storage_bucket,publish_status'
     : '*';
-  const { data, error } = await _sb.from(tabela).select(columns).order('id', { ascending: true });
+  let consulta = _sb.from(tabela).select(columns);
+  // Bloco 7 (T7.1): segunda camada do gate de rascunho. A RLS ja bloqueia o
+  // anonimo; aqui evitamos ate o download do rascunho. Fail-closed: na duvida
+  // (_podeVerRascunhos=false), filtra por publicado.
+  if (!_podeVerRascunhos) consulta = consulta.eq('publish_status', 'published');
+  const { data, error } = await consulta.order('id', { ascending: true });
   if (error) throw error;
   _db[colecao] = _normalizeCollectionData(colecao, data || []);
 }
@@ -738,6 +765,8 @@ async function _initSupabase() {
   _ensureAppConfig();
   _normalizeDbCollections();
   _applyLocalAppConfig();
+
+  _podeVerRascunhos = await _resolverPodeVerRascunhos();
 
   try {
     const colecoes = Object.keys(SUPABASE_TABLES);

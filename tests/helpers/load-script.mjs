@@ -242,13 +242,20 @@ export function criarSupabaseFalso() {
       signOut: async () => ({ error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     },
-    from: () => ({
-      select: () => ({ order: async () => ({ data: [], error: null }), async then(r) { return r({ data: [], error: null }); } }),
-      insert: async () => ({ error: null }),
-      update: async () => ({ error: null }),
-      delete: async () => ({ error: null }),
-      upsert: async () => ({ error: null }),
-    }),
+    from: () => {
+      const resultado = { data: [], error: null };
+      const consulta = {
+        select: () => consulta,
+        eq: () => consulta,
+        order: async () => resultado,
+        insert: async () => ({ error: null }),
+        update: async () => ({ error: null }),
+        delete: async () => ({ error: null }),
+        upsert: async () => ({ error: null }),
+        async then(resolve) { return resolve(resultado); },
+      };
+      return consulta;
+    },
     storage: {
       from: () => ({
         getPublicUrl: (caminho) => ({ data: { publicUrl: `https://fake.supabase.co/storage/v1/object/public/x/${caminho}` } }),

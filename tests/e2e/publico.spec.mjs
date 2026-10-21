@@ -89,4 +89,25 @@ test.describe('app publico', () => {
 
     expect(erros, `erros de JS ao navegar: ${erros.join(' | ')}`).toEqual([]);
   });
+
+  test('6. defesa em profundidade: o anonimo pede so publish_status=published', async ({ page }) => {
+    // Bloco 7 (T7.1): a RLS ja barra o rascunho; este teste garante que o
+    // cliente tambem nao pede rascunho. admin_settings nao tem o campo.
+    const requisicoes = [];
+    page.on('request', (req) => {
+      const url = req.url();
+      if (!url.includes('/rest/v1/')) return;
+      const tabela = new URL(url).pathname.split('/').pop();
+      if (tabela === 'admin_settings') return;
+      requisicoes.push({ tabela, url });
+    });
+
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    expect(requisicoes.length).toBeGreaterThan(0);
+    for (const { tabela, url } of requisicoes) {
+      expect(url, `tabela ${tabela} pediu sem o filtro de publicado`).toContain('publish_status=eq.published');
+    }
+  });
 });
