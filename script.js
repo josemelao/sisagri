@@ -1483,10 +1483,10 @@ function _renderManualEmPainel(m, modo, passoAtivo, cfg) {
           </div>
           <div class="manual-passo-footer">
             <button class="btn-passo" ${passoAtivo===0?'disabled':''}
-                    data-acao="manual-painel-passo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo-1}">
+                    data-acao="manual-painel-passo" data-modo="completo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo-1}">
               <i class="ph-bold ph-arrow-left"></i> Anterior</button>
             <button class="btn-passo btn-passo-primary" ${passoAtivo===total-1?'disabled':''}
-                    data-acao="manual-painel-passo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo+1}">
+                    data-acao="manual-painel-passo" data-modo="completo" data-painel="${escapeAttr(cfg.painel)}" data-id="${escapeAttr(m.id)}"${processoAttr} data-passo="${passoAtivo+1}">
               Próximo <i class="ph-bold ph-arrow-right"></i></button>
           </div>
         </div>
@@ -2043,7 +2043,7 @@ function buildManualPaginationHTML(total, passoAtivo, opts = {}) {
   const acao = opts.acao || "manual-passo";
   const painelAttr = opts.painel ? ` data-painel="${escapeAttr(opts.painel)}"` : "";
   const processoAttr = opts.processoId !== undefined ? ` data-processo-id="${escapeAttr(opts.processoId)}"` : "";
-  const attrs = `data-acao="${acao}" data-id="${escapeAttr(opts.id)}"${painelAttr}${processoAttr}`;
+  const attrs = `data-acao="${acao}" data-id="${escapeAttr(opts.id)}" data-modo="completo"${painelAttr}${processoAttr}`;
   return `
     <div class="manual-paginacao">
       <button class="pag-arrow" ${passoAtivo === 0 ? "disabled" : ""} ${attrs} data-passo="${passoAtivo - 1}" aria-label="Passo anterior">
@@ -4691,7 +4691,10 @@ function _renderManualNoPainel(el, passo) {
   if (!render) return;
   const m = manuais.find((item) => String(item.id) === String(el.dataset.id));
   if (!m) return;
-  const modo = el.dataset.modo || "resumido";
+  // Passo so existe na visao completa; sem data-modo (botoes antigos ou
+  // template novo) mantem o modo em vez de voltar para "resumido".
+  const modo = el.dataset.modo
+    || (el.dataset.acao === "manual-painel-passo" ? "completo" : "resumido");
   if (el.dataset.painel.endsWith("-neto")) {
     render(m, modo, el.dataset.processoId, passo);
   } else {

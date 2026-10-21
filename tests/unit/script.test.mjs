@@ -278,3 +278,46 @@ test('renderManualDetail: usa imagem_url_assinada e nao a URL publica antiga', (
   assert.doesNotMatch(container.innerHTML, /object\/public\/manuais\/1\.jpg/);
 });
 
+/* ==========================================================================
+   Navegacao de passos do manual (bug: voltava para "resumido")
+   ========================================================================== */
+
+test('buildManualPaginationHTML: botoes de passo carregam o modo completo', () => {
+  const h = carregarApp();
+  const html = h.get('buildManualPaginationHTML')(3, 1, {
+    acao: 'manual-painel-passo',
+    id: 1,
+    painel: 'manual-filho',
+  });
+
+  assert.match(html, /data-acao="manual-painel-passo"/);
+  assert.match(html, /data-modo="completo"/);
+});
+
+test('_renderManualNoPainel: passo sem data-modo permanece no modo completo', () => {
+  const h = carregarApp();
+  h.run(`
+    manuais = [{
+      id: 1,
+      titulo: 'Manual',
+      categoria: 'Categoria',
+      observacoes: '',
+      documentos: [],
+      passos: [{ texto: 'Primeiro' }, { texto: 'Segundo' }]
+    }];
+    window.__renderManualChamadas = [];
+    PAINEIS_MANUAIS['manual-filho'] = (m, modo, passo) => {
+      window.__renderManualChamadas.push({ id: m.id, modo, passo });
+    };
+  `);
+
+  h.get('_renderManualNoPainel')({
+    dataset: { acao: 'manual-painel-passo', painel: 'manual-filho', id: '1', passo: '1' },
+  }, 1);
+
+  const chamadas = h.window.__renderManualChamadas;
+  assert.equal(chamadas.length, 1);
+  assert.equal(chamadas[0].id, 1);
+  assert.equal(chamadas[0].modo, 'completo');
+  assert.equal(chamadas[0].passo, 1);
+});
