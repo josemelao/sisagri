@@ -26,6 +26,25 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 9c GRUPO 1 CONCLUIDO (commit local 470182b)
+=========================================================================
+
+  - script.js: 42 handlers inline -> `data-acao` + uma delegacao unica
+    (ACOES_CLIQUE / despacharAcaoClique / initAcoesDelegadas, listener de
+    `click` em document no DOMContentLoaded). Zero `on(click|change|input|
+    submit)=` no arquivo.
+  - Testes: tests/unit/no-inline-handlers.test.mjs (novo, guarda estatica de
+    script.js), tests/unit/acoes-delegadas.test.mjs (novo, 5 casos);
+    script.test.mjs, tests/e2e/publico.spec.mjs (teste 7) e xss.spec.mjs
+    atualizados.
+  - Medido em 2026-10-21: npm run check exit 0 (131 testes, 0 erros de lint)
+    | e2e 10 passed / 2 skipped | check-draft-leak 15/15.
+  - Validado manualmente pelo dono em http://localhost:5173/index.html:
+    cards, modais, paineis aninhados, filtros, paginacao e download OK.
+  - Proximo: Bloco 9c grupos 2 e 3 (admin.js: tabelas/listas e
+    modais/formularios) e grupo 4 (18 handlers no HTML); depois 9d (CSP).
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 7 CONCLUIDO (commit local 0e8180e)
 =========================================================================
 
@@ -73,8 +92,10 @@ SESSAO 2026-10-21 — BLOCO 8 CONCLUIDO (commits locais b9f2604, 9851e45,
     obsoleto afetou 0 linhas, anon sem execute na RPC replace_collection.
   - DEPENDENCIA DE DEPLOY: aplicar 0012-0014 em PRODUCAO antes de
     publicar este codigo. Producao continua intocada.
-  - Proximo: Bloco 9c/9d (handlers inline), depois Bloco 10 (token do
-    Instagram, depende do dono), Bloco 6 restante e Blocos 11-13.
+  - Proximo: Bloco 9c grupos 2-4 (admin.js e HTML), depois 9d (CSP),
+    Bloco 10 (token do Instagram, depende do dono), Bloco 6 restante e
+    Blocos 11-13. Grupo 1 do 9c (script.js) ja concluido (ver sessao 9c
+    acima).
 
 
 =========================================================================
@@ -203,7 +224,8 @@ Plano vigente (substitui a v1):
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
-     sanitizador de link) concluidos; falta 9c/9d (handlers inline, CSP).
+     sanitizador de link) concluidos; 9c grupo 1 (script.js, commit 470182b)
+     concluido e validado; falta 9c grupos 2-4 (admin.js e HTML) e 9d (CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
