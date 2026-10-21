@@ -305,25 +305,34 @@ function renderOverview() {
 /* ============================================================
    ROTEADOR DE SEÇÕES
    ============================================================ */
+/**
+ * Registro dos modulos do painel: chave da secao -> render + id do campo
+ * de busca. Substitui a cadeia de `case` do roteador; um modulo novo agora
+ * e uma entrada aqui. Formulario/salvar/excluir seguem nas tabelas de acoes
+ * (SALVAR_MODAL e ACOES_ADMIN_CLIQUE), que ja sao fechadas.
+ */
+const MODULES = {
+  overview: { render: () => renderOverview() },
+  funcionarios: { render: () => renderFuncionarios(), searchId: 'funcionarios-search' },
+  manuais: { render: () => renderManuais(), searchId: 'manuais-search' },
+  processos: { render: () => renderProcessos(), searchId: 'processos-search' },
+  arquivos: { render: () => renderArquivos(), searchId: 'arquivos-search' },
+  veiculos: { render: () => renderVeiculos(), searchId: 'veiculos-search' },
+  sistemas: { render: () => renderSistemas(), searchId: 'sistemas-search' },
+  servicos: { render: () => renderServicos(), searchId: 'servicos-search' },
+  avisos: { render: () => renderAvisos(), searchId: 'avisos-search' },
+  agendaEventos: { render: () => renderAgendaEventos(), searchId: 'agenda-search' },
+  escalaFerias: { render: () => renderEscalaFerias(), searchId: 'escala-search' },
+  acessoRapido: { render: () => renderAcessoRapido(), searchId: 'acesso-search' },
+  infoJuridico: { render: () => renderInfoSimples('infoJuridico', 'Secretaria', 'Informações da Secretaria'), searchId: 'infosimples-search-infoJuridico' },
+  infoMunicipio: { render: () => renderInfoSimples('infoMunicipio', 'Município e Prefeitura', 'Informações do Município'), searchId: 'infosimples-search-infoMunicipio' },
+  infoOrgaos: { render: () => renderInfoOrgaos(), searchId: 'orgaos-search' },
+  configuracoes: { render: () => carregarConfigDashboard() },
+};
+
 function renderSection(key) {
-  switch (key) {
-    case 'overview':       renderOverview(); break;
-    case 'funcionarios':   renderFuncionarios(); break;
-    case 'manuais':        renderManuais(); break;
-    case 'processos':      renderProcessos(); break;
-    case 'arquivos':       renderArquivos(); break;
-    case 'veiculos':       renderVeiculos(); break;
-    case 'sistemas':       renderSistemas(); break;
-    case 'servicos':       renderServicos(); break;
-    case 'avisos':         renderAvisos(); break;
-    case 'agendaEventos':  renderAgendaEventos(); break;
-    case 'escalaFerias':   renderEscalaFerias(); break;
-    case 'acessoRapido':   renderAcessoRapido(); break;
-    case 'infoJuridico':   renderInfoSimples('infoJuridico', 'Secretaria', 'Informações da Secretaria'); break;
-    case 'infoMunicipio':  renderInfoSimples('infoMunicipio', 'Município e Prefeitura', 'Informações do Município'); break;
-    case 'infoOrgaos':     renderInfoOrgaos(); break;
-    case 'configuracoes':  carregarConfigDashboard(); break;
-  }
+  const modulo = MODULES[key];
+  if (modulo && typeof modulo.render === 'function') modulo.render();
   aplicarPermissoesUI();
 }
 
