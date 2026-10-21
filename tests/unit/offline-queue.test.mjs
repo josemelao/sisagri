@@ -16,7 +16,10 @@ function carregar({ falhar = true, erro = { message: 'sem rede' } } = {}) {
   const estado = { falhar, erro };
   const chamadas = [];
 
-  const resposta = () => Promise.resolve({ error: estado.falhar ? estado.erro : null });
+  const resposta = () => ({
+    data: estado.falhar ? null : [{ id: 1 }],
+    error: estado.falhar ? estado.erro : null,
+  });
 
   const consulta = {
     select: () => consulta,
@@ -29,18 +32,37 @@ function carregar({ falhar = true, erro = { message: 'sem rede' } } = {}) {
     rpc: async () => ({ data: false, error: null }),
     from: (tabela) => ({
       select: () => consulta,
-      insert: (payload) => { chamadas.push({ tipo: 'insert', tabela, payload }); return resposta(); },
-      upsert: (payload) => { chamadas.push({ tipo: 'upsert', tabela, payload }); return resposta(); },
-      update: (payload) => ({
-        eq: (coluna, valor) => {
-          chamadas.push({ tipo: 'update', tabela, valor, payload });
-          return resposta();
-        },
-      }),
+      insert: (payload) => {
+        chamadas.push({ tipo: 'insert', tabela, payload });
+        const builder = {
+          select: () => builder,
+          single: async () => ({
+            data: estado.falhar ? null : { id: 1 },
+            error: estado.falhar ? estado.erro : null,
+          }),
+        };
+        return builder;
+      },
+      upsert: (payload) => {
+        chamadas.push({ tipo: 'upsert', tabela, payload });
+        return Promise.resolve(resposta());
+      },
+      update: (payload) => {
+        chamadas.push({ tipo: 'update', tabela, payload });
+        const builder = {
+          eq: (coluna, valor) => {
+            chamadas.push({ tipo: 'eq', coluna, valor });
+            return builder;
+          },
+          select: () => builder,
+          then: (resolve) => resolve(resposta()),
+        };
+        return builder;
+      },
       delete: () => ({
         eq: (coluna, valor) => {
-          chamadas.push({ tipo: 'delete', tabela, valor });
-          return resposta();
+          chamadas.push({ tipo: 'delete', coluna, valor });
+          return Promise.resolve(resposta());
         },
       }),
     }),
@@ -86,8 +108,9 @@ test('flush reenvia a fila e nao duplica', async () => {
   const restante = await DB.flushPendingWrites();
   assert.equal(restante.length, 0, 'fila deve esvaziar');
 
-  const envios = chamadas.filter(c => c.tipo === 'upsert' || c.tipo === 'insert');
-  assert.equal(envios.length >= 2, true, 'deve tentar de novo o insert');
+  const envios = chamadas.filter(c => c.tipo === 'upsert');
+  assert.equal(envios.length >= 1, true, 'deve reenviar o insert como upsert');
+  assert.equal(envios[0].payload.id != null, true, 'o replay carrega o id temporario');
 
   // Segundo flush nao reenvia nada.
   const antes = chamadas.length;
@@ -111,7 +134,10 @@ test('update pendente usa o id e o payload salvos', async () => {
 
   estado.falhar = false;
   await DB.flushPendingWrites();
-  assert.ok(chamadas.some(c => c.tipo === 'update' && c.valor === id && c.payload.titulo === 'Editado'));
+  const reenvio = chamadas.find(c => c.tipo === 'update' && c.payload.titulo === 'Editado');
+  const filtroId = chamadas.find(c => c.tipo === 'eq' && c.coluna === 'id' && c.valor === id);
+  assert.ok(reenvio, 'deve reenviar o update pendente');
+  assert.ok(filtroId, 'deve filtrar pelo id do registro');
 });
 
 test('sucesso nao cria pendencia', async () => {

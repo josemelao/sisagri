@@ -366,6 +366,16 @@ function _migrarPublishStatusLegado(colecoes) {
 
 function _normalizeSupabaseRow(colecao, row) {
   if (!row) return row;
+  const normalizado = _normalizarCamposSupabase(colecao, row);
+  // Bloco 8 (T8.5): preserva updated_at mesmo nos casos que montam o objeto
+  // campo a campo (sem spread), para a deteccao de conflito funcionar.
+  if (normalizado && typeof normalizado === 'object' && !Array.isArray(normalizado) && 'updated_at' in row) {
+    return { ...normalizado, updated_at: row.updated_at };
+  }
+  return normalizado;
+}
+
+function _normalizarCamposSupabase(colecao, row) {
   switch (colecao) {
     case 'funcionarios':
       return {
@@ -791,21 +801,32 @@ async function _reprocessarPendentes() {
  * Envia uma operacao ao Supabase e devolve `{ ok, error }` (nunca rejeita).
  * O status do banco e a recarga da colecao continuam centralizados aqui.
  */
-function _enviarParaSupabase(colecao, tipo, id, registro) {
+function _enviarParaSupabase(colecao, tipo, id, registro, opcoes = {}) {
   if (!_sb || !_isSupabaseCollection(colecao)) return Promise.resolve({ ok: true, skipped: true });
   const tabela = SUPABASE_TABLES[colecao];
   const payload = tipo === 'delete' ? null : _toSupabasePayload(colecao, registro);
+  // Na fila offline o insert carrega o id temporario para o replay ser
+  // idempotente (upsert); no envio online o id e gerado pelo banco.
+  const payloadFila = (tipo === 'insert' && opcoes.idTemporario != null && payload)
+    ? { ...payload, id: opcoes.idTemporario }
+    : payload;
   let requisicao;
+
   if (tipo === 'insert') {
-    requisicao = _sb.from(tabela).insert(payload);
+    const { id: _idIgnorado, ...semId } = payload;
+    requisicao = _sb.from(tabela).insert(semId).select('id').single();
   } else if (tipo === 'update') {
     requisicao = _sb.from(tabela).update(payload).eq('id', id);
+    if (opcoes.updatedAtAnterior) {
+      requisicao = requisicao.eq('updated_at', opcoes.updatedAtAnterior);
+    }
+    requisicao = requisicao.select('id');
   } else {
     requisicao = _sb.from(tabela).delete().eq('id', id);
   }
 
   return Promise.resolve(requisicao)
-    .then(({ error }) => {
+    .then(({ data, error }) => {
       if (error) {
         _setDbStatus({
           provider: 'local',
@@ -815,10 +836,27 @@ function _enviarParaSupabase(colecao, tipo, id, registro) {
         });
         console.error(`[DB] Falha ao gravar em ${tabela} (${tipo} ${id}):`, error);
         if (_erroTransiente(error)) {
-          _enfileirarPendente({ op: tipo, colecao, id, payload, ts: Date.now() });
+          _enfileirarPendente({ op: tipo, colecao, id, payload: payloadFila, ts: Date.now() });
+          return { ok: false, error, enfileirado: true };
         }
         return { ok: false, error };
       }
+
+      // T8.5: update filtrado pelo updated_at esperado nao achou a linha =
+      // outro editor salvou antes. Nao enfileira (nao adianta repetir).
+      if (tipo === 'update' && opcoes.updatedAtAnterior && Array.isArray(data) && data.length === 0) {
+        const conflito = {
+          code: 'CONFLITO',
+          message: 'O registro foi alterado por outro usuario. Recarregue e edite novamente.',
+        };
+        _setDbStatus({ provider: 'local', lastError: conflito.message });
+        console.warn(`[DB] Conflito de edicao em ${tabela}:${id}`);
+        _refreshSupabaseCollection(colecao).catch((refreshError) => {
+          console.warn(`[DB] Falha ao recarregar ${tabela} apos conflito:`, refreshError);
+        });
+        return { ok: false, error: conflito, conflito: true };
+      }
+
       _setDbStatus({
         provider: 'supabase',
         supabaseConnected: true,
@@ -828,7 +866,7 @@ function _enviarParaSupabase(colecao, tipo, id, registro) {
       _refreshSupabaseCollection(colecao).catch((refreshError) => {
         console.warn(`[DB] Falha ao recarregar ${tabela} apos ${tipo}:`, refreshError);
       });
-      return { ok: true };
+      return { ok: true, id: tipo === 'insert' ? data?.id : null };
     })
     .catch((error) => {
       _setDbStatus({
@@ -838,8 +876,8 @@ function _enviarParaSupabase(colecao, tipo, id, registro) {
         lastError: error?.message || `Falha ao gravar em ${tabela}.`,
       });
       console.error(`[DB] Erro inesperado ao gravar em ${tabela} (${tipo} ${id}):`, error);
-      _enfileirarPendente({ op: tipo, colecao, id, payload, ts: Date.now() });
-      return { ok: false, error };
+      _enfileirarPendente({ op: tipo, colecao, id, payload: payloadFila, ts: Date.now() });
+      return { ok: false, error, enfileirado: true };
     });
 }
 
@@ -1103,11 +1141,23 @@ const DB = {
     _persistLocal();
     _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
-      _registrarEscrita(
+      const idTemporario = novoRegistro.id;
+      const promessa = _enviarParaSupabase(
         colecao,
-        novoRegistro.id,
-        _enviarParaSupabase(colecao, 'insert', novoRegistro.id, novoRegistro)
-      );
+        'insert',
+        idTemporario,
+        novoRegistro,
+        { idTemporario }
+      ).then((resultado) => {
+        // T8.3: o id definitivo vem do banco. O temporario so existiu para a
+        // UI responder na hora.
+        if (resultado?.ok && resultado.id != null) {
+          novoRegistro.id = resultado.id;
+          _persistLocal();
+        }
+        return resultado;
+      });
+      _registrarEscrita(colecao, idTemporario, promessa);
     }
     return novoRegistro;
   },
@@ -1117,6 +1167,8 @@ const DB = {
     if (!_db[colecao]) return null;
     const idx = _db[colecao].findIndex(r => r.id === id);
     if (idx === -1) return null;
+    // T8.5: guarda o updated_at ANTERIOR antes de sobrescrever o registro.
+    const updatedAtAnterior = _db[colecao][idx]?.updated_at || null;
     _db[colecao][idx] = _normalizeCollectionRecord(colecao, { ..._db[colecao][idx], ...dados, id });
     _persistLocal();
     _notifyCollectionUpdated(colecao);
@@ -1124,7 +1176,7 @@ const DB = {
       _registrarEscrita(
         colecao,
         id,
-        _enviarParaSupabase(colecao, 'update', id, _db[colecao][idx])
+        _enviarParaSupabase(colecao, 'update', id, _db[colecao][idx], { updatedAtAnterior })
       );
     }
     return _db[colecao][idx];
@@ -1180,23 +1232,41 @@ const DB = {
     return true;
   },
 
-  /** Substitui uma coleção inteira (usado pelo admin ao importar) */
-  replaceCollection(colecao, lista) {
-    _db[colecao] = _normalizeCollectionData(colecao, JSON.parse(JSON.stringify(lista)));
+  /**
+   * Substitui uma coleção inteira (usado pelo admin ao importar).
+   * Bloco 8 (T8.4): usa a RPC `replace_collection`, que faz delete + insert
+   * numa transação. Nunca apaga antes pelo cliente.
+   */
+  async replaceCollection(colecao, lista) {
+    _db[colecao] = _normalizeCollectionData(colecao, JSON.parse(JSON.stringify(lista || [])));
     _persistLocal();
-    if (_sb && _isSupabaseCollection(colecao)) {
-      const tabela = SUPABASE_TABLES[colecao];
-      const payload = _db[colecao].map(item => _toSupabasePayload(colecao, item));
-      _sb.from(tabela).delete().gte('id', 0).then(({ error }) => {
-        if (error) {
-          console.error(`[DB] Falha ao limpar ${tabela} antes de replaceCollection:`, error);
-          return;
-        }
-        _sb.from(tabela).insert(payload).then(({ error: insertError }) => {
-          if (insertError) console.error(`[DB] Falha ao repor ${tabela}:`, insertError);
-        });
+    _notifyCollectionUpdated(colecao);
+    if (!_sb || !_isSupabaseCollection(colecao)) return DB.get(colecao);
+
+    const tabela = SUPABASE_TABLES[colecao];
+    const payload = _db[colecao].map(item => _toSupabasePayload(colecao, item));
+    const { data, error } = await _sb.rpc('replace_collection', {
+      p_tabela: tabela,
+      p_payload: payload,
+    });
+    if (error) {
+      _setDbStatus({
+        provider: 'local',
+        supabaseConnected: false,
+        writesReachSupabase: false,
+        lastError: error.message || `Falha ao substituir ${tabela}.`,
       });
+      console.error(`[DB] Falha ao substituir ${tabela}:`, error);
+      throw error;
     }
+    _setDbStatus({
+      provider: 'supabase',
+      supabaseConnected: true,
+      writesReachSupabase: true,
+      lastError: '',
+    });
+    await _refreshSupabaseCollection(colecao);
+    return DB.get(colecao);
   },
 
   /** Retorna o banco completo (para exportação) */
@@ -1313,16 +1383,18 @@ const DB = {
   },
 
   /** Importa um banco completo (substitui tudo, usado no admin) */
-  importAll(dados) {
+  async importAll(dados) {
     _db = JSON.parse(JSON.stringify(dados));
     _ensureAppConfig();
     _normalizeDbCollections();
     _persistLocal();
-    if (_sb) {
-      Object.keys(SUPABASE_TABLES).forEach(colecao => {
-        DB.replaceCollection(colecao, _db[colecao] || []);
-      });
-    }
+    if (!_sb) return DB.exportAll();
+
+    // T8.4: cada colecao e trocada numa transacao (RPC), em paralelo.
+    await Promise.all(
+      Object.keys(SUPABASE_TABLES).map(colecao => DB.replaceCollection(colecao, _db[colecao] || []))
+    );
+    return DB.exportAll();
   },
 
   /* ---- Autenticação admin (Supabase Auth) ---- */

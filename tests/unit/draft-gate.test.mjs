@@ -106,6 +106,20 @@ test('_loadSupabaseCollection: erro do banco continua propagando', async () => {
   );
 });
 
+test('_normalizeSupabaseRow: preserva updated_at nos casos sem spread (T8.5)', () => {
+  const { h } = carregar();
+  const normalizar = h.get('_normalizeSupabaseRow');
+
+  const processo = normalizar('processos', {
+    id: 7,
+    titulo: 'X',
+    publish_status: 'draft',
+    updated_at: '2026-10-21T13:00:00+00:00',
+  });
+
+  assert.equal(processo.updated_at, '2026-10-21T13:00:00+00:00');
+});
+
 test('escalaFerias: "status" operacional nunca vira publish_status', () => {
   const { h } = carregar();
   const normalizar = h.get('_normalizeCollectionRecord');

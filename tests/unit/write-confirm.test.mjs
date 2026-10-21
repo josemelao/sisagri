@@ -11,20 +11,12 @@ import { carregarScripts } from '../helpers/load-script.mjs';
 
 /**
  * Cliente falso com controle da resposta remota.
- * `controle.liberar` resolve a escrita pendente.
+ * `liberar()` resolve a escrita pendente (modo manual).
+ * `dadosUpdate` simula o retorno do update (vazio = conflito).
  */
-function carregar({ falhar = false, manual = false } = {}) {
+function carregar({ falhar = false, manual = false, dadosUpdate = undefined } = {}) {
   const chamadas = [];
   let liberar = null;
-  let pendente = null;
-
-  const resposta = () => {
-    if (manual) {
-      pendente = new Promise((resolve) => { liberar = resolve; });
-      return pendente;
-    }
-    return Promise.resolve({ error: falhar ? { message: 'sem rede' } : null });
-  };
 
   const consulta = {
     select: () => consulta,
@@ -37,17 +29,42 @@ function carregar({ falhar = false, manual = false } = {}) {
     rpc: async () => ({ data: false, error: null }),
     from: (tabela) => ({
       select: () => consulta,
-      insert: (payload) => { chamadas.push({ tipo: 'insert', tabela, payload }); return resposta(); },
-      update: (payload) => ({
-        eq: (coluna, valor) => {
-          chamadas.push({ tipo: 'update', tabela, coluna, valor, payload });
-          return resposta();
-        },
-      }),
+      insert: (payload) => {
+        chamadas.push({ tipo: 'insert', tabela, payload });
+        const builder = {
+          select: () => builder,
+          single: () => {
+            if (manual) return new Promise((resolve) => { liberar = resolve; });
+            return Promise.resolve({
+              data: falhar ? null : { id: 900 },
+              error: falhar ? { message: 'sem rede' } : null,
+            });
+          },
+        };
+        return builder;
+      },
+      update: (payload) => {
+        chamadas.push({ tipo: 'update', tabela, payload });
+        const builder = {
+          eq: (coluna, valor) => {
+            chamadas.push({ tipo: 'eq', coluna, valor });
+            return builder;
+          },
+          select: () => builder,
+          then: (resolve) => {
+            const data = dadosUpdate !== undefined ? dadosUpdate : [{ id: payload.id }];
+            resolve({
+              data: falhar ? null : data,
+              error: falhar ? { message: 'sem rede' } : null,
+            });
+          },
+        };
+        return builder;
+      },
       delete: () => ({
         eq: (coluna, valor) => {
           chamadas.push({ tipo: 'delete', tabela, coluna, valor });
-          return resposta();
+          return Promise.resolve({ data: null, error: falhar ? { message: 'sem rede' } : null });
         },
       }),
     }),
@@ -55,7 +72,11 @@ function carregar({ falhar = false, manual = false } = {}) {
 
   const h = carregarScripts(['db.js'], { supabase: false, cliente });
   h.run('_sb = window.__clienteFake; _db = {}');
-  return { h, chamadas, liberar: () => liberar && liberar({ error: null }) };
+  return {
+    h,
+    chamadas,
+    liberar: () => liberar && liberar({ data: { id: 900 }, error: null }),
+  };
 }
 
 test('DB.save: espera a resposta do banco antes de resolver', async () => {
@@ -100,9 +121,42 @@ test('DB.save: update usa o id e envia so o payload normalizado', async () => {
   await DB.save('processos', id, { titulo: 'Editado' });
 
   const update = chamadas.find(c => c.tipo === 'update');
+  const filtroId = chamadas.find(c => c.tipo === 'eq' && c.coluna === 'id');
   assert.ok(update, 'deve chamar update');
-  assert.equal(update.valor, id);
+  assert.equal(filtroId.valor, id);
   assert.equal(update.payload.titulo, 'Editado');
+});
+
+test('DB.save: insert nao envia id e adota o id que o banco devolve (T8.3)', async () => {
+  const { h, chamadas } = carregar();
+  const DB = h.get('DB');
+
+  const salvo = await DB.save('processos', 0, { titulo: 'Novo', publish_status: 'draft' });
+
+  const insert = chamadas.find(c => c.tipo === 'insert');
+  assert.ok(insert, 'deve chamar insert');
+  assert.equal('id' in insert.payload, false, 'o id nao pode ser enviado no insert');
+  assert.equal(salvo.id, 900, 'o registro assume o id gerado pelo banco');
+});
+
+test('DB.save: updated_at desatualizado vira conflito e nao entra na fila (T8.5)', async () => {
+  const { h, chamadas } = carregar({ dadosUpdate: [] });
+  const DB = h.get('DB');
+  h.run(`_db = { processos: [{
+    id: 1,
+    titulo: 'De outro editor',
+    publish_status: 'draft',
+    updated_at: '2026-01-01T00:00:00+00:00'
+  }] }`);
+
+  await assert.rejects(
+    () => DB.save('processos', 1, { titulo: 'Minha versao' }),
+    (erro) => erro.message.includes('alterado por outro usuario')
+  );
+
+  const filtroUpdatedAt = chamadas.find(c => c.tipo === 'eq' && c.coluna === 'updated_at');
+  assert.equal(filtroUpdatedAt.valor, '2026-01-01T00:00:00+00:00');
+  assert.equal(DB.getPendingWrites().length, 0, 'conflito nao e erro transitorio');
 });
 
 test('DB.remove: falha do banco devolve o registro ao cache', async () => {
