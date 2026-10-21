@@ -656,7 +656,7 @@ function _toSupabasePayload(colecao, registro) {
   }
 }
 
-async function _loadSupabaseCollection(colecao, options = {}) {
+async function _loadSupabaseCollection(colecao) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
   const tabela = SUPABASE_TABLES[colecao];
   const columns = (colecao === 'arquivos')
@@ -674,14 +674,14 @@ async function _loadSupabaseCollection(colecao, options = {}) {
 
 async function _refreshSupabaseCollectionsForExport() {
   if (!_sb) return;
-  await Promise.all(Object.keys(SUPABASE_TABLES).map(colecao => _loadSupabaseCollection(colecao, colecao === 'arquivos' ? { metadataOnly: true } : {})));
+  await Promise.all(Object.keys(SUPABASE_TABLES).map(colecao => _loadSupabaseCollection(colecao)));
   _persistLocal();
   _notifyCollectionUpdated('arquivos');
 }
 
 async function _refreshSupabaseCollection(colecao) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
-  await _loadSupabaseCollection(colecao, colecao === 'arquivos' ? { metadataOnly: true } : {});
+  await _loadSupabaseCollection(colecao);
   _persistLocal();
   _notifyCollectionUpdated(colecao);
 }
@@ -977,7 +977,7 @@ async function _initSupabase() {
   try {
     const colecoes = Object.keys(SUPABASE_TABLES);
     await Promise.all(colecoes.filter(c => c !== 'arquivos').map(_loadSupabaseCollection));
-    await _loadSupabaseCollection('arquivos', { metadataOnly: true });
+    await _loadSupabaseCollection('arquivos');
     const remoteLayoutConfig = await _loadSupabaseLayoutConfig();
     if (Object.keys(remoteLayoutConfig).length) {
       _db.layoutConfig = { ..._db.layoutConfig, ...remoteLayoutConfig };

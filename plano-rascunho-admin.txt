@@ -46,6 +46,38 @@ SESSAO 2026-10-21 — BLOCO 7 CONCLUIDO (commit local 0e8180e)
   - Proximo: Bloco 8 (escrita confiavel, migrations 0012/0013/0014).
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 8 CONCLUIDO (commits locais b9f2604, 9851e45,
+49392bc) + migrations 0012/0013/0014 APLICADAS NO TESTE
+=========================================================================
+
+  - T8.1: DB.save/DB.remove esperam a resposta real; admin.js so confirma
+    depois (salvarComFeedback, 13 telas + toggle inline + exclusao). Falha
+    mostra a mensagem real e preserva o dado local.
+  - T8.2: fila offline em smader_pending_writes_v1, replay no boot e no
+    evento online; insert pendente replaya como upsert (sem duplicar);
+    erro permanente (permissao/dado) nao entra na fila; o painel mostra
+    "N alteracao(oes) pendente(s)".
+  - T8.3: insert sem id + select('id').single(); o id do banco vira o id do
+    registro. 0012 sincronizou as 14 sequences.
+  - T8.4: replaceCollection/importAll usam a RPC replace_collection
+    (transacao unica). Nunca delete antes de insert.
+  - T8.5: updated_at + trigger nas 14 tabelas; update envia o carimbo
+    anterior e 0 linhas vira CONFLITO (sem enfileirar).
+  - T8.6: options morto removido; clone profundo de DB.get mantido de
+    proposito (arrays aninhados de manuais/processos).
+  - Medido: 125 testes de unidade (0 falhas), e2e 9 passed / 2 skipped,
+    check-draft-leak 15/15, lint 0 erros.
+  - Projeto de TESTE (zoywmvuswyosehlddmma): migrations 0012/0013/0014
+    aplicadas pelo MCP; provas: inserts sem id geraram 21 e 22, payload
+    invalido nao esvaziou a tabela (continuou com 2 linhas), updated_at
+    obsoleto afetou 0 linhas, anon sem execute na RPC replace_collection.
+  - DEPENDENCIA DE DEPLOY: aplicar 0012-0014 em PRODUCAO antes de
+    publicar este codigo. Producao continua intocada.
+  - Proximo: Bloco 9c/9d (handlers inline), depois Bloco 10 (token do
+    Instagram, depende do dono), Bloco 6 restante e Blocos 11-13.
+
+
+=========================================================================
 ESTADO DO REMOTO — PONTO DE RETOMADA (atualizado 2026-10-20)
 =========================================================================
 
