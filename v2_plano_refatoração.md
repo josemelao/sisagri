@@ -1223,17 +1223,17 @@ Bloco 2 continua sendo o último recurso.
 
 ### Tarefas
 
-- [ ] **T7.1 — Filtro server-side para o público**
-  Em `_loadSupabaseCollection`, quando a sessão **não** for admin, pedir `.eq('publish_status','published')`.
+- [x] **T7.1 — Filtro server-side para o público** — **feito em 2026-10-21 (commit `0e8180e`)**
+  `_resolverPodeVerRascunhos()` roda uma vez por boot (`getSession` + `rpc('pode_editar')`, fail-closed) e `_loadSupabaseCollection` aplica `.eq('publish_status','published')` quando não pode editar. O painel reexecuta `dbInit()` após o login e volta a ver rascunhos.
   Manter o filtro no cliente (`filterPublished`) como segunda camada — não remover.
   **Atenção:** o painel admin compartilha o mesmo `db.js`; a condição precisa ser por sessão, e não global, senão o admin deixa de ver rascunhos.
 - [x] **T7.2 — Default seguro de `publish_status`** — **feito no Bloco 4.1** (`_normalizePublishStatus` fail-closed e `isPublished` só aceita `published`).
   `_normalizePublishStatus` passa a devolver `'draft'` quando o campo estiver ausente/nulo/desconhecido (hoje o default é publicado).
   Conferir também `isPublished` em `script.js`.
   **Prova obrigatória de que nada publicado desaparece:** hoje há **0 registros sem `publish_status`**; após a mudança, a contagem do que o app público exibe deve ser **idêntica**.
-- [ ] **T7.3 — `status` vs `publish_status` em `escala_ferias`**
-  Documentar e garantir que **todo** filtro de publicação usa `publish_status`. Adicionar teste que falha se alguém usar `status` como critério de publicação.
-- [ ] **T7.4 — Teste**
+- [x] **T7.3 — `status` vs `publish_status` em `escala_ferias`** — **feito em 2026-10-21**
+  `tests/unit/draft-gate.test.mjs` e `script.test.mjs` provam que `status` operacional (`ativo`, `ferias`, ate `published`) nunca publica; só `publish_status === 'published'`.
+- [x] **T7.4 — Teste** — `tests/unit/draft-gate.test.mjs` (9 casos: sem sessão, sem papel, erro de RPC, erro de sessão, query com/sem filtro, erro do banco, `escala_ferias`) + e2e `6. defesa em profundidade` (o navegador anônimo só pede `publish_status=eq.published`).
 
 ### Validação (prova)
 

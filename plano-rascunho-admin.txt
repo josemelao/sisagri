@@ -26,6 +26,26 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 7 CONCLUIDO (commit local 0e8180e)
+=========================================================================
+
+  - Bloco 7 (rascunho em profundidade) concluido e validado:
+      db.js: _resolverPodeVerRascunhos() (getSession + rpc pode_editar,
+      fail-closed) e _loadSupabaseCollection com .eq('publish_status',
+      'published') quando a sessao nao pode editar;
+      admin continua vendo rascunho porque admin.js chama dbInit() apos o
+      login;
+      testes novos: tests/unit/draft-gate.test.mjs (9 casos) + 1 em
+      script.test.mjs + e2e "6. defesa em profundidade".
+  - Medido em 2026-10-21: npm run check exit 0 (110 testes, 0 erros de
+    lint) | e2e 9 passed / 2 skipped | check-draft-leak 15/15.
+  - Prova real no navegador: todas as requisicoes REST do anonimo levam
+    publish_status=eq.published (e2e 6).
+  - Prova no projeto de teste: 14 tabelas com 1 rascunho cada; a chave
+    anonima recebe so o publicado.
+  - Proximo: Bloco 8 (escrita confiavel, migrations 0012/0013/0014).
+
+=========================================================================
 ESTADO DO REMOTO — PONTO DE RETOMADA (atualizado 2026-10-20)
 =========================================================================
 
