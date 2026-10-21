@@ -1657,11 +1657,13 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
 | T13.6 | Higiene de repositório | `plano-refatoracao-v1.3.md` (mojibake real) regenerado/arquivado; branch fantasma `codex/fase1-...` e `origin/master` órfã **com confirmação do dono**; ADRs; `README.md` de setup | S |
+| T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `.opencode/plan/2026-10-21-item-frescor-dados-publico.md` | M |
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual não intencional (screenshots)
 - [ ] Lighthouse SEO ≥ 90 e a11y ≥ 90
 - [ ] app funciona com CDN bloqueado
+- [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
 - [ ] `AGENTS.md` atualizado com a nova arquitetura
 - [ ] nenhuma branch apagada sem autorização explícita
 

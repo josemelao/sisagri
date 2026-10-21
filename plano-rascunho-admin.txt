@@ -26,6 +26,56 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 9d CONCLUIDO (commit 7f89e5a) — CSP APLICADA
+=========================================================================
+
+  - index.html e admin.html: meta Content-Security-Policy EM VIGOR (nao
+    Report-Only). Politica aplicada:
+      default-src 'self';
+      script-src 'self' https://cdn.jsdelivr.net https://unpkg.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
+      font-src 'self' https://fonts.gstatic.com https://unpkg.com;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+      frame-src 'self' blob: https://*.supabase.co https://view.officeapps.live.com;
+      object-src 'none'; base-uri 'self'; form-action 'self'
+    `style-src 'unsafe-inline'` e obrigatorio: o app usa style="..." em
+    massa e o admin.html tem bloco <style> inline.
+  - DESVIO REGISTRADO: meta tag NAO suporta Report-Only (so header HTTP, e
+    o GitHub Pages nao permite header customizado). A fase de observacao
+    foi feita com header `Content-Security-Policy-Report-Only` injetado
+    pelo navegador (Playwright), sem alterar arquivos: 11 paginas + modal
+    de manual + 3 modais de arquivo + login do admin = 0 violacoes. So
+    entao a meta foi aplicada em modo enforced.
+  - CDN: supabase-js fixado em 2.118.0 (dist/umd/supabase.js) com
+    integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
+    e crossorigin="anonymous", igual nos dois HTMLs.
+    ATENCAO: subir a versao exige atualizar o hash; self-host esta previsto
+    no T13.5.
+  - script.js: removido o unico `onerror` inline (fallback do preview de
+    imagem de arquivo). Agora o fallback usa delegacao do evento `error`
+    em fase de captura (tratarErroImagemPreview), registrada dentro de
+    initAcoesDelegadas.
+  - Guardas novas: tests/unit/csp.test.mjs (diretivas/fontes, sem
+    unsafe-eval, sem unsafe-inline em script-src, SRI e mesma versao nos
+    dois HTMLs) e tests/e2e/csp.spec.mjs (coleta securitypolicyviolation e
+    exige zero no publico, nos modais e no login do admin, alem de provar o
+    fallback de imagem). no-inline-handlers.test.mjs passou a cobrir
+    onerror/onload/onmouseover/focus/blur (atributo com valor entre aspas).
+  - Medido: npm run check exit 0 (168 testes, 0 erros de lint, 19
+    warnings) | npx playwright test 13 passed / 2 skipped. SRI provado no
+    navegador: window.supabase.createClient existe e o boot conclui.
+  - Validacao manual do dono (2026-10-21): console sem nenhuma mensagem de
+    CSP. So aparecem (a) CORS da function do Instagram (PENDENTE 7,
+    pre-existente) e (b) mensagens internas do iframe do Office Online
+    (Permissions policy/BSSO), que nao sao do nosso app.
+  - Proximo: Bloco 10 (deploy da function do Instagram + rotacao do token,
+    depende do dono); depois 11, 12 e 13. No 13 entra a T13.7 (frescor do
+    app publico sem F5), ja especificada em
+    C:\Users\Usuario\.opencode\plan\2026-10-21-item-frescor-dados-publico.md
+    -> planejada para o fim do bloco, NAO antecipar.
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 9c GRUPO 4 (commit 0d1e476)
 + FIX DAS BUSCAS POR DIGITACAO (VALIDADO PELO DONO)
 =========================================================================
@@ -340,12 +390,15 @@ Plano vigente (substitui a v1):
   C:\Users\Usuario\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
-  -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
-     sanitizador de link) concluidos; 9c grupos 1 (script.js, 470182b), 2
-     (admin.js tabelas/listas, 71db11a), 3 (admin.js modais/formularios,
-     a82e957 + fixes 6a85171/292f79e) e 4 (HTML, 0d1e476) concluidos;
-     fix das buscas por digitacao (campo nulo) concluido e validado pelo
-     dono; falta 9d (CSP).
+  -> Bloco 9 CONCLUIDO: 9a (SisUtils + guarda de CI), 9b (escape na saida +
+     sanitizador de link), 9c grupos 1 (script.js, 470182b), 2 (admin.js
+     tabelas/listas, 71db11a), 3 (admin.js modais/formularios, a82e957 +
+     fixes 6a85171/292f79e) e 4 (HTML, 0d1e476), fix das buscas por
+     digitacao (fb67e1b) e 9d (CSP + SRI, 7f89e5a) concluidos e validados.
+  -> Bloco 13: T13.7 (frescor do app publico sem F5) planejada para o fim do
+     bloco; especificacao em
+     C:\Users\Usuario\.opencode\plan\2026-10-21-item-frescor-dados-publico.md
+     -> NAO antecipar sem decisao explicita do dono.
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
