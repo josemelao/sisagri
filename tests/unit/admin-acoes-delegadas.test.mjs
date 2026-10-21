@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { carregarScripts, criarElemento } from '../helpers/load-script.mjs';
 
 function carregar() {
-  return carregarScripts(['js/core/utils.js', 'db.js', 'admin.js'], {
+  return carregarScripts(['js/core/utils.js', 'js/admin/list-controller.js', 'db.js', 'admin.js'], {
     supabase: false,
     elementos: {
       'login-email': criarElemento('input'),

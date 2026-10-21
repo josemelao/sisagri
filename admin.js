@@ -460,12 +460,6 @@ function escUrl(valor) {
   return window.SisUtils.urlSegura(valor);
 }
 
-const ARQUIVOS_LIST_STATE = {
-  query: '',
-  page: 1,
-  pageSize: 12,
-};
-
 function normalizeSearchText(value) {
   return String(value || '')
     .toLowerCase()
@@ -500,10 +494,14 @@ function ordenarListaAdminPorId(items) {
   if (!Array.isArray(items)) return [];
   return [...items].sort((a, b) => Number(a?.id || 0) - Number(b?.id || 0));
 }
-function paginarLista(items, page, pageSize) {
-  const sortedItems = getAdminDefaultSortMode() === 'id'
+/** Ordem usada pelas listas do admin: preferencia salva no layout (nome ou id). */
+function ordenarListaAdminAtual(items) {
+  return getAdminDefaultSortMode() === 'id'
     ? ordenarListaAdminPorId(items)
     : ordenarListaAdminPorNome(items);
+}
+function paginarLista(items, page, pageSize) {
+  const sortedItems = ordenarListaAdminAtual(items);
   const totalItems = sortedItems.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -516,28 +514,21 @@ function paginarLista(items, page, pageSize) {
   };
 }
 
+const ARQUIVOS_LISTA = window.SisListas.createListController({
+  colecao: 'arquivos',
+  pageSize: 12,
+  filter: filtrarArquivosLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarArquivos,
+  searchInputId: 'arquivos-search',
+});
+
 function atualizarBuscaArquivos(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number'
-    ? inputEl.selectionStart
-    : String(value).length;
-
-  ARQUIVOS_LIST_STATE.query = String(value || '');
-  ARQUIVOS_LIST_STATE.page = 1;
-  renderArquivos();
-
-  const nextInput = document.getElementById('arquivos-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') {
-    nextInput.setSelectionRange(safeCaret, safeCaret);
-  }
+  ARQUIVOS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaArquivos(delta) {
-  ARQUIVOS_LIST_STATE.page += delta;
-  renderArquivos();
+  ARQUIVOS_LISTA.setPage(ARQUIVOS_LISTA.getState().pagina + Number(delta || 0));
 }
 const MANUAIS_LIST_STATE = {
   query: '',
@@ -1971,11 +1962,10 @@ function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
    ARQUIVOS
    ============================================================ */
 function renderArquivos() {
-  const lista = DB.get('arquivos');
-  const listaFiltrada = filtrarArquivosLista(lista, ARQUIVOS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, ARQUIVOS_LIST_STATE.page, ARQUIVOS_LIST_STATE.pageSize);
-  ARQUIVOS_LIST_STATE.page = paginacao.page;
+  ARQUIVOS_LISTA.setItems(DB.get('arquivos'));
+}
 
+function pintarArquivos(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-arquivos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Arquivos</h1>
@@ -1983,21 +1973,21 @@ function renderArquivos() {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input
           id="arquivos-search"
-          value="${escHtml(ARQUIVOS_LIST_STATE.query)}"
+          value="${escHtml(estado.query)}"
           data-acao="buscar-arquivos"
           placeholder="Buscar por nome, tipo ou tag..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-arquivo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table class="admin-table-arquivos">
       <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>Ações</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(a => `
+      <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
           <td class="admin-col-arquivo-nome"><strong class="arquivo-nome-wrap" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
