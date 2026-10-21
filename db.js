@@ -676,6 +676,80 @@ async function _refreshSupabaseCollection(colecao) {
 }
 
 /**
+ * Bloco 8 (T8.1): rastreia cada escrita remota para que a UI possa esperar a
+ * resposta real do banco antes de dizer "salvo".
+ */
+const _escritasPendentes = new Map();
+
+function _chaveEscrita(colecao, id) {
+  return `${colecao}:${id}`;
+}
+
+function _registrarEscrita(colecao, id, promessa) {
+  const chave = _chaveEscrita(colecao, id);
+  _escritasPendentes.set(chave, promessa);
+  promessa.finally(() => {
+    if (_escritasPendentes.get(chave) === promessa) _escritasPendentes.delete(chave);
+  });
+  return promessa;
+}
+
+function _confirmacaoDaEscrita(colecao, id) {
+  return _escritasPendentes.get(_chaveEscrita(colecao, id)) || Promise.resolve({ ok: true });
+}
+
+/**
+ * Envia uma operacao ao Supabase e devolve `{ ok, error }` (nunca rejeita).
+ * O status do banco e a recarga da colecao continuam centralizados aqui.
+ */
+function _enviarParaSupabase(colecao, tipo, id, registro) {
+  if (!_sb || !_isSupabaseCollection(colecao)) return Promise.resolve({ ok: true, skipped: true });
+  const tabela = SUPABASE_TABLES[colecao];
+  let requisicao;
+  if (tipo === 'insert') {
+    requisicao = _sb.from(tabela).insert(_toSupabasePayload(colecao, registro));
+  } else if (tipo === 'update') {
+    requisicao = _sb.from(tabela).update(_toSupabasePayload(colecao, registro)).eq('id', id);
+  } else {
+    requisicao = _sb.from(tabela).delete().eq('id', id);
+  }
+
+  return Promise.resolve(requisicao)
+    .then(({ error }) => {
+      if (error) {
+        _setDbStatus({
+          provider: 'local',
+          supabaseConnected: false,
+          writesReachSupabase: false,
+          lastError: error.message || `Falha ao gravar em ${tabela}.`,
+        });
+        console.error(`[DB] Falha ao gravar em ${tabela} (${tipo} ${id}):`, error);
+        return { ok: false, error };
+      }
+      _setDbStatus({
+        provider: 'supabase',
+        supabaseConnected: true,
+        writesReachSupabase: true,
+        lastError: '',
+      });
+      _refreshSupabaseCollection(colecao).catch((refreshError) => {
+        console.warn(`[DB] Falha ao recarregar ${tabela} apos ${tipo}:`, refreshError);
+      });
+      return { ok: true };
+    })
+    .catch((error) => {
+      _setDbStatus({
+        provider: 'local',
+        supabaseConnected: false,
+        writesReachSupabase: false,
+        lastError: error?.message || `Falha ao gravar em ${tabela}.`,
+      });
+      console.error(`[DB] Erro inesperado ao gravar em ${tabela} (${tipo} ${id}):`, error);
+      return { ok: false, error };
+    });
+}
+
+/**
  * Inicializa o banco.
  * Retorna uma Promise que resolve quando os dados estão prontos.
  * O script.js chama DB.init().then(() => renderApp()).
@@ -930,27 +1004,11 @@ const DB = {
     _persistLocal();
     _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
-      _sb.from(SUPABASE_TABLES[colecao]).insert(_toSupabasePayload(colecao, novoRegistro)).then(({ error }) => {
-        if (error) {
-          _setDbStatus({
-            provider: 'local',
-            supabaseConnected: false,
-            writesReachSupabase: false,
-            lastError: error.message || `Falha ao inserir em ${SUPABASE_TABLES[colecao]}.`,
-          });
-          console.error(`[DB] Falha ao inserir em ${SUPABASE_TABLES[colecao]}:`, error);
-          return;
-        }
-        _setDbStatus({
-          provider: 'supabase',
-          supabaseConnected: true,
-          writesReachSupabase: true,
-          lastError: '',
-        });
-        _refreshSupabaseCollection(colecao).catch((refreshError) => {
-          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos insert:`, refreshError);
-        });
-      });
+      _registrarEscrita(
+        colecao,
+        novoRegistro.id,
+        _enviarParaSupabase(colecao, 'insert', novoRegistro.id, novoRegistro)
+      );
     }
     return novoRegistro;
   },
@@ -964,27 +1022,11 @@ const DB = {
     _persistLocal();
     _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
-      _sb.from(SUPABASE_TABLES[colecao]).update(_toSupabasePayload(colecao, _db[colecao][idx])).eq('id', id).then(({ error }) => {
-        if (error) {
-          _setDbStatus({
-            provider: 'local',
-            supabaseConnected: false,
-            writesReachSupabase: false,
-            lastError: error.message || `Falha ao atualizar ${SUPABASE_TABLES[colecao]}:${id}.`,
-          });
-          console.error(`[DB] Falha ao atualizar ${SUPABASE_TABLES[colecao]}:${id}`, error);
-          return;
-        }
-        _setDbStatus({
-          provider: 'supabase',
-          supabaseConnected: true,
-          writesReachSupabase: true,
-          lastError: '',
-        });
-        _refreshSupabaseCollection(colecao).catch((refreshError) => {
-          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos update:`, refreshError);
-        });
-      });
+      _registrarEscrita(
+        colecao,
+        id,
+        _enviarParaSupabase(colecao, 'update', id, _db[colecao][idx])
+      );
     }
     return _db[colecao][idx];
   },
@@ -997,29 +1039,46 @@ const DB = {
     _persistLocal();
     _notifyCollectionUpdated(colecao);
     if (_sb && _isSupabaseCollection(colecao)) {
-      _sb.from(SUPABASE_TABLES[colecao]).delete().eq('id', id).then(({ error }) => {
-        if (error) {
-          _setDbStatus({
-            provider: 'local',
-            supabaseConnected: false,
-            writesReachSupabase: false,
-            lastError: error.message || `Falha ao excluir de ${SUPABASE_TABLES[colecao]}:${id}.`,
-          });
-          console.error(`[DB] Falha ao excluir de ${SUPABASE_TABLES[colecao]}:${id}`, error);
-          return;
-        }
-        _setDbStatus({
-          provider: 'supabase',
-          supabaseConnected: true,
-          writesReachSupabase: true,
-          lastError: '',
-        });
-        _refreshSupabaseCollection(colecao).catch((refreshError) => {
-          console.warn(`[DB] Falha ao recarregar ${SUPABASE_TABLES[colecao]} apos delete:`, refreshError);
-        });
-      });
+      _registrarEscrita(colecao, id, _enviarParaSupabase(colecao, 'delete', id, null));
     }
     return _db[colecao].length < antes;
+  },
+
+  /**
+   * Bloco 8 (T8.1): salva e espera a resposta real do banco.
+   * `insert`/`update` continuam sincronos (compatibilidade); a UI do painel
+   * usa `save` para so confirmar depois do Supabase responder.
+   */
+  async save(colecao, id, dados) {
+    if (!_db[colecao]) _db[colecao] = [];
+    const registro = id ? DB.update(colecao, id, dados) : DB.insert(colecao, dados);
+    if (!registro) throw new Error('Registro nao encontrado.');
+    const resultado = await _confirmacaoDaEscrita(colecao, registro.id);
+    if (!resultado.ok) {
+      const erro = new Error(resultado.error?.message || `Falha ao salvar em ${colecao}.`);
+      erro.cause = resultado.error;
+      throw erro;
+    }
+    return registro;
+  },
+
+  /** Bloco 8 (T8.1): exclui aguardando o banco e devolve o registro ao cache se falhar. */
+  async remove(colecao, id) {
+    const antes = _db[colecao] ? _db[colecao].find(r => r.id === id) : null;
+    const removido = DB.delete(colecao, id);
+    if (!removido) return false;
+    const resultado = await _confirmacaoDaEscrita(colecao, id);
+    if (!resultado.ok) {
+      if (antes) {
+        _db[colecao].push(antes);
+        _persistLocal();
+        _notifyCollectionUpdated(colecao);
+      }
+      const erro = new Error(resultado.error?.message || `Falha ao excluir de ${colecao}.`);
+      erro.cause = resultado.error;
+      throw erro;
+    }
+    return true;
   },
 
   /** Substitui uma coleção inteira (usado pelo admin ao importar) */

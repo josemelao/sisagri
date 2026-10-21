@@ -121,31 +121,19 @@ function instalarFeedbackAcoesAdmin() {
   DB.__adminFeedbackWrapped = true;
 
   const wrapMap = {
-    insert: { pending: 'Salvando alteracao...', success: 'Alteracao salva.' },
-    update: { pending: 'Salvando alteracao...', success: 'Alteracao salva.' },
-    delete: { pending: 'Excluindo registro...', success: 'Registro excluido.' },
-    updateLayoutConfig: { pending: 'Salvando configuracao...', success: 'Configuracao salva.' },
+    save: { pending: 'Salvando alteracao...' },
+    remove: { pending: 'Excluindo registro...' },
   };
 
   Object.entries(wrapMap).forEach(([methodName, messages]) => {
     if (typeof DB[methodName] !== 'function') return;
     const original = DB[methodName].bind(DB);
-    DB[methodName] = (...args) => {
+    DB[methodName] = async (...args) => {
       iniciarAcaoAdmin(messages.pending);
       try {
-        const result = original(...args);
-        setTimeout(() => {
-          const status = DB.getStatus ? DB.getStatus() : null;
-          if (status && status.supabaseConfigured && status.provider !== 'supabase' && status.lastError) {
-            concluirAcaoAdmin();
-            return;
-          }
-          concluirAcaoAdmin();
-        }, 220);
-        return result;
-      } catch (error) {
+        return await original(...args);
+      } finally {
         concluirAcaoAdmin();
-        throw error;
       }
     };
   });
@@ -383,6 +371,21 @@ function toast(msg, tipo = 'success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+/**
+ * Bloco 8 (T8.1): salva e so confirma depois da resposta do banco.
+ * Em falha mostra o motivo real e mantem os dados na tela (nada de "salvo"
+ * otimista).
+ */
+async function salvarComFeedback(colecao, id, dados) {
+  try {
+    await DB.save(colecao, id, dados);
+    return true;
+  } catch (erro) {
+    toast(`Nao foi possivel salvar: ${erro?.message || 'falha desconhecida'}`, 'error');
+    return false;
+  }
+}
+
 let _modalCloseOnBackdrop = false;
 
 function abrirModal(html, options = {}) {
@@ -424,13 +427,18 @@ function confirmarDelecao(colecao, id, nome, callback) {
   `);
 }
 
-function executarDelecao(colecao, id) {
+async function executarDelecao(colecao, id) {
   if (!DB.podeExcluir()) {
     toast('Sua conta não tem permissão para excluir.', 'error');
     fecharModal();
     return;
   }
-  DB.delete(colecao, id);
+  try {
+    await DB.remove(colecao, id);
+  } catch (erro) {
+    toast(`Nao foi possivel excluir: ${erro?.message || 'falha desconhecida'}`, 'error');
+    return;
+  }
   fecharModal();
   toast('Registro excluído com sucesso.');
   renderSection(colecao);
@@ -1026,18 +1034,14 @@ function renderInlinePublishStatusControl(colecao, item = {}) {
     </label>`;
 }
 
-function toggleInlinePublishStatus(colecao, id, checked) {
+async function toggleInlinePublishStatus(colecao, id, checked) {
   const publishStatus = checked ? 'published' : 'draft';
-  const atualizado = DB.update(colecao, id, { publish_status: publishStatus });
-  if (!atualizado) {
-    toast('Nao foi possivel atualizar o status de publicacao.', 'error');
+  if (!(await salvarComFeedback(colecao, id, { publish_status: publishStatus }))) {
     renderSection(colecao);
     return;
   }
-  setTimeout(() => {
-    renderSection(colecao);
-    renderOverview();
-  }, 220);
+  renderSection(colecao);
+  renderOverview();
   toast(checked ? 'Item publicado.' : 'Item movido para rascunho.');
 }
 
@@ -1464,7 +1468,7 @@ async function salvarFuncionario(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
-  id ? DB.update('funcionarios', id, dados) : DB.insert('funcionarios', dados);
+  if (!(await salvarComFeedback('funcionarios', id, dados))) return;
   if (existente?.foto_storage_path && (removeFoto || (fotoStoragePathFinal && fotoStoragePathFinal !== existente.foto_storage_path))) {
     DB.deleteFuncionarioFotoStorage(existente.foto_storage_path, existente.foto_storage_bucket).catch((error) => {
       console.warn('[Admin] Falha ao remover foto antiga do Storage:', error);
@@ -1797,7 +1801,7 @@ async function salvarManual(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('manuais', id, dados) : DB.insert('manuais', dados);
+  if (!(await salvarComFeedback('manuais', id, dados))) return;
 
   const currentStorageRefs = new Set(
     passos
@@ -1908,7 +1912,7 @@ function addEtapa() {
 function novoProcesso()     { abrirModal(formProcesso()); }
 function editarProcesso(id) { abrirModal(formProcesso(DB.getById('processos', id))); }
 
-function salvarProcesso(id) {
+async function salvarProcesso(id) {
   const list = document.getElementById('dyn-etapas');
   const etapas = Array.from(list.children).map(div => {
     const sel = div.querySelector('select[name^="etapa_manuais_"]');
@@ -1931,7 +1935,7 @@ function salvarProcesso(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('processos', id, dados) : DB.insert('processos', dados);
+  if (!(await salvarComFeedback('processos', id, dados))) return;
   fecharModal(); toast('Processo salvo.'); renderProcessos();
 }
 
@@ -2149,7 +2153,7 @@ async function salvarArquivo(id) {
     publish_status: getModalPublishStatus(),
   };
 
-  id ? DB.update('arquivos', id, dados) : DB.insert('arquivos', dados);
+  if (!(await salvarComFeedback('arquivos', id, dados))) return;
   if (existente?.storage_path && (removeArquivo || (finalStoragePath && finalStoragePath !== existente.storage_path))) {
     DB.deleteArquivoStorage(existente.storage_path, existente.storage_bucket).catch((error) => {
       console.warn('[Admin] Falha ao remover arquivo antigo do Storage:', error);
@@ -2292,7 +2296,7 @@ function clearVeiculoMultiSelect(selectId) {
   clearAdminMultiSelect(selectId);
 }
 
-function salvarVeiculo(id) {
+async function salvarVeiculo(id) {
   const motoristaIds = Array.from(
     document.getElementById('v-motorista-ids').selectedOptions
   ).map(o => parseInt(o.value)).filter(Boolean);
@@ -2331,7 +2335,7 @@ function salvarVeiculo(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
-  id ? DB.update('veiculos', id, dados) : DB.insert('veiculos', dados);
+  if (!(await salvarComFeedback('veiculos', id, dados))) return;
   fecharModal(); toast('Veículo salvo.'); renderVeiculos();
 }
 
@@ -2519,7 +2523,7 @@ function formSistema(s = {}) {
 function novoSistema()     { abrirModal(formSistema()); }
 function editarSistema(id) { abrirModal(formSistema(DB.getById('sistemas', id))); }
 
-function salvarSistema(id) {
+async function salvarSistema(id) {
   const manuaisIds   = Array.from(document.getElementById('s-manuais').selectedOptions).map(o => parseInt(o.value)).filter(Boolean);
   const processosIds = Array.from(document.getElementById('s-processos').selectedOptions).map(o => parseInt(o.value)).filter(Boolean);
   const { icone, cor } = getIconeCorValues('sistema');
@@ -2536,7 +2540,7 @@ function salvarSistema(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
-  id ? DB.update('sistemas', id, dados) : DB.insert('sistemas', dados);
+  if (!(await salvarComFeedback('sistemas', id, dados))) return;
   fecharModal(); toast('Sistema salvo.'); renderSistemas();
 }
 
@@ -2634,7 +2638,7 @@ function formServico(s = {}) {
     ${renderPublishStatusActions(`salvarServico(${s.id||0})`, s)}`;
 }
 
-function salvarServico(id) {
+async function salvarServico(id) {
   const docsList = document.getElementById('dyn-servico-documentos');
   const documentos = Array.from(docsList.children).map(div => {
     const tipoSelect = div.querySelector('select[name^="sv_doc_tipo_"]');
@@ -2678,7 +2682,7 @@ function salvarServico(id) {
   };
   if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
   if (!dados.categoria) { toast('Categoria é obrigatória.','error'); return; }
-  id ? DB.update('servicos', id, dados) : DB.insert('servicos', dados);
+  if (!(await salvarComFeedback('servicos', id, dados))) return;
   fecharModal(); toast('Serviço salvo.'); renderServicos();
 }
 
@@ -2746,7 +2750,7 @@ function formAviso(a = {}) {
 function novoAviso()     { abrirModal(formAviso()); }
 function editarAviso(id) { abrirModal(formAviso(DB.getById('avisos', id))); }
 
-function salvarAviso(id) {
+async function salvarAviso(id) {
   const descricao = document.getElementById('av-desc').value.trim();
   const dados = {
     titulo: document.getElementById('av-titulo').value.trim(),
@@ -2757,7 +2761,7 @@ function salvarAviso(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('avisos', id, dados) : DB.insert('avisos', dados);
+  if (!(await salvarComFeedback('avisos', id, dados))) return;
   fecharModal(); toast('Aviso salvo.'); renderAvisos();
 }
 
@@ -2874,7 +2878,7 @@ function editarEvento(id) {
   setTimeout(toggleEventoTipoFields, 0);
 }
 
-function salvarEvento(id) {
+async function salvarEvento(id) {
   const tipo = document.getElementById('ev-tipo').value;
   const isPrazo = tipo === 'prazo';
   const dataFim = document.getElementById('ev-data-fim').value.trim();
@@ -2900,7 +2904,7 @@ function salvarEvento(id) {
     return;
   }
 
-  id ? DB.update('agendaEventos', id, dados) : DB.insert('agendaEventos', dados);
+  if (!(await salvarComFeedback('agendaEventos', id, dados))) return;
   fecharModal(); toast('Evento salvo.'); renderAgendaEventos();
 }
 
@@ -2996,7 +3000,7 @@ function formFerias(f = {}) {
     ${renderPublishStatusActions(`salvarFerias(${f.id||0})`, f)}`;
 }
 
-function salvarFerias(id) {
+async function salvarFerias(id) {
   const sel = document.getElementById('fer-func');
   const funcId = parseInt(sel.value);
   const func = DB.getById('funcionarios', funcId);
@@ -3013,7 +3017,7 @@ function salvarFerias(id) {
   };
   if (!dados.funcionario_id || !dados.periodo_inicio || !dados.periodo_fim) { toast('Preencha todos os campos obrigatórios.','error'); return; }
   if (dados.periodo_fim < dados.periodo_inicio) { toast('A data final não pode ser anterior à data inicial.','error'); return; }
-  id ? DB.update('escalaFerias', id, dados) : DB.insert('escalaFerias', dados);
+  if (!(await salvarComFeedback('escalaFerias', id, dados))) return;
   fecharModal(); toast('Escala de férias salva.'); renderEscalaFerias();
 }
 
@@ -3076,7 +3080,7 @@ function formAcesso(a = {}) {
 function novoAcesso()     { abrirModal(formAcesso()); }
 function editarAcesso(id) { abrirModal(formAcesso(DB.getById('acessoRapido', id))); }
 
-function salvarAcesso(id) {
+async function salvarAcesso(id) {
   const { icone, cor } = getIconeCorValues('acesso');
   const dados = {
     titulo:  document.getElementById('ac-titulo').value.trim(),
@@ -3087,7 +3091,7 @@ function salvarAcesso(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('acessoRapido', id, dados) : DB.insert('acessoRapido', dados);
+  if (!(await salvarComFeedback('acessoRapido', id, dados))) return;
   fecharModal(); toast('Acesso rápido salvo.'); renderAcessoRapido();
 }
 
@@ -3194,7 +3198,7 @@ function toggleDynValorInput(checkboxEl) {
 function novoInfoSimples(colecao)    { abrirModal(formInfoSimples(colecao)); }
 function editarInfoSimples(col, id)  { abrirModal(formInfoSimples(col, DB.getById(col, id))); }
 
-function salvarInfoSimples(colecao, id) {
+async function salvarInfoSimples(colecao, id) {
   const list = document.getElementById('dyn-campos');
   const campos = Array.from(list.children).map(div => {
     const label = div.querySelector('.js-campo-label')?.value.trim() || '';
@@ -3220,7 +3224,7 @@ function salvarInfoSimples(colecao, id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update(colecao, id, dados) : DB.insert(colecao, dados);
+  if (!(await salvarComFeedback(colecao, id, dados))) return;
   fecharModal(); toast('Bloco salvo.');
   renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
 }
@@ -3310,7 +3314,7 @@ function addOrgCampo() {
 function novoOrgao()     { abrirModal(formOrgao()); }
 function editarOrgao(id) { abrirModal(formOrgao(DB.getById('infoOrgaos', id))); }
 
-function salvarOrgao(id) {
+async function salvarOrgao(id) {
   const list = document.getElementById('dyn-orgcampos');
   const campos = Array.from(list.children).map(div => {
     const label = div.querySelector('.js-org-label')?.value.trim() || '';
@@ -3335,7 +3339,7 @@ function salvarOrgao(id) {
     publish_status: getModalPublishStatus(),
   };
   if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  id ? DB.update('infoOrgaos', id, dados) : DB.insert('infoOrgaos', dados);
+  if (!(await salvarComFeedback('infoOrgaos', id, dados))) return;
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }
 

@@ -174,6 +174,12 @@ export function carregarScripts(arquivos, opcoes = {}) {
     FileReader: class FileReader {},
     FormData: class FormData {},
     Image: class Image {},
+    CustomEvent: class CustomEvent {
+      constructor(type, init = {}) {
+        this.type = type;
+        this.detail = init.detail;
+      }
+    },
     IntersectionObserver: class IntersectionObserver { observe() {} unobserve() {} disconnect() {} },
     MutationObserver: class MutationObserver { observe() {} disconnect() {} },
     ResizeObserver: class ResizeObserver { observe() {} unobserve() {} disconnect() {} },
