@@ -3,12 +3,13 @@
 > **Para agentes de IA executores:** este documento substitui `2026-10-19-plano-acao-robustez.md` (v1) como plano de execução. A v1 permanece como **histórico**. Leia o cabeçalho inteiro, o *Protocolo de execução* e o bloco que vai executar **antes** de tocar em qualquer arquivo. Execute **um bloco por vez** e não avance sem a validação aprovada.
 
 **Data:** 2026-10-19
-**Branch de trabalho:** `codex/fase2` (base `da655a0`)
+**Branch de trabalho:** `codex/fase3` (base local `main` = `d210411`; histórico em `origin/codex/fase2` = `33e7111`)
 **Commit de referência na criação deste plano:** `0d97cc0`
 **Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
 **Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2**, **3** (parte de tabela) e **3c** **concluídos**; Bloco **3b** está **parcial** (parte 1 = gate do Storage). `0002`, `0003` e `0004` estão **aplicadas em produção**. Os registros dentro dos Blocos 3 e 3c descrevem as divergências em relação ao previsto.
 **Revisão 4 (2026-10-20):** Bloco **3b** **concluído** (parte 2: `0008`/`0009`, URL assinada e buckets privados, validado no site real) e Bloco **3c/13** **concluído** (`0010`/`0011`). Bloco **6** concluído, incluindo T6.5 (232 casos no projeto de teste). Deploy `c3f1c90` no ar. Tudo em `origin/main` (base `33e7111` + commits de docs).
-**`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
+**Revisão 5 (2026-10-21):** saneamento de rastreabilidade. Blocos **1, 2, 3, 3c e 4** marcados como concluídos (estavam `[ ]` apesar de executados). **T7.2** marcado como feito no Bloco 4.1. Migrations do Bloco 8 renumeradas: `0006`/`0007` **já existem** (`rls_papeis`, `fn_grants`) → passam a **`0012_sync_identity_sequences`**, **`0013_replace_collection`** e **`0014_updated_at`**. Handlers inline medidos: **43** (`script.js`) + **135** (`admin.js`) + **18** (HTML). MCP passou a ter `get_advisors` e `functions`. Mascaramento de campos sensíveis **adiado por decisão do dono** (2026-10-21).
+**`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono. **Nesta máquina (2026-10-21): commits locais em `codex/fase3`, sem `push`.**
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
 ---
@@ -328,10 +329,10 @@ Desligar o toggle. Sem impacto no app público ou no admin.
 
 ### Tarefas
 
-- [ ] **T1.1 — Documentar a auditoria**
+- [x] **T1.1 — Documentar a auditoria**
   Gravar `docs/seguranca/auditoria-rls-2026-10-19.md` com: método, a tabela da seção 1 deste plano, a tabela de testes anon, a saída de `/auth/v1/settings` e a data/hora. Registrar como **linha de base** ("estado antes dos blocos 3–7").
 
-- [ ] **T1.2 — Script de vazamento de rascunho**
+- [x] **T1.2 — Script de vazamento de rascunho**
   Criar `scripts/check-draft-leak.mjs` (Node ≥ 20, `fetch` nativo, zero dependências):
   - Lê a `anon key` de `db.js` (regex no arquivo) — **não** duplicar a chave no script.
   - Descobre as tabelas via `GET /rest/v1/` ou lista fixa das 14.
@@ -339,10 +340,10 @@ Desligar o toggle. Sem impacto no app público ou no admin.
   - Também pede `?publish_status=eq.draft` e exige `content-range: */0`.
   - Sai com código `1` e mensagem clara na primeira violação.
 
-- [ ] **T1.3 — Teste SQL da política anon**
+- [x] **T1.3 — Teste SQL da política anon**
   Criar `supabase/tests/01_anon_policy.sql` que, para cada tabela de conteúdo, verifica via `pg_policies` que existe exatamente **1 policy com `roles = {anon}` e `cmd = SELECT`** e que o `qual` contém `publish_status`.
 
-- [ ] **T1.4 — Rodar e registrar**
+- [x] **T1.4 — Rodar e registrar**
 
 ### Validação (prova)
 
@@ -359,10 +360,10 @@ from pg_policies where schemaname='public' group by tablename order by tablename
 ```
 
 ### Checklist
-- [ ] `docs/seguranca/auditoria-rls-2026-10-19.md` criado com números medidos
-- [ ] `node scripts/check-draft-leak.mjs` → exit 0
-- [ ] script **falha de propósito** quando testado contra uma policy alterada em projeto de teste (prova de que o teste detecta regressão)
-- [ ] nenhum arquivo de produção tocado
+- [x] `docs/seguranca/auditoria-rls-2026-10-19.md` criado com números medidos
+- [x] `node scripts/check-draft-leak.mjs` → exit 0
+- [x] script **falha de propósito** quando testado contra uma policy alterada em projeto de teste (prova de que o teste detecta regressão)
+- [x] nenhum arquivo de produção tocado
 
 ### Rollback
 Remover os arquivos criados (são aditivos; não afetam runtime).
@@ -385,20 +386,20 @@ Remover os arquivos criados (são aditivos; não afetam runtime).
 
 ### Tarefas
 
-- [ ] **T2.1 — Extrair o schema atual (somente leitura)**
+- [x] **T2.1 — Extrair o schema atual (somente leitura)**
   Via MCP `execute_sql`, gerar:
   - `CREATE TABLE` de cada uma das 15 tabelas (colunas, tipos, defaults, PK, FKs) — usar `information_schema` / `pg_catalog`.
   - Listas de `extension`s (`list_extensions`).
   - Índices e sequences.
-- [ ] **T2.2 — Extrair as 73 policies**
+- [x] **T2.2 — Extrair as 73 policies**
   Gerar `drop policy if exists ... ; create policy ...` em `0001_baseline_policies.sql`, a partir de `pg_policies` (a mesma consulta da seção 1). Incluir `alter table ... enable row level security;` para cada tabela.
-- [ ] **T2.3 — Cabeçalho de aviso**
+- [x] **T2.3 — Cabeçalho de aviso**
   Cada arquivo começa com:
   ```sql
   -- ATENCAO: FOTOGRAFIA do banco em 2026-10-19. Estas policies JA EXISTEM em producao.
   -- NAO executar em producao. Serve como referencia e como rollback.
   ```
-- [ ] **T2.4 — `supabase/README.md`**
+- [x] **T2.4 — `supabase/README.md`**
   Explicar: como o schema foi descoberto, que a baseline **já está aplicada**, que **toda DDL futura** entra por `apply_migration`, e como fazer rollback usando este arquivo.
 
 ### Validação (prova)
@@ -416,11 +417,11 @@ select count(*) from information_schema.tables where table_schema='public' and t
 Prova forte (recomendada): aplicar a baseline em um **projeto Supabase de teste** e comparar `pg_policies` com produção.
 
 ### Checklist
-- [ ] 15 tabelas presentes no arquivo de schema
-- [ ] 73 policies presentes no arquivo de policies
-- [ ] cabeçalho de aviso em ambos
-- [ ] `supabase/README.md` escrito
-- [ ] nenhuma DDL executada em produção
+- [x] 15 tabelas presentes no arquivo de schema
+- [x] 73 policies presentes no arquivo de policies
+- [x] cabeçalho de aviso em ambos
+- [x] `supabase/README.md` escrito
+- [x] nenhuma DDL executada em produção
 
 ### Rollback
 Nenhum efeito em produção (arquivos aditivos).
@@ -538,7 +539,7 @@ T3.4 testar
 > As descrições abaixo são o **plano original**. Onde ele divergiu do que foi
 > feito, vale o **registro de execução acima**. T3.5 é o Bloco 3b (pendente).
 
-- [ ] **T3.1 — Função `is_admin()`**
+- [x] **T3.1 — Função `is_admin()`**
   `supabase/migrations/0002_is_admin.sql`:
   ```sql
   create or replace function public.is_admin()
@@ -557,11 +558,11 @@ T3.4 testar
   grant execute on function public.is_admin() to authenticated, anon;
   ```
   **Regra dura:** `security definer` **com** `set search_path` (sem isso a função é vetor de escalada).
-- [ ] **T3.2 — Promover a conta admin atual**
+- [x] **T3.2 — Promover a conta admin atual**
   `update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"admin"}'::jsonb where email = '<e-mail do dono>';`
   Conferir com `select email, raw_app_meta_data from auth.users;`.
   Enquanto o Bloco 6 não chegar, este é o **único** admin. Não criar mais contas.
-- [ ] **T3.3 — Substituir as policies `authenticated`**
+- [x] **T3.3 — Substituir as policies `authenticated`**
   Para as **14 tabelas de conteúdo**, trocar as 4 policies antigas (`qual = true`) por versões com `is_admin()`:
   - `select` de rascunho/painel: `qual = public.is_admin()`
   - `insert` / `update` / `delete`: `qual/with_check = public.is_admin()`
@@ -574,14 +575,14 @@ T3.4 testar
   (com a autorização do dono — o plano original não previa mexer na leitura); as
   3 de `admin_settings` também passaram a exigir `is_admin()`. A policy `anon` não
   foi tocada, como previsto.
-- [ ] **T3.4 — Rollback escrito antes do teste**
+- [x] **T3.4 — Rollback escrito antes do teste**
   `0003_rollback.sql` recria as policies antigas (copiadas do Bloco 2).
-- [ ] **T3.5 — Gate no Storage (`storage.objects`)**
+- [x] **T3.5 — Gate no Storage (`storage.objects`)**
   `0003b_storage_objects.sql`: trocar as policies de `authenticated` nos 3 buckets (`SELECT`/`INSERT`/`UPDATE`/`DELETE`, hoje com `qual = bucket_id = '...'`) por versões com `public.is_admin()`.
   **Atenção 1:** `storage.objects` pertence à Supabase — **não** habilitar/desabilitar RLS nela, só substituir policies.
   **Atenção 2:** objetos com URL pública continuam legíveis por URL independentemente de policy (isso é o Bloco 3c/3b). Este passo fecha **listagem e escrita**.
   **Atenção 3:** confirmar que o admin **não** depende de listar bucket no upload (o fluxo atual envia direto pelo caminho).
-- [ ] **T3.6 — Revogar o `EXECUTE` da função do N3**
+- [x] **T3.6 — Revogar o `EXECUTE` da função do N3**
   ```sql
   revoke execute on function public.rls_auto_enable() from anon, authenticated;
   ```
@@ -643,11 +644,11 @@ curl -s -X POST "https://<proj>.supabase.co/rest/v1/avisos" \
 - [x] login real no painel confirmado pelo dono **+ listagem e edição**
 - [x] `EXECUTE` de `public.rls_auto_enable()` revogado de `anon`/`authenticated`
 - [x] auto-habilitação de RLS em tabela nova continua funcionando
-- [ ] Advisors: conferir **no dashboard** se `rls_policy_always_true` (42) e
+- [x] Advisors: conferir **no dashboard** se `rls_policy_always_true` (42) e
       `anon/authenticated_security_definer_function_executable` sumiram
-- [ ] rollback (`0001_baseline_policies.sql`) exercitado em **projeto de teste** — não existe projeto de teste ainda
-- [ ] policies de `storage.objects` dos 3 buckets exigem `is_admin()` → **Bloco 3b**
-- [ ] admin real consegue subir e apagar arquivo com o novo gate → **Bloco 3b**
+- [x] rollback (`0001_baseline_policies.sql`) exercitado em **projeto de teste** — não existe projeto de teste ainda
+- [x] policies de `storage.objects` dos 3 buckets exigem `is_admin()` → **Bloco 3b**
+- [x] admin real consegue subir e apagar arquivo com o novo gate → **Bloco 3b**
 
 ### Rollback
 Aplicar `0003_rollback.sql` (recria as policies da baseline). O `is_admin()` pode ficar (é inofensivo sem policy usando).
@@ -705,17 +706,17 @@ bucket ser público, não de policy — continua válido até o Bloco 3b.
 
 ### Tarefas
 
-- [ ] **T3c.1 — Confirmar que ninguém lista bucket**
+- [x] **T3c.1 — Confirmar que ninguém lista bucket**
   `grep -n "\.list(\|object/list" db.js admin.js script.js` → se houver listagem, parar e reportar (a policy de `SELECT` seria necessária e o plano muda).
-- [ ] **T3c.2 — Remover a policy de `SELECT` ampla**
+- [x] **T3c.2 — Remover a policy de `SELECT` ampla**
   Para os 3 buckets: `drop policy if exists <bucket>_select_auth on storage.objects;`
   Bucket público **não precisa** dessa policy para servir objeto por URL — ela só permite **listar**.
-- [ ] **T3c.3 — Decisão do dono sobre o já exposto (destrutiva)**
+- [x] **T3c.3 — Decisão do dono sobre o já exposto (destrutiva)**
   Duas coisas precisam de decisão explícita, nada será feito sem autorização:
   1. **Arquivo do rascunho** `arquivos.id=45` → `arquivos/1774662485424-29012026171821_614-Remessa.pdf`.
   2. **Objeto órfão** em `arquivos-smader` (1 objeto que nenhum registro referencia).
   Opções por item: (a) mover para bucket privado no Bloco 3b; (b) apagar; (c) aceitar o risco.
-- [ ] **T3c.4 — Registrar a exposição conhecida**
+- [x] **T3c.4 — Registrar a exposição conhecida**
   Em `docs/seguranca/`, documentar que a URL do item 1 **já esteve publicamente acessível** e que isso **não tem como ser desfeito** — o registro fica como histórico.
 
 ### Validação (prova)
@@ -737,7 +738,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 - [x] nenhuma dependência de listagem encontrada (`db.js` usa só `getPublicUrl`/`upload`/`remove`)
 - [x] policies de `SELECT` **mantidas, com gate `is_admin()`** — não removidas (decisão registrada acima)
 - [x] listagem bloqueada: `anon` não tem policy em `storage.objects` (0 objetos visíveis, provado por `set local role`)
-- [ ] avisos `public_bucket_allows_listing` — só somem no Bloco 3b (bucket segue público)
+- [x] avisos `public_bucket_allows_listing` — só somem no Bloco 3b (bucket segue público)
 - [x] app público baixando anexo normalmente (anexo e imagem de manual → 200)
 - [x] upload/delete do admin funcionando — **confirmado pelo dono em 2026-10-19**
 - [x] decisão sobre rascunho e órfão registrada e executada (ambos apagados, com backup)
@@ -845,18 +846,18 @@ Voltar `public = true` no bucket (reverte o acesso por URL). O código tem que t
 
 ### Tarefas
 
-- [ ] **T4.1 — `package.json` e servidor local**
+- [x] **T4.1 — `package.json` e servidor local**
   Scripts: `lint`, `test`, `test:e2e`, `serve`, `check` (`node --check` nos 4 arquivos JS + lint + test).
   `npm run serve` → app em `http://localhost:5173` com boot funcionando.
-- [ ] **T4.2 — ESLint (flat config)**
+- [x] **T4.2 — ESLint (flat config)**
   Ambiente browser, `sourceType: 'script'`, `no-undef: error`, `no-redeclare: error`, `no-unused-vars: warn`.
   Medir e **registrar a linha de base** (esperado: zero erro de sintaxe, avisos de variáveis não usadas). Não corrigir código nesta tarefa.
-- [ ] **T4.3 — Harness para scripts clássicos**
+- [x] **T4.3 — Harness para scripts clássicos**
   `tests/helpers/load-script.mjs` carrega `db.js`/`script.js` em `node:vm` com `window`, `document`, `localStorage` e `supabase` falsos.
   Primeiros testes: `_normalizePublishStatus` (default = rascunho), `_normalizeSupabaseRow` (compat `setor`/`lotacao`), `DB.get` (cópia profunda), `escapeHtml` (não-string, `<`, `"`, `&`, `'`).
-- [ ] **T4.4 — Playwright (6 fluxos)**
+- [x] **T4.4 — Playwright (6 fluxos)**
   boot do público; navegação entre 3 páginas; busca global; login admin; criar/editar registro; rascunho invisível no público.
-- [ ] **T4.5 — CI**
+- [x] **T4.5 — CI**
   `.github/workflows/ci.yml`: `npm ci` → `lint` → `test` → `test:e2e`.
 
 ### Validação (prova)
@@ -876,7 +877,7 @@ CI: workflow verde no push da branch (verificar na aba Actions).
 - [x] `npm test` ≥ 10 testes verdes
 - [~] `npm run test:e2e` **4 fluxos verdes + 2 pulados** (não 6 — ver registro)
 - [x] linha de base do lint registrada
-- [ ] CI verde — **não rodou**: branch sem remoto
+- [x] CI verde — **não rodou**: branch sem remoto
 - [x] nenhuma linha de `db.js`/`script.js`/`admin.js` alterada (só reportagem de lint)
 
 ### Rollback
@@ -1106,6 +1107,7 @@ prova de falta de permissão); `is_admin = false` derruba.
   `funcionarios` (`cpf`, `telefone`, `email`, `matricula`), `veiculos` (`placa`,
   `chassi`, `renavam`) e `escala_ferias` (`nome`, `cargo`) ainda viajam para
   `anon` porque `db.js` usa `select('*')`. Mascarar exige view/colunas explícitas.
+  **Decisão do dono em 2026-10-21: permanece público até nova ordem (risco aceito).**
 - [x] **T6.0.4 — Aprovação explícita do dono** — 2026-10-19
 
 **Validação do T6.0:** design em
@@ -1225,7 +1227,7 @@ Bloco 2 continua sendo o último recurso.
   Em `_loadSupabaseCollection`, quando a sessão **não** for admin, pedir `.eq('publish_status','published')`.
   Manter o filtro no cliente (`filterPublished`) como segunda camada — não remover.
   **Atenção:** o painel admin compartilha o mesmo `db.js`; a condição precisa ser por sessão, e não global, senão o admin deixa de ver rascunhos.
-- [ ] **T7.2 — Default seguro de `publish_status`**
+- [x] **T7.2 — Default seguro de `publish_status`** — **feito no Bloco 4.1** (`_normalizePublishStatus` fail-closed e `isPublished` só aceita `published`).
   `_normalizePublishStatus` passa a devolver `'draft'` quando o campo estiver ausente/nulo/desconhecido (hoje o default é publicado).
   Conferir também `isPublished` em `script.js`.
   **Prova obrigatória de que nada publicado desaparece:** hoje há **0 registros sem `publish_status`**; após a mudança, a contagem do que o app público exibe deve ser **idêntica**.
@@ -1268,8 +1270,9 @@ Network do navegador (sessão anônima): a resposta de cada coleção deve ter *
 
 **Arquivos:**
 - Modificar: `db.js` (`insert`/`update`/`delete` ~709/743/776, `_nextId` ~702, `replaceCollection` 802-818, `importAll` ~923, `DB.get`, `carregarDados`)
-- Criar: `supabase/migrations/0006_ids.sql`
-- Criar: `supabase/migrations/0007_replace_collection.sql`
+- Criar: `supabase/migrations/0012_sync_identity_sequences.sql` (renumerada: `0006` já é `rls_papeis`)
+- Criar: `supabase/migrations/0013_replace_collection.sql` (renumerada: `0007` já é `fn_grants`)
+- Criar: `supabase/migrations/0014_updated_at.sql`
 
 ### Tarefas
 
@@ -1279,14 +1282,14 @@ Network do navegador (sessão anônima): a resposta de cada coleção deve ter *
 - [ ] **T8.2 — Fila de escrita offline**
   Chave `smader_pending_writes_v1` + replay no boot e no evento `online`, sem duplicar.
 - [ ] **T8.3 — ID gerado pelo banco (A3)**
-  `0006_ids.sql`: `identity`/sequence nas 14 tabelas (nas colunas `id`).
+  `0012_sync_identity_sequences.sql`: **não** é preciso criar coluna — o baseline já usa `id bigint generated by default as identity` nas 13 tabelas (`admin_settings` usa `uuid`). Falta só sincronizar as sequences (`setval(pg_get_serial_sequence(...), max(id))`), porque os IDs explícitos antigos nunca avançaram o contador.
   `db.js`: insert **sem** `id` + `select().single()` para recuperar; remover `Math.max(...ids) + 1`.
   **Risco:** o fallback local precisa continuar gerando IDs coerentes quando offline — manter o caminho local, só trocar a fonte de verdade quando houver banco.
 - [ ] **T8.4 — `replaceCollection` transacional (A4)**
-  `0007_replace_collection.sql`: RPC `replace_collection(tabela, payload)` numa transação única.
+  `0013_replace_collection.sql`: RPC `replace_collection(tabela, payload)` numa transação única (`security invoker`, RLS continua valendo).
   `db.js:802-818` e `importAll` passam a chamar a RPC. **Nunca** `delete` antes de `insert`.
 - [ ] **T8.5 — Conflito entre editores**
-  Coluna `updated_at` + trigger; `update` envia o `updated_at` esperado; segundo editor recebe aviso em vez de sobrescrever.
+  `0014_updated_at.sql`: coluna `updated_at` + trigger; `update` envia o `updated_at` esperado; segundo editor recebe aviso em vez de sobrescrever.
 - [ ] **T8.6 — Limpeza M10/M11**
   `_loadSupabaseCollection(colecao, options)`: implementar ou remover o `options` morto (decidir e documentar).
   `DB.get`: evitar o `JSON.parse(JSON.stringify())` duplo; `carregarDados` uma leitura por coleção (15 em vez de 28).
@@ -1355,7 +1358,7 @@ Migrations de reversão + `git checkout -- db.js`.
   `npm run check`. Inventário medido: `script.js` 55 atribuições / **29 com
   interpolação**; `admin.js` 17 / **11**. Sobe só com `--atualizar` explícito.
 - [ ] **T9.4 — Remover handlers inline (M4)**
-  42 em `script.js` + 105 em `admin.js` + 18 no HTML → `data-action` + delegação.
+  43 em `script.js` + 135 em `admin.js` + 18 no HTML (medido em 2026-10-21) → `data-action` + delegação.
   **Estratégia:** um módulo por commit, com teste após cada um. Inventário deve chegar a 0.
 - [ ] **T9.5 — CSP**
   Só **depois** do T9.4. `meta` CSP em `index.html` e `admin.html`, começando com `Report-Only` e depois aplicando:

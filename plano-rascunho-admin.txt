@@ -1,6 +1,29 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-20
-Branch de trabalho: codex/fase2 (base da655a0; main = producao; deploy c3f1c90 em 2026-10-20)
+Atualizado em: 2026-10-21
+Branch de trabalho: codex/fase3 (local, base main = d210411; main = producao; deploy c3f1c90 em 2026-10-20)
+
+=========================================================================
+ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
+=========================================================================
+
+  - Repo clonado em C:\Users\Usuario\Desktop\SisAgri. A maquina antiga
+    (C:\Users\PICHAU) nao existe mais; os caminhos abaixo foram corrigidos.
+  - Branch local codex/fase3, criada de main (d210411). O trabalho vai nela.
+  - POLITICA DESTA FASE: commit local SIM, push NAO. Nada vai para o remoto
+    sem o dono pedir explicitamente.
+  - MCPs do OpenCode conectados em 2026-10-21:
+      supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
+      supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
+    O MCP oficial atual TEM get_advisors e (no teste) functions. A limitacao
+    registrada nas PENDENTE 2/7 era da URL antiga (features=database,docs).
+  - Producao conferida em 2026-10-21 via MCP: 10 migrations, 16 tabelas,
+    0 avisos de seguranca.
+  - Teste conferido em 2026-10-21: 12 migrations, 16 tabelas, 0 avisos,
+    3 buckets privados, 0 edge functions.
+  - MASCARAMENTO ADIADO por decisao do dono em 2026-10-21: os campos
+    sensiveis seguem publicos ate nova ordem (ver PENDENTE 9, item 3).
+  - Plano de acao desta fase:
+    C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
 ESTADO DO REMOTO — PONTO DE RETOMADA (atualizado 2026-10-20)
@@ -13,8 +36,9 @@ ESTADO DO REMOTO — PONTO DE RETOMADA (atualizado 2026-10-20)
     git fetch origin
     git checkout -B codex/fase2 origin/main
 
-  Observacao: a branch local codex/fase2 NAO tem upstream proprio (nao existe
-  origin/codex/fase2); o conteudo dela e identico ao origin/main.
+  Observacao (corrigida em 2026-10-21): origin/codex/fase2 EXISTE
+  (33e7111). O que nao existe e a branch local com upstream; por isso o
+  trabalho desta fase usa codex/fase3, derivada de main.
 
   Deploy no ar: c3f1c90 (GitHub Pages) + hotfix e7287e4.
   Conferido em 2026-10-20: Edge Function do Instagram ainda NAO publicada
@@ -123,7 +147,7 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 =========================================================================
 
 Plano vigente (substitui a v1):
-  C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
+  C:\Users\Usuario\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
@@ -135,11 +159,12 @@ Plano vigente (substitui a v1):
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
 Evidencia:
-  C:\Users\PICHAU\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
-  C:\Users\PICHAU\Desktop\SisAgri\supabase\README.md
+  C:\Users\Usuario\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
+  C:\Users\Usuario\Desktop\SisAgri\supabase\README.md
 
-Historico (v1, nao usar como plano):
-  C:\Users\PICHAU\.opencode\plan\2026-10-19-plano-acao-robustez.md
+Historico (v1, NAO existe nesta maquina e nao deve ser usado como plano):
+  `2026-10-19-plano-acao-robustez.md` — citado em sessoes antigas em
+  C:\Users\PICHAU\.opencode\plan\; referencia apenas historica.
 
 =========================================================================
 ONDE PARAMOS
@@ -229,7 +254,7 @@ O que esta fechado, medido:
             privados desde 2026-10-20; manuais publico)
 
 Backup local (nao versionado, fora do repo):
-  C:\Users\PICHAU\Desktop\SisAgri-backup-storage\
+  C:\Users\Usuario\Desktop\SisAgri-backup-storage\
     rascunho-id45-teste.pdf      87.377 bytes
     orfao-arquivos-smader.pdf 1.460.078 bytes
 
@@ -277,7 +302,7 @@ PENDENTE 1 — Bloco 3b parte 2 (RESOLVIDO EM PRODUCAO 2026-10-20)
   adiada. Validacao: 60/60 imagens assinadas, URL publica 400, rascunho
   anonimo 400.
 
-PENDENTE 2 — conferencia no DASHBOARD (o MCP nao tem get_advisors)
+PENDENTE 2 — conferencia no DASHBOARD (o MCP ANTIGO nao tinha get_advisors; corrigido em 2026-10-21)
   2026-10-20: rls_policy_always_true sumiu (42 avisos). Os 3 avisos
   anon_security_definer_function_executable sumiram apos a 0007.
   Restam 3 de authenticated_security_definer_function_executable
@@ -330,8 +355,9 @@ PENDENTE 7 — DEPLOY da function do Instagram + rotacao do token (humano)
   404 {"code":"NOT_FOUND","message":"Requested function was not found"} —
   ou seja, a function continua NAO publicada.
   Detalhes no BLOCO 10 do plano v2 e no supabase/README.md.
-  ATENCAO: o MCP deste ambiente nao tem a feature "functions". Para deployar
-  pelo MCP, reconfigurar a URL incluindo functions e reautenticar.
+  ATENCAO (corrigida em 2026-10-21): o MCP deste ambiente agora TEM a feature
+  "functions" no projeto de teste. Basta usar supabase-teste (ou habilitar a
+  feature na URL de producao durante a janela de deploy).
 
 PENDENTE 6 — RESOLVIDO em 2026-10-19 (Bloco 5)
   O Bloco 5 falava em app_metadata.role; isso nunca existiu no projeto.
@@ -363,9 +389,12 @@ PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
      role = servidor (validado: is_admin false, pode_editar true, meu_papel
      servidor). Rebaixar = insert com 'admin'; remover = delete da linha.
   2. T6.5: FEITO em 2026-10-20 no projeto de teste (232 casos, 0 falhas).
-  3. MASCARAMENTO: funcionarios.cpf/telefone/email/matricula,
-     veiculos.placa/chassi/renavam e escala_ferias.nome/cargo ainda vao para
-     anon, porque db.js usa select('*'). Exige view/colunas explicitas.
+  3. MASCARAMENTO: ADIADO por decisao do dono em 2026-10-21. Os campos
+     funcionarios.cpf/telefone/email/matricula, veiculos.placa/chassi/renavam
+     e escala_ferias.nome/cargo seguem indo para anon, porque db.js usa
+     select('*'). RISCO ACEITO E DATADO; reavaliar quando o dono pedir ou
+     quando houver requisito de LGPD. Correcao futura exige view/colunas
+     explicitas.
   4. PROMOCAO PELO PAINEL: futuro. app_admins nao tem policy de leitura;
      precisa de RPC security definer checando is_admin().
 
