@@ -26,6 +26,54 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 9c GRUPO 4 (commit 0d1e476)
++ FIX DAS BUSCAS POR DIGITACAO (VALIDADO PELO DONO)
+=========================================================================
+
+  - HTML: os 18 handlers inline restantes foram removidos (11 em
+    index.html + 7 em admin.html) -> `data-acao` + tabelas de delegacao
+    ja existentes (`ACOES_CLIQUE` e `ACOES_ADMIN_CLIQUE`). A guarda
+    estatica agora cobre os 4 arquivos: 0
+    `on(click|change|input|submit)=`.
+  - Novas acoes publicas: navegar, limpar-busca-funcionarios,
+    limpar-busca-modulo (data-modulo/input/apply) e toggle-historico.
+    Admin: fazer-login, fazer-logout, exportar-dados e
+    salvar-config-dashboard; fechar-modal ja existia.
+  - Testes do grupo 4: npm run check exit 0 (158 testes, 0 erros,
+    19 warnings) | e2e 10 passed / 2 skipped | check-draft-leak 15/15 |
+    smoke headless 4/4. Guard innerHTML 29/11/0 inalterado.
+
+  BUG DAS BUSCAS (diagnosticado e corrigido na sequencia):
+    * Sintoma: digitar em Manuais, Processos e Veiculos nao filtrava.
+    * Causa: registros reais com campo nulo (manuais.id=7 categoria;
+      processos.id=5 categoria; veiculos.id=4 marca/modelo/placa/tipo)
+      e o filtro chamando `.toLowerCase()` direto no campo -> TypeError
+      dentro do `filter` -> o handler abortava antes do render.
+    * NAO era regressao do grupo 4: 0d1e476 so somou entradas em
+      ACOES_CLIQUE; era bug latente exposto por dado incompleto.
+    * Fix (TDD, 8 testes escritos antes de codar): helper
+      `textoInclui(valor, q)` em script.js, usado nas buscas de
+      manuais, processos (com Array.isArray(etapas)), veiculos,
+      sistemas, servicos, agenda e informacoes (com Array.isArray em
+      campos); o filtro de arquivos (nome/tags) ficou null-safe.
+      Nada mudou em db.js, admin.js, dados.js, HTML, publish_status
+      ou contratos de DB.*.
+    * Medido apos o fix: npm run check exit 0 (166 testes, 0 erros de
+      lint, 19 warnings) | e2e 10 passed / 2 skipped | prova headless
+      com dados de producao: termo inexistente zera manuais (7->0),
+      processos (4->0) e veiculos (4->0), 0 pageerrors.
+    * Validacao manual do dono (2026-10-21): todas as buscas OK, alem
+      do grupo 4 (navegacao, limpar buscas/filtros, historico e acoes
+      do admin).
+
+  Observacoes para depois (nao bloqueiam):
+    - a busca e sensivel a acento: "veiculo" nao acha "Veiculo".
+    - preview de .docx usa Office Online e o campo `tipo` do arquivo nao
+      e inferido no upload.
+
+  - Proximo: 9d (CSP: fixar CDNs + SRI, report-only e depois aplicar).
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 9c GRUPO 3 CONCLUIDO + 3 CORRECOES
 (commits locais a82e957, 6a85171, 292f79e)
 =========================================================================
@@ -294,9 +342,10 @@ Plano vigente (substitui a v1):
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
      sanitizador de link) concluidos; 9c grupos 1 (script.js, 470182b), 2
-     (admin.js tabelas/listas, 71db11a) e 3 (admin.js modais/formularios,
-     a82e957 + fixes 6a85171/292f79e) concluidos e validados; falta 9c
-     grupo 4 (18 handlers no HTML) e 9d (CSP).
+     (admin.js tabelas/listas, 71db11a), 3 (admin.js modais/formularios,
+     a82e957 + fixes 6a85171/292f79e) e 4 (HTML, 0d1e476) concluidos;
+     fix das buscas por digitacao (campo nulo) concluido e validado pelo
+     dono; falta 9d (CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
