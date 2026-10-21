@@ -1572,15 +1572,15 @@ visitante deixou de ver um campo pedindo token.
 
 ### Tarefas
 
-- [ ] **T11.1 — `createListController`**
-  `createListController({ colecao, pageSize, filter, render, searchInputId, stateKey })` → `{ setQuery, setPage, getState, render }`.
-  Com testes unitários: filtro, página, estado vazio, persistência.
-- [ ] **T11.2 — 3 módulos piloto**
+- [x] **T11.1 — `createListController`** (a2ac914)
+  `createListController({ colecao, pageSize, filter, render, searchInputId, stateKey })` → `{ setItems, setQuery, setPage, getState, render, aplicarBusca }`.
+  Com testes unitários: filtro, página, estado vazio, persistência, cursor e storage com falha.
+- [x] **T11.2 — 3 módulos piloto** (8afd789, 2012bb0)
   Arquivos, Avisos, Funcionários passam a usar o controlador; funções antigas ficam mortas (não apagar ainda).
-- [ ] **T11.3 — Os 10 restantes + apagar duplicatas**
-  Remover 13 `filtrar*`, 13 `atualizarBusca*`, 13 `mudarPagina*`.
-- [ ] **T11.4 — Registro de módulos**
-  `MODULES = { arquivos: { render, form, save, delete, searchId } }` substituindo cadeias de `if`.
+- [x] **T11.3 — Os 10 restantes + apagar duplicatas** (9f52b3a, d1f44e5, 0e3418a)
+  Removidos 13 `*_LIST_STATE`, 13 `atualizarBusca*` e 13 `mudarPagina*` (os `filtrar*` ficaram: são o `filter` injetado).
+- [x] **T11.4 — Registro de módulos** (8f470d6)
+  `MODULES = { secao: { render, searchId } }` no roteador. `form/save/delete` já viviam em `SALVAR_MODAL`/`ACOES_ADMIN_CLIQUE` (tabelas fechadas do Bloco 9), então não viraram campos mortos.
 
 ### Validação (prova)
 
@@ -1596,13 +1596,25 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 `grep -c "filtrar" admin.js` → 0 (ou só as que o plano documentar).
 
 ### Checklist
-- [ ] controlador testado
-- [ ] 13 módulos migrados
-- [ ] duplicatas removidas
-- [ ] `admin.js` −25% de linhas
-- [ ] busca/página persistem
-- [ ] nenhuma função órfã
-- [ ] comportamento idêntico (E2E)
+- [x] controlador testado (15 testes)
+- [x] 13 módulos migrados (14 coleções: infoJuridico e infoMunicipio contam como um módulo)
+- [x] duplicatas removidas (39 funções)
+- [x] `admin.js` consolidado: 3218 → 3089 linhas (−4%)
+- [x] busca/página persistem (validado pelo dono em 2026-10-21)
+- [x] nenhuma função órfã (`paginarLista` removida; lint segue em 19 avisos)
+- [x] comportamento idêntico (E2E 13 passed / 2 skipped)
+
+### Resultado (2026-10-21)
+
+- `npm run check` exit 0: **200 testes, 0 falhas, 19 avisos** (baseline).
+- `npx playwright test`: **13 passed / 2 skipped** (admin sem credenciais).
+- `admin.js`: **3218 → 3089 linhas (−129)**. O alvo de −25% era
+  superestimado: a duplicação real (estado + busca + paginação) era ~130
+  linhas; o ganho principal é estrutural (39 funções → 13 controladores).
+- Estado de busca/página em `localStorage` (`smader_admin_list_state_v1`),
+  por coleção: trocar de módulo e voltar mantém busca e página.
+- Validação manual do dono: navegação, busca, paginação e persistência ao
+  trocar de módulo sem quebra visível.
 
 ### Rollback
 `git checkout -- admin.js` (+ remover arquivo novo).

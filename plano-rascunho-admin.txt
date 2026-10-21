@@ -26,6 +26,37 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 11 CONCLUIDO (T11.1–T11.4) — VALIDADO PELO DONO
+=========================================================================
+
+  - Commits locais (sem push; origin/codex/fase3 segue em df0ee9e):
+      a2ac914  motor de listas + testes (T11.1)
+      8afd789  Arquivos (T11.2)
+      2012bb0  Avisos e Funcionarios (T11.2)
+      9f52b3a  Manuais, Processos, Veiculos, Sistemas, Servicos (T11.3)
+      d1f44e5  Agenda, Escala de Ferias, Acesso Rapido (T11.3)
+      0e3418a  Informacoes (infoJuridico/infoMunicipio) e Orgaos + remove paginarLista (T11.3)
+      8f470d6  registro MODULES no roteador (T11.4)
+  - Novo arquivo: js/admin/list-controller.js (window.SisListas.createListController),
+    carregado no admin.html ANTES de admin.js.
+  - 13 modulos / 14 colecoes migrados; 39 funcoes duplicadas eliminadas
+    (*_LIST_STATE, atualizarBusca*, mudarPagina*). Os `filtrar*` ficaram de
+    proposito: sao injetados como `filter` no controlador.
+  - Busca e pagina persistem por colecao em localStorage
+    (smader_admin_list_state_v1). Trocar de modulo e voltar mantem o estado
+    (M3) — validado manualmente pelo dono em 2026-10-21.
+  - Roteador: MODULES = { secao: { render, searchId } }. Formulario/salvar/
+    excluir continuam em SALVAR_MODAL / ACOES_ADMIN_CLIQUE (tabelas fechadas
+    desde o Bloco 9). Chave desconhecida nao quebra a navegacao.
+  - Medido: npm run check exit 0 (200 testes, 0 falhas, 19 warnings) |
+    npx playwright test 13 passed / 2 skipped.
+  - admin.js: 3218 -> 3089 linhas (-4%). O alvo de -25% do plano era
+    superestimado: a duplicacao real era ~130 linhas; o ganho e estrutural.
+  - Proximo: Bloco 12 (repaginacao do admin), que exige T12.0 (brainstorming
+    + prototipo aprovado) antes de tocar em codigo. Bloco 10 segue pendente de
+    acao do dono (token do Meta + deploy da function) e adiado.
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 9d CONCLUIDO (commit 7f89e5a) — CSP APLICADA
 =========================================================================
 
