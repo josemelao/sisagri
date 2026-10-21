@@ -26,6 +26,39 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21 — BLOCO 9c GRUPO 2 CONCLUIDO (commit local 71db11a)
+=========================================================================
+
+  - admin.js: 66 handlers inline de tabelas/listas -> `data-acao` + uma
+    delegacao unica (ACOES_ADMIN_CLIQUE / ACOES_ADMIN_INPUT /
+    ACOES_ADMIN_CHANGE + despacharAcaoAdmin + initAcoesDelegadasAdmin,
+    listeners de `click`, `input` e `change` em document).
+    Cobertos: buscas (12 modulos + info-simples), paginacao, Novo, Editar,
+    Excluir e o toggle inline de publicacao. Tres tabelas separadas evitam
+    o toggle dispara duas vezes (click + change).
+  - Ids vindos de `dataset` (string) sao passados como Number(...): mesmo
+    comportamento do inline anterior e compativel com o `===` de
+    DB.getById/DB.remove. publish_status e os contratos de DB.* intactos.
+  - admin.html: so a regra CSS do papel `servidor` (linha 147) trocou de
+    `[onclick^="confirmarDelecao"]` para `[data-acao="confirmar-delecao"]`;
+    nada mais no HTML foi tocado (os 18 handlers do grupo 4 continuam).
+  - aplicarPermissoesUI(): seletor atualizado para
+    `#admin-app [data-acao="confirmar-delecao"]`.
+  - Restam 56 handlers inline, todos de modal/formulario (grupo 3).
+  - Testes: tests/unit/admin-acoes-delegadas.test.mjs (novo, 7 casos).
+    A guarda estatica no-inline-handlers.test.mjs so passa a incluir
+    admin.js no fim do grupo 3.
+  - Medido em 2026-10-21: npm run check exit 0 (138 testes, 0 erros de
+    lint, 58 warnings; eram 112 porque as funcoes de lista agora sao
+    referenciadas pela tabela) | e2e 10 passed / 2 skipped |
+    check-draft-leak 15/15.
+  - Validado manualmente pelo dono em http://localhost:5173/admin.html:
+    login real, busca, paginacao, Novo/Editar/Salvar/Excluir em varios
+    modulos, toggle inline e papel `servidor` sem lixeira.
+  - Proximo: Bloco 9c grupo 3 (modais/formularios do admin.js) e grupo 4
+    (18 handlers no HTML); depois 9d (CSP).
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 9c GRUPO 1 CONCLUIDO (commit local 470182b)
 =========================================================================
 
@@ -41,8 +74,8 @@ SESSAO 2026-10-21 — BLOCO 9c GRUPO 1 CONCLUIDO (commit local 470182b)
     | e2e 10 passed / 2 skipped | check-draft-leak 15/15.
   - Validado manualmente pelo dono em http://localhost:5173/index.html:
     cards, modais, paineis aninhados, filtros, paginacao e download OK.
-  - Proximo: Bloco 9c grupos 2 e 3 (admin.js: tabelas/listas e
-    modais/formularios) e grupo 4 (18 handlers no HTML); depois 9d (CSP).
+  - Proximo: Bloco 9c grupos 3 e 4 (admin.js: modais/formularios; e os 18
+    handlers no HTML); depois 9d (CSP). Grupos 1 e 2 ja concluidos.
 
 =========================================================================
 SESSAO 2026-10-21 — BLOCO 7 CONCLUIDO (commit local 0e8180e)
@@ -92,10 +125,9 @@ SESSAO 2026-10-21 — BLOCO 8 CONCLUIDO (commits locais b9f2604, 9851e45,
     obsoleto afetou 0 linhas, anon sem execute na RPC replace_collection.
   - DEPENDENCIA DE DEPLOY: aplicar 0012-0014 em PRODUCAO antes de
     publicar este codigo. Producao continua intocada.
-  - Proximo: Bloco 9c grupos 2-4 (admin.js e HTML), depois 9d (CSP),
+  - Proximo: Bloco 9c grupos 3-4 (admin.js e HTML), depois 9d (CSP),
     Bloco 10 (token do Instagram, depende do dono), Bloco 6 restante e
-    Blocos 11-13. Grupo 1 do 9c (script.js) ja concluido (ver sessao 9c
-    acima).
+    Blocos 11-13. Grupos 1 e 2 do 9c ja concluidos (ver sessoes 9c acima).
 
 
 =========================================================================
@@ -224,8 +256,9 @@ Plano vigente (substitui a v1):
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 PARCIAL: 9a (SisUtils + guarda de CI) e 9b (escape na saida +
-     sanitizador de link) concluidos; 9c grupo 1 (script.js, commit 470182b)
-     concluido e validado; falta 9c grupos 2-4 (admin.js e HTML) e 9d (CSP).
+     sanitizador de link) concluidos; 9c grupos 1 (script.js, 470182b) e 2
+     (admin.js tabelas/listas, 71db11a) concluidos e validados; falta 9c
+     grupos 3-4 (admin.js modais/formularios e HTML) e 9d (CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
