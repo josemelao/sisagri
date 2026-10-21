@@ -1,6 +1,24 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
 Atualizado em: 2026-10-20
-Branch de trabalho: codex/fase2 (base da655a0; main = producao; deploy 3cc260e em 2026-10-20)
+Branch de trabalho: codex/fase2 (base da655a0; main = producao; deploy c3f1c90 em 2026-10-20)
+
+=========================================================================
+ESTADO DO REMOTO — PONTO DE RETOMADA (atualizado 2026-10-20)
+=========================================================================
+
+  origin/main = este commit de docs do handoff; o ultimo commit de
+  codigo/validacao antes dele e 33e7111. Working tree limpo apos o push.
+
+  Para retomar em OUTRO PC:
+    git fetch origin
+    git checkout -B codex/fase2 origin/main
+
+  Observacao: a branch local codex/fase2 NAO tem upstream proprio (nao existe
+  origin/codex/fase2); o conteudo dela e identico ao origin/main.
+
+  Deploy no ar: c3f1c90 (GitHub Pages) + hotfix e7287e4.
+  Conferido em 2026-10-20: Edge Function do Instagram ainda NAO publicada
+  (GET /functions/v1/instagram -> 404 NOT_FOUND). Ver PENDENTE 7.
 
 =========================================================================
 SESSAO 2026-10-19/20 — ULTIMA ANTES DA PAUSA (leia antes de retomar)
@@ -112,7 +130,8 @@ Plano vigente (substitui a v1):
      sanitizador de link) concluidos; falta 9c/9d (handlers inline, CSP).
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
-  -> Bloco 3b PARCIAL: parte 1 (gate do Storage) aplicada; falta o mecanismo.
+  -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,
+     URL assinada e buckets privados; validado no site real).
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
 Evidencia:
@@ -153,8 +172,13 @@ Migrations aplicadas (primeira DDL rastreavel do projeto):
   20261020023304  supabase/migrations/0005_rbac_papel.sql
   20261020023320  supabase/migrations/0006_rls_papeis.sql
   20261020130953  supabase/migrations/0007_fn_grants.sql
+  20261020151915  supabase/migrations/0008_storage_policies_assinatura.sql
+  20261020152424  supabase/migrations/0009_storage_buckets_privados.sql
+  20261020183947  supabase/migrations/0010_manuais_imagens_policy.sql
+  20261020184951  supabase/migrations/0011_manuais_imagens_bucket_privado.sql
+  (no projeto de TESTE zoywmvuswyosehlddmma, a 0011 esta na versao 20261020194040)
 
-Commits locais (codex/fase2, sem push):
+Commits da fase (todos em origin/main; ultimo de codigo/validacao = 33e7111):
   8b053d4  auditoria + suite de vazamento
   640c0b0  baseline versionada
   f49d477  0002 (gate is_admin nas 42 policies de escrita + fix N1)
@@ -181,12 +205,23 @@ Commits locais (codex/fase2, sem push):
   06428fb  docs(bloco 6): conta servidor e fix de UI registrados
   248977f  fix(bloco 6): reinit do login nao anuncia fallback antes de carregar
   6e7d37e  fix(bloco 6): revoga execute anonimo das funcoes de papel
+  2e65eb0  test(bloco 6): T6.5 com 232 casos e seed reproduzivel
+  810926b  docs(bloco 6): projeto de teste, T6.5 e aceite do plano Free
+  3cc260e  feat(bloco 3b2): storage privado com URL assinada
+  dad8e6b  docs(bloco 3b2): producao aplicada e validada
+  e7287e4  fix: usa url assinada no preview de arquivos
+  e4bf509  feat(storage): assina imagens de manuais e prepara bucket privado
+  c3f1c90  docs: registra 3c/13 no handoff
+  9506aed  docs: registra 3c/13 validado em producao
+  bb4ebfc  docs: alinha projeto de teste com bucket privado
+  33e7111  docs: fecha pendencias do 3c/13  (ultimo de codigo/validacao)
 
 O que esta fechado, medido:
   tabelas   anon 59 publicados / 0 rascunhos
             nao-admin 59 publicados / 0 rascunhos / escrita bloqueada
             admin tudo, inclusive 1 rascunho e admin_settings
-            servidor: 0 contas ainda (regra provada por SQL, falta conta real)
+            servidor: 1 conta (servidor@servidor.com); regra provada por SQL e
+            validada no painel (cria/edita, nao exclui)
   storage   nao-admin ve 0 objetos (era 133) / DELETE 0 linhas
             admin ve 133 / apaga normalmente
             servidor: upload/listagem liberados; DELETE negado
@@ -203,7 +238,7 @@ Bloco 4, medido:
   npm run test:e2e exit 0   (4 fluxos verdes, 2 pulados sem credenciais)
   nenhuma linha de db.js/script.js/admin.js/dados.js mudou
 
-Proxima acao sugerida:
+Proxima acao sugerida (HISTORICO — ja superada pela "PROXIMA ACAO" do topo):
   1. Bloco 9b: classificar os 40 pontos de innerHTML interpolado por tipo de
      campo e escapar os de texto simples. DECISAO NECESSARIA DO DONO:
      quais campos aceitam HTML por desenho (suspeito: manuais.passos, que tem
@@ -291,6 +326,9 @@ PENDENTE 7 — DEPLOY da function do Instagram + rotacao do token (humano)
     4. supabase functions deploy instagram
   Enquanto isso: GET /functions/v1/instagram -> 404 e o widget mostra
   "Feed do Instagram indisponivel no momento." (nao quebra a pagina).
+  Conferido em 2026-10-20: GET /functions/v1/instagram responde
+  404 {"code":"NOT_FOUND","message":"Requested function was not found"} —
+  ou seja, a function continua NAO publicada.
   Detalhes no BLOCO 10 do plano v2 e no supabase/README.md.
   ATENCAO: o MCP deste ambiente nao tem a feature "functions". Para deployar
   pelo MCP, reconfigurar a URL incluindo functions e reautenticar.
@@ -314,9 +352,10 @@ PENDENTE 8 — RESOLVIDO em 2026-10-19 (Bloco 9b)
   <img src=x onerror=...> nao executa e aparece como texto.
   Guard segue 29/11: ele conta PONTOS com interpolacao, nao pontos inseguros;
   o escape acontece dentro da expressao. Chegar a 0 e o 9c/9d (DOM/CSP).
-  PENDENCIA DE DADO: info_municipio id=3 com href sem https:// (ja era
-  relativo antes); corrigir no painel, campo "Site oficial".
-  FALTA: teste automatizado de XSS no admin (depende do login real).
+  [FEITO 2026-10-20] info_municipio id=3 corrigido e validado no site
+  (campo "Site oficial").
+  FALTA: teste automatizado de XSS no admin (depende do login real); o
+  publico ja tem cobertura em tests/e2e/xss.spec.mjs.
 
 PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
   1. CONTA SERVIDOR: FEITO em 2026-10-20.

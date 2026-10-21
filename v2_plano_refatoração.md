@@ -7,6 +7,7 @@
 **Commit de referência na criação deste plano:** `0d97cc0`
 **Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
 **Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2**, **3** (parte de tabela) e **3c** **concluídos**; Bloco **3b** está **parcial** (parte 1 = gate do Storage). `0002`, `0003` e `0004` estão **aplicadas em produção**. Os registros dentro dos Blocos 3 e 3c descrevem as divergências em relação ao previsto.
+**Revisão 4 (2026-10-20):** Bloco **3b** **concluído** (parte 2: `0008`/`0009`, URL assinada e buckets privados, validado no site real) e Bloco **3c/13** **concluído** (`0010`/`0011`). Bloco **6** concluído, incluindo T6.5 (232 casos no projeto de teste). Deploy `c3f1c90` no ar. Tudo em `origin/main` (base `33e7111` + commits de docs).
 **`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono.
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
@@ -752,19 +753,24 @@ Recriar as 3 policies de `SELECT` (copiadas da baseline do Bloco 2). Nada de des
 **Tipo:** 🤝 design + 🤖. **Esforço:** 2–3 dias. **Depende de:** B4 (mexe em `script.js`). **Achados:** N5.
 **Objetivo:** fazer o acesso a arquivo depender de **autorização**, e não de "conhecer a URL".
 
-**Status: 🟡 PARCIAL.** A **parte 1** foi aplicada em 2026-10-19:
-`migrations/0004_storage_gate.sql` fecha **quem** lista, sobrescreve e apaga — as
-12 policies de `storage.objects` passaram a exigir `public.is_admin()`.
+**Status: 🟢 CONCLUÍDO em 2026-10-20.** A **parte 1** foi aplicada em 2026-10-19
+(`migrations/0004_storage_gate.sql` fecha **quem** lista, sobrescreve e apaga —
+as 12 policies de `storage.objects` passaram a exigir `public.is_admin()`).
+A **parte 2** foi aplicada em 2026-10-20 (`0008_storage_policies_assinatura.sql`
+e `0009_storage_buckets_privados.sql`), com URL assinada no cliente
+(`DB.createSignedUrl`), cache em memória e validação no site real: 15/15 fotos,
+sign/download 200, URL pública antiga 400. O `3c/13` fechou o caso de
+`manuais` (`0010`/`0011`).
 
 Medido: não-admin vê **0** objetos (era 133), DELETE devolve **0 linhas**; admin
 vê **133** e apaga normalmente; `anon` nunca teve policy. Nada mudou para o site
 público (URL direta não passa por policy) — anexo publicado e imagem de manual
 seguem **200**. O dono confirmou **upload e exclusão** no painel em 2026-10-19.
 
-**O que falta (parte 2, o mecanismo):** os 3 buckets continuam `public = true`.
-URL pública **não consulta policy**, então todo upload novo em rascunho nasce
-público. É exatamente o que as tarefas T3b.2–T3b.5 abaixo resolvem, e o motivo de
-`tests/04_storage_rascunho_publico.sql` existir.
+**O que faltava (parte 2, o mecanismo) — RESOLVIDO em 2026-10-20:** os 3 buckets
+estavam `public = true`; URL pública **não consulta policy**, então todo upload
+novo em rascunho nascia público. Foi exatamente o que as tarefas T3b.2–T3b.5
+resolveram (e o motivo de `tests/04_storage_rascunho_publico.sql` existir).
 
 **Nota de viabilidade descoberta agora:** `arquivos` tem `storage_path` +
 `storage_bucket` e `funcionarios` tem `foto_storage_path` + `foto_storage_bucket`
@@ -786,11 +792,11 @@ ou de decisão explícita.
 
 ### Tarefas (assumindo opção 1)
 
-- [ ] **T3b.1 — Design doc** em `docs/superpowers/specs/` cobrindo: como o app público obtém a URL assinada, tempo de expiração, cache, comportamento offline e o que acontece com `arquivos.url` (campo hoje persistido com URL pública).
-- [ ] **T3b.2 — Tornar o bucket privado** (`arquivos-smader` primeiro; `funcionarios-fotos-smader` depois).
-- [ ] **T3b.3 — Emissão de URL assinada** — Edge Function (só para `published`) ou `create_signed_url` no cliente com policy restrita. Avaliar com o dono qual caminho.
-- [ ] **T3b.4 — Adaptar o frontend** — `script.js` (download/exibição) e admin (preview de anexo/foto).
-- [ ] **T3b.5 — Migrar os dados** — `arquivos.url` / `funcionarios.foto` deixam de guardar URL pública; ler de `storage_path` e assinar em runtime (mantendo fallback para os valores antigos durante a transição).
+- [x] **T3b.1 — Design doc** em `docs/superpowers/specs/` cobrindo: como o app público obtém a URL assinada, tempo de expiração, cache, comportamento offline e o que acontece com `arquivos.url` (campo hoje persistido com URL pública). → `docs/superpowers/specs/2026-10-20-storage-url-assinada.md`
+- [x] **T3b.2 — Tornar o bucket privado** (`arquivos-smader` primeiro; `funcionarios-fotos-smader` depois). → `0009` (produção 20261020152424)
+- [x] **T3b.3 — Emissão de URL assinada** — Edge Function (só para `published`) ou `create_signed_url` no cliente com policy restrita. Avaliar com o dono qual caminho. → opção cliente + policy (`0008`), produção 20261020151915
+- [x] **T3b.4 — Adaptar o frontend** — `script.js` (download/exibição) e admin (preview de anexo/foto). → commit `3cc260e` + hotfix `e7287e4`
+- [x] **T3b.5 — Migrar os dados** — `arquivos.url` / `funcionarios.foto` deixam de guardar URL pública; ler de `storage_path` e assinar em runtime (mantendo fallback para os valores antigos durante a transição). → 12 fotos base64 migradas para o bucket; `foto_url`/`url_assinada` em runtime; fallback preservado
 
 ### Validação (prova)
 
@@ -806,12 +812,12 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 - `functions` habilitado no MCP se a opção for Edge Function (mesmo fluxo de `/mcps` do Bloco 10).
 
 ### Checklist
-- [ ] design aprovado antes do código
-- [ ] bucket privado: URL pública deixa de responder `200`
-- [ ] URL assinada funciona e expira
-- [ ] anexo publicado continua acessível no app público
-- [ ] rascunho sem acesso por nenhum caminho
-- [ ] dados migrados (`storage_path` como fonte) com fallback para os valores antigos
+- [x] design aprovado antes do código
+- [x] bucket privado: URL pública deixa de responder `200`
+- [x] URL assinada funciona e expira (expiração passada como `expiresIn=3600`; cache em memória com margem de 5 min — a expiração real não foi esperada em produção)
+- [x] anexo publicado continua acessível no app público
+- [x] rascunho sem acesso por nenhum caminho
+- [x] dados migrados (`storage_path` como fonte) com fallback para os valores antigos
 
 ### Rollback
 Voltar `public = true` no bucket (reverte o acesso por URL). O código tem que tolerar os dois modos durante a transição.
@@ -1028,8 +1034,8 @@ npm test -- -t "isAdminLoggedIn"
 - RPC em produção com a anon key e sem sessão: `status=200 corpo=false`.
 - `/admin.html` sem sessão (Chromium): tela de login visível, `#admin-app`
   escondido, sem erro de JS.
-- Login real com a conta admin: **pendente de teste humano** (não há credenciais
-  no ambiente de execução).
+- Login real com a conta admin: **validado pelo dono em 2026-10-20** (o painel
+  abre e mostra o rascunho `processos.id=4`, que segue fora do site público).
 
 ### Checklist
 - [x] sessão sem permissão não entra no painel
@@ -1127,13 +1133,14 @@ prova de falta de permissão); `is_admin = false` derruba.
 - [x] **T6.4 — Guardas de UI** — feito em 2026-10-20
   Painel abre com `isStaff()`; excluir e a seção "configurações" somem para
   `servidor`; `confirmarDelecao`/`executarDelecao` também recusam.
-- [ ] **T6.5 — Suíte de acesso**
-  `tests/security/access-matrix.spec.mjs`: 3 personas × 14 coleções × 4 ações.
-  **Bloqueado:** precisa de projeto Supabase de teste e de uma conta `servidor`.
+- [x] **T6.5 — Suíte de acesso** — feito em 2026-10-20
+  Virou `tests/06_matriz_rbac.sql` (4 personas × 14 coleções × 4 ações +
+  `admin_settings`): **232 casos, 0 falhas** no projeto de teste
+  `zoywmvuswyosehlddmma`. A conta `servidor` também foi criada e validada no painel.
 
 ### Validação (prova)
 
-- `tests/security/access-matrix.spec.mjs` verde (nenhuma célula fora da matriz aprovada) — **pendente (T6.5)**
+- `tests/06_matriz_rbac.sql` verde (232 casos, 0 falhas) — **feito em 2026-10-20 (T6.5)** no projeto de teste
 - sessão anônima **não faz request** das tabelas internas (verificar no Network do navegador) — não se aplica: todas públicas
 - tentativa de ação proibida via console do DevTools → **negada pelo banco** — provado por policy (`DELETE` com `is_admin()`)
 - `funcionarios`: campos sensíveis mascarados — **pendência registrada**, fora do bloco
