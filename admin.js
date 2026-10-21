@@ -216,10 +216,14 @@ function atualizarStatusBanco() {
   const headerText = document.getElementById('admin-db-status-text');
   const config = document.getElementById('config-db-status');
   const message = getDbStatusMessage(status);
+  const pendentes = DB.getPendingWrites ? DB.getPendingWrites().length : 0;
 
   if (header && headerText) {
     header.classList.remove('is-ok', 'is-warn', 'is-offline');
-    if (status.provider === 'supabase' && status.writesReachSupabase) {
+    if (pendentes > 0) {
+      header.classList.add('is-offline');
+      headerText.textContent = `${pendentes} alteracao(oes) pendente(s)`;
+    } else if (status.provider === 'supabase' && status.writesReachSupabase) {
       header.classList.add('is-ok');
       headerText.textContent = 'Supabase online';
     } else if (status.supabaseConfigured) {

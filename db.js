@@ -24,6 +24,7 @@ const DB_CONFIG = {
   LS_KEY:          'smader_db_v1', // chave principal do localStorage
   LEGACY_LS_KEY:   'seagri_db_v1', // chave antiga para migração segura
   CONFIG_LS_KEY:   'smader_layout_config_v1',
+  PENDING_WRITES_KEY: 'smader_pending_writes_v1', // Bloco 8 (T8.2): fila offline
 };
 
 const STORAGE_CONFIG = {
@@ -699,17 +700,106 @@ function _confirmacaoDaEscrita(colecao, id) {
 }
 
 /**
+ * Bloco 8 (T8.2): fila de escrita offline.
+ * Guarda a operacao que falhou por motivo transitorio (rede/5xx) e tenta de
+ * novo no boot e quando o navegador volta a ficar online, sem duplicar.
+ */
+function _erroTransiente(error) {
+  const codigo = String(error?.code || '');
+  if (!codigo) return true; // erro de rede/timeout nao tem code
+  if (codigo.startsWith('22') || codigo.startsWith('23')) return false; // dados invalidos
+  if (codigo === '42501' || codigo === 'PGRST301' || codigo === 'PGRST204') return false; // permissao/coluna
+  return true;
+}
+
+function _lerPendentes() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(DB_CONFIG.PENDING_WRITES_KEY) || '[]');
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+function _gravarPendentes(lista) {
+  try {
+    localStorage.setItem(DB_CONFIG.PENDING_WRITES_KEY, JSON.stringify(lista));
+  } catch (e) {
+    console.warn('[DB] Nao foi possivel gravar a fila de escritas pendentes:', e);
+  }
+  _emitStatusChanged();
+}
+
+function _enfileirarPendente(item) {
+  if (!item || !_isSupabaseCollection(item.colecao)) return;
+  const lista = _lerPendentes();
+  const chave = `${item.op}:${item.colecao}:${item.id ?? ''}`;
+  const existente = lista.findIndex(x => `${x.op}:${x.colecao}:${x.id ?? ''}` === chave);
+  if (existente >= 0) lista[existente] = item;
+  else lista.push(item);
+  _gravarPendentes(lista);
+}
+
+async function _executarPendente(item) {
+  if (!_sb || !_isSupabaseCollection(item.colecao)) return { ok: false, transiente: true };
+  const tabela = SUPABASE_TABLES[item.colecao];
+  let requisicao;
+  if (item.op === 'delete') {
+    requisicao = _sb.from(tabela).delete().eq('id', item.id);
+  } else if (item.op === 'update') {
+    requisicao = _sb.from(tabela).update(item.payload).eq('id', item.id);
+  } else if (item.payload && item.payload.id != null) {
+    requisicao = _sb.from(tabela).upsert(item.payload, { onConflict: 'id' });
+  } else {
+    requisicao = _sb.from(tabela).insert(item.payload);
+  }
+  try {
+    const { error } = await Promise.resolve(requisicao);
+    if (error) return { ok: false, transiente: _erroTransiente(error), error };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, transiente: true, error };
+  }
+}
+
+async function _reprocessarPendentes() {
+  if (!_sb) return;
+  const pendentes = _lerPendentes();
+  if (!pendentes.length) return;
+  const restantes = [];
+  const colecoes = new Set();
+  for (const item of pendentes) {
+    const resultado = await _executarPendente(item);
+    if (resultado.ok) {
+      colecoes.add(item.colecao);
+    } else if (resultado.transiente) {
+      restantes.push(item);
+    } else {
+      console.warn('[DB] Escrita pendente descartada (erro permanente):', item, resultado.error);
+    }
+  }
+  _gravarPendentes(restantes);
+  for (const colecao of colecoes) {
+    await _refreshSupabaseCollection(colecao).catch((e) => {
+      console.warn(`[DB] Falha ao recarregar ${colecao} apos replay da fila:`, e);
+    });
+  }
+  if (colecoes.size) _persistLocal();
+}
+
+/**
  * Envia uma operacao ao Supabase e devolve `{ ok, error }` (nunca rejeita).
  * O status do banco e a recarga da colecao continuam centralizados aqui.
  */
 function _enviarParaSupabase(colecao, tipo, id, registro) {
   if (!_sb || !_isSupabaseCollection(colecao)) return Promise.resolve({ ok: true, skipped: true });
   const tabela = SUPABASE_TABLES[colecao];
+  const payload = tipo === 'delete' ? null : _toSupabasePayload(colecao, registro);
   let requisicao;
   if (tipo === 'insert') {
-    requisicao = _sb.from(tabela).insert(_toSupabasePayload(colecao, registro));
+    requisicao = _sb.from(tabela).insert(payload);
   } else if (tipo === 'update') {
-    requisicao = _sb.from(tabela).update(_toSupabasePayload(colecao, registro)).eq('id', id);
+    requisicao = _sb.from(tabela).update(payload).eq('id', id);
   } else {
     requisicao = _sb.from(tabela).delete().eq('id', id);
   }
@@ -724,6 +814,9 @@ function _enviarParaSupabase(colecao, tipo, id, registro) {
           lastError: error.message || `Falha ao gravar em ${tabela}.`,
         });
         console.error(`[DB] Falha ao gravar em ${tabela} (${tipo} ${id}):`, error);
+        if (_erroTransiente(error)) {
+          _enfileirarPendente({ op: tipo, colecao, id, payload, ts: Date.now() });
+        }
         return { ok: false, error };
       }
       _setDbStatus({
@@ -745,6 +838,7 @@ function _enviarParaSupabase(colecao, tipo, id, registro) {
         lastError: error?.message || `Falha ao gravar em ${tabela}.`,
       });
       console.error(`[DB] Erro inesperado ao gravar em ${tabela} (${tipo} ${id}):`, error);
+      _enfileirarPendente({ op: tipo, colecao, id, payload, ts: Date.now() });
       return { ok: false, error };
     });
 }
@@ -867,6 +961,11 @@ async function _initSupabase() {
       lastError: '',
     });
     console.info('[DB] Dados carregados do Supabase.');
+
+    // T8.2: tenta enviar o que ficou pendente de sessoes offline.
+    _reprocessarPendentes().catch((e) => {
+      console.warn('[DB] Falha ao reprocessar escritas pendentes:', e);
+    });
 
     return Promise.resolve();
   } catch (e) {
@@ -1124,6 +1223,17 @@ const DB = {
   /** Retorna o status atual da conexão/persistência */
   getStatus() {
     return JSON.parse(JSON.stringify(_dbStatus));
+  },
+
+  /** Bloco 8 (T8.2): operacoes aguardando reconexao. */
+  getPendingWrites() {
+    return _lerPendentes();
+  },
+
+  /** Bloco 8 (T8.2): tenta enviar a fila agora e devolve o que restou. */
+  async flushPendingWrites() {
+    await _reprocessarPendentes();
+    return _lerPendentes();
   },
 
   async refreshCollection(colecao) {
@@ -1389,6 +1499,13 @@ function _persistLocal() {
     console.error('[DB] Falha ao salvar no localStorage:', e);
   }
 }
+
+/* Bloco 8 (T8.2): ao voltar a conexao, tenta a fila de novo. */
+window.addEventListener('online', () => {
+  _reprocessarPendentes().catch((e) => {
+    console.warn('[DB] Falha ao reprocessar escritas pendentes ao reconectar:', e);
+  });
+});
 
 window.addEventListener('storage', (event) => {
   if (event.key === DB_CONFIG.LS_KEY && event.newValue) {
