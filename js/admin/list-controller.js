@@ -14,7 +14,7 @@
  *     colecao: 'arquivos',
  *     pageSize: 12,
  *     filter: filtrarArquivosLista,
- *     sort: (itens) => paginarLista(itens, 1, itens.length)...,  // opcional
+ *     sort: (itens) => ordenarListaAdminAtual(itens),  // opcional
  *     render: (estado) => renderArquivos(estado),
  *     searchInputId: 'arquivos-search',
  *   });

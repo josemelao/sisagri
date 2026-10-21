@@ -500,19 +500,6 @@ function ordenarListaAdminAtual(items) {
     ? ordenarListaAdminPorId(items)
     : ordenarListaAdminPorNome(items);
 }
-function paginarLista(items, page, pageSize) {
-  const sortedItems = ordenarListaAdminAtual(items);
-  const totalItems = sortedItems.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-  const start = (safePage - 1) * pageSize;
-  return {
-    pageItems: sortedItems.slice(start, start + pageSize),
-    totalItems,
-    totalPages,
-    page: safePage,
-  };
-}
 
 const ARQUIVOS_LISTA = window.SisListas.createListController({
   colecao: 'arquivos',
@@ -784,13 +771,25 @@ function atualizarBuscaAcesso(inputEl) {
 function mudarPaginaAcesso(delta) {
   ACESSO_LISTA.setPage(ACESSO_LISTA.getState().pagina + Number(delta || 0));
 }
-const INFO_SIMPLES_LIST_STATE = {};
+const INFO_SIMPLES_CONTROLLERS = {};
+const INFO_SIMPLES_HEADINGS = {};
 
-function getInfoSimplesListState(colecao) {
-  if (!INFO_SIMPLES_LIST_STATE[colecao]) {
-    INFO_SIMPLES_LIST_STATE[colecao] = { query: '', page: 1, pageSize: 12 };
+/**
+ * Um controlador por colecao (infoJuridico/infoMunicipio). O cabecalho vem do
+ * call site, entao fica guardado num mapa e e lido no momento do render.
+ */
+function getInfoSimplesController(colecao) {
+  if (!INFO_SIMPLES_CONTROLLERS[colecao]) {
+    INFO_SIMPLES_CONTROLLERS[colecao] = window.SisListas.createListController({
+      colecao,
+      pageSize: 12,
+      filter: filtrarInfoSimplesLista,
+      sort: ordenarListaAdminAtual,
+      render: (estado) => pintarInfoSimples(colecao, estado, INFO_SIMPLES_HEADINGS[colecao] || ''),
+      searchInputId: `infosimples-search-${colecao}`,
+    });
   }
-  return INFO_SIMPLES_LIST_STATE[colecao];
+  return INFO_SIMPLES_CONTROLLERS[colecao];
 }
 
 function filtrarInfoSimplesLista(items, query) {
@@ -803,26 +802,13 @@ function filtrarInfoSimplesLista(items, query) {
 }
 
 function atualizarBuscaInfoSimples(colecao, inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
-  const state = getInfoSimplesListState(colecao);
-  state.query = String(value || '');
-  state.page = 1;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
-  const nextInput = document.getElementById(`infosimples-search-${colecao}`);
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+  getInfoSimplesController(colecao).aplicarBusca(inputEl);
 }
 
 function mudarPaginaInfoSimples(colecao, delta) {
-  const state = getInfoSimplesListState(colecao);
-  state.page += delta;
-  renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informaï¿½ï¿½es da Secretaria' : 'Informaï¿½ï¿½es do Municï¿½pio');
+  const controlador = getInfoSimplesController(colecao);
+  controlador.setPage(controlador.getState().pagina + Number(delta || 0));
 }
-
-const INFO_ORGAOS_LIST_STATE = { query: '', page: 1, pageSize: 12 };
 
 function filtrarInfoOrgaosLista(items, query) {
   const normalizedQuery = normalizeSearchText(query);
@@ -833,22 +819,21 @@ function filtrarInfoOrgaosLista(items, query) {
   });
 }
 
+const INFO_ORGAOS_LISTA = window.SisListas.createListController({
+  colecao: 'infoOrgaos',
+  pageSize: 12,
+  filter: filtrarInfoOrgaosLista,
+  sort: ordenarListaAdminAtual,
+  render: pintarInfoOrgaos,
+  searchInputId: 'orgaos-search',
+});
+
 function atualizarBuscaInfoOrgaos(inputEl) {
-  const value = inputEl ? inputEl.value : '';
-  const caret = inputEl && typeof inputEl.selectionStart === 'number' ? inputEl.selectionStart : String(value).length;
-  INFO_ORGAOS_LIST_STATE.query = String(value || '');
-  INFO_ORGAOS_LIST_STATE.page = 1;
-  renderInfoOrgaos();
-  const nextInput = document.getElementById('orgaos-search');
-  if (!nextInput) return;
-  nextInput.focus();
-  const safeCaret = Math.min(caret, nextInput.value.length);
-  if (typeof nextInput.setSelectionRange === 'function') nextInput.setSelectionRange(safeCaret, safeCaret);
+  INFO_ORGAOS_LISTA.aplicarBusca(inputEl);
 }
 
 function mudarPaginaInfoOrgaos(delta) {
-  INFO_ORGAOS_LIST_STATE.page += delta;
-  renderInfoOrgaos();
+  INFO_ORGAOS_LISTA.setPage(INFO_ORGAOS_LISTA.getState().pagina + Number(delta || 0));
 }
 function formatDateBR(value) {
   if (!value || typeof value !== 'string') return value || '—';
@@ -2965,28 +2950,27 @@ async function salvarAcesso(id) {
 }
 
 function renderInfoSimples(colecao, titulo, heading) {
-  const lista = DB.get(colecao);
-  const state = getInfoSimplesListState(colecao);
-  const listaFiltrada = filtrarInfoSimplesLista(lista, state.query);
-  const paginacao = paginarLista(listaFiltrada, state.page, state.pageSize);
-  state.page = paginacao.page;
+  INFO_SIMPLES_HEADINGS[colecao] = heading;
+  getInfoSimplesController(colecao).setItems(DB.get(colecao));
+}
 
+function pintarInfoSimples(colecao, estado, heading) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-' + colecao), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">${heading}</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="infosimples-search-${colecao}" value="${escHtml(state.query)}" data-acao="buscar-info-simples" data-colecao="${colecao}" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <input id="infosimples-search-${colecao}" value="${escHtml(estado.query)}" data-acao="buscar-info-simples" data-colecao="${colecao}" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-info-simples" data-colecao="${colecao}"><i class="ph-bold ph-plus"></i> Novo bloco</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(item => `
+      <tbody>${estado.itens.length ? estado.itens.map(item => `
         <tr>
           <td><strong>${escHtml(item.titulo)}</strong></td>
           <td>${(item.campos||[]).length} campos</td>
@@ -3102,27 +3086,26 @@ async function salvarInfoSimples(colecao, id) {
    ÓRGÃOS EXTERNOS
    ============================================================ */
 function renderInfoOrgaos() {
-  const lista = DB.get('infoOrgaos');
-  const listaFiltrada = filtrarInfoOrgaosLista(lista, INFO_ORGAOS_LIST_STATE.query);
-  const paginacao = paginarLista(listaFiltrada, INFO_ORGAOS_LIST_STATE.page, INFO_ORGAOS_LIST_STATE.pageSize);
-  INFO_ORGAOS_LIST_STATE.page = paginacao.page;
+  INFO_ORGAOS_LISTA.setItems(DB.get('infoOrgaos'));
+}
 
+function pintarInfoOrgaos(estado) {
   renderAdminSectionWithTableAnimation(document.getElementById('section-infoOrgaos'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">&#211;rg&#227;os Externos</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="orgaos-search" value="${escHtml(INFO_ORGAOS_LIST_STATE.query)}" data-acao="buscar-info-orgaos" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${paginacao.totalItems} de ${lista.length}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="-1" ${paginacao.page <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${paginacao.page} de ${paginacao.totalPages}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="1" ${paginacao.page >= paginacao.totalPages ? 'disabled' : ''}>Proxima</button>
+        <input id="orgaos-search" value="${escHtml(estado.query)}" data-acao="buscar-info-orgaos" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-orgao"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
       <thead><tr><th>T&#237;tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
-      <tbody>${paginacao.pageItems.length ? paginacao.pageItems.map(o => `
+      <tbody>${estado.itens.length ? estado.itens.map(o => `
         <tr>
           <td><strong>${escHtml(o.titulo)}</strong></td>
           <td class="td-truncate">${escHtml(o.nome_completo)}</td>
