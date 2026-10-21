@@ -68,6 +68,17 @@ module.exports = [
     rules: regrasApp,
   },
 
+  // -------------------- utilitarios compartilhados (script classico) ----
+  {
+    files: ['js/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: base,
+    },
+    rules: regrasApp,
+  },
+
   // -------------------- ferramentas: Node / ESM --------------------
   {
     files: ['scripts/**/*.mjs', 'tests/**/*.mjs', 'playwright.config.mjs'],
