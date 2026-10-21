@@ -185,7 +185,6 @@ function getArquivoPreviewHTML(a) {
           src="${escapeAttr(urlSegura(url))}"
           alt="${escapeAttr(a.nome || 'Imagem')}"
           class="arquivo-preview-img"
-          onerror="this.closest('.arquivo-preview-container').innerHTML='<p class=\\'arquivo-preview-fallback\\'>Não foi possível carregar a imagem.</p>'"
         />
       </div>`;
   }
@@ -4784,6 +4783,17 @@ function despacharAcaoClique(evento) {
 
 function initAcoesDelegadas() {
   document.addEventListener("click", despacharAcaoClique);
+  // A CSP bloqueia `onerror` inline; o fallback do preview usa delegacao.
+  // O evento `error` nao borbulha, por isso a fase de captura.
+  document.addEventListener("error", tratarErroImagemPreview, true);
+}
+
+function tratarErroImagemPreview(evento) {
+  const alvo = evento.target;
+  if (!alvo || !alvo.classList || !alvo.classList.contains("arquivo-preview-img")) return;
+  const container = alvo.closest ? alvo.closest(".arquivo-preview-container") : null;
+  if (!container) return;
+  container.innerHTML = '<p class="arquivo-preview-fallback">Não foi possível carregar a imagem.</p>';
 }
 
 /* ============================================================

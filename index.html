@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- CSP (Bloco 9d): fontes medidas em tests/e2e/csp.spec.mjs -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob: https://*.supabase.co https://view.officeapps.live.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <title>SMADER — Sistema Interno</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Ícones leves via Phosphor Icons (CDN) -->
@@ -779,7 +781,7 @@
   <!-- Dados e camada de abstração (carregar antes do script.js) -->
   <script src="js/core/utils.js"></script>
 <script src="dados.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
   <script src="db.js"></script>
   <script src="script.js"></script>
 </body>
