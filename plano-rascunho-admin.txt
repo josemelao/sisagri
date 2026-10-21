@@ -11,6 +11,9 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
   - Branch local codex/fase3, criada de main (d210411). O trabalho vai nela.
   - POLITICA DESTA FASE: commit local SIM, push NAO. Nada vai para o remoto
     sem o dono pedir explicitamente.
+  - EXCECAO AUTORIZADA em 2026-10-21: o dono pediu push de codex/fase3
+    (commits do Bloco 11 + registro do Bloco 12). Fora disso, push segue
+    proibido sem pedido explicito.
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
@@ -26,10 +29,48 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING EM ANDAMENTO
+=========================================================================
+
+  - Nada de codigo foi alterado. O Bloco 12 comeca por design: T12.0.1
+    (spec) e T12.0.2 (prototipo estatico aprovado) ANTES de tocar em admin.js.
+  - Relato do dono: modais sem resposta visual ao clique ("parece imagem");
+    modal percebido como "atropelo" (campos com o mesmo peso, sem secoes com
+    inicio/fim); seletor de icone ocupa espaco demais; listas as vezes
+    quebram linha; insercao/selecao de passos incomoda.
+  - Decisoes fechadas (2026-10-21):
+      1. hierarquia visual (titulo grande sozinho, secoes com inicio/fim,
+         peso diferente por campo) vale para TODOS os modais do admin;
+      2. categoria: input livre + sugestoes das categorias existentes
+         (datalist nativo);
+      3. icone/cor: linha compacta com a escolha atual + grade colapsavel
+         recolhida por padrao, com mais icones;
+      4. passos de Manuais/Processos: acordeao numerado (uma linha compacta
+         por passo com numero, inicio do texto e miniatura; um aberto por
+         vez), reordenar arrastando com setas como alternativa acessivel,
+         cartao aberto destacado (borda de acento);
+      5. documentos: manter a estrutura, esconder o nome quando tipo =
+         Arquivo, normalizar o select Texto/Arquivo;
+      6. observacoes: mantidas como estao.
+  - Achados de codigo verificados (NAO corrigidos):
+      * apagar o passo 4 de 5 deixa rotulos 1,2,3,5 na tela; o save
+        compacta para 1,2,3,4; reabrir mostra 1,2,3,4;
+      * apagar e clicar em "Adicionar passo" gera rotulo duplicado (dois "5");
+      * toggleDocTipo so desabilita o nome do documento, nao esconde;
+      * select Texto/Arquivo tem estilo inline proprio (120px, padding 6).
+  - Proximas perguntas (retomar exatamente por aqui): P6 selects dependentes
+    / T12.4 (nao existe sistema_id/processo_id, so `categoria`); P7 estados
+    do Salvar; P8 uploads; P9 fechar modal com alteracoes; P10 listas que
+    quebram linha; P11 nivel de acessibilidade.
+  - Detalhe completo em v2_plano_refatoracao.md, secao T12.0.1.
+  - Push autorizado explicitamente pelo dono nesta sessao.
+
+=========================================================================
 SESSAO 2026-10-21 — BLOCO 11 CONCLUIDO (T11.1–T11.4) — VALIDADO PELO DONO
 =========================================================================
 
-  - Commits locais (sem push; origin/codex/fase3 segue em df0ee9e):
+  - Commits do Bloco 11 (feitos localmente; enviados ao remoto em
+    2026-10-21 a pedido do dono):
       a2ac914  motor de listas + testes (T11.1)
       8afd789  Arquivos (T11.2)
       2012bb0  Avisos e Funcionarios (T11.2)

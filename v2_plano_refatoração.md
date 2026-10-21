@@ -1628,9 +1628,64 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 
 ### T12.0 — Design (obrigatório)
 
-- [ ] **T12.0.1 — Brainstorming + spec**
+- [ ] **T12.0.1 — Brainstorming + spec** *(em andamento: 5 perguntas respondidas em 2026-10-21)*
   Cobrir: abertura do modal, estados (`idle → salvando → salvo → erro`), anexos com progresso, selects dependentes, validação por campo, cancelar com alterações pendentes.
 - [ ] **T12.0.2 — Protótipo HTML estático** aprovado pelo dono **antes** de tocar em `admin.js`.
+
+#### Registro do brainstorming — 2026-10-21 (retomar daqui)
+
+**Relato do dono (síntese):** cliques nos modais não têm resposta visual
+("parece imagem"); o modal parece um "atropelo" — campos todos com o mesmo
+peso, sem seções com começo e fim; o seletor de ícone ocupa espaço demais;
+listas às vezes quebram linha e desfiguram; inserir/selecionar passos
+incomoda mesmo funcionando.
+
+**Decisões fechadas:**
+
+1. **Hierarquia visual** — título grande sozinho; seções com cabeçalho e fim
+   explícitos; campos primários e opcionais com pesos diferentes. Vale para
+   **todos os modais** do admin (não só Manuais/Processos).
+2. **Categoria** — input livre com sugestão das categorias já existentes
+   (`datalist` nativo).
+3. **Ícone e cor** — linha compacta mostrando a escolha atual; expandir para
+   grade colapsável, recolhida por padrão; ampliar o conjunto de ícones.
+4. **Passos (Manuais/Processos)** — acordeão numerado: uma linha compacta por
+   passo (`nº` + início do texto + miniatura), **um aberto por vez**;
+   "Adicionar" já abre o novo cartão; **reordenar arrastando**, com setas ↑↓
+   como alternativa (teclado/telas pequenas); cartão aberto recebe destaque
+   (borda de acento e fundo levemente realçado). A opção de duas colunas foi
+   descartada por exigir mais largura.
+5. **Documentos** — manter a estrutura; **esconder** o nome quando tipo =
+   "Arquivo"; normalizar o select Texto/Arquivo.
+6. **Observações** — mantidas como estão.
+
+**Achados de código verificados (não corrigidos, entram no bloco):**
+
+- `formManual`/`addManualPasso` numeram pelo índice do momento e
+  `removeDynItem` apenas remove o nó: apagar o passo 4 de 5 deixa rótulos
+  **1, 2, 3, 5** na tela; o save compacta (grava 1, 2, 3, 4) e reabrir mostra
+  1, 2, 3, 4.
+- Após apagar e clicar em "Adicionar passo", `i = list.children.length` gera
+  rótulo **duplicado** (dois "PASSO 5").
+- `toggleDocTipo` só aplica `disabled` ao nome do documento — o campo continua
+  visível.
+- O select Texto/Arquivo é o único com estilo inline próprio (120 px,
+  `padding: 6px`, seta nativa), diferente de `.form-group select`.
+
+**Perguntas ainda abertas (próxima sessão):**
+
+- **P6** — T12.4: não existe `sistema_id`/`processo_id` em `manuais` nem em
+  `processos` (só `categoria`). Decidir modelagem ou re-escopo de
+  "sistema → processo → manual".
+- **P7** — estados do Salvar (T12.1/T12.3): o que o dono espera ver entre o
+  clique e o resultado.
+- **P8** — uploads (T12.2): progresso real, cancelar, tentar de novo.
+- **P9** — fechar o modal com alterações pendentes.
+- **P10** — listas que quebram linha: dentro do Bloco 12 ou no Bloco 13.
+- **P11** — nível de acessibilidade desejado (T12.5).
+
+Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
+(T12.0.2)** — nenhum código de `admin.js` antes da aprovação do dono.
 
 ### Tarefas de implementação (só depois da aprovação)
 
