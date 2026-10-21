@@ -321,3 +321,142 @@ test('_renderManualNoPainel: passo sem data-modo permanece no modo completo', ()
   assert.equal(chamadas[0].modo, 'completo');
   assert.equal(chamadas[0].passo, 1);
 });
+
+/* ==========================================================================
+   Busca por modulo com campo nulo (bug 2026-10-21)
+   O filtro chamava `.toLowerCase()` direto no campo; um registro com null
+   lancava TypeError dentro do filter e a lista nem era re-renderizada.
+   ========================================================================== */
+
+/** Substitui as funcoes de render por capturadoras de id e devolve o mapa. */
+function capturarIds(h, nomes) {
+  h.run('window.__ids = {};');
+  nomes.forEach((nome) => {
+    h.run(`${nome} = (lista) => { window.__ids[${JSON.stringify(nome)}] = (lista || []).map((item) => item.id); };`);
+  });
+  return h.window.__ids;
+}
+
+test('applyManuaisSearch: manual com categoria nula nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderManuais']);
+  h.run(`
+    manuais = [
+      { id: 7, titulo: 'Manual novo', categoria: null },
+      { id: 2, titulo: 'Manual de Ferias', categoria: 'RH' }
+    ];
+  `);
+
+  h.get('applyManuaisSearch')('ferias');
+
+  assert.deepEqual([...ids.renderManuais], [2]);
+});
+
+test('applyProcessosSearch: processo com categoria e etapas nulas nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderProcessos']);
+  h.run(`
+    processos = [
+      { id: 5, titulo: 'Processo novo', categoria: null, etapas: null },
+      { id: 2, titulo: 'Processo de Fiscalizacao', categoria: 'Fiscalizacao', etapas: [{ titulo: null }] }
+    ];
+  `);
+
+  h.get('applyProcessosSearch')('fiscalizacao');
+
+  assert.deepEqual([...ids.renderProcessos], [2]);
+});
+
+test('applyVeiculosSearch: veiculo com marca/modelo/placa/tipo nulos nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderVeiculos']);
+  h.run(`
+    veiculos = [
+      { id: 4, nome: 'Veiculo novo', marca: null, modelo: null, placa: null, tipo: null, situacao: null },
+      { id: 2, nome: 'Hilux', marca: 'Toyota', modelo: 'Hilux', placa: 'ABC1D23', tipo: 'Caminhonete', situacao: 'Em operacao' }
+    ];
+  `);
+
+  h.get('applyVeiculosSearch')('abc1d23');
+
+  assert.deepEqual([...ids.renderVeiculos], [2]);
+});
+
+test('applySistemasSearch: sistema com campos nulos nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderSistemas']);
+  h.run(`
+    sistemas = [
+      { id: 1, nome: 'SEI', nome_completo: null, descricao: null, orgao: null },
+      { id: 2, nome: 'Outro', nome_completo: 'Outro sistema', descricao: 'Descricao', orgao: 'Orgao' }
+    ];
+  `);
+
+  h.get('applySistemasSearch')('outro');
+
+  assert.deepEqual([...ids.renderSistemas], [2]);
+});
+
+test('applyServicosSearch: servico com categoria/descricao/publico nulos nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderServicos']);
+  h.run(`
+    servicos = [
+      { id: 1, nome: 'Outro', categoria: null, descricao: null, publico: null },
+      { id: 2, nome: 'Licenciamento', categoria: 'Ambiental', descricao: 'Emissao', publico: 'Produtor' }
+    ];
+  `);
+
+  h.get('applyServicosSearch')('licenciamento');
+
+  assert.deepEqual([...ids.renderServicos], [2]);
+});
+
+test('applyAgendaSearch: aviso com titulo nulo nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderAvisos', 'renderAgendaEventos', 'renderAgendaHistorico']);
+  h.run(`
+    avisos = [
+      { id: 1, titulo: null, desc: null, local: null, tipo: null },
+      { id: 2, titulo: 'Aviso de vacinacao', desc: '', local: '', tipo: 'aviso' }
+    ];
+    agendaEventos = [];
+  `);
+
+  h.get('applyAgendaSearch')('vacinacao');
+
+  assert.deepEqual([...ids.renderAvisos], [2]);
+});
+
+test('applyInformacoesSearch: item com campos nulos nao quebra a busca', () => {
+  const h = carregarApp();
+  const ids = capturarIds(h, ['renderJuridico', 'renderMunicipio', 'renderOrgaos']);
+  h.run(`
+    infoJuridico = [
+      { id: 1, titulo: 'Lei', campos: null },
+      { id: 2, titulo: 'Decreto', campos: [{ label: 'Assunto', valor: 'Licitacao' }] }
+    ];
+    infoMunicipio = [];
+    infoOrgaos = [];
+  `);
+
+  h.get('applyInformacoesSearch')('licitacao');
+
+  assert.deepEqual([...ids.renderJuridico], [2]);
+});
+
+test('renderArquivos: arquivo com nome e tags nulos nao quebra a busca por texto', () => {
+  const lista = criarElemento('div');
+  const h = carregarApp({ elementos: { 'arquivos-list': lista } });
+  h.run(`
+    arquivos = [
+      { id: 1, nome: null, tags: null, tipo: 'PDF' },
+      { id: 2, nome: 'Edital.pdf', tags: [], tipo: 'PDF' }
+    ];
+    arquivoQuery = 'edital';
+  `);
+
+  h.get('renderArquivos')();
+
+  assert.match(lista.innerHTML, /Edital\.pdf/);
+});

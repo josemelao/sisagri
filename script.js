@@ -1118,8 +1118,8 @@ function applyManuaisSearch(query = getModuleSearchValue("manuais")) {
   const q = String(query || "").toLowerCase().trim();
   const filtrados = q
     ? manuais.filter(m =>
-        m.titulo.toLowerCase().includes(q) ||
-        m.categoria.toLowerCase().includes(q)
+        textoInclui(m.titulo, q) ||
+        textoInclui(m.categoria, q)
       )
     : manuais;
   renderManuais(filtrados);
@@ -1324,9 +1324,9 @@ function applyProcessosSearch(query = getModuleSearchValue("processos")) {
   const q = String(query || "").toLowerCase().trim();
   const filtrados = q
     ? processos.filter(p =>
-        p.titulo.toLowerCase().includes(q) ||
-        p.categoria.toLowerCase().includes(q) ||
-        p.etapas.some(et => et.titulo.toLowerCase().includes(q))
+        textoInclui(p.titulo, q) ||
+        textoInclui(p.categoria, q) ||
+        (Array.isArray(p.etapas) && p.etapas.some(et => textoInclui(et && et.titulo, q)))
       )
     : processos;
   renderProcessos(filtrados);
@@ -1613,6 +1613,15 @@ function setModuleSearchValue(moduleId, value) {
   } catch (error) {
     console.warn("[Busca] Falha ao salvar estado de busca dos módulos:", error);
   }
+}
+
+/**
+ * Compara um campo com a busca em caixa baixa.
+ * Campo nulo/ausente vira "" e nunca casa — impede que um registro
+ * incompleto lance TypeError e aborte o filtro inteiro.
+ */
+function textoInclui(valor, queryLower) {
+  return String(valor ?? "").toLowerCase().includes(queryLower);
 }
 
 function restoreModuleSearchInput(moduleId, inputId) {
@@ -2144,10 +2153,10 @@ function renderArquivos() {
   if (!container) return;
 
   const filtrados = arquivos.filter(a => {
-    const passaTag   = tagsAtivas.size === 0 || a.tags.some(t => tagsAtivas.has(t));
+    const passaTag   = tagsAtivas.size === 0 || (Array.isArray(a.tags) && a.tags.some(t => tagsAtivas.has(t)));
     const extensaoGrupo = getArquivoExtensaoGrupo(getArquivoExtensaoReal(a) || getArquivoExtensaoFallbackPorTipo(a.tipo));
     const passaExtensao = extensoesAtivas.size === 0 || extensoesAtivas.has(extensaoGrupo);
-    const passaTexto = arquivoQuery === "" || a.nome.toLowerCase().includes(arquivoQuery);
+    const passaTexto = arquivoQuery === "" || textoInclui(a.nome, arquivoQuery);
     return passaTag && passaExtensao && passaTexto;
   });
 
@@ -2931,10 +2940,12 @@ function initInformacoes() {
 function applyInformacoesSearch(query = getModuleSearchValue("informacoes")) {
   const q = String(query || "").toLowerCase().trim();
   const matchItem = item =>
-    item.titulo.toLowerCase().includes(q) ||
-    (item.tag || "").toLowerCase().includes(q) ||
-    (item.nome_completo || "").toLowerCase().includes(q) ||
-    item.campos.some(c => (c.label || "").toLowerCase().includes(q) || (c.valor || "").toLowerCase().includes(q));
+    textoInclui(item.titulo, q) ||
+    textoInclui(item.tag, q) ||
+    textoInclui(item.nome_completo, q) ||
+    (Array.isArray(item.campos) && item.campos.some(c =>
+      textoInclui(c && c.label, q) || textoInclui(c && c.valor, q)
+    ));
 
   renderJuridico(q ? infoJuridico.filter(matchItem) : infoJuridico);
   renderMunicipio(q ? infoMunicipio.filter(matchItem) : infoMunicipio);
@@ -3094,12 +3105,12 @@ function applyVeiculosSearch(query = getModuleSearchValue("veiculos")) {
   const q = String(query || "").toLowerCase().trim();
   const filtrados = q
     ? veiculos.filter(v =>
-        v.nome.toLowerCase().includes(q) ||
-        v.marca.toLowerCase().includes(q) ||
-        v.modelo.toLowerCase().includes(q) ||
-        v.placa.toLowerCase().includes(q) ||
-        v.tipo.toLowerCase().includes(q) ||
-        v.situacao.toLowerCase().includes(q)
+        textoInclui(v.nome, q) ||
+        textoInclui(v.marca, q) ||
+        textoInclui(v.modelo, q) ||
+        textoInclui(v.placa, q) ||
+        textoInclui(v.tipo, q) ||
+        textoInclui(v.situacao, q)
       )
     : veiculos;
   renderVeiculos(filtrados);
@@ -3260,10 +3271,10 @@ function applySistemasSearch(query = getModuleSearchValue("sistemas")) {
   const q = String(query || "").toLowerCase().trim();
   const filtrados = q
     ? sistemas.filter(s =>
-        s.nome.toLowerCase().includes(q) ||
-        s.nome_completo.toLowerCase().includes(q) ||
-        s.descricao.toLowerCase().includes(q) ||
-        s.orgao.toLowerCase().includes(q)
+        textoInclui(s.nome, q) ||
+        textoInclui(s.nome_completo, q) ||
+        textoInclui(s.descricao, q) ||
+        textoInclui(s.orgao, q)
       )
     : sistemas;
   renderSistemas(filtrados);
@@ -3516,10 +3527,10 @@ function applyServicosSearch(query = getModuleSearchValue("servicos")) {
   const q = String(query || "").toLowerCase().trim();
   const filtrados = q
     ? servicos.filter(s =>
-        s.nome.toLowerCase().includes(q) ||
-        s.categoria.toLowerCase().includes(q) ||
-        s.descricao.toLowerCase().includes(q) ||
-        s.publico.toLowerCase().includes(q)
+        textoInclui(s.nome, q) ||
+        textoInclui(s.categoria, q) ||
+        textoInclui(s.descricao, q) ||
+        textoInclui(s.publico, q)
       )
     : servicos;
   renderServicos(filtrados);
@@ -3967,7 +3978,7 @@ function applyAgendaSearch(query = getModuleSearchValue("agenda")) {
 
   const avisosFiltrados = q
     ? avisos.filter(a =>
-        a.titulo.toLowerCase().includes(q) ||
+        textoInclui(a.titulo, q) ||
         (a.desc || "").toLowerCase().includes(q) ||
         (a.local || "").toLowerCase().includes(q) ||
         (a.tipo || "").toLowerCase().includes(q)
@@ -3976,7 +3987,7 @@ function applyAgendaSearch(query = getModuleSearchValue("agenda")) {
 
   const eventosFiltrados = q
     ? agendaEventos.filter(ev =>
-        ev.titulo.toLowerCase().includes(q) ||
+        textoInclui(ev.titulo, q) ||
         (ev.desc || "").toLowerCase().includes(q) ||
         (ev.local || "").toLowerCase().includes(q) ||
         (ev.tipo || "").toLowerCase().includes(q)
