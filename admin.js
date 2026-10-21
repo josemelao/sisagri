@@ -3464,6 +3464,12 @@ const ACOES_ADMIN_CLIQUE = {
   'remover-arquivo-upload': () => removerArquivoUpload(),
   'selecionar-icone': (el) => selecionarIcone(el.dataset.field, el.dataset.valor),
   'selecionar-cor': (el) => selecionarCor(el.dataset.field, el.dataset.valor),
+
+  // Acoes do HTML (grupo 4)
+  'fazer-login': () => fazerLogin(),
+  'fazer-logout': () => fazerLogout(),
+  'exportar-dados': () => DB.exportarDadosJS(),
+  'salvar-config-dashboard': () => salvarConfigDashboard(),
 };
 
 const ACOES_ADMIN_INPUT = {

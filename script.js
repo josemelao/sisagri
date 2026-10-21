@@ -4716,6 +4716,12 @@ const ACOES_CLIQUE = {
     setTimeout(() => openEvento(el.dataset.id), 120);
   },
   "abrir-funcionario": (el) => openFuncionario(el.dataset.id),
+  "navegar": (el, evento) => {
+    evento.preventDefault();
+    navigateTo(el.dataset.page);
+  },
+  "limpar-busca-funcionarios": () => limparBuscaFuncionarios(),
+  "limpar-busca-modulo": (el) => clearModuleSearch(el.dataset.modulo, el.dataset.input, el.dataset.apply),
   "abrir-manual": (el) => openManual(el.dataset.id),
   "abrir-processo": (el) => openProcesso(el.dataset.id),
   "abrir-arquivo": (el) => openArquivo(el.dataset.id),
@@ -4752,6 +4758,7 @@ const ACOES_CLIQUE = {
   "toggle-extensao": (el) => toggleExtensao(el.dataset.ext),
   "arquivos-pagina": (el) => goToArquivosPage(Number(el.dataset.pagina)),
   "limpar-filtros": () => limparFiltros(),
+  "toggle-historico": () => toggleHistorico(),
   "ignorar": () => {},
 };
 

@@ -215,7 +215,7 @@
               <div class="dash-block-header">
                 <i class="ph-bold ph-umbrella"></i>
                 <span>Escala de Férias</span>
-                <a href="#" class="dash-block-link" onclick="navigateTo('funcionarios');return false;">Ver funcionários</a>
+                <a href="#" class="dash-block-link" data-acao="navegar" data-page="funcionarios">Ver funcionários</a>
               </div>
               <div class="ferias-list" id="ferias-list"></div>
             </div>
@@ -311,7 +311,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="func-search" placeholder="Buscar por nome ou cargo..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="limparBuscaFuncionarios()">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-funcionarios">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -346,7 +346,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="manuais-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('manuais', 'manuais-search', 'applyManuaisSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="manuais" data-input="manuais-search" data-apply="applyManuaisSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -380,7 +380,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="processos-search" placeholder="Buscar por título ou categoria..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('processos', 'processos-search', 'applyProcessosSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="processos" data-input="processos-search" data-apply="applyProcessosSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -433,7 +433,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="arquivo-search" placeholder="Buscar por nome do arquivo..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="limparFiltros()">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-filtros">
           <i class="ph-bold ph-x-circle"></i> Limpar filtros
         </button>
       </div>
@@ -468,7 +468,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="info-search" placeholder="Buscar em todas as seções..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('informacoes', 'info-search', 'applyInformacoesSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="informacoes" data-input="info-search" data-apply="applyInformacoesSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -542,7 +542,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="veiculos-search" placeholder="Buscar por nome, modelo ou placa..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('veiculos', 'veiculos-search', 'applyVeiculosSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="veiculos" data-input="veiculos-search" data-apply="applyVeiculosSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -575,7 +575,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="sistemas-search" placeholder="Buscar por nome ou órgão..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('sistemas', 'sistemas-search', 'applySistemasSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="sistemas" data-input="sistemas-search" data-apply="applySistemasSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -606,7 +606,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="servicos-search" placeholder="Buscar por nome ou categoria..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('servicos', 'servicos-search', 'applyServicosSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="servicos" data-input="servicos-search" data-apply="applyServicosSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -641,7 +641,7 @@
           <i class="ph-bold ph-magnifying-glass search-icon"></i>
           <input type="text" id="agenda-search" placeholder="Buscar em avisos e eventos..." autocomplete="off" />
         </div>
-        <button class="tag-limpar-btn arquivos-limpar-btn" onclick="clearModuleSearch('agenda', 'agenda-search', 'applyAgendaSearch')">
+        <button class="tag-limpar-btn arquivos-limpar-btn" data-acao="limpar-busca-modulo" data-modulo="agenda" data-input="agenda-search" data-apply="applyAgendaSearch">
           <i class="ph-bold ph-x-circle"></i> Limpar busca
         </button>
       </div>
@@ -673,7 +673,7 @@
           <h2 class="info-section-title" style="color:var(--text-secondary)">Histórico de Eventos</h2>
           <p class="info-section-sub">Eventos encerrados — do mais recente ao mais antigo</p>
         </div>
-        <button class="historico-toggle-btn" id="historico-toggle" onclick="toggleHistorico()">
+        <button class="historico-toggle-btn" id="historico-toggle" data-acao="toggle-historico">
           <i class="ph-bold ph-caret-down" id="historico-chevron"></i>
           <span id="historico-toggle-label">Mostrar</span>
         </button>

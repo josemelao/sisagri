@@ -100,3 +100,49 @@ test('delegacao: botao desabilitado e acao desconhecida nao disparam nada', () =
   clicar(h, alvo({ acao: 'acao-inexistente' }));
   assert.equal(h.window.__chamada, undefined);
 });
+
+/* ==========================================================================
+   Acoes que estavam no HTML (grupo 4)
+   ========================================================================== */
+
+test('delegacao: link do dashboard navega e previne o salto', () => {
+  const h = carregar();
+  h.run('navigateTo = (page) => { globalThis.__chamada = ["navegar", page]; };');
+
+  const prevenido = clicar(h, alvo({ acao: 'navegar', page: 'funcionarios' }));
+
+  assert.equal(prevenido, true);
+  assert.deepEqual(chamada(h), ['navegar', 'funcionarios']);
+});
+
+test('delegacao: limpar busca de modulo entrega modulo, input e funcao', () => {
+  const h = carregar();
+  h.run('clearModuleSearch = (modulo, input, apply) => { globalThis.__chamada = [modulo, input, apply]; };');
+
+  clicar(h, alvo({
+    acao: 'limpar-busca-modulo',
+    modulo: 'manuais',
+    input: 'manuais-search',
+    apply: 'applyManuaisSearch',
+  }));
+
+  assert.deepEqual(chamada(h), ['manuais', 'manuais-search', 'applyManuaisSearch']);
+});
+
+test('delegacao: limpar busca de funcionarios chama a funcao do modulo', () => {
+  const h = carregar();
+  h.run('limparBuscaFuncionarios = () => { globalThis.__chamada = ["limpar-funcionarios"]; };');
+
+  clicar(h, alvo({ acao: 'limpar-busca-funcionarios' }));
+
+  assert.deepEqual(chamada(h), ['limpar-funcionarios']);
+});
+
+test('delegacao: toggle do historico chama a funcao', () => {
+  const h = carregar();
+  h.run('toggleHistorico = () => { globalThis.__chamada = ["historico"]; };');
+
+  clicar(h, alvo({ acao: 'toggle-historico' }));
+
+  assert.deepEqual(chamada(h), ['historico']);
+});

@@ -112,6 +112,42 @@ test('admin delegacao: toggle inline usa a colecao, o id e o checked', () => {
   assert.deepEqual(chamada(h), ['funcionarios', 9, true]);
 });
 
+/* ==========================================================================
+   Acoes que estavam no admin.html (grupo 4)
+   ========================================================================== */
+
+test('admin delegacao: login e logout usam as funcoes globais', () => {
+  const h = carregar();
+  h.run(`
+    fazerLogin = () => { globalThis.__chamada = ['login']; };
+    fazerLogout = () => { globalThis.__chamada = ['logout']; };
+  `);
+
+  despachar(h, alvo({ acao: 'fazer-login' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['login']);
+
+  despachar(h, alvo({ acao: 'fazer-logout' }), 'ACOES_ADMIN_CLIQUE');
+  assert.deepEqual(chamada(h), ['logout']);
+});
+
+test('admin delegacao: exportar dados chama DB.exportarDadosJS', () => {
+  const h = carregar();
+  h.run('DB.exportarDadosJS = () => { globalThis.__chamada = ["exportar"]; };');
+
+  despachar(h, alvo({ acao: 'exportar-dados' }), 'ACOES_ADMIN_CLIQUE');
+
+  assert.deepEqual(chamada(h), ['exportar']);
+});
+
+test('admin delegacao: salvar configuracao do dashboard usa a funcao', () => {
+  const h = carregar();
+  h.run('salvarConfigDashboard = () => { globalThis.__chamada = ["config"]; };');
+
+  despachar(h, alvo({ acao: 'salvar-config-dashboard' }), 'ACOES_ADMIN_CLIQUE');
+
+  assert.deepEqual(chamada(h), ['config']);
+});
+
 test('admin delegacao: acao desconhecida ou botao desabilitado nao disparam nada', () => {
   const h = carregar();
   h.run('editarFuncionario = () => { globalThis.__chamada = ["nao deveria"]; };');

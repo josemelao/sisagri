@@ -631,7 +631,7 @@
     <div class="login-sub">SMADER — Secretaria de Agricultura</div>
     <input type="email" id="login-email" placeholder="E-mail do admin" autocomplete="username" />
     <input type="password" id="login-senha" placeholder="Senha de acesso" autocomplete="current-password" />
-    <button onclick="fazerLogin()"><i class="ph-bold ph-sign-in"></i> Entrar</button>
+    <button data-acao="fazer-login"><i class="ph-bold ph-sign-in"></i> Entrar</button>
     <a href="index.html" class="login-home-link">Ir para página inicial</a>
     <div class="login-error" id="login-error"></div>
   </div>
@@ -654,11 +654,11 @@
     &nbsp;
     <a href="index.html">Acessar Sistema</a>
     &nbsp;&nbsp;
-    <button class="btn btn-export btn-sm" onclick="DB.exportarDadosJS()">
+    <button class="btn btn-export btn-sm" data-acao="exportar-dados">
       <i class="ph-bold ph-download-simple"></i> Exportar dados.js
     </button>
     &nbsp;
-    <button class="admin-logout-btn" onclick="fazerLogout()">
+    <button class="admin-logout-btn" data-acao="fazer-logout">
       <i class="ph-bold ph-sign-out"></i> Sair
     </button>
   </header>
@@ -772,7 +772,7 @@
             <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">
               Gera o arquivo <code>dados.js</code> com todos os dados atuais (incluindo edições do localStorage). Substitua o arquivo original pelo exportado para tornar as alterações permanentes.
             </p>
-            <button class="btn btn-export" onclick="DB.exportarDadosJS()">
+            <button class="btn btn-export" data-acao="exportar-dados">
               <i class="ph-bold ph-download-simple"></i> Exportar dados.js
             </button>
           </div>
@@ -786,7 +786,7 @@
               <option value="sidebar">Coluna lateral</option>
             </select>
             <div style="margin-top:10px">
-              <button class="btn btn-primary" onclick="salvarConfigDashboard()">
+              <button class="btn btn-primary" data-acao="salvar-config-dashboard">
                 <i class="ph-bold ph-floppy-disk"></i> Salvar posição
               </button>
             </div>
@@ -801,7 +801,7 @@
               <option value="id">ID (criacao)</option>
             </select>
             <div style="margin-top:10px">
-              <button class="btn btn-primary" onclick="salvarConfigDashboard()">
+              <button class="btn btn-primary" data-acao="salvar-config-dashboard">
                 <i class="ph-bold ph-floppy-disk"></i> Salvar ordenacao
               </button>
             </div>
@@ -816,7 +816,7 @@
 <!-- Modal genérico -->
 <div class="modal-overlay" id="modal">
   <div class="modal-box" id="modal-box">
-    <button class="modal-close" onclick="fecharModal()"><i class="ph-bold ph-x"></i></button>
+    <button class="modal-close" data-acao="fechar-modal"><i class="ph-bold ph-x"></i></button>
     <div id="modal-content"></div>
   </div>
 </div>
