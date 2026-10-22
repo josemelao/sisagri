@@ -1713,40 +1713,47 @@ function formFuncionario(f = {}) {
     ? `<img src="${escHtml(foto)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:8px" />`
     : `<div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.8rem;margin-bottom:8px"><i class="ph-bold ph-user"></i></div>`;
 
-  return `
-    <h2 class="modal-title">${f.id ? 'Editar' : 'Novo'} Funcionário</h2>
-    <div class="form-grid">
-      <div class="form-group full" style="align-items:center">
-        <label>Foto do funcionário</label>
-        <div id="foto-preview">${fotoPreview}</div>
-        <input type="file" id="f-foto-file" accept="image/*" style="display:none" data-acao="preview-foto" />
-        <input type="hidden" id="f-foto" value="${escHtml(f.foto||'')}" />
-        <input type="hidden" id="f-foto-storage-path" value="${escHtml(f.foto_storage_path||'')}" />
-        <input type="hidden" id="f-foto-storage-bucket" value="${escHtml(f.foto_storage_bucket||'')}" />
-        <input type="hidden" id="f-remover-foto" value="0" />
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button type="button" class="btn btn-ghost btn-sm" data-acao="abrir-input-arquivo" data-input="f-foto-file">
-            <i class="ph-bold ph-upload-simple"></i> Escolher foto
-          </button>
-          ${foto ? `<button type="button" class="btn btn-danger btn-sm" data-acao="remover-foto"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
+  return modalV2HTML(`${f.id ? 'Editar' : 'Novo'} Funcionário`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full" style="align-items:center">
+          <label>Foto do funcionário</label>
+          <div id="foto-preview">${fotoPreview}</div>
+          <input type="file" id="f-foto-file" accept="image/*" style="display:none" data-acao="preview-foto" />
+          <input type="hidden" id="f-foto" value="${escHtml(f.foto||'')}" />
+          <input type="hidden" id="f-foto-storage-path" value="${escHtml(f.foto_storage_path||'')}" />
+          <input type="hidden" id="f-foto-storage-bucket" value="${escHtml(f.foto_storage_bucket||'')}" />
+          <input type="hidden" id="f-remover-foto" value="0" />
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="abrir-input-arquivo" data-input="f-foto-file">
+              <i class="ph-bold ph-upload-simple"></i> Escolher foto
+            </button>
+            ${foto ? `<button type="button" class="btn btn-danger btn-sm" data-acao="remover-foto"><i class="ph-bold ph-trash"></i> Remover</button>` : ''}
+          </div>
+          <span class="form-hint">JPG, PNG ou WebP. Recomendado: até 500kb.</span>
         </div>
-        <span class="form-hint">JPG, PNG ou WebP. Recomendado: até 500kb.</span>
-      </div>
-      <div class="form-group full"><label>Nome completo</label><input id="f-nome" value="${escHtml(f.nome||'')}" /></div>
-      <div class="form-group"><label>Matrícula</label><input id="f-matricula" value="${escHtml(f.matricula||'')}" /></div>
-      <div class="form-group"><label>Cargo</label><input id="f-cargo" value="${escHtml(f.cargo||'')}" /></div>
-      <div class="form-group"><label>Lotação</label><input id="f-lotacao" value="${escHtml(f.lotacao||f.setor||'')}" /></div>
-      <div class="form-group"><label>Vínculo</label><input id="f-vinculo" value="${escHtml(f.vinculo||'')}" /></div>
-      <div class="form-group"><label>Órgão</label><input id="f-orgao" value="${escHtml(f.orgao||'')}" /></div>
-      <div class="form-group"><label>Data de admissão</label><input type="date" id="f-data-admissao" value="${escHtml(f.data_admissao||'')}" /></div>
-      <div class="form-group"><label>Telefone</label><input id="f-telefone" value="${escHtml(f.telefone||'')}" /></div>
-      <div class="form-group"><label>E-mail</label><input id="f-email" value="${escHtml(f.email||'')}" /></div>
-      <div class="form-group"><label>CPF</label><input id="f-cpf" value="${escHtml(f.cpf||'')}" /></div>
-      <div class="form-group"><label>Departamento</label><input id="f-departamento" value="${escHtml(f.departamento||'')}" /></div>
-      <div class="form-group full"><label>Descrição (o que essa pessoa faz)</label><textarea id="f-descricao">${escHtml(f.descricao||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions('funcionario', f)}
-  `;
+        <div class="form-group full"><label>Nome completo</label><input id="f-nome" value="${escHtml(f.nome||'')}" /></div>
+        <div class="form-group"><label>Matrícula</label><input id="f-matricula" value="${escHtml(f.matricula||'')}" /></div>
+        <div class="form-group"><label>Cargo</label><input id="f-cargo" value="${escHtml(f.cargo||'')}" /></div>
+        <div class="form-group"><label>Lotação</label><input id="f-lotacao" value="${escHtml(f.lotacao||f.setor||'')}" /></div>
+        <div class="form-group"><label>Vínculo</label><input id="f-vinculo" value="${escHtml(f.vinculo||'')}" /></div>
+        <div class="form-group"><label>Órgão</label><input id="f-orgao" value="${escHtml(f.orgao||'')}" /></div>
+      </div>`, 'Foto e dados de identificação')}
+
+    ${secaoV2('Dados funcionais', `
+      <div class="form-grid">
+        <div class="form-group"><label>Data de admissão</label><input type="date" id="f-data-admissao" value="${escHtml(f.data_admissao||'')}" /></div>
+        <div class="form-group"><label>Telefone</label><input id="f-telefone" value="${escHtml(f.telefone||'')}" /></div>
+        <div class="form-group"><label>E-mail</label><input id="f-email" value="${escHtml(f.email||'')}" /></div>
+        <div class="form-group"><label>CPF</label><input id="f-cpf" value="${escHtml(f.cpf||'')}" /></div>
+        <div class="form-group"><label>Departamento</label><input id="f-departamento" value="${escHtml(f.departamento||'')}" /></div>
+      </div>`, 'Admissão e contato')}
+
+    ${secaoV2('Atribuições', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Descrição (o que essa pessoa faz)</label><textarea id="f-descricao">${escHtml(f.descricao||'')}</textarea></div>
+      </div>`, 'Opcional')}`,
+    publishFooterHTML('funcionario', f), f);
 }
 
 /** Lê o arquivo de imagem e converte para base64, exibindo preview */
@@ -1776,8 +1783,8 @@ function removerFoto() {
     <div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.8rem;margin-bottom:8px"><i class="ph-bold ph-user"></i></div>`;
 }
 
-function novoFuncionario()    { abrirModal(formFuncionario()); }
-function editarFuncionario(id){ abrirModal(formFuncionario(DB.getById('funcionarios', id))); }
+function novoFuncionario()    { abrirModalV2(formFuncionario()); }
+function editarFuncionario(id){ const f = DB.getById('funcionarios', id); abrirModalV2(formFuncionario(f), f); }
 
 async function salvarFuncionario(id) {
   const existente = id ? DB.getById('funcionarios', id) : null;
@@ -2960,56 +2967,68 @@ function getArquivosVeiculoOptions(selectedIds = []) {
 }
 
 function formVeiculo(v = {}) {
-  return `
-    <h2 class="modal-title">${v.id ? 'Editar' : 'Novo'} Veículo</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome</label><input id="v-nome" value="${escHtml(v.nome||'')}" placeholder="Ex: Trator Agrícola I" /></div>
-      <div class="form-group"><label>Tipo</label><input id="v-tipo" value="${escHtml(v.tipo||'')}" placeholder="Trator, Caminhonete..." /></div>
-      <div class="form-group"><label>Marca</label><input id="v-marca" value="${escHtml(v.marca||'')}" /></div>
-      <div class="form-group"><label>Modelo</label><input id="v-modelo" value="${escHtml(v.modelo||'')}" /></div>
-      <div class="form-group"><label>Ano</label><input id="v-ano" value="${escHtml(v.ano||'')}" /></div>
-      <div class="form-group"><label>Cor</label><input id="v-cor" value="${escHtml(v.cor_veiculo||'')}" /></div>
-      <div class="form-group"><label>Placa</label><input id="v-placa" value="${escHtml(v.placa||'')}" /></div>
-      <div class="form-group"><label>Nº Patrimônio</label><input id="v-patrimonio" value="${escHtml(v.patrimonio||'')}" /></div>
-      <div class="form-group"><label>Nº Série/Chassi</label><input id="v-chassi" value="${escHtml(v.chassi||'')}" /></div>
-      <div class="form-group"><label>RENAVAM</label><input id="v-renavam" value="${escHtml(v.renavam||'')}" /></div>
-      <div class="form-group"><label>Combustível</label><input id="v-combustivel" value="${escHtml(v.combustivel||'')}" /></div>
-      <div class="form-group">
-        <label>Situação</label>
-        <select id="v-situacao">
-          <option ${v.situacao==='Em operação'?'selected':''}>Em operação</option>
-          <option ${v.situacao==='Em manutenção'?'selected':''}>Em manutenção</option>
-          <option ${v.situacao==='Inativo'?'selected':''}>Inativo</option>
-        </select>
-      </div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(v.icone, v.cor, 'veiculo')}
-      </div>
-      <div class="form-group full">
-        <label>Motorista(s) habilitado(s)</label>
-        <select id="v-motorista-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
-          ${getMotoristaOptions(v.motorista_ids || [])}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-motorista-ids">Limpar seleção</button>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos motoristas.</p>
-      </div>
-      <div class="form-group full"><label>Localização atual</label><input id="v-localizacao" value="${escHtml(v.localizacao||'')}" /></div>
-      <div class="form-group full">
-        <label>Documentos vinculados <span style="font-weight:400;color:var(--text-muted)">(arquivos com tag "ve\u00EDculos")</span></label>
-        <select id="v-arquivo-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
-          ${getArquivosVeiculoOptions(v.arquivo_ids || [])}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-arquivo-ids">Limpar seleção</button>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
-      </div>
-      <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||v.observacoes||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions('veiculo', v)}`;
+  return modalV2HTML(`${v.id ? 'Editar' : 'Novo'} Veículo`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome</label><input id="v-nome" value="${escHtml(v.nome||'')}" placeholder="Ex: Trator Agrícola I" /></div>
+        <div class="form-group"><label>Tipo</label><input id="v-tipo" value="${escHtml(v.tipo||'')}" placeholder="Trator, Caminhonete..." /></div>
+        <div class="form-group"><label>Marca</label><input id="v-marca" value="${escHtml(v.marca||'')}" /></div>
+        <div class="form-group"><label>Modelo</label><input id="v-modelo" value="${escHtml(v.modelo||'')}" /></div>
+        <div class="form-group"><label>Ano</label><input id="v-ano" value="${escHtml(v.ano||'')}" /></div>
+        <div class="form-group"><label>Cor</label><input id="v-cor" value="${escHtml(v.cor_veiculo||'')}" /></div>
+        <div class="form-group"><label>Placa</label><input id="v-placa" value="${escHtml(v.placa||'')}" /></div>
+        <div class="form-group"><label>Nº Patrimônio</label><input id="v-patrimonio" value="${escHtml(v.patrimonio||'')}" /></div>
+        <div class="form-group"><label>Nº Série/Chassi</label><input id="v-chassi" value="${escHtml(v.chassi||'')}" /></div>
+        <div class="form-group"><label>RENAVAM</label><input id="v-renavam" value="${escHtml(v.renavam||'')}" /></div>
+        <div class="form-group"><label>Combustível</label><input id="v-combustivel" value="${escHtml(v.combustivel||'')}" /></div>
+        <div class="form-group">
+          <label>Situação</label>
+          <select id="v-situacao">
+            <option ${v.situacao==='Em operação'?'selected':''}>Em operação</option>
+            <option ${v.situacao==='Em manutenção'?'selected':''}>Em manutenção</option>
+            <option ${v.situacao==='Inativo'?'selected':''}>Inativo</option>
+          </select>
+        </div>
+      </div>`, 'Nome, marca, placa e situação')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do card</label>
+          ${iconPickerCompactoHTML(v.icone, v.cor, 'veiculo')}
+        </div>
+      </div>`, 'Ícone e destaque do card')}
+
+    ${secaoV2('Vínculos', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Motorista(s) habilitado(s)</label>
+          <select id="v-motorista-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
+            ${getMotoristaOptions(v.motorista_ids || [])}
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-motorista-ids">Limpar seleção</button>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos motoristas.</p>
+        </div>
+        <div class="form-group full"><label>Localização atual</label><input id="v-localizacao" value="${escHtml(v.localizacao||'')}" /></div>
+        <div class="form-group full">
+          <label>Documentos vinculados <span style="font-weight:400;color:var(--text-muted)">(arquivos com tag "ve\u00EDculos")</span></label>
+          <select id="v-arquivo-ids" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:72px;max-height:120px">
+            ${getArquivosVeiculoOptions(v.arquivo_ids || [])}
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="v-arquivo-ids">Limpar seleção</button>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Cadastre arquivos com tag "ve\u00EDculos" na seção Arquivos.</p>
+        </div>
+      </div>`, 'Motoristas e documentos')}
+
+    ${secaoV2('Observações', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Observações</label><textarea id="v-obs">${escHtml(v.obs||v.observacoes||'')}</textarea></div>
+      </div>`, 'Opcional')}`,
+    publishFooterHTML('veiculo', v), v);
 }
 
-function novoVeiculo()     { abrirModal(formVeiculo()); }
-function editarVeiculo(id) { abrirModal(formVeiculo(DB.getById('veiculos', id))); }
+function novoVeiculo()     { abrirModalV2(formVeiculo()); }
+function editarVeiculo(id) { const v = DB.getById('veiculos', id); abrirModalV2(formVeiculo(v), v); }
 
 function clearAdminMultiSelect(selectRef) {
   const select = typeof selectRef === 'string'
@@ -3213,41 +3232,53 @@ function toggleServicoCategoriaOutro() {
 }
 
 function formSistema(s = {}) {
-  return `
-    <h2 class="modal-title">${s.id ? 'Editar' : 'Novo'} Sistema</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>Nome (sigla)</label><input id="s-nome" value="${escHtml(s.nome||'')}" /></div>
-      <div class="form-group"><label>Órgão responsável</label><input id="s-orgao" value="${escHtml(s.orgao||'')}" /></div>
-      <div class="form-group full"><label>Nome completo</label><input id="s-nome-completo" value="${escHtml(s.nome_completo||'')}" /></div>
-      <div class="form-group full"><label>URL de acesso</label><input id="s-url" value="${escHtml(s.url||'')}" placeholder="https://..." /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="s-descricao">${escHtml(s.descricao||'')}</textarea></div>
-      <div class="form-group full"><label>Instrução de acesso</label><input id="s-acesso" value="${escHtml(s.acesso||'')}" placeholder="Ex: Login com CPF..." /></div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(s.icone, s.cor, 'sistema')}
-      </div>
-      <div class="form-group full">
-        <label>Manuais relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-        <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-          ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
-      </div>
-      <div class="form-group full">
-        <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-        <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-          ${getSistemaLinksOptions('processos', s.processos_ids || [])}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
-      </div>
-    </div>
-    ${renderPublishStatusActions('sistema', s)}`;
+  return modalV2HTML(`${s.id ? 'Editar' : 'Novo'} Sistema`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group"><label>Nome (sigla)</label><input id="s-nome" value="${escHtml(s.nome||'')}" /></div>
+        <div class="form-group"><label>Órgão responsável</label><input id="s-orgao" value="${escHtml(s.orgao||'')}" /></div>
+        <div class="form-group full"><label>Nome completo</label><input id="s-nome-completo" value="${escHtml(s.nome_completo||'')}" /></div>
+        <div class="form-group full"><label>URL de acesso</label><input id="s-url" value="${escHtml(s.url||'')}" placeholder="https://..." /></div>
+        <div class="form-group full"><label>Instrução de acesso</label><input id="s-acesso" value="${escHtml(s.acesso||'')}" placeholder="Ex: Login com CPF..." /></div>
+      </div>`, 'Sigla, órgão e link')}
+
+    ${secaoV2('Descrição', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Descrição</label><textarea id="s-descricao">${escHtml(s.descricao||'')}</textarea></div>
+      </div>`, 'O que o sistema faz')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do card</label>
+          ${iconPickerCompactoHTML(s.icone, s.cor, 'sistema')}
+        </div>
+      </div>`, 'Ícone e destaque do card')}
+
+    ${secaoV2('Vínculos', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Manuais relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
+            ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+        </div>
+        <div class="form-group full">
+          <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
+            ${getSistemaLinksOptions('processos', s.processos_ids || [])}
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+        </div>
+      </div>`, 'Opcional')}`,
+    publishFooterHTML('sistema', s), s);
 }
 
-function novoSistema()     { abrirModal(formSistema()); }
-function editarSistema(id) { abrirModal(formSistema(DB.getById('sistemas', id))); }
+function novoSistema()     { abrirModalV2(formSistema()); }
+function editarSistema(id) { const s = DB.getById('sistemas', id); abrirModalV2(formSistema(s), s); }
 
 async function salvarSistema(id) {
   const manuaisIds   = Array.from(document.getElementById('s-manuais').selectedOptions).map(o => parseInt(o.value)).filter(Boolean);
@@ -3317,8 +3348,8 @@ function pintarServicos(estado) {
     </table></div>`);
 }
 
-function novoServico()     { abrirModal(formServico()); }
-function editarServico(id) { abrirModal(formServico(DB.getById('servicos', id))); }
+function novoServico()     { abrirModalV2(formServico()); }
+function editarServico(id) { const s = DB.getById('servicos', id); abrirModalV2(formServico(s), s); }
 
 
 /* ============================================================
@@ -3326,41 +3357,57 @@ function editarServico(id) { abrirModal(formServico(DB.getById('servicos', id)))
    ============================================================ */
 function formServico(s = {}) {
   const { categoriaSelect, categoriaOutra } = getServicoCategoriaState(s.categoria || '');
-  return `
-    <h2 class="modal-title">${s.id ? 'Editar' : 'Novo'} Serviço</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome</label><input id="sv-nome" value="${escHtml(s.nome||'')}" /></div>
-      <div class="form-group">
-        <label>Categoria</label>
-        <select id="sv-categoria" data-acao="toggle-servico-categoria">${SERVICO_CATEGORIAS_PADRAO.map(c => `<option ${categoriaSelect === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
-      </div>
-      <div class="form-group" id="sv-categoria-outra-wrap" style="display:${categoriaSelect === 'Outro' ? 'flex' : 'none'};flex-direction:column">
-        <label>Qual categoria?</label>
-        <input id="sv-categoria-outra" value="${escHtml(categoriaOutra)}" placeholder="Digite a categoria personalizada" ${categoriaSelect === 'Outro' ? '' : 'disabled'} />
-      </div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(s.icone, s.cor, 'servico')}
-      </div>
-      <div class="form-group full"><label>Descrição</label><textarea id="sv-descricao">${escHtml(s.descricao||'')}</textarea></div>
-      <div class="form-group full"><label>Público-alvo</label><input id="sv-publico" value="${escHtml(s.publico||'')}" /></div>
-      <div class="form-group full"><label>Como solicitar</label><textarea id="sv-como">${escHtml(s.como_solicitar||'')}</textarea></div>
-      <div class="form-group full">
-        <label>Documentos necessários</label>
-        ${renderServicoDocumentosFields(s.documentos || [])}
-      </div>
-      <div class="form-group full">
-        <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-        <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-          ${getSistemaLinksOptions('processos', s.processos_ids || [])}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
-        <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
-      </div>
-      <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
-      <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions('servico', s)}`;
+  return modalV2HTML(`${s.id ? 'Editar' : 'Novo'} Serviço`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome</label><input id="sv-nome" value="${escHtml(s.nome||'')}" /></div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="sv-categoria" data-acao="toggle-servico-categoria">${SERVICO_CATEGORIAS_PADRAO.map(c => `<option ${categoriaSelect === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        </div>
+        <div class="form-group" id="sv-categoria-outra-wrap" style="display:${categoriaSelect === 'Outro' ? 'flex' : 'none'};flex-direction:column">
+          <label>Qual categoria?</label>
+          <input id="sv-categoria-outra" value="${escHtml(categoriaOutra)}" placeholder="Digite a categoria personalizada" ${categoriaSelect === 'Outro' ? '' : 'disabled'} />
+        </div>
+      </div>`, 'Nome e categoria do serviço')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do card</label>
+          ${iconPickerCompactoHTML(s.icone, s.cor, 'servico')}
+        </div>
+      </div>`, 'Ícone e destaque do card')}
+
+    ${secaoV2('Conteúdo', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Descrição</label><textarea id="sv-descricao">${escHtml(s.descricao||'')}</textarea></div>
+        <div class="form-group full"><label>Público-alvo</label><input id="sv-publico" value="${escHtml(s.publico||'')}" /></div>
+        <div class="form-group full"><label>Como solicitar</label><textarea id="sv-como">${escHtml(s.como_solicitar||'')}</textarea></div>
+      </div>`, 'O que é e como pedir')}
+
+    ${secaoV2('Documentos', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Documentos necessários</label>
+          ${renderServicoDocumentosFields(s.documentos || [])}
+        </div>
+        <div class="form-group full">
+          <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
+            ${getSistemaLinksOptions('processos', s.processos_ids || [])}
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+        </div>
+      </div>`, 'Anexos e vínculos')}
+
+    ${secaoV2('Prazos e observações', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Prazo estimado</label><input id="sv-prazo" value="${escHtml(s.prazo||'')}" /></div>
+        <div class="form-group full"><label>Observações</label><textarea id="sv-obs">${escHtml(s.obs||'')}</textarea></div>
+      </div>`, 'Opcional')}`,
+    publishFooterHTML('servico', s), s);
 }
 
 async function salvarServico(id) {
@@ -3551,25 +3598,33 @@ function pintarAgenda(estado) {
 }
 function formEvento(e = {}) {
   const tipos = ['reuniao','evento','prazo','capacitacao','operacao'];
-  return `
-    <h2 class="modal-title">${e.id ? 'Editar' : 'Novo'} Evento</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="ev-titulo" value="${escHtml(e.titulo||'')}" /></div>
-      <div class="form-group">
-        <label>Tipo</label>
-        <select id="ev-tipo" data-acao="toggle-evento-tipo">${tipos.map(t=>`<option ${(e.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}</select>
-      </div>
-      <div class="form-group" id="ev-data-group"><label>Data início</label><input type="date" id="ev-data" value="${escHtml(e.data||'')}" /></div>
-      <div class="form-group" id="ev-data-fim-group"><label id="ev-data-fim-label">Data fim</label><input type="date" id="ev-data-fim" value="${escHtml(e.data_fim||'')}" /></div>
-      <div class="form-group" id="ev-hora-group"><label>Hora inicial</label><input type="time" id="ev-hora" value="${escHtml(e.hora||'')}" /></div>
-      <div class="form-group"><label id="ev-hora-fim-label">Hora final</label><input type="time" id="ev-hora-fim" value="${escHtml(e.hora_fim||'')}" /></div>
-      <div class="form-group"><label>Local</label><input id="ev-local" value="${escHtml(e.local||'')}" /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||e.descricao||'')}</textarea></div>
-      <div class="form-group full" id="ev-prazo-hint" style="display:none">
-        <p class="form-hint">Para o tipo prazo, use apenas data final e hora final. O evento ficará "em andamento" até esse momento e depois passará para "encerrado".</p>
-      </div>
-    </div>
-    ${renderPublishStatusActions('evento', e)}`;
+  return modalV2HTML(`${e.id ? 'Editar' : 'Novo'} Evento`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Título</label><input id="ev-titulo" value="${escHtml(e.titulo||'')}" /></div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="ev-tipo" data-acao="toggle-evento-tipo">${tipos.map(t=>`<option ${(e.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label>Local</label><input id="ev-local" value="${escHtml(e.local||'')}" /></div>
+      </div>`, 'Título, tipo e local')}
+
+    ${secaoV2('Período', `
+      <div class="form-grid">
+        <div class="form-group" id="ev-data-group"><label>Data início</label><input type="date" id="ev-data" value="${escHtml(e.data||'')}" /></div>
+        <div class="form-group" id="ev-data-fim-group"><label id="ev-data-fim-label">Data fim</label><input type="date" id="ev-data-fim" value="${escHtml(e.data_fim||'')}" /></div>
+        <div class="form-group" id="ev-hora-group"><label>Hora inicial</label><input type="time" id="ev-hora" value="${escHtml(e.hora||'')}" /></div>
+        <div class="form-group"><label id="ev-hora-fim-label">Hora final</label><input type="time" id="ev-hora-fim" value="${escHtml(e.hora_fim||'')}" /></div>
+        <div class="form-group full" id="ev-prazo-hint" style="display:none">
+          <p class="form-hint">Para o tipo prazo, use apenas data final e hora final. O evento ficará "em andamento" até esse momento e depois passará para "encerrado".</p>
+        </div>
+      </div>`, 'Datas e horários')}
+
+    ${secaoV2('Descrição', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Descrição</label><textarea id="ev-desc">${escHtml(e.desc||e.descricao||'')}</textarea></div>
+      </div>`, 'Opcional')}`,
+    publishFooterHTML('evento', e), e);
 }
 
 function toggleEventoTipoFields() {
@@ -3596,12 +3651,13 @@ function toggleEventoTipoFields() {
 }
 
 function novoEvento() {
-  abrirModal(formEvento());
+  abrirModalV2(formEvento());
   setTimeout(toggleEventoTipoFields, 0);
 }
 
 function editarEvento(id) {
-  abrirModal(formEvento(DB.getById('agendaEventos', id)));
+  const e = DB.getById('agendaEventos', id);
+  abrirModalV2(formEvento(e), e);
   setTimeout(toggleEventoTipoFields, 0);
 }
 
@@ -3642,8 +3698,8 @@ function preencherDadosFunc() {
   if (opt) document.getElementById('fer-cargo').value = opt.dataset.cargo || '';
 }
 
-function novaFerias()     { abrirModal(formFerias()); }
-function editarFerias(id) { abrirModal(formFerias(DB.getById('escalaFerias', id))); }
+function novaFerias()     { abrirModalV2(formFerias()); }
+function editarFerias(id) { const f = DB.getById('escalaFerias', id); abrirModalV2(formFerias(f), f); }
 
 
 /* ============================================================
@@ -3703,27 +3759,31 @@ function pintarEscala(estado) {
 }
 function formFerias(f = {}) {
   const funcionarios = DB.get('funcionarios');
-  return `
-    <h2 class="modal-title">${f.id ? 'Editar' : 'Nova'} Entrada de Férias</h2>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label>Funcionário</label>
-        <select id="fer-func" data-acao="preencher-dados-func">
-          <option value="">— Selecione —</option>
-          ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group full"><label>Cargo (preenchido automaticamente)</label><input id="fer-cargo" value="${escHtml(f.cargo||'')}" /></div>
-      <div class="form-group"><label>Início das férias</label><input type="date" id="fer-inicio" value="${escHtml(f.periodo_inicio||'')}" /></div>
-      <div class="form-group"><label>Fim das férias</label><input type="date" id="fer-fim" value="${escHtml(f.periodo_fim||'')}" /></div>
-      <div class="form-group full">
-        <label>Status</label>
-        <div style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:0.84rem;color:var(--text-secondary)">
-          Calculado automaticamente pelas datas: antes do início = <strong>agendado</strong>, durante o período = <strong>em_curso</strong>, após o fim = <strong>concluido</strong>.
+  return modalV2HTML(`${f.id ? 'Editar' : 'Nova'} Entrada de Férias`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Funcionário</label>
+          <select id="fer-func" data-acao="preencher-dados-func">
+            <option value="">— Selecione —</option>
+            ${funcionarios.map(fn=>`<option value="${fn.id}" data-cargo="${escHtml(fn.cargo)}" ${String(f.funcionario_id)===String(fn.id)?'selected':''}>${escHtml(withDraftSuffix(fn.nome, fn))}</option>`).join('')}
+          </select>
         </div>
-      </div>
-    </div>
-    ${renderPublishStatusActions('ferias', f)}`;
+        <div class="form-group full"><label>Cargo (preenchido automaticamente)</label><input id="fer-cargo" value="${escHtml(f.cargo||'')}" /></div>
+      </div>`, 'Quem entra de férias')}
+
+    ${secaoV2('Período', `
+      <div class="form-grid">
+        <div class="form-group"><label>Início das férias</label><input type="date" id="fer-inicio" value="${escHtml(f.periodo_inicio||'')}" /></div>
+        <div class="form-group"><label>Fim das férias</label><input type="date" id="fer-fim" value="${escHtml(f.periodo_fim||'')}" /></div>
+        <div class="form-group full">
+          <label>Status</label>
+          <div style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:0.84rem;color:var(--text-secondary)">
+            Calculado automaticamente pelas datas: antes do início = <strong>agendado</strong>, durante o período = <strong>em_curso</strong>, após o fim = <strong>concluido</strong>.
+          </div>
+        </div>
+      </div>`, 'Datas e situação')}`,
+    publishFooterHTML('ferias', f), f);
 }
 
 async function salvarFerias(id) {
