@@ -3125,7 +3125,7 @@ function pintarSistemas(estado) {
         <tr>
           <td><strong title="${escHtml(s.nome)}">${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
-          <td><div class="td-truncate"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></div></td>
+          <td><div class="td-truncate td-truncate--curto"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></div></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('sistemas', s)}
             <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-sistema" data-id="${s.id}" title="Editar" aria-label="Editar ${escHtml(s.nome)}"><i class="ph-bold ph-pencil"></i></button>
@@ -3838,7 +3838,7 @@ function pintarAcesso(estado) {
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
           <td><strong title="${escHtml(a.titulo)}">${escHtml(a.titulo)}</strong></td>
-          <td><div class="td-truncate"><a href="${escHtml(escUrl(a.url))}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></div></td>
+          <td><div class="td-truncate td-truncate--curto"><a href="${escHtml(escUrl(a.url))}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></div></td>
           <td>${escHtml(a.icone)}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('acessoRapido', a)}
