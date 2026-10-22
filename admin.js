@@ -495,19 +495,26 @@ function salvarComoRascunho() {
 function validarObrigatorioV2(inputId, mensagem) {
   const input = document.getElementById(inputId);
   if (!input) return true;
-  const field = input.closest('.field');
-  const msg = field ? field.querySelector('.field-error-msg') : null;
+  const field = input.closest('.field, .form-group');
+  if (!field) {
+    input.focus();
+    return Boolean(input.value.trim());
+  }
+  let msg = field.querySelector('.field-error-msg');
+  if (!msg && mensagem) {
+    msg = document.createElement('span');
+    msg.className = 'field-error-msg';
+    field.appendChild(msg);
+  }
   if (msg && !msg.id) msg.id = `${inputId}-erro`;
   if (input.value.trim()) {
-    if (field) field.classList.remove('field-error');
+    field.classList.remove('field-error');
     input.removeAttribute('aria-invalid');
     if (msg) input.removeAttribute('aria-describedby');
     return true;
   }
-  if (field) {
-    field.classList.add('field-error');
-    if (msg) msg.textContent = mensagem;
-  }
+  field.classList.add('field-error');
+  if (msg) msg.textContent = mensagem;
   input.setAttribute('aria-invalid', 'true');
   if (msg) input.setAttribute('aria-describedby', msg.id);
   input.focus();
@@ -1833,7 +1840,7 @@ async function salvarFuncionario(id) {
     descricao:     document.getElementById('f-descricao').value.trim(),
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('f-nome', 'Informe o nome completo.')) return;
   if (!(await salvarComFeedback('funcionarios', id, dados))) return;
   if (existente?.foto_storage_path && (removeFoto || (fotoStoragePathFinal && fotoStoragePathFinal !== existente.foto_storage_path))) {
     DB.deleteFuncionarioFotoStorage(existente.foto_storage_path, existente.foto_storage_bucket).catch((error) => {
@@ -2856,7 +2863,7 @@ function editarArquivo(id) {
 
 async function salvarArquivo(id) {
   const nome = document.getElementById('a-nome').value.trim();
-  if (!nome) { toast('Nome é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('a-nome', 'Informe o nome de exibição.')) return;
 
   const existente = id ? DB.getById('arquivos', id) : null;
   const removeArquivo = document.getElementById('a-remover-arquivo').value === '1';
@@ -3087,7 +3094,7 @@ async function salvarVeiculo(id) {
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('v-nome', 'Informe o nome do veículo.')) return;
   if (!(await salvarComFeedback('veiculos', id, dados))) return;
   fecharModal(); toast('Veículo salvo.'); renderVeiculos();
 }
@@ -3303,7 +3310,7 @@ async function salvarSistema(id) {
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('s-nome', 'Informe o nome (sigla) do sistema.')) return;
   if (!(await salvarComFeedback('sistemas', id, dados))) return;
   fecharModal(); toast('Sistema salvo.'); renderSistemas();
 }
@@ -3459,8 +3466,8 @@ async function salvarServico(id) {
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.nome) { toast('Nome é obrigatório.','error'); return; }
-  if (!dados.categoria) { toast('Categoria é obrigatória.','error'); return; }
+  if (!validarObrigatorioV2('sv-nome', 'Informe o nome do serviço.')) return;
+  if (!validarObrigatorioV2('sv-categoria', 'Selecione uma categoria.')) return;
   if (!(await salvarComFeedback('servicos', id, dados))) return;
   fecharModal(); toast('Serviço salvo.'); renderServicos();
 }
@@ -3542,7 +3549,7 @@ async function salvarAviso(id) {
     descricao,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('av-titulo', 'Informe o título do aviso.')) return;
   if (!(await salvarComFeedback('avisos', id, dados))) return;
   fecharModal(); toast('Aviso salvo.'); renderAvisos();
 }
@@ -3686,11 +3693,10 @@ async function salvarEvento(id) {
     publish_status: getModalPublishStatus(),
   };
 
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('ev-titulo', 'Informe o título do evento.')) return;
   if (isPrazo) {
-    if (!dados.data_fim) { toast('Data final é obrigatória para prazo.','error'); return; }
-  } else if (!dados.data) {
-    toast('Data inicial é obrigatória.','error');
+    if (!validarObrigatorioV2('ev-data-fim', 'Informe a data final do prazo.')) return;
+  } else if (!validarObrigatorioV2('ev-data', 'Informe a data inicial.')) {
     return;
   }
 
@@ -3808,7 +3814,9 @@ async function salvarFerias(id) {
     status:          getFeriasStatus(periodoInicio, periodoFim),
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.funcionario_id || !dados.periodo_inicio || !dados.periodo_fim) { toast('Preencha todos os campos obrigatórios.','error'); return; }
+  if (!validarObrigatorioV2('fer-func', 'Selecione o funcionário.')) return;
+  if (!validarObrigatorioV2('fer-inicio', 'Informe o início das férias.')) return;
+  if (!validarObrigatorioV2('fer-fim', 'Informe o fim das férias.')) return;
   if (dados.periodo_fim < dados.periodo_inicio) { toast('A data final não pode ser anterior à data inicial.','error'); return; }
   if (!(await salvarComFeedback('escalaFerias', id, dados))) return;
   fecharModal(); toast('Escala de férias salva.'); renderEscalaFerias();
@@ -3886,7 +3894,7 @@ async function salvarAcesso(id) {
     coringa: false,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('ac-titulo', 'Informe o título do atalho.')) return;
   if (!(await salvarComFeedback('acessoRapido', id, dados))) return;
   fecharModal(); toast('Acesso rápido salvo.'); renderAcessoRapido();
 }
@@ -4026,7 +4034,7 @@ async function salvarInfoSimples(colecao, id) {
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('info-titulo', 'Informe o título do bloco.')) return;
   if (!(await salvarComFeedback(colecao, id, dados))) return;
   fecharModal(); toast('Bloco salvo.');
   renderInfoSimples(colecao, '', colecao === 'infoJuridico' ? 'Informações da Secretaria' : 'Informações do Município');
@@ -4148,7 +4156,7 @@ async function salvarOrgao(id) {
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
+  if (!validarObrigatorioV2('org-titulo', 'Informe o título ou a sigla do órgão.')) return;
   if (!(await salvarComFeedback('infoOrgaos', id, dados))) return;
   fecharModal(); toast('Órgão salvo.'); renderInfoOrgaos();
 }

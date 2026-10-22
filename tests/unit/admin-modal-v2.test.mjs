@@ -188,3 +188,94 @@ test('ICONES_DISPONIVEIS: nomes unicos e todos com classe Phosphor', async () =>
   nomes.forEach((nome) => assert.match(nome, /^ph-[a-z0-9-]+$/));
   icones.forEach((o) => assert.ok(o.label && o.label.trim(), `label vazio para ${o.icone}`));
 });
+
+/* ------------------------------------------------------------------ */
+/* T12.1.1 - validacao inline dos obrigatorios                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Campo falso com o formato usado pelos formularios da Onda 2
+ * (`.form-group` > input) para exercitar `validarObrigatorioV2`.
+ */
+function montarCampo(valorInicial = '') {
+  const field = criarElemento('div');
+  const input = criarElemento('input');
+  const attrs = new Map();
+  let foco = 0;
+
+  input.value = valorInicial;
+  input.setAttribute = (chave, valor) => attrs.set(chave, String(valor));
+  input.getAttribute = (chave) => (attrs.has(chave) ? attrs.get(chave) : null);
+  input.removeAttribute = (chave) => attrs.delete(chave);
+  input.focus = () => { foco += 1; };
+  input.closest = (seletor) => (String(seletor).includes('.form-group') ? field : null);
+  field.querySelector = (seletor) =>
+    seletor === '.field-error-msg'
+      ? field.children.find((filho) => filho.className === 'field-error-msg') || null
+      : null;
+
+  return { field, input, attrs, focos: () => foco };
+}
+
+function carregarCom(campos) {
+  const elementos = { ...campos };
+  const h = carregarScripts(
+    ['js/core/utils.js', 'js/admin/list-controller.js', 'db.js', 'admin.js'],
+    {
+      supabase: false,
+      elementos: {
+        'login-email': criarElemento('input'),
+        'login-senha': criarElemento('input'),
+        modal: criarElemento('div'),
+        'modal-box': criarElemento('div'),
+        'modal-content': criarElemento('div'),
+        'unsaved-bar': criarElemento('div'),
+        ...elementos,
+      },
+    },
+  );
+  return h;
+}
+
+test('validarObrigatorioV2: campo vazio marca erro no .form-group da Onda 2', () => {
+  const campo = montarCampo('');
+  const h = carregarCom({ 'x-nome': campo.input });
+
+  const ok = h.get('validarObrigatorioV2')('x-nome', 'Informe o nome.');
+
+  assert.equal(ok, false);
+  assert.equal(campo.field.classList.contains('field-error'), true);
+  assert.equal(campo.attrs.get('aria-invalid'), 'true');
+  assert.equal(campo.input.value, '');
+  assert.equal(campo.focos(), 1, 'campo invalido recebe foco');
+
+  const msg = campo.field.children.find((filho) => filho.className === 'field-error-msg');
+  assert.ok(msg, 'mensagem criada sob demanda');
+  assert.equal(msg.textContent, 'Informe o nome.');
+  assert.equal(msg.id, 'x-nome-erro');
+  assert.equal(campo.attrs.get('aria-describedby'), 'x-nome-erro');
+});
+
+test('validarObrigatorioV2: campo preenchido limpa o erro sem duplicar a mensagem', () => {
+  const campo = montarCampo('');
+  const h = carregarCom({ 'x-nome': campo.input });
+  const validar = h.get('validarObrigatorioV2');
+
+  validar('x-nome', 'Informe o nome.');
+  campo.input.value = 'Secretaria de Agricultura';
+
+  assert.equal(validar('x-nome', 'Informe o nome.'), true);
+  assert.equal(campo.field.classList.contains('field-error'), false);
+  assert.equal(campo.attrs.has('aria-invalid'), false);
+  assert.equal(campo.attrs.has('aria-describedby'), false);
+  assert.equal(
+    campo.field.children.filter((filho) => filho.className === 'field-error-msg').length,
+    1,
+    'nao cria segunda mensagem',
+  );
+});
+
+test('validarObrigatorioV2: campo inexistente e considera valido (defensivo)', () => {
+  const h = carregarCom({});
+  assert.equal(h.get('validarObrigatorioV2')('nao-existe', 'x'), true);
+});

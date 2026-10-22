@@ -855,6 +855,25 @@ PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
     Fix de UI (45bfbfa): body.sem-excluir cobre re-render direto; boot
     aplica permissoes. Validado pelo dono no painel local.
 
+PENDENTE 10 — graphify com DOCUMENTACAO (build semantico, decisao do dono 2026-10-22)
+  Pedido do dono em 2026-10-22: rodar o build COMPLETO do graphify incluindo
+  documentacao (handoff, v2_plano_refatoracao.md, AGENTS.md, docs/, migrations),
+  nao apenas codigo. Fica para "momento oportuno" — nao executar sem o dono pedir.
+  Estado atual do grafo (conferido em 2026-10-22 na branch codex3):
+    - graphify-out/ e gitignored (.gitignore linha 7); e artefato local.
+    - build de 2026-10-19, commit da655a03 (branch homologacao-refatoracao-v1.1.x),
+      460 nos / 1184 arestas / 26 comunidades, file_type=code em 100% dos nos.
+    - so 4 arquivos: admin.js, dados.js, db.js, script.js. ZERO documentacao,
+      e sem admin.html, index.html, style.css, js/**, tests/, supabase/**.
+    - esta desatualizado: ainda lista paginarLista() (removida no T11.3, 0e3418a).
+  O que fazer no build com docs:
+    1. graphify update . (ou /graphify .) para reextrair o codigo (AST, sem custo);
+    2. build completo com extracao semantica dos .md/.txt (custa tokens: subagentes
+       ou GEMINI_API_KEY/GOOGLE_API_KEY);
+    3. conferir no GRAPH_REPORT.md se aparecem nos de documentacao e o commit atual.
+  Custo/beneficio: util para perguntas tipo "onde esta documentado o T12.4";
+  nao muda codigo nem banco. Sem pressa.
+
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
 =========================================================================
