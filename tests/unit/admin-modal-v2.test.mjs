@@ -24,6 +24,9 @@ async function carregar() {
         'login-email': criarElemento('input'),
         'login-senha': criarElemento('input'),
         modal: criarElemento('div'),
+        'modal-box': criarElemento('div'),
+        'modal-content': criarElemento('div'),
+        'unsaved-bar': criarElemento('div'),
       },
     },
   );
@@ -135,6 +138,40 @@ test('formProcesso: secoes, acordeao de etapas e barra de alteracoes', async () 
   assert.match(html, /data-acao="add-etapa"/);
   assert.match(html, /data-acao="salvar-modal" data-salvar="processo"/);
   assert.match(html, /id="unsaved-bar"/);
+});
+
+/* ------------------------------------------------------------------ */
+/* Salvamento x barra de alteracoes                                    */
+/* ------------------------------------------------------------------ */
+
+test('salvamento bem-sucedido limpa o estado sujo e permite fechar o modal v2', async () => {
+  const h = await carregar();
+  const modal = h.window.document.getElementById('modal');
+  const barra = h.window.document.getElementById('unsaved-bar');
+
+  h.run('_modalV2 = { sujo: true, itemPublicado: false };');
+  modal.classList.add('open');
+  h.get('fecharModal')();
+
+  assert.equal(modal.classList.contains('open'), true, 'modal continua aberto com pendencias');
+  assert.equal(barra.classList.contains('visible'), true, 'barra aparece com pendencias');
+
+  h.run('DB.save = async () => ({ id: 1 });');
+  const ok = await h.get('salvarComFeedback')('teste', 0, {});
+
+  assert.equal(ok, true);
+  h.get('fecharModal')();
+  assert.equal(modal.classList.contains('open'), false, 'apos salvar, o modal fecha sem barra');
+});
+
+test('salvamento com erro mantem o estado sujo (nao perde o aviso)', async () => {
+  const h = await carregar();
+  h.run("_modalV2 = { sujo: true, itemPublicado: false }; DB.save = async () => { throw new Error('sem rede'); };");
+
+  const ok = await h.get('salvarComFeedback')('teste', 0, {}, { aoErro: () => {} });
+
+  assert.equal(ok, false);
+  assert.equal(h.run('_modalV2.sujo'), true);
 });
 
 /* ------------------------------------------------------------------ */

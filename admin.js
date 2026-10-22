@@ -392,6 +392,11 @@ function toast(msg, tipo = 'success') {
 async function salvarComFeedback(colecao, id, dados, opcoes = {}) {
   try {
     await DB.save(colecao, id, dados);
+    // Salvou: o formulario aberto deixa de ter pendencias. Sem isto, o
+    // fecharModal() logo depois encontra _modalV2.sujo = true (marcado pelos
+    // eventos de input/change) e deixa o modal aberto com a barra "Voce tem
+    // alteracoes nao salvas" mesmo apos um salvamento bem-sucedido.
+    if (_modalV2) _modalV2.sujo = false;
     return true;
   } catch (erro) {
     const mensagem = `Nao foi possivel salvar: ${erro?.message || 'falha desconhecida'}`;
