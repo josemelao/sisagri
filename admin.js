@@ -1893,8 +1893,11 @@ function categoriasDe(colecao) {
     .sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-function publishFooterHTML(saveAcao, item = {}) {
+function publishFooterHTML(saveAcao, item = {}, dadosExtras = {}) {
   const publicado = item.publish_status !== 'draft';
+  const dadosAttr = Object.entries(dadosExtras)
+    .map(([chave, valor]) => `data-${chave}="${escHtml(valor)}"`)
+    .join(' ');
   return `
     <div class="publish-status-control">
       <span class="publish-status-text" id="publish-status-label">${publicado ? 'Publicado' : 'Rascunho'}</span>
@@ -1906,7 +1909,49 @@ function publishFooterHTML(saveAcao, item = {}) {
     <div class="save-error" id="save-error" role="alert"></div>
     <div class="footer-actions">
       <button class="btn btn-ghost" type="button" data-acao="fechar-modal">Cancelar</button>
-      <button class="btn btn-primary" type="button" data-acao="salvar-modal" data-salvar="${saveAcao}" data-id="${item.id || 0}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
+      <button class="btn btn-primary" type="button" data-acao="salvar-modal" data-salvar="${saveAcao}" data-id="${item.id || 0}" ${dadosAttr}><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
+    </div>`;
+}
+
+/* ---------- modal v2: casca, secoes e abertura (Onda 2) ---------- */
+
+/** Abre um formulario no modo v2 (foco preso, barra de alteracoes, etc.). */
+function abrirModalV2(html, item = {}) {
+  abrirModal(html, { v2: true, itemPublicado: !!(item.id && item.publish_status !== 'draft') });
+}
+
+function barraAlteracoesHTML(item = {}) {
+  const sairDoAr = !!(item.id && item.publish_status !== 'draft');
+  return `
+    <div class="unsaved-bar" id="unsaved-bar" role="status" aria-live="polite">
+      <p>Você tem alterações não salvas.</p>
+      <button class="btn btn-ghost" type="button" data-acao="descartar-alteracoes">Descartar</button>
+      <button class="btn btn-ghost" type="button" data-acao="salvar-rascunho">Salvar como rascunho${sairDoAr ? ' (sai do ar)' : ''}</button>
+      <button class="btn btn-primary" type="button" data-acao="continuar-editando">Continuar editando</button>
+    </div>`;
+}
+
+function secaoV2(titulo, conteudo, hint = '') {
+  return `
+    <section class="form-section">
+      <div class="form-section-head">
+        <span class="form-section-title">${escHtml(titulo)}</span>
+        ${hint ? `<span class="form-section-hint">${escHtml(hint)}</span>` : ''}
+      </div>
+      ${conteudo}
+    </section>`;
+}
+
+/** Casca completa do modal v2: titulo, corpo em secoes, barra e rodape. */
+function modalV2HTML(titulo, corpo, rodape, item = {}) {
+  return `
+    <div class="modal-v2">
+      <div class="modal-head">
+        <h2 class="modal-title" id="modal-title" tabindex="-1">${escHtml(titulo)}</h2>
+      </div>
+      <div class="modal-body">${corpo}</div>
+      ${barraAlteracoesHTML(item)}
+      <div class="modal-footer">${rodape}</div>
     </div>`;
 }
 
@@ -2701,45 +2746,51 @@ function formArquivo(a = {}) {
        </div>`
     : `<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Nenhum arquivo carregado.</div>`;
 
-  const html = `
-    <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Arquivo</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome de exibição</label><input id="a-nome" value="${escHtml(a.nome||'')}" placeholder="Ex: Manual de Procedimentos" /></div>
-      <div class="form-group">
-        <label>Tipo</label>
-        <select id="a-tipo">
-          ${['PDF','DOCX','XLSX','PPTX','JPG/JPEG','PNG','TXT','ZIP','Outro'].map(t => `<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
-        </select>
-      </div>
+  const corpo = `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome de exibição</label><input id="a-nome" value="${escHtml(a.nome||'')}" placeholder="Ex: Manual de Procedimentos" /></div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="a-tipo">
+            ${['PDF','DOCX','XLSX','PPTX','JPG/JPEG','PNG','TXT','ZIP','Outro'].map(t => `<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>`, 'Como o arquivo aparece na lista')}
 
-      <div class="form-group full">
-        <label>Upload de arquivo <span style="font-weight:400;color:var(--text-muted)">(recomendado)</span></label>
-        ${arquivoStatus}
-        <input type="file" id="a-file-input" style="display:none" data-acao="processar-arquivo-upload" />
-        <input type="hidden" id="a-arquivo-data" value="${escHtml(a.arquivo_data || '')}" />
-        <input type="hidden" id="a-arquivo-nome" value="${escHtml(nomeArquivoAtual)}" />
-        <input type="hidden" id="a-storage-path" value="${escHtml(a.storage_path || '')}" />
-        <input type="hidden" id="a-storage-bucket" value="${escHtml(a.storage_bucket || '')}" />
-        <input type="hidden" id="a-remover-arquivo" value="0" />
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="abrir-input-arquivo" data-input="a-file-input">
-          <i class="ph-bold ph-upload-simple"></i> ${temArquivo ? 'Substituir arquivo' : 'Escolher arquivo'}
-        </button>
-        <span class="form-hint">O arquivo ficará disponível para download. Máx. recomendado: 10MB.</span>
-      </div>
+    ${secaoV2('Arquivo', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Upload de arquivo <span style="font-weight:400;color:var(--text-muted)">(recomendado)</span></label>
+          ${arquivoStatus}
+          <input type="file" id="a-file-input" style="display:none" data-acao="processar-arquivo-upload" />
+          <input type="hidden" id="a-arquivo-data" value="${escHtml(a.arquivo_data || '')}" />
+          <input type="hidden" id="a-arquivo-nome" value="${escHtml(nomeArquivoAtual)}" />
+          <input type="hidden" id="a-storage-path" value="${escHtml(a.storage_path || '')}" />
+          <input type="hidden" id="a-storage-bucket" value="${escHtml(a.storage_bucket || '')}" />
+          <input type="hidden" id="a-remover-arquivo" value="0" />
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="abrir-input-arquivo" data-input="a-file-input">
+            <i class="ph-bold ph-upload-simple"></i> ${temArquivo ? 'Substituir arquivo' : 'Escolher arquivo'}
+          </button>
+          <span class="form-hint">O arquivo ficará disponível para download. Máx. recomendado: 10MB.</span>
+        </div>
 
-      <div class="form-group full">
-        <label>Ou use URL / Link externo <span style="font-weight:400;color:var(--text-muted)">(Google Drive, etc.)</span></label>
-        <input id="a-url" value="${escHtml(urlAtual)}" placeholder="https://drive.google.com/..." />
-        <span class="form-hint">Se um arquivo foi carregado acima, o link externo é ignorado.</span>
-      </div>
+        <div class="form-group full">
+          <label>Ou use URL / Link externo <span style="font-weight:400;color:var(--text-muted)">(Google Drive, etc.)</span></label>
+          <input id="a-url" value="${escHtml(urlAtual)}" placeholder="https://drive.google.com/..." />
+          <span class="form-hint">Se um arquivo foi carregado acima, o link externo é ignorado.</span>
+        </div>
+      </div>`, 'Envie um arquivo ou informe um link')}
 
-      <div class="form-group full">
-        <label>Tags</label>
-        ${tagsInputHTML(a.tags||[], 'arquivo')}
-      </div>
-    </div>
-    ${renderPublishStatusActions('arquivo', a)}`;
-  return html;
+    ${secaoV2('Organização', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Tags</label>
+          ${tagsInputHTML(a.tags||[], 'arquivo')}
+        </div>
+      </div>`, 'Opcional')}`;
+
+  return modalV2HTML(`${a.id ? 'Editar' : 'Novo'} Arquivo`, corpo, publishFooterHTML('arquivo', a), a);
 }
 
 function processarArquivoUpload(input) {
@@ -2782,11 +2833,11 @@ function removerArquivoUpload() {
 }
 
 function novoArquivo()     {
-  abrirModal(formArquivo());
+  abrirModalV2(formArquivo());
 }
 function editarArquivo(id) {
   const a = DB.getById('arquivos', id);
-  abrirModal(formArquivo(a));
+  abrirModalV2(formArquivo(a), a);
 }
 
 async function salvarArquivo(id) {
@@ -3404,24 +3455,28 @@ function pintarAvisos(estado) {
     </table></div>`);
 }
 function formAviso(a = {}) {
-  return `
-    <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Aviso</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="av-titulo" value="${escHtml(a.titulo||'')}" /></div>
-      <div class="form-group">
-        <label>Tipo</label>
-        <select id="av-tipo">
-          ${['aviso','urgente','comunicado'].map(t=>`<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group"><label>Local</label><input id="av-local" value="${escHtml(a.local||'')}" /></div>
-      <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||a.descricao||'')}</textarea></div>
-    </div>
-    ${renderPublishStatusActions('aviso', a)}`;
+  return modalV2HTML(`${a.id ? 'Editar' : 'Novo'} Aviso`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Título</label><input id="av-titulo" value="${escHtml(a.titulo||'')}" /></div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="av-tipo">
+            ${['aviso','urgente','comunicado'].map(t=>`<option ${(a.tipo||'')=== t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Local</label><input id="av-local" value="${escHtml(a.local||'')}" /></div>
+      </div>`, 'Título, tipo e local')}
+
+    ${secaoV2('Mensagem', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Descrição</label><textarea id="av-desc">${escHtml(a.desc||a.descricao||'')}</textarea></div>
+      </div>`, 'Texto exibido no app')}`,
+    publishFooterHTML('aviso', a), a);
 }
 
-function novoAviso()     { abrirModal(formAviso()); }
-function editarAviso(id) { abrirModal(formAviso(DB.getById('avisos', id))); }
+function novoAviso()     { abrirModalV2(formAviso()); }
+function editarAviso(id) { const a = DB.getById('avisos', id); abrirModalV2(formAviso(a), a); }
 
 async function salvarAviso(id) {
   const descricao = document.getElementById('av-desc').value.trim();
@@ -3734,21 +3789,25 @@ function pintarAcesso(estado) {
    INFO SIMPLES (infoJuridico, infoMunicipio) — edição de campos
    ============================================================ */
 function formAcesso(a = {}) {
-  return `
-    <h2 class="modal-title">${a.id ? 'Editar' : 'Novo'} Acesso Rápido</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="ac-titulo" value="${escHtml(a.titulo||'')}" /></div>
-      <div class="form-group full"><label>URL</label><input id="ac-url" value="${escHtml(a.url||'')}" placeholder="https://..." /></div>
-      <div class="form-group full">
-        <label>Ícone e cor do botão</label>
-        ${iconPickerHTML(a.icone, a.cor, 'acesso')}
-      </div>
-    </div>
-    ${renderPublishStatusActions('acesso', a)}`;
+  return modalV2HTML(`${a.id ? 'Editar' : 'Novo'} Acesso Rápido`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Título</label><input id="ac-titulo" value="${escHtml(a.titulo||'')}" /></div>
+        <div class="form-group full"><label>URL</label><input id="ac-url" value="${escHtml(a.url||'')}" placeholder="https://..." /></div>
+      </div>`, 'Como o atalho aparece no app')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do botão</label>
+          ${iconPickerCompactoHTML(a.icone, a.cor, 'acesso')}
+        </div>
+      </div>`, 'Ícone e destaque do atalho')}`,
+    publishFooterHTML('acesso', a), a);
 }
 
-function novoAcesso()     { abrirModal(formAcesso()); }
-function editarAcesso(id) { abrirModal(formAcesso(DB.getById('acessoRapido', id))); }
+function novoAcesso()     { abrirModalV2(formAcesso()); }
+function editarAcesso(id) { const a = DB.getById('acessoRapido', id); abrirModalV2(formAcesso(a), a); }
 
 async function salvarAcesso(id) {
   const { icone, cor } = getIconeCorValues('acesso');
@@ -3810,26 +3869,34 @@ function formInfoSimples(colecao, item = {}) {
       <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
-  return `
-    <h2 class="modal-title">${item.id ? 'Editar' : 'Novo'} Bloco</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título do bloco</label><input id="info-titulo" value="${escHtml(item.titulo||'')}" /></div>
-      <div class="form-group full">
-        <label>Badge <span style="font-weight:400;color:var(--text-muted)">(etiqueta no painel de detalhes)</span></label>
-          <input id="info-badge" value="${escHtml(item.badge||item.tag||'')}" placeholder="Ex: SMADER, Município, Prefeitura..." />
-        <span class="form-hint">Aparece como etiqueta colorida no topo do painel de detalhes.</span>
-      </div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(item.icone, item.cor, 'info')}
-      </div>
-      <div class="form-group full">
-        <label>Campos (label → valor)</label>
-        <div class="dyn-list" id="dyn-campos">${camposHTML}</div>
-        <button type="button" class="dyn-add" data-acao="add-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
-      </div>
-    </div>
-    ${renderPublishStatusActions('infoSimples', item, { colecao })}`;
+  return modalV2HTML(`${item.id ? 'Editar' : 'Novo'} Bloco`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group full"><label>Título do bloco</label><input id="info-titulo" value="${escHtml(item.titulo||'')}" /></div>
+        <div class="form-group full">
+          <label>Badge <span style="font-weight:400;color:var(--text-muted)">(etiqueta no painel de detalhes)</span></label>
+            <input id="info-badge" value="${escHtml(item.badge||item.tag||'')}" placeholder="Ex: SMADER, Município, Prefeitura..." />
+          <span class="form-hint">Aparece como etiqueta colorida no topo do painel de detalhes.</span>
+        </div>
+      </div>`, 'Título e etiqueta')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do card</label>
+          ${iconPickerCompactoHTML(item.icone, item.cor, 'info')}
+        </div>
+      </div>`, 'Ícone e destaque do card')}
+
+    ${secaoV2('Conteúdo', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Campos (label → valor)</label>
+          <div class="dyn-list" id="dyn-campos">${camposHTML}</div>
+          <button type="button" class="dyn-add" data-acao="add-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
+        </div>
+      </div>`, 'Cada linha vira uma informação no app')}`,
+    publishFooterHTML('infoSimples', item, { colecao }), item);
 }
 
 function addCampo() {
@@ -3864,8 +3931,8 @@ function toggleDynValorInput(checkboxEl) {
   }
 }
 
-function novoInfoSimples(colecao)    { abrirModal(formInfoSimples(colecao)); }
-function editarInfoSimples(col, id)  { abrirModal(formInfoSimples(col, DB.getById(col, id))); }
+function novoInfoSimples(colecao)    { abrirModalV2(formInfoSimples(colecao)); }
+function editarInfoSimples(col, id)  { const item = DB.getById(col, id); abrirModalV2(formInfoSimples(col, item), item); }
 
 async function salvarInfoSimples(colecao, id) {
   const list = document.getElementById('dyn-campos');
@@ -3946,23 +4013,31 @@ function formOrgao(o = {}) {
       <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
     </div>`).join('');
 
-  return `
-    <h2 class="modal-title">${o.id ? 'Editar' : 'Novo'} Órgão</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>Título / Sigla</label><input id="org-titulo" value="${escHtml(o.titulo||'')}" /></div>
-      <div class="form-group full"><label>Nome completo</label><input id="org-nome-completo" value="${escHtml(o.nome_completo||'')}" /></div>
-      <div class="form-group full"><label>Atribuição</label><textarea id="org-atribuicao">${escHtml(o.atribuicao||'')}</textarea></div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(o.icone, o.cor, 'orgao')}
-      </div>
-      <div class="form-group full">
-        <label>Campos de contato</label>
-        <div class="dyn-list" id="dyn-orgcampos">${camposHTML}</div>
-        <button type="button" class="dyn-add" data-acao="add-org-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
-      </div>
-    </div>
-    ${renderPublishStatusActions('orgao', o)}`;
+  return modalV2HTML(`${o.id ? 'Editar' : 'Novo'} Órgão`, `
+    ${secaoV2('Identificação', `
+      <div class="form-grid">
+        <div class="form-group"><label>Título / Sigla</label><input id="org-titulo" value="${escHtml(o.titulo||'')}" /></div>
+        <div class="form-group full"><label>Nome completo</label><input id="org-nome-completo" value="${escHtml(o.nome_completo||'')}" /></div>
+        <div class="form-group full"><label>Atribuição</label><textarea id="org-atribuicao">${escHtml(o.atribuicao||'')}</textarea></div>
+      </div>`, 'Sigla, nome e o que o órgão faz')}
+
+    ${secaoV2('Aparência', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Ícone e cor do card</label>
+          ${iconPickerCompactoHTML(o.icone, o.cor, 'orgao')}
+        </div>
+      </div>`, 'Ícone e destaque do card')}
+
+    ${secaoV2('Contato', `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Campos de contato</label>
+          <div class="dyn-list" id="dyn-orgcampos">${camposHTML}</div>
+          <button type="button" class="dyn-add" data-acao="add-org-campo"><i class="ph-bold ph-plus"></i> Adicionar campo</button>
+        </div>
+      </div>`, 'Telefone, e-mail, endereço...')}`,
+    publishFooterHTML('orgao', o), o);
 }
 
 function addOrgCampo() {
@@ -3979,8 +4054,8 @@ function addOrgCampo() {
   list.appendChild(div);
 }
 
-function novoOrgao()     { abrirModal(formOrgao()); }
-function editarOrgao(id) { abrirModal(formOrgao(DB.getById('infoOrgaos', id))); }
+function novoOrgao()     { abrirModalV2(formOrgao()); }
+function editarOrgao(id) { const o = DB.getById('infoOrgaos', id); abrirModalV2(formOrgao(o), o); }
 
 async function salvarOrgao(id) {
   const list = document.getElementById('dyn-orgcampos');
