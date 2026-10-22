@@ -1,5 +1,5 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-21
+Atualizado em: 2026-10-22
 Branch de trabalho: codex/fase3 (local, base main = d210411; main = producao; deploy c3f1c90 em 2026-10-20)
 
 =========================================================================
@@ -29,11 +29,58 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
-SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING EM ANDAMENTO
+SESSAO 2026-10-22 — BLOCO 12 / ONDA 1 ENTREGUE (T12.0.2 + Manuais/Processos)
 =========================================================================
 
-  - Nada de codigo foi alterado. O Bloco 12 comeca por design: T12.0.1
-    (spec) e T12.0.2 (prototipo estatico aprovado) ANTES de tocar em admin.js.
+  - T12.0.1 (spec) e T12.0.2 (prototipo estatico) APROVADOS pelo dono em
+    2026-10-22. Prototipo em
+    C:\Users\Usuario\.opencode\plan\2026-10-22-bloco12-prototipo.html.
+  - Escopo re-escopado na aprovacao (vale para o resto do Bloco 12):
+      T12.2 uploads  -> feedback minimo (spinner/"Enviando arquivo..."),
+                        sem progresso real e sem cancelar;
+      T12.4 vinculos -> seletor pesquisavel pai -> filho (sistema e etapa),
+                        sem criar sistema_id/processo_id em manuais;
+      T12.6 (novo)   -> listas (2 linhas, altura uniforme, acoes so com
+                        icone, cabecalho responsivo, Funcionarios sem Lotacao).
+  - ONDA 1 ENTREGUE em Manuais e Processos. Commits locais (sem push):
+      b2f50d0  feat(bloco 12): onda 1 do modal v2 (Manuais e Processos)
+      31c4d58  test(bloco 12): cobre o modal v2 de Manuais e Processos
+  - admin.html: CSS .modal-v2 (cabecalho, corpo rolavel, rodape fixo, secoes,
+    acordeao, chips de documento, seletor de arquivo com busca, barra de
+    alteracoes, spinner) + role=dialog/aria-modal e aria-live no toast.
+  - admin.js: abrirModal ganhou a variante v2 (foco no titulo, foco preso,
+    Esc, retorno do foco ao abridor); acordeao generico de passos/etapas
+    (arrastar, setas, renumeracao imediata, remover); seletor de icone
+    colapsavel; categoria com datalist; documentos com busca de arquivo +
+    chip do arquivo escolhido; salvar com spinner/erro junto ao botao; barra
+    de alteracoes (Descartar / Salvar como rascunho (sai do ar) / Continuar
+    editando); validacao inline do titulo.
+  - Ajustes pedidos na validacao visual do dono (entraram no b2f50d0):
+      * "Adicionar passo"/"Adicionar documento" full width com 14px de folga;
+      * contraste levemente maior so no modal v2 (--text-muted #8a9482 ->
+        #6a7461; --border #dde0d5 -> #ccd3c4), sem tocar em :root;
+      * icones e cores nao cortam mais (padding no painel aberto);
+      * 3 icones nao existiam no @phosphor-icons/web@2.1.1 e foram trocados:
+        ph-seedling -> ph-potted-plant, ph-broccoli -> ph-pepper,
+        ph-wheelbarrow -> ph-trolley. Catalogo agora com 63/63 validos.
+  - Modelo de dados inalterado: documentos continua string | {nome,
+    arquivo_id}. db.js e script.js nao foram tocados.
+  - Prova: npm run check exit 0 (207 testes, 0 falhas); checagem visual com
+    Playwright no modal real (sem login, injetando formManual) conferindo
+    chip, busca, estado vazio, troca Texto/Arquivo e payload {nome,
+    arquivo_id}; validacao manual do dono em 2026-10-22.
+  - PENDENTE: Onda 2 (Arquivos, Avisos, Funcionarios, Veiculos, Sistemas,
+    Servicos, Agenda, Escala de Ferias, Acesso Rapido, Informacoes 2x,
+    Orgaos) + T12.6 (listas/cabecalho). Nenhum outro modal usa .modal-v2.
+
+=========================================================================
+SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING (SPEC FECHADA)
+=========================================================================
+
+  - [contexto de 2026-10-21] Ate aqui nada de codigo havia sido alterado. O
+    Bloco 12 comecou por design: T12.0.1 (spec) e T12.0.2 (prototipo aprovado)
+    ANTES de tocar em admin.js. A Onda 1 foi entregue em 2026-10-22 (secao
+    acima).
   - Relato do dono: modais sem resposta visual ao clique ("parece imagem");
     modal percebido como "atropelo" (campos com o mesmo peso, sem secoes com
     inicio/fim); seletor de icone ocupa espaco demais; listas as vezes
@@ -52,16 +99,17 @@ SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING EM ANDAMENTO
       5. documentos: manter a estrutura, esconder o nome quando tipo =
          Arquivo, normalizar o select Texto/Arquivo;
       6. observacoes: mantidas como estao.
-  - Achados de codigo verificados (NAO corrigidos):
-      * apagar o passo 4 de 5 deixa rotulos 1,2,3,5 na tela; o save
-        compacta para 1,2,3,4; reabrir mostra 1,2,3,4;
-      * apagar e clicar em "Adicionar passo" gera rotulo duplicado (dois "5");
-      * toggleDocTipo so desabilita o nome do documento, nao esconde;
-      * select Texto/Arquivo tem estilo inline proprio (120px, padding 6).
-  - Proximas perguntas (retomar exatamente por aqui): P6 selects dependentes
-    / T12.4 (nao existe sistema_id/processo_id, so `categoria`); P7 estados
-    do Salvar; P8 uploads; P9 fechar modal com alteracoes; P10 listas que
-    quebram linha; P11 nivel de acessibilidade.
+  - Achados de codigo verificados em 2026-10-21:
+      * apagar o passo 4 de 5 deixava rotulos 1,2,3,5 -> RESOLVIDO na Onda 1;
+      * apagar e clicar em "Adicionar passo" gerava rotulo duplicado -> RESOLVIDO;
+      * toggleDocTipo so desabilitava o nome do documento -> RESOLVIDO (agora
+        alterna campo de nome e chip do arquivo);
+      * select Texto/Arquivo com estilo inline proprio -> RESOLVIDO em Manuais;
+        o de Servicos continua inline (entra na Onda 2).
+  - Proximas perguntas (respondidas em 2026-10-22 na spec aprovada): P6
+    selects dependentes / T12.4 (nao existe sistema_id/processo_id, so
+    `categoria`); P7 estados do Salvar; P8 uploads; P9 fechar modal com
+    alteracoes; P10 listas que quebram linha; P11 nivel de acessibilidade.
   - Detalhe completo em v2_plano_refatoracao.md, secao T12.0.1.
   - Push autorizado explicitamente pelo dono nesta sessao.
 

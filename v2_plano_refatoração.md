@@ -1628,9 +1628,9 @@ Busca e página **persistem** ao trocar de módulo e voltar (M3) — verificaç�
 
 ### T12.0 — Design (obrigatório)
 
-- [ ] **T12.0.1 — Brainstorming + spec** *(em andamento: 5 perguntas respondidas em 2026-10-21)*
+- [x] **T12.0.1 — Brainstorming + spec** *(fechada em 2026-10-22)*
   Cobrir: abertura do modal, estados (`idle → salvando → salvo → erro`), anexos com progresso, selects dependentes, validação por campo, cancelar com alterações pendentes.
-- [ ] **T12.0.2 — Protótipo HTML estático** aprovado pelo dono **antes** de tocar em `admin.js`.
+- [x] **T12.0.2 — Protótipo HTML estático** aprovado pelo dono **antes** de tocar em `admin.js` *(aprovado em 2026-10-22; arquivo em `.opencode/plan/2026-10-22-bloco12-prototipo.html`)*.
 
 #### Registro do brainstorming — 2026-10-21 (retomar daqui)
 
@@ -1687,13 +1687,23 @@ incomoda mesmo funcionando.
 Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 (T12.0.2)** — nenhum código de `admin.js` antes da aprovação do dono.
 
+### Registro de execução — 2026-10-22 (Onda 1)
+
+**Aprovado:** T12.0.1 (spec) e T12.0.2 (protótipo estático).
+**Escopo re-escopado na aprovação:** T12.2 (feedback mínimo, sem progresso real e sem cancelar), T12.4 (seletor pesquisável pai → filho, sem criar campo em `manuais`) e **T12.6 (novo)**: listas e cabeçalho.
+**Entregue — Manuais e Processos:** commits `b2f50d0` (onda 1) e `31c4d58` (testes). Modal em seções com cabeçalho e rodapé fixos, acordeão de passos/etapas (arrastar, setas, renumeração), seletor de ícone colapsável, categoria com `datalist`, documentos com busca de arquivo + chip do arquivo escolhido, salvar com spinner/erro junto ao botão, barra de alterações (`Descartar` / `Salvar como rascunho (sai do ar)` / `Continuar editando`), validação inline do título, foco preso, `Esc`, `aria-live`, contraste levemente maior no modal e botões de adicionar full width.
+**Modelo de dados:** inalterado. `documentos` continua `string | {nome, arquivo_id}`; `db.js` e `script.js` não foram tocados.
+**Prova:** `npm run check` exit 0 (207 testes, 0 falhas) · checagem visual com Playwright no modal real · validação manual do dono.
+**Pendente:** Onda 2 (Arquivos, Avisos, Funcionários, Veículos, Sistemas, Serviços, Agenda, Escala de Férias, Acesso Rápido, Informações ×2 e Órgãos) + T12.6. Nenhum outro modal usa `.modal-v2` ainda.
+
 ### Tarefas de implementação (só depois da aprovação)
 
-- [ ] **T12.1 — Modal com máquina de estados** — não permite duplo envio; progresso visível em < 200 ms; erro mantém o formulário com os dados.
-- [ ] **T12.2 — Uploads com progresso e cancelamento** — arquivo de 10 MB mostra progresso real; cancelar libera o formulário; falha permite tentar de novo sem reescolher.
-- [ ] **T12.3 — Feedback global de ação** — toda gravação emite estado visível em < 200 ms e resultado explícito (não depender de toast de 3 s).
-- [ ] **T12.4 — Selects dependentes pesquisáveis** — sistema → processo → manual, com teclado e busca; trocar o pai limpa os filhos de forma previsível.
-- [ ] **T12.5 — Acessibilidade do admin** — foco preso no modal, `Esc` fecha, `aria-live` nos toasts, labels associados, navegação completa por teclado.
+- [ ] **T12.1 — Modal com máquina de estados** — *(onda 1 feita em Manuais/Processos; falta onda 2)* não permite duplo envio; resposta visível em < 200 ms; erro mantém o formulário com os dados.
+- [ ] **T12.2 — Uploads com feedback mínimo** — *re-escopado:* botão vira spinner com `Enviando arquivo…` → `Salvando…`, sem % e sem cancelar; falha permite tentar de novo. *(onda 1 feita em Manuais)*
+- [ ] **T12.3 — Feedback global de ação** — *(onda 1 feita em Manuais/Processos)* toda gravação emite estado visível e resultado explícito (não depender de toast de 3 s).
+- [ ] **T12.4 — Vínculos pesquisáveis pai → filho** — *re-escopado:* `sistema` escolhe processos e manuais com busca; `processo` (etapa) escolhe manuais com busca; sem novo campo em `manuais`. *(etapa feita; falta sistema)*
+- [ ] **T12.5 — Acessibilidade do admin** — *(modal v2 feito)* foco preso, `Esc`, retorno de foco, `aria-live`, labels associados e reordenação por teclado; falta varrer as 13 listas.
+- [ ] **T12.6 — Listas e cabeçalho** — células em até 2 linhas com `title`, altura de linha uniforme, ações só com ícone (lápis/olho/lixeira) com `aria-label`, cabeçalho em duas linhas na tela pequena (título + "Novo" / busca + paginação) e Funcionários sem a coluna "Lotação".
 
 ### Validação (prova)
 - roteiro de teste manual por tarefa, com captura antes/depois
@@ -1701,12 +1711,13 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 - checklist de teclado (Tab/Shift+Tab/Esc/Enter) executado no formulário completo
 
 ### Checklist
-- [ ] protótipo aprovado antes do código
-- [ ] duplo envio bloqueado
-- [ ] progresso de upload real
-- [ ] erro preserva dados
-- [ ] feedback em < 200 ms
-- [ ] teclado completo
+- [x] protótipo aprovado antes do código
+- [x] duplo envio bloqueado (modal v2)
+- [ ] progresso de upload real — re-escopado para feedback mínimo (T12.2)
+- [x] erro preserva dados (modal v2)
+- [x] feedback em < 200 ms (modal v2)
+- [ ] teclado completo (modal v2 ok; listas pendentes)
+- [ ] listas normalizadas (T12.6)
 
 ---
 
