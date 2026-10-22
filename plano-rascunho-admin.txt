@@ -29,6 +29,44 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-22 — BLOCO 12 / ONDA 2 + T12.6 ENTREGUES (aguardando push)
+=========================================================================
+
+  - ONDA 2 concluida: os 11 modais restantes usam a anatomia do modal v2
+    (titulo, secoes, rodape fixo, barra de alteracoes, icone compacto).
+    Modais: Arquivo, Aviso, Acesso Rapido, Informacoes (2x), Orgaos,
+    Funcionario, Veiculo, Sistema, Servico, Evento e Ferias.
+    "Confirmar exclusao" continua no modal legado (intencional).
+  - Helpers compartilhados em admin.js: abrirModalV2, barraAlteracoesHTML,
+    secaoV2 e modalV2HTML; publishFooterHTML ganhou 3o parametro opcional
+    (dadosExtras) para o data-colecao de infoSimples.
+  - T12.6 aplicado nas 13 tabelas:
+      * texto principal com clamp de 2 linhas + title com o texto completo;
+      * altura uniforme das linhas (56px) e badge em uma linha;
+      * acoes so com icone (lapis/lixeira), com title e aria-label;
+      * status inline virou olho aberto/fechado mantendo o switch;
+      * cabecalho de secao em 2 linhas abaixo de 899px (titulo + Novo /
+        busca + paginacao);
+      * Funcionarios sem a coluna "Lotacao".
+  - Fallback 'ï¿½' (em dash corrompido em commit antigo) trocado por '—'
+    nas listas de Avisos e Agenda.
+  - Contratos preservados: DB.*, publish_status, IDs/classes/chaves e o
+    formato documentos string | {nome, arquivo_id}. db.js e script.js
+    intocados.
+  - Commits locais (sem push):
+      392af0a  feat(bloco 12): aplica o modal v2 em Arquivos, Avisos, Acesso, Informacoes e Orgaos
+      53b6d8d  feat(bloco 12): aplica o modal v2 em Funcionarios, Veiculos, Sistemas, Servicos, Eventos e Ferias
+      376780b  feat(bloco 12): normaliza listas e cabecalho do admin (T12.6)
+  - Prova: npm run check exit 0 (207 testes, 0 falhas); screenshots
+    Playwright em 1280, 820 e 430 (cabecalho em 2 linhas no 820; no 430
+    fica em 3 por causa da sidebar fixa de 220px, limitacao pre-existente);
+    nenhum erro de console. Sem login real (Supabase indisponivel), o botao
+    de excluir nao aparece por permissao - conferido no codigo.
+  - PENDENTE do Bloco 12: T12.2 (feedback de upload, spinner) e T12.4
+    (seletor pesquisavel pai -> filho em sistema/etapa). Os multi-selects
+    atuais seguem como estavam.
+
+=========================================================================
 SESSAO 2026-10-22 — BLOCO 12 / ONDA 1 ENTREGUE (T12.0.2 + Manuais/Processos)
 =========================================================================
 
@@ -69,9 +107,8 @@ SESSAO 2026-10-22 — BLOCO 12 / ONDA 1 ENTREGUE (T12.0.2 + Manuais/Processos)
     Playwright no modal real (sem login, injetando formManual) conferindo
     chip, busca, estado vazio, troca Texto/Arquivo e payload {nome,
     arquivo_id}; validacao manual do dono em 2026-10-22.
-  - PENDENTE: Onda 2 (Arquivos, Avisos, Funcionarios, Veiculos, Sistemas,
-    Servicos, Agenda, Escala de Ferias, Acesso Rapido, Informacoes 2x,
-    Orgaos) + T12.6 (listas/cabecalho). Nenhum outro modal usa .modal-v2.
+  - PENDENTE na epoca: Onda 2 + T12.6. Entregues em 2026-10-22 (ver secao
+    "ONDA 2 + T12.6 ENTREGUES" acima).
 
 =========================================================================
 SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING (SPEC FECHADA)

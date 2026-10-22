@@ -1694,16 +1694,24 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **Entregue — Manuais e Processos:** commits `b2f50d0` (onda 1) e `31c4d58` (testes). Modal em seções com cabeçalho e rodapé fixos, acordeão de passos/etapas (arrastar, setas, renumeração), seletor de ícone colapsável, categoria com `datalist`, documentos com busca de arquivo + chip do arquivo escolhido, salvar com spinner/erro junto ao botão, barra de alterações (`Descartar` / `Salvar como rascunho (sai do ar)` / `Continuar editando`), validação inline do título, foco preso, `Esc`, `aria-live`, contraste levemente maior no modal e botões de adicionar full width.
 **Modelo de dados:** inalterado. `documentos` continua `string | {nome, arquivo_id}`; `db.js` e `script.js` não foram tocados.
 **Prova:** `npm run check` exit 0 (207 testes, 0 falhas) · checagem visual com Playwright no modal real · validação manual do dono.
-**Pendente:** Onda 2 (Arquivos, Avisos, Funcionários, Veículos, Sistemas, Serviços, Agenda, Escala de Férias, Acesso Rápido, Informações ×2 e Órgãos) + T12.6. Nenhum outro modal usa `.modal-v2` ainda.
+**Pendente na época:** Onda 2 (Arquivos, Avisos, Funcionários, Veículos, Sistemas, Serviços, Agenda, Escala de Férias, Acesso Rápido, Informações ×2 e Órgãos) + T12.6 — **entregues em 2026-10-22** (ver registro abaixo).
+
+### Registro de execução — 2026-10-22 (Onda 2 + T12.6)
+
+**Entregue — Onda 2:** commits `392af0a` (Arquivos, Avisos, Acesso Rápido, Informações ×2 e Órgãos) e `53b6d8d` (Funcionários, Veículos, Sistemas, Serviços, Eventos e Férias). Os 11 formulários restantes passaram a usar `abrirModalV2` + `secaoV2` + `publishFooterHTML` + seletor de ícone compacto. O modal "Confirmar exclusão" continua no estilo legado (intencional). `publishFooterHTML` ganhou um 3º parâmetro opcional (`dadosExtras`) para preservar o `data-colecao` de `infoSimples`.
+**Entregue — T12.6:** commit `376780b`. Nas 13 tabelas: texto principal com clamp de 2 linhas + `title`, altura uniforme (56 px), `badge` em uma linha, ações só com ícone (lápis/lixeira) com `title` e `aria-label`, status inline com olho aberto/fechado mantendo o switch, cabeçalho de seção em duas linhas abaixo de 899 px e Funcionários sem a coluna "Lotação".
+**Correção de texto:** o fallback `'ï¿½'` (em dash corrompido em commit antigo) foi trocado por `'—'` nas listas de Avisos e Agenda.
+**Prova:** `npm run check` exit 0 (207 testes, 0 falhas) · screenshots Playwright em 1280, 820 e 430 · nenhum erro de console.
+**Pendente:** T12.2 (feedback de upload) e T12.4 (seletor pesquisável pai → filho em `sistema`; `processo` já feito).
 
 ### Tarefas de implementação (só depois da aprovação)
 
-- [ ] **T12.1 — Modal com máquina de estados** — *(onda 1 feita em Manuais/Processos; falta onda 2)* não permite duplo envio; resposta visível em < 200 ms; erro mantém o formulário com os dados.
+- [x] **T12.1 — Modal com máquina de estados** — *(onda 1 em Manuais/Processos; onda 2 nos 11 formulários restantes)* não permite duplo envio; resposta visível em < 200 ms; erro mantém o formulário com os dados.
 - [ ] **T12.2 — Uploads com feedback mínimo** — *re-escopado:* botão vira spinner com `Enviando arquivo…` → `Salvando…`, sem % e sem cancelar; falha permite tentar de novo. *(onda 1 feita em Manuais)*
-- [ ] **T12.3 — Feedback global de ação** — *(onda 1 feita em Manuais/Processos)* toda gravação emite estado visível e resultado explícito (não depender de toast de 3 s).
+- [x] **T12.3 — Feedback global de ação** — *(onda 1 em Manuais/Processos e onda 2 nos demais)* toda gravação emite estado visível e resultado explícito (não depender de toast de 3 s).
 - [ ] **T12.4 — Vínculos pesquisáveis pai → filho** — *re-escopado:* `sistema` escolhe processos e manuais com busca; `processo` (etapa) escolhe manuais com busca; sem novo campo em `manuais`. *(etapa feita; falta sistema)*
 - [ ] **T12.5 — Acessibilidade do admin** — *(modal v2 feito)* foco preso, `Esc`, retorno de foco, `aria-live`, labels associados e reordenação por teclado; falta varrer as 13 listas.
-- [ ] **T12.6 — Listas e cabeçalho** — células em até 2 linhas com `title`, altura de linha uniforme, ações só com ícone (lápis/olho/lixeira) com `aria-label`, cabeçalho em duas linhas na tela pequena (título + "Novo" / busca + paginação) e Funcionários sem a coluna "Lotação".
+- [x] **T12.6 — Listas e cabeçalho** — *(feito)* células em até 2 linhas com `title`, altura de linha uniforme, ações só com ícone (lápis/olho/lixeira) com `aria-label`, cabeçalho em duas linhas na tela pequena (título + "Novo" / busca + paginação) e Funcionários sem a coluna "Lotação".
 
 ### Validação (prova)
 - roteiro de teste manual por tarefa, com captura antes/depois
@@ -1717,7 +1725,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 - [x] erro preserva dados (modal v2)
 - [x] feedback em < 200 ms (modal v2)
 - [ ] teclado completo (modal v2 ok; listas pendentes)
-- [ ] listas normalizadas (T12.6)
+- [x] listas normalizadas (T12.6)
 
 ---
 
