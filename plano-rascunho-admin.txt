@@ -14,6 +14,8 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
   - EXCECAO AUTORIZADA em 2026-10-21: o dono pediu push de codex/fase3
     (commits do Bloco 11 + registro do Bloco 12). Fora disso, push segue
     proibido sem pedido explicito.
+  - EXCECAO AUTORIZADA em 2026-10-22: o dono pediu push de codex/fase3
+    (Onda 1, Onda 2, T12.6, ajustes pos-entrega e este registro).
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
@@ -29,7 +31,47 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
-SESSAO 2026-10-22 — BLOCO 12 / ONDA 2 + T12.6 ENTREGUES (aguardando push)
+SESSAO 2026-10-22 — BLOCO 12 / AJUSTES POS-ONDA 2 (modal, listas, titulo)
+=========================================================================
+
+  - Correcao do falso "Voce tem alteracoes nao salvas" apos salvar:
+    salvarComFeedback zera _modalV2.sujo somente depois de DB.save com
+    sucesso; em erro o modal continua aberto e sujo. Um unico ponto cobre
+    as 13 telas. Testes novos: sucesso fecha; erro mantem o aviso.
+  - Centralizacao vertical das celulas de 1 linha: removido o min-height
+    de .td-truncate e adicionado vertical-align: middle nos td. A altura
+    uniforme de 56px foi preservada.
+  - Largura da coluna de titulo: de max-width 260px para responsivo.
+    A primeira tentativa (34vw/560px) foi rejeitada pelo dono; valor
+    final: clamp(180px, 28vw, 400px) + min-width: 0. URLs de Sistemas e
+    Acoes seguem com .td-truncate--curto (min(260px, 30vw)).
+    Medido: 1920=400px, 1366=382px, 1024=287px; o titulo de exemplo
+    "Processo de Solicitacao de Corte ou Poda de Arvore" fica em 1 linha
+    a partir de 1024; o titulo mais longo quebra em 2 linhas em 1366.
+  - Commits desta leva (enviados ao remoto nesta sessao, a pedido do dono):
+      6df52a1  fix(bloco 12): fecha o modal apos salvar e centraliza as celulas das listas
+      fea2a21  style(admin): torna a largura das colunas de titulo responsiva
+      e11d9a0  style(admin): ajusta largura do titulo para meio termo
+  - Prova: npm run check exit 0 (209 testes, 0 falhas); Playwright em
+    1920/1366/1024/768/390; sem erros de console. Em 390 o admin segue
+    com limitacao pre-existente de layout (secao estreita + rolagem
+    horizontal da tabela).
+  - PENDENTE desta sessao (nao implementado):
+      1. Validacao inline dos campos obrigatorios nas 11 telas da Onda 2:
+         hoje so Manuais e Processos usam validarObrigatorioV2. As demais
+         apenas mostram toast, sem foco, borda vermelha ou mensagem.
+         Plano: generalizar o helper para .form-group, criar a mensagem
+         sob demanda, CSS .form-group.field-error e trocar os toast.
+      2. T12.2 - feedback minimo de upload (spinner "Enviando arquivo..."
+         -> "Salvando...", sem progresso real e sem cancelar).
+      3. T12.4 - seletor pesquisavel pai -> filho (sistema: processos e
+         manuais; etapa: manuais).
+      4. T12.5 - acessibilidade das listas (modal v2 ja feito).
+  - O bloco "ONDA 2 + T12.6" abaixo segue valido; esta secao complementa
+    os ajustes pos-entrega.
+
+=========================================================================
+SESSAO 2026-10-22 — BLOCO 12 / ONDA 2 + T12.6 ENTREGUES (push autorizado em 2026-10-22)
 =========================================================================
 
   - ONDA 2 concluida: os 11 modais restantes usam a anatomia do modal v2
