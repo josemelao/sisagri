@@ -389,37 +389,478 @@ function toast(msg, tipo = 'success') {
  * Em falha mostra o motivo real e mantem os dados na tela (nada de "salvo"
  * otimista).
  */
-async function salvarComFeedback(colecao, id, dados) {
+async function salvarComFeedback(colecao, id, dados, opcoes = {}) {
   try {
     await DB.save(colecao, id, dados);
     return true;
   } catch (erro) {
-    toast(`Nao foi possivel salvar: ${erro?.message || 'falha desconhecida'}`, 'error');
+    const mensagem = `Nao foi possivel salvar: ${erro?.message || 'falha desconhecida'}`;
+    if (typeof opcoes.aoErro === 'function') opcoes.aoErro(mensagem);
+    else toast(mensagem, 'error');
     return false;
   }
 }
 
 let _modalCloseOnBackdrop = false;
+let _modalOpener = null;
+let _modalV2 = null;
+let _seqItemV2 = 0;
+
+function novoIdItemV2() {
+  _seqItemV2 += 1;
+  return `i${_seqItemV2}`;
+}
 
 function abrirModal(html, options = {}) {
   _modalCloseOnBackdrop = !!options.closeOnBackdrop;
+  _modalOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const box = document.getElementById('modal-box');
+  const v2 = !!options.v2;
+  box.classList.toggle('modal-box--v2', v2);
   document.getElementById('modal-content').innerHTML = html;
-  document.getElementById('modal').classList.add('open');
+  const modalEl = document.getElementById('modal');
+  modalEl.classList.add('open');
+  if (v2) modalEl.setAttribute('aria-labelledby', 'modal-title');
+  else modalEl.removeAttribute('aria-labelledby');
+  _modalV2 = v2
+    ? { sujo: false, itemPublicado: !!options.itemPublicado }
+    : null;
+  if (v2) inicializarModalV2();
 }
 
-function fecharModal() {
+function fecharModal(force = false) {
+  if (!force && _modalV2 && _modalV2.sujo) {
+    mostrarBarraAlteracoes();
+    return;
+  }
+  const tinhaV2 = !!_modalV2;
   _modalCloseOnBackdrop = false;
+  _modalV2 = null;
+  document.getElementById('modal-box').classList.remove('modal-box--v2');
   document.getElementById('modal').classList.remove('open');
   document.getElementById('modal-content').innerHTML = '';
+  if (tinhaV2 && _modalOpener && document.contains(_modalOpener)) _modalOpener.focus();
+  _modalOpener = null;
+}
+
+/**
+ * Comportamentos exclusivos dos formularios v2 (Manuais/Processos na onda 1):
+ * foco no titulo, acordeoes, estado "sujo" e barra de alteracoes.
+ */
+function inicializarModalV2() {
+  document.querySelectorAll('#modal-content .step-list[data-acordeao]').forEach((list) => {
+    iniciarAcordeaoV2(list);
+  });
+  setTimeout(() => {
+    const titulo = document.getElementById('modal-title');
+    if (titulo) titulo.focus();
+  }, 0);
+}
+
+function marcarSujoV2() {
+  if (!_modalV2) return;
+  _modalV2.sujo = true;
+}
+
+function mostrarBarraAlteracoes() {
+  const barra = document.getElementById('unsaved-bar');
+  if (barra) barra.classList.add('visible');
+}
+
+function esconderBarraAlteracoes() {
+  const barra = document.getElementById('unsaved-bar');
+  if (barra) barra.classList.remove('visible');
+}
+
+function descartarAlteracoes() {
+  fecharModal(true);
+}
+
+function salvarComoRascunho() {
+  const toggle = document.getElementById('publish-status-toggle');
+  if (toggle) {
+    toggle.checked = false;
+    handlePublishStatusToggle(toggle);
+  }
+  esconderBarraAlteracoes();
+  const btn = document.querySelector('#modal-content [data-acao="salvar-modal"]');
+  if (btn) btn.click();
+}
+
+function validarObrigatorioV2(inputId, mensagem) {
+  const input = document.getElementById(inputId);
+  if (!input) return true;
+  const field = input.closest('.field');
+  const msg = field ? field.querySelector('.field-error-msg') : null;
+  if (msg && !msg.id) msg.id = `${inputId}-erro`;
+  if (input.value.trim()) {
+    if (field) field.classList.remove('field-error');
+    input.removeAttribute('aria-invalid');
+    if (msg) input.removeAttribute('aria-describedby');
+    return true;
+  }
+  if (field) {
+    field.classList.add('field-error');
+    if (msg) msg.textContent = mensagem;
+  }
+  input.setAttribute('aria-invalid', 'true');
+  if (msg) input.setAttribute('aria-describedby', msg.id);
+  input.focus();
+  return false;
+}
+
+function iniciarSalvamentoV2() {
+  const btn = document.querySelector('#modal-content [data-acao="salvar-modal"]');
+  if (!btn || btn.disabled) return null;
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.classList.add('is-loading');
+  btn.innerHTML = '<span class="spinner"></span> Salvando…';
+  return {
+    etapa(texto) {
+      btn.innerHTML = `<span class="spinner"></span> ${escHtml(texto)}`;
+    },
+    restaurar() {
+      btn.disabled = false;
+      btn.classList.remove('is-loading');
+      btn.innerHTML = original;
+    },
+  };
+}
+
+function mostrarErroSalvar(mensagem) {
+  const box = document.getElementById('save-error');
+  if (box) {
+    box.textContent = mensagem;
+    box.classList.add('visible');
+  }
+  toast(mensagem, 'error');
 }
 
 document.getElementById('modal').addEventListener('click', (e) => {
   if (_modalCloseOnBackdrop && e.target === document.getElementById('modal')) fecharModal();
 });
 
+const _modalContentEl = document.getElementById('modal-content');
+if (_modalContentEl) {
+  _modalContentEl.addEventListener('input', (e) => {
+    if (!_modalV2) return;
+    if (e.target.classList && e.target.classList.contains('doc-arquivo-busca')) {
+      filtrarArquivosDoc(e.target);
+      return;
+    }
+    if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
+    marcarSujoV2();
+    const boxErro = document.getElementById('save-error');
+    if (boxErro) boxErro.classList.remove('visible');
+    const field = e.target.closest && e.target.closest('.field-error');
+    if (field) {
+      field.classList.remove('field-error');
+      if (e.target.removeAttribute) {
+        e.target.removeAttribute('aria-invalid');
+        e.target.removeAttribute('aria-describedby');
+      }
+    }
+  });
+
+  _modalContentEl.addEventListener('change', (e) => {
+    if (!_modalV2) return;
+    if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
+    if (e.target.classList && e.target.classList.contains('doc-arquivo-busca')) return;
+    marcarSujoV2();
+  });
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') fecharModal();
+  if (e.key === 'Escape') {
+    if (_modalV2 && _modalV2.sujo) {
+      const barra = document.getElementById('unsaved-bar');
+      if (barra && barra.classList.contains('visible')) esconderBarraAlteracoes();
+      else mostrarBarraAlteracoes();
+      return;
+    }
+    fecharModal();
+    return;
+  }
+
+  if (e.key === 'Tab' && _modalV2) {
+    const box = document.getElementById('modal-box');
+    const focaveis = Array.from(box.querySelectorAll(
+      'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    )).filter((el) => el.offsetParent !== null);
+    if (!focaveis.length) return;
+    const primeiro = focaveis[0];
+    const ultimo = focaveis[focaveis.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) {
+      e.preventDefault();
+      ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault();
+      primeiro.focus();
+    }
+  }
 });
+
+/* ---------- acordeao generico de passos/etapas ---------- */
+const ACORDEAO_V2 = {
+  passo: {
+    rotulo: (n) => `Texto do passo ${n}`,
+    resumo: '.step-texto',
+    vazio: 'Passo sem texto',
+    hint: 'passos-hint',
+    empty: 'passos-empty',
+    nome: 'passo',
+  },
+  etapa: {
+    rotulo: (n) => `Título da etapa ${n}`,
+    resumo: '.etapa-titulo',
+    vazio: 'Etapa sem título',
+    hint: 'etapas-hint',
+    empty: 'etapas-empty',
+    nome: 'etapa',
+  },
+};
+
+function iniciarAcordeaoV2(list) {
+  const cfg = ACORDEAO_V2[list.dataset.acordeao];
+  if (!cfg) return;
+
+  function itens() {
+    return Array.from(list.querySelectorAll('.step'));
+  }
+
+  function atualizarHint() {
+    const hint = document.getElementById(cfg.hint);
+    if (!hint) return;
+    const n = itens().length;
+    hint.textContent = `${n} ${cfg.nome}${n === 1 ? '' : 's'} · arraste para reordenar`;
+  }
+
+  function renumerar() {
+    itens().forEach((el, i) => {
+      const num = el.querySelector('.step-num');
+      if (num) num.textContent = i + 1;
+      const rotulo = el.querySelector('.step-rotulo');
+      if (rotulo) rotulo.textContent = cfg.rotulo(i + 1);
+      const up = el.querySelector('[data-mover="-1"]');
+      const down = el.querySelector('[data-mover="1"]');
+      if (up) {
+        up.disabled = i === 0;
+        up.setAttribute('aria-label', `Mover ${cfg.nome} ${i + 1} para cima`);
+      }
+      if (down) {
+        down.disabled = i === itens().length - 1;
+        down.setAttribute('aria-label', `Mover ${cfg.nome} ${i + 1} para baixo`);
+      }
+      const rem = el.querySelector('[data-remover-item]');
+      if (rem) rem.setAttribute('aria-label', `Remover ${cfg.nome} ${i + 1}`);
+    });
+    const empty = cfg.empty ? document.getElementById(cfg.empty) : null;
+    if (empty) empty.hidden = itens().length > 0;
+    atualizarHint();
+  }
+
+  function abrir(el, foco) {
+    itens().forEach((outro) => {
+      const aberto = outro === el;
+      outro.classList.toggle('open', aberto);
+      const head = outro.querySelector('.step-head');
+      if (head) head.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+    });
+    if (foco) {
+      const campo = el.querySelector(foco);
+      if (campo) setTimeout(() => campo.focus(), 0);
+    }
+  }
+
+  function alternar(el) {
+    if (el.classList.contains('open')) {
+      el.classList.remove('open');
+      const head = el.querySelector('.step-head');
+      if (head) head.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    abrir(el);
+  }
+
+  function mover(el, delta) {
+    const lista = itens();
+    const idx = lista.indexOf(el);
+    const novo = idx + delta;
+    if (idx < 0 || novo < 0 || novo >= lista.length) return;
+    const referencia = delta < 0 ? lista[novo] : lista[novo].nextElementSibling;
+    list.insertBefore(el, referencia);
+    renumerar();
+    marcarSujoV2();
+  }
+
+  function remover(el) {
+    el.remove();
+    renumerar();
+    marcarSujoV2();
+  }
+
+  list.addEventListener('click', (e) => {
+    if (e.target.closest('.drag-handle')) return;
+    const moverBtn = e.target.closest('[data-mover]');
+    if (moverBtn) {
+      e.stopPropagation();
+      mover(moverBtn.closest('.step'), Number(moverBtn.dataset.mover));
+      return;
+    }
+    const removerBtn = e.target.closest('[data-remover-item]');
+    if (removerBtn) {
+      e.stopPropagation();
+      remover(removerBtn.closest('.step'));
+      return;
+    }
+    const head = e.target.closest('.step-head');
+    if (head) alternar(head.closest('.step'));
+  });
+
+  list.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const head = e.target.closest('.step-head');
+    if (!head || e.target !== head) return;
+    e.preventDefault();
+    alternar(head.closest('.step'));
+  });
+
+  list.addEventListener('input', (e) => {
+    const busca = e.target.closest('.etapa-manuais-busca');
+    if (busca) {
+      const select = busca.closest('.field')?.querySelector('.etapa-manuais');
+      const termo = normalizeSearchText(busca.value);
+      if (select) {
+        Array.from(select.options).forEach((opt) => {
+          opt.hidden = !!termo && !normalizeSearchText(opt.textContent).includes(termo);
+        });
+      }
+      return;
+    }
+    const campo = e.target.closest(cfg.resumo);
+    if (!campo) return;
+    const el = campo.closest('.step');
+    const resumo = el.querySelector('.step-summary');
+    const texto = campo.value.trim();
+    resumo.textContent = texto || cfg.vazio;
+    resumo.classList.toggle('empty', !texto);
+    marcarSujoV2();
+  });
+
+  /* arraste: habilita apenas pela alca, para nao atrapalhar selecao de texto */
+  list.addEventListener('mousedown', (e) => {
+    const el = e.target.closest('.step');
+    if (!el) return;
+    el.draggable = !!e.target.closest('.drag-handle');
+  });
+
+  list.addEventListener('dragstart', (e) => {
+    const el = e.target.closest('.step');
+    if (!el) return;
+    el.classList.add('dragging');
+    el._ordemAntes = itens().map((item) => item.dataset.id).join(',');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', el.dataset.id || ''); } catch (erro) { /* ignore */ }
+  });
+
+  list.addEventListener('dragover', (e) => {
+    const arrastado = list.querySelector('.step.dragging');
+    if (!arrastado) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const cartoes = itens();
+    if (!cartoes.length) return;
+    let alvo = e.target.closest('.step');
+    let depois;
+    if (alvo) {
+      const r = alvo.getBoundingClientRect();
+      depois = (e.clientY - r.top) > r.height / 2;
+    } else {
+      let melhor = null;
+      let dist = Infinity;
+      cartoes.forEach((el) => {
+        const box = el.getBoundingClientRect();
+        const d = e.clientY < box.top ? box.top - e.clientY
+          : (e.clientY > box.bottom ? e.clientY - box.bottom : 0);
+        if (d < dist) { dist = d; melhor = el; }
+      });
+      alvo = melhor;
+      if (!alvo) return;
+      const rb = alvo.getBoundingClientRect();
+      depois = e.clientY > rb.top + rb.height / 2;
+    }
+    if (alvo === arrastado) return;
+    const referencia = depois ? alvo.nextElementSibling : alvo;
+    if (referencia === arrastado) return;
+    if (!depois && alvo.previousElementSibling === arrastado) return;
+
+    const elementos = itens();
+    const antes = elementos.map((el) => el.getBoundingClientRect().top);
+    list.insertBefore(arrastado, referencia);
+    elementos.forEach((el, i) => {
+      if (el === arrastado) return;
+      const dy = antes[i] - el.getBoundingClientRect().top;
+      if (!dy) return;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${dy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform .16s ease';
+        el.style.transform = '';
+      });
+    });
+    renumerar();
+  });
+
+  list.addEventListener('drop', (e) => {
+    if (list.querySelector('.step.dragging')) e.preventDefault();
+  });
+
+  list.addEventListener('dragend', () => {
+    const arrastado = list.querySelector('.step.dragging');
+    if (arrastado) {
+      arrastado.classList.remove('dragging');
+      const depois = itens().map((el) => el.dataset.id).join(',');
+      if (arrastado._ordemAntes !== depois) marcarSujoV2();
+      delete arrastado._ordemAntes;
+    }
+    itens().forEach((el) => { el.draggable = false; });
+  });
+
+  renumerar();
+  list._renumerarV2 = renumerar;
+}
+
+document.addEventListener('mouseup', () => {
+  document.querySelectorAll('#modal-content .step[draggable="true"]').forEach((el) => {
+    if (!el.classList.contains('dragging')) el.draggable = false;
+  });
+});
+
+function abrirNovoItemV2(listId, foco) {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const cfg = ACORDEAO_V2[list.dataset.acordeao];
+  list.querySelectorAll('.step.open').forEach((el) => {
+    el.classList.remove('open');
+    const head = el.querySelector('.step-head');
+    if (head) head.setAttribute('aria-expanded', 'false');
+  });
+  const html = cfg && cfg.nome === 'etapa'
+    ? etapaProcessoHTML({}, list.children.length)
+    : manualPassoHTML({}, list.children.length);
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const el = wrap.firstElementChild;
+  list.appendChild(el);
+  el.classList.add('open');
+  const head = el.querySelector('.step-head');
+  if (head) head.setAttribute('aria-expanded', 'true');
+  marcarSujoV2();
+  if (typeof list._renumerarV2 === 'function') list._renumerarV2();
+  if (foco) setTimeout(() => { const campo = el.querySelector(foco); if (campo) campo.focus(); }, 0);
+}
 
 function confirmarDelecao(colecao, id, nome, callback) {
   if (!DB.podeExcluir()) {
@@ -1043,6 +1484,25 @@ const ICONES_DISPONIVEIS = [
   { icone: 'ph-cow',             label: 'Bovino' },
   { icone: 'ph-package',         label: 'Pacote' },
   { icone: 'ph-flask',           label: 'Frasco' },
+  { icone: 'ph-potted-plant',    label: 'Muda' },
+  { icone: 'ph-grains',          label: 'Grãos' },
+  { icone: 'ph-carrot',          label: 'Hortaliça' },
+  { icone: 'ph-pepper',          label: 'Verdura' },
+  { icone: 'ph-egg',             label: 'Ovos' },
+  { icone: 'ph-cheese',          label: 'Leite e queijo' },
+  { icone: 'ph-fish',            label: 'Peixe' },
+  { icone: 'ph-bird',            label: 'Ave' },
+  { icone: 'ph-horse',           label: 'Equino' },
+  { icone: 'ph-barn',            label: 'Celeiro' },
+  { icone: 'ph-trolley',         label: 'Carrinho' },
+  { icone: 'ph-shovel',          label: 'Pá' },
+  { icone: 'ph-basket',          label: 'Cesta' },
+  { icone: 'ph-mountains',       label: 'Montanhas' },
+  { icone: 'ph-cloud-sun',       label: 'Clima' },
+  { icone: 'ph-thermometer',     label: 'Temperatura' },
+  { icone: 'ph-scales',          label: 'Balança' },
+  { icone: 'ph-recycle',         label: 'Sustentabilidade' },
+  { icone: 'ph-road-horizon',    label: 'Estrada' },
   // Pessoas / organização
   { icone: 'ph-users',           label: 'Equipe' },
   { icone: 'ph-user-circle',     label: 'Usuário' },
@@ -1106,6 +1566,7 @@ function iconPickerHTML(iconeAtual, corAtual, fieldId) {
             <button type="button"
               class="icon-opt ${o.icone === ic ? 'active' : ''}"
               title="${o.label}"
+              aria-label="Selecionar ícone ${o.label}"
               data-acao="selecionar-icone" data-field="${fieldId}" data-valor="${o.icone}"
               style="${o.icone === ic ? `background:color-mix(in srgb,${cor} 18%,transparent);color:${cor};border-color:${cor}` : ''}">
               <i class="ph-bold ${o.icone}"></i>
@@ -1117,6 +1578,7 @@ function iconPickerHTML(iconeAtual, corAtual, fieldId) {
             <button type="button"
               class="cor-opt ${c === cor ? 'active' : ''}"
               title="${c}"
+              aria-label="Selecionar cor ${c}"
               style="background:${c}"
               data-acao="selecionar-cor" data-field="${fieldId}" data-valor="${c}">
               ${c === cor ? '<i class="ph-bold ph-check" style="color:#fff;font-size:.7rem"></i>' : ''}
@@ -1133,8 +1595,14 @@ function iconPickerHTML(iconeAtual, corAtual, fieldId) {
 function selecionarIcone(fieldId, icone) {
   const cor = document.getElementById('cor-val-' + fieldId).value;
   document.getElementById('icon-val-' + fieldId).value = icone;
+  marcarSujoV2();
   // Atualiza preview
   document.getElementById('icon-preview-' + fieldId).innerHTML = `<i class="ph-bold ${escHtml(icone)}"></i>`;
+  const nomeEl = document.getElementById('icon-nome-' + fieldId);
+  if (nomeEl) {
+    const opcao = ICONES_DISPONIVEIS.find(o => o.icone === icone);
+    if (opcao) nomeEl.textContent = opcao.label;
+  }
   // Atualiza botões do grid
   document.querySelectorAll(`#icon-picker-${fieldId} .icon-opt`).forEach(btn => {
     const isActive = btn.querySelector('i').classList.contains(icone);
@@ -1145,9 +1613,20 @@ function selecionarIcone(fieldId, icone) {
   });
 }
 
+function toggleIconePanel(fieldId) {
+  const panel = document.getElementById('icon-panel-' + fieldId);
+  if (!panel) return;
+  const aberto = panel.classList.toggle('open');
+  const btn = document.querySelector(`[data-acao="toggle-icone-panel"][data-field="${fieldId}"]`);
+  if (!btn) return;
+  btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+  const label = btn.querySelector('.toggle-label');
+  if (label) label.textContent = aberto ? 'Recolher' : 'Alterar';
+}
+
 function selecionarCor(fieldId, cor) {
-  const icone = document.getElementById('icon-val-' + fieldId).value;
   document.getElementById('cor-val-' + fieldId).value = cor;
+  marcarSujoV2();
   // Atualiza preview
   const preview = document.getElementById('icon-preview-' + fieldId);
   preview.style.background = `color-mix(in srgb,${cor} 14%,transparent)`;
@@ -1407,88 +1886,330 @@ function pintarManuais(estado) {
     </div>
   `);
 }
-function formManual(m = {}) {
-  const passosHTML = (m.passos || []).map((p, i) => {
-    const texto = typeof p === 'string' ? p : p.texto;
-    const imagem = typeof p === 'object' ? (p.imagem_url_assinada || p.imagem || '') : '';
-    const imagemStoragePath = typeof p === 'object' ? (p.imagem_storage_path || '') : '';
-    const imagemStorageBucket = typeof p === 'object' ? (p.imagem_storage_bucket || '') : '';
-    return `
-      <div class="dyn-item" style="flex-direction:column;gap:8px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
-        <div style="display:flex;gap:8px;width:100%">
-          <div style="flex:1">
-            <label style="font-size:0.65rem;margin-bottom:4px;display:block">TEXTO DO PASSO ${i+1}</label>
-            <textarea name="passo_texto_${i}" placeholder="Descreva o passo..." rows="2" style="width:100%">${escHtml(texto)}</textarea>
-          </div>
-          <button type="button" class="dyn-remove" data-acao="remover-dyn-item" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
-        </div>
-        <div style="width:100%">
-          <label style="font-size:0.65rem;margin-bottom:4px;display:block">IMAGEM (OPCIONAL)</label>
-          <div style="display:flex;gap:10px;align-items:center">
-            <div class="passo-img-preview" style="width:60px;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-              ${imagem ? `<img src="${escHtml(imagem)}" style="width:100%;height:100%;object-fit:cover" />` : `<i class="ph ph-image" style="opacity:0.3"></i>`}
-            </div>
-            <input type="file" accept="image/*" data-acao="preview-passo-imagem" style="font-size:0.7rem;flex:1" />
-            <input type="hidden" name="passo_imagem_${i}" value="${escHtml(imagem)}" />
-            <input type="hidden" name="passo_imagem_storage_path_${i}" value="${escHtml(imagemStoragePath)}" />
-            <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="${escHtml(imagemStorageBucket)}" />
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+function categoriasDe(colecao) {
+  return [...new Set((DB.get(colecao) || [])
+    .map(item => (item.categoria || '').trim())
+    .filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
 
-  // Gera HTML dos documentos existentes (texto ou vinculado a arquivo)
-  const docsList = m.documentos || [];
-  const docsHTML = docsList.map((d, i) => {
-    const isObj = typeof d === 'object' && d !== null;
-    const nome = isObj ? d.nome : d;
-    const arquivoId = isObj ? d.arquivo_id : null;
-    const isVinculado = arquivoId !== null && arquivoId !== undefined;
-    return `
-      <div class="dyn-item doc-item" style="flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
-        <div style="display:flex;gap:8px;align-items:center">
-          <select name="doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-            <option value="texto" ${!isVinculado ? 'selected' : ''}>Texto</option>
-            <option value="arquivo" ${isVinculado ? 'selected' : ''}>Arquivo</option>
-          </select>
-          <input name="doc_nome_${i}" value="${escHtml(nome)}" placeholder="Nome do documento..." style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" ${isVinculado ? 'disabled' : ''} class="doc-nome-input" />
-          <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
-        </div>
-        <div class="doc-arquivo-selector" style="display:${isVinculado ? 'flex' : 'none'};gap:8px;align-items:center">
-          <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
-          <select name="doc_arquivo_${i}" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-            <option value="">Selecione um arquivo...</option>
-            ${getArquivosOptions(arquivoId)}
-          </select>
-        </div>
-      </div>`;
-  }).join('');
-
-  const html = `
-    <h2 class="modal-title">${m.id ? 'Editar' : 'Novo'} Manual</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="m-titulo" value="${escHtml(m.titulo||'')}" /></div>
-      <div class="form-group full"><label>Categoria</label><input id="m-categoria" value="${escHtml(m.categoria||'')}" placeholder="Ex: Administrativo, Técnico..." /></div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(m.icone, m.cor, 'manual')}
-      </div>
-      <div class="form-group full">
-        <label>Passos (Texto + Imagem)</label>
-        <div class="dyn-list" id="dyn-passos">${passosHTML}</div>
-        <button type="button" class="dyn-add" data-acao="add-manual-passo"><i class="ph-bold ph-plus"></i> Adicionar passo</button>
-      </div>
-      <div class="form-group full">
-        <label>Documentos necessários</label>
-        <div class="dyn-list" id="dyn-documentos">${docsHTML}</div>
-        <button type="button" class="dyn-add" data-acao="add-documento"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
-        <p class="form-hint" style="margin-top:8px">Escolha "Texto" para digitar manualmente ou "Arquivo" para vincular um arquivo já cadastrado.</p>
-      </div>
-      <div class="form-group full"><label>Observações</label><textarea id="m-observacoes">${escHtml(m.observacoes||'')}</textarea></div>
+function publishFooterHTML(saveAcao, item = {}) {
+  const publicado = item.publish_status !== 'draft';
+  return `
+    <div class="publish-status-control">
+      <span class="publish-status-text" id="publish-status-label">${publicado ? 'Publicado' : 'Rascunho'}</span>
+      <label class="publish-status-switch" title="Alternar entre rascunho e publicado">
+        <input type="checkbox" id="publish-status-toggle" ${publicado ? 'checked' : ''} data-acao="toggle-publish-modal" />
+        <span class="publish-status-slider"></span>
+      </label>
     </div>
-    ${renderPublishStatusActions('manual', m)}
-  `;
-  return html;
+    <div class="save-error" id="save-error" role="alert"></div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" type="button" data-acao="fechar-modal">Cancelar</button>
+      <button class="btn btn-primary" type="button" data-acao="salvar-modal" data-salvar="${saveAcao}" data-id="${item.id || 0}"><i class="ph-bold ph-floppy-disk"></i> Salvar</button>
+    </div>`;
+}
+
+function iconPickerCompactoHTML(iconeAtual, corAtual, fieldId) {
+  const ic = iconeAtual || 'ph-leaf';
+  const cor = corAtual || '#2d6a4f';
+  const atual = ICONES_DISPONIVEIS.find(o => o.icone === ic) || ICONES_DISPONIVEIS[0];
+  return `
+    <div class="icon-picker-wrap icon-picker-wrap--compact" id="icon-picker-${fieldId}">
+      <div class="icon-compact-row">
+        <div class="icon-picker-preview" id="icon-preview-${fieldId}" style="background:color-mix(in srgb,${cor} 14%,transparent);color:${cor}">
+          <i class="ph-bold ${ic}"></i>
+        </div>
+        <div class="icon-meta">
+          <strong id="icon-nome-${fieldId}">${escHtml(atual.label)}</strong>
+          <span>Ícone e cor usados no card público</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" data-acao="toggle-icone-panel" data-field="${fieldId}" aria-expanded="false" aria-controls="icon-panel-${fieldId}">
+          <span class="toggle-label">Alterar</span> <i class="ph-bold ph-caret-down caret"></i>
+        </button>
+      </div>
+      <div class="icon-panel" id="icon-panel-${fieldId}">
+        <div class="icon-panel-inner">
+          <div class="icon-picker-grid">
+            ${ICONES_DISPONIVEIS.map(o => `
+              <button type="button"
+                class="icon-opt ${o.icone === ic ? 'active' : ''}"
+                title="${o.label}"
+                aria-label="Selecionar ícone ${o.label}"
+                data-acao="selecionar-icone" data-field="${fieldId}" data-valor="${o.icone}"
+                style="${o.icone === ic ? `background:color-mix(in srgb,${cor} 18%,transparent);color:${cor};border-color:${cor}` : ''}">
+                <i class="ph-bold ${o.icone}"></i>
+              </button>
+            `).join('')}
+          </div>
+          <div class="icon-cor-row">
+            ${CORES_DISPONIVEIS.map(c => `
+              <button type="button"
+                class="cor-opt ${c === cor ? 'active' : ''}"
+                title="${c}"
+                aria-label="Selecionar cor ${c}"
+                style="background:${c}"
+                data-acao="selecionar-cor" data-field="${fieldId}" data-valor="${c}">
+                ${c === cor ? '<i class="ph-bold ph-check" style="color:#fff;font-size:.7rem"></i>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="icon-val-${fieldId}" value="${escHtml(ic)}" />
+      <input type="hidden" id="cor-val-${fieldId}" value="${escHtml(cor)}" />
+    </div>`;
+}
+
+function manualPassoHTML(p = {}, i = 0) {
+  const texto = typeof p === 'string' ? p : (p.texto || '');
+  const imagem = typeof p === 'object' ? (p.imagem_url_assinada || p.imagem || '') : '';
+  const imagemPath = typeof p === 'object' ? (p.imagem_storage_path || '') : '';
+  const imagemBucket = typeof p === 'object' ? (p.imagem_storage_bucket || '') : '';
+  const limpo = texto.trim();
+  const id = novoIdItemV2();
+  const thumb = imagem
+    ? `<img src="${escHtml(imagem)}" alt="" />`
+    : '<i class="ph ph-image"></i>';
+  return `
+    <div class="step" data-id="${id}">
+      <div class="step-head" role="button" tabindex="0" aria-expanded="false">
+        <span class="drag-handle" title="Arrastar para reordenar"><i class="ph-bold ph-dots-six-vertical"></i></span>
+        <span class="step-num">${i + 1}</span>
+        <span class="step-thumb">${thumb}</span>
+        <span class="step-summary${limpo ? '' : ' empty'}">${limpo ? escHtml(limpo) : 'Passo sem texto'}</span>
+        <span class="step-tools">
+          <button class="step-tool" type="button" data-mover="-1" ${i === 0 ? 'disabled' : ''} title="Mover para cima" aria-label="Mover passo ${i + 1} para cima"><i class="ph-bold ph-arrow-up"></i></button>
+          <button class="step-tool" type="button" data-mover="1" title="Mover para baixo" aria-label="Mover passo ${i + 1} para baixo"><i class="ph-bold ph-arrow-down"></i></button>
+          <button class="step-tool danger" type="button" data-remover-item title="Remover passo" aria-label="Remover passo ${i + 1}"><i class="ph-bold ph-trash"></i></button>
+        </span>
+      </div>
+      <div class="step-content">
+        <div class="step-content-inner">
+          <div class="field">
+            <label class="step-rotulo" for="step-texto-${id}">Texto do passo ${i + 1}</label>
+            <textarea id="step-texto-${id}" class="step-texto" rows="2" placeholder="Descreva o passo...">${escHtml(texto)}</textarea>
+          </div>
+          <div class="field">
+            <label for="step-imagem-${id}">Imagem (opcional)</label>
+            <div class="step-img-row">
+              <div class="step-img-preview">${thumb}</div>
+              <input id="step-imagem-${id}" type="file" accept="image/*" data-acao="preview-passo-imagem" />
+              <input type="hidden" data-campo="imagem" value="${escHtml(imagem)}" />
+              <input type="hidden" data-campo="imagem_path" value="${escHtml(imagemPath)}" />
+              <input type="hidden" data-campo="imagem_bucket" value="${escHtml(imagemBucket)}" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function manualDocHTML(d) {
+  const isObj = typeof d === 'object' && d !== null;
+  const nome = isObj ? (d.nome || '') : (d || '');
+  const arquivoId = isObj ? d.arquivo_id : null;
+  const vinculado = arquivoId !== null && arquivoId !== undefined;
+  return `
+    <div class="doc-item">
+      <div class="doc-top">
+        <select class="doc-tipo doc-tipo-select" data-acao="toggle-doc-tipo" aria-label="Tipo do documento">
+          <option value="texto" ${!vinculado ? 'selected' : ''}>Texto</option>
+          <option value="arquivo" ${vinculado ? 'selected' : ''}>Arquivo</option>
+        </select>
+        <input class="doc-nome doc-nome-input" value="${escHtml(nome)}" placeholder="Nome do documento..." aria-label="Nome do documento" ${vinculado ? 'hidden' : ''} />
+        <div class="doc-arquivo-atual" ${vinculado ? '' : 'hidden'}>${docChipHTML(vinculado ? nome : '')}</div>
+        <button type="button" class="doc-remove" data-acao="remover-doc-item" title="Remover documento" aria-label="Remover documento"><i class="ph-bold ph-trash"></i></button>
+      </div>
+      <div class="doc-arquivo doc-arquivo-selector ${vinculado ? 'visible' : ''}" style="display:${vinculado ? 'flex' : 'none'}">
+        ${arquivoPickerHTML(arquivoId)}
+      </div>
+    </div>`;
+}
+
+/**
+ * Previa do arquivo escolhido, exibida na mesma linha do select de tipo.
+ * Sem arquivo, devolve o texto discreto para a linha nao colapsar.
+ */
+function docChipHTML(nome) {
+  if (!nome) return '<span class="doc-arquivo-atual-vazio">Nenhum arquivo selecionado</span>';
+  return `
+    <span class="doc-chip" title="${escHtml(nome)}">
+      <i class="ph-bold ph-file-text"></i>
+      <span class="doc-chip-nome">${escHtml(nome)}</span>
+      <button type="button" class="doc-chip-remove" data-acao="limpar-arquivo-doc" title="Remover arquivo selecionado" aria-label="Remover arquivo selecionado"><i class="ph-bold ph-x"></i></button>
+    </span>`;
+}
+
+/**
+ * Seletor de arquivo dos documentos do manual, no mesmo padrao do filtro de
+ * manuais das etapas (busca + lista rolavel). Guarda o id em input oculto.
+ */
+function arquivoPickerHTML(arquivoId) {
+  const arquivos = DB.get ? DB.get('arquivos') : [];
+  const atualId = arquivoId !== null && arquivoId !== undefined && arquivoId !== ''
+    ? Number(arquivoId)
+    : null;
+  const opcoes = arquivos.map(a => {
+    const label = withDraftSuffix(`${a.nome || 'Arquivo'} (${a.tipo || 'Arquivo'})`, a);
+    const ativo = atualId === a.id;
+    return `
+      <button type="button"
+        class="doc-arquivo-opcao ${ativo ? 'active' : ''}"
+        role="option" aria-selected="${ativo}"
+        data-acao="escolher-arquivo-doc"
+        data-id="${a.id}"
+        data-nome="${escHtml(a.nome || '')}"
+        data-tipo="${escHtml(a.tipo || '')}"
+        title="${escHtml(label)}">
+        <span class="doc-arquivo-nome">${escHtml(withDraftSuffix(a.nome || 'Arquivo', a))}</span>
+        <span class="badge">${escHtml(a.tipo || 'Arquivo')}</span>
+      </button>`;
+  }).join('');
+  return `
+    <div class="doc-arquivo-picker">
+      <input class="doc-arquivo-busca" placeholder="Buscar arquivo por nome ou tipo..." aria-label="Buscar arquivo" autocomplete="off" />
+      <div class="doc-arquivo-lista" role="listbox" aria-label="Arquivos disponíveis" ${opcoes ? '' : 'hidden'}>${opcoes}</div>
+      <p class="doc-arquivo-vazio" ${opcoes ? 'hidden' : ''}>${arquivos.length
+        ? 'Nenhum arquivo corresponde à busca.'
+        : 'Nenhum arquivo cadastrado. Cadastre em Arquivos.'}</p>
+      <input type="hidden" class="doc-arquivo-id" value="${atualId !== null ? atualId : ''}" />
+    </div>`;
+}
+
+function filtrarArquivosDoc(input) {
+  const picker = input.closest('.doc-arquivo-picker');
+  if (!picker) return;
+  const termo = normalizeSearchText(input.value).trim();
+  let visiveis = 0;
+  picker.querySelectorAll('.doc-arquivo-opcao').forEach(opcao => {
+    const alvo = normalizeSearchText(`${opcao.dataset.nome || ''} ${opcao.dataset.tipo || ''}`);
+    const mostra = !termo || alvo.includes(termo);
+    opcao.hidden = !mostra;
+    if (mostra) visiveis += 1;
+  });
+  const vazio = picker.querySelector('.doc-arquivo-vazio');
+  const lista = picker.querySelector('.doc-arquivo-lista');
+  if (lista) lista.hidden = visiveis === 0;
+  if (vazio) {
+    vazio.hidden = visiveis > 0;
+    if (!visiveis) {
+      vazio.textContent = picker.querySelector('.doc-arquivo-opcao')
+        ? 'Nenhum arquivo corresponde à busca.'
+        : 'Nenhum arquivo cadastrado. Cadastre em Arquivos.';
+    }
+  }
+}
+
+function escolherArquivoDoc(botao) {
+  const picker = botao.closest('.doc-arquivo-picker');
+  if (!picker) return;
+  picker.querySelectorAll('.doc-arquivo-opcao').forEach(opcao => {
+    const ativo = opcao === botao;
+    opcao.classList.toggle('active', ativo);
+    opcao.setAttribute('aria-selected', String(ativo));
+  });
+  const idInput = picker.querySelector('.doc-arquivo-id');
+  if (idInput) idInput.value = botao.dataset.id || '';
+
+  const atual = botao.closest('.doc-item')?.querySelector('.doc-arquivo-atual');
+  if (atual) {
+    const nome = botao.querySelector('.doc-arquivo-nome')?.textContent || botao.dataset.nome || '';
+    atual.innerHTML = docChipHTML(nome.trim());
+  }
+  marcarSujoV2();
+}
+
+/** Remove so o arquivo vinculado, mantendo o documento no formulario. */
+function limparArquivoDoc(botao) {
+  const item = botao.closest('.doc-item');
+  if (!item) return;
+  const picker = item.querySelector('.doc-arquivo-picker');
+  if (picker) {
+    const idInput = picker.querySelector('.doc-arquivo-id');
+    if (idInput) idInput.value = '';
+    picker.querySelectorAll('.doc-arquivo-opcao').forEach(opcao => {
+      opcao.classList.remove('active');
+      opcao.setAttribute('aria-selected', 'false');
+    });
+  }
+  const atual = item.querySelector('.doc-arquivo-atual');
+  if (atual) atual.innerHTML = docChipHTML('');
+  marcarSujoV2();
+}
+
+function formManual(m = {}) {
+  const passosHTML = (m.passos || []).map((p, i) => manualPassoHTML(p, i)).join('');
+  const docsHTML = (m.documentos || []).map((d) => manualDocHTML(d)).join('');
+  const categorias = categoriasDe('manuais');
+  const sairDoAr = !!(m.id && m.publish_status !== 'draft');
+  const totalPassos = (m.passos || []).length;
+
+  return `
+    <div class="modal-v2">
+      <div class="modal-head">
+        <h2 class="modal-title" id="modal-title" tabindex="-1">${m.id ? 'Editar' : 'Novo'} Manual</h2>
+      </div>
+      <div class="modal-body">
+        <section class="form-section">
+          <div class="form-section-head"><span class="form-section-title">Identificação</span></div>
+          <div class="field field-primary">
+            <label for="m-titulo">Título</label>
+            <input id="m-titulo" value="${escHtml(m.titulo || '')}" />
+            <span class="field-error-msg">Informe o título.</span>
+          </div>
+          <div class="field">
+            <label for="m-categoria">Categoria</label>
+            <input id="m-categoria" list="m-categorias" value="${escHtml(m.categoria || '')}" placeholder="Ex: Administrativo, Técnico..." />
+            <datalist id="m-categorias">${categorias.map(c => `<option value="${escHtml(c)}"></option>`).join('')}</datalist>
+            <span class="hint">Digite livremente ou escolha uma categoria existente.</span>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-section-title">Aparência do card</span>
+            <span class="form-section-hint">opcional</span>
+          </div>
+          ${iconPickerCompactoHTML(m.icone, m.cor, 'manual')}
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-section-title">Passos</span>
+            <span class="form-section-hint" id="passos-hint">${totalPassos} passo${totalPassos === 1 ? '' : 's'} · arraste para reordenar</span>
+          </div>
+          <p class="step-empty" id="passos-empty" ${totalPassos ? 'hidden' : ''}>Nenhum passo ainda. Clique em "Adicionar passo" para começar.</p>
+          <div class="step-list" id="dyn-passos" data-acordeao="passo">${passosHTML}</div>
+          <button type="button" class="dyn-add" data-acao="add-manual-passo"><i class="ph-bold ph-plus"></i> Adicionar passo</button>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-section-title">Documentos necessários</span>
+            <span class="form-section-hint">opcional</span>
+          </div>
+          <div class="dyn-list" id="dyn-documentos">${docsHTML}</div>
+          <button type="button" class="dyn-add" data-acao="add-documento"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head"><span class="form-section-title">Observações</span></div>
+          <div class="field"><textarea id="m-observacoes" rows="3" aria-label="Observações">${escHtml(m.observacoes || '')}</textarea></div>
+        </section>
+      </div>
+
+      <div class="unsaved-bar" id="unsaved-bar" role="status" aria-live="polite">
+        <p>Você tem alterações não salvas.</p>
+        <button class="btn btn-ghost" type="button" data-acao="descartar-alteracoes">Descartar</button>
+        <button class="btn btn-ghost" type="button" data-acao="salvar-rascunho">Salvar como rascunho${sairDoAr ? ' (sai do ar)' : ''}</button>
+        <button class="btn btn-primary" type="button" data-acao="continuar-editando">Continuar editando</button>
+      </div>
+
+      <div class="modal-footer">
+        ${publishFooterHTML('manual', m)}
+      </div>
+    </div>`;
 }
 
 function getArquivosOptions(selectedId) {
@@ -1504,73 +2225,68 @@ function getArquivosOptions(selectedId) {
 
 function addDocumento() {
   const list = document.getElementById('dyn-documentos');
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'dyn-item doc-item';
-  div.style.cssText = 'flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)';
-  div.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center">
-      <select name="doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-        <option value="texto" selected>Texto</option>
-        <option value="arquivo">Arquivo</option>
-      </select>
-      <input name="doc_nome_${i}" value="" placeholder="Nome do documento..." style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" />
-      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
-    </div>
-    <div class="doc-arquivo-selector" style="display:none;gap:8px;align-items:center">
-      <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
-      <select name="doc_arquivo_${i}" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-        <option value="">Selecione um arquivo...</option>
-        ${getArquivosOptions(null)}
-      </select>
-    </div>`;
-  list.appendChild(div);
+  if (!list) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = manualDocHTML(null);
+  const item = wrap.firstElementChild;
+  list.appendChild(item);
+  marcarSujoV2();
+  const nome = item.querySelector('.doc-nome-input');
+  if (nome) nome.focus();
 }
 
 function toggleDocTipo(select) {
   const item = select.closest('.doc-item');
   const nomeInput = item.querySelector('.doc-nome-input');
   const arquivoSelector = item.querySelector('.doc-arquivo-selector');
-  
+
   if (select.value === 'arquivo') {
-    nomeInput.disabled = true;
-    nomeInput.value = '';
-    arquivoSelector.style.display = 'flex';
+    if (nomeInput) {
+      nomeInput.hidden = true;
+      nomeInput.disabled = false;
+      nomeInput.value = '';
+    }
+    if (arquivoSelector) {
+      arquivoSelector.classList.add('visible');
+      arquivoSelector.style.display = 'flex';
+    }
+    const atual = item.querySelector('.doc-arquivo-atual');
+    if (atual) atual.hidden = false;
   } else {
-    nomeInput.disabled = false;
-    arquivoSelector.style.display = 'none';
-    const arquivoSelect = arquivoSelector.querySelector('select');
-    arquivoSelect.value = '';
+    if (nomeInput) {
+      nomeInput.hidden = false;
+      nomeInput.disabled = false;
+    }
+    if (arquivoSelector) {
+      arquivoSelector.classList.remove('visible');
+      arquivoSelector.style.display = 'none';
+    }
+    const arquivoSelect = arquivoSelector ? arquivoSelector.querySelector('select') : null;
+    if (arquivoSelect) arquivoSelect.value = '';
+    const picker = arquivoSelector ? arquivoSelector.querySelector('.doc-arquivo-picker') : null;
+    if (picker) {
+      const idInput = picker.querySelector('.doc-arquivo-id');
+      if (idInput) idInput.value = '';
+      picker.querySelectorAll('.doc-arquivo-opcao').forEach(opcao => {
+        opcao.classList.remove('active');
+        opcao.setAttribute('aria-selected', 'false');
+      });
+      const busca = picker.querySelector('.doc-arquivo-busca');
+      if (busca && busca.value) {
+        busca.value = '';
+        filtrarArquivosDoc(busca);
+      }
+    }
+    const atual = item.querySelector('.doc-arquivo-atual');
+    if (atual) {
+      atual.hidden = true;
+      atual.innerHTML = docChipHTML('');
+    }
   }
 }
 
 function addManualPasso() {
-  const list = document.getElementById('dyn-passos');
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'dyn-item';
-  div.style.cssText = 'flex-direction:column;gap:8px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)';
-  div.innerHTML = `
-    <div style="display:flex;gap:8px;width:100%">
-      <div style="flex:1">
-        <label style="font-size:0.65rem;margin-bottom:4px;display:block">TEXTO DO PASSO ${i+1}</label>
-        <textarea name="passo_texto_${i}" placeholder="Descreva o passo..." rows="2" style="width:100%"></textarea>
-      </div>
-      <button type="button" class="dyn-remove" data-acao="remover-dyn-item" style="align-self:flex-start"><i class="ph-bold ph-trash"></i></button>
-    </div>
-    <div style="width:100%">
-      <label style="font-size:0.65rem;margin-bottom:4px;display:block">IMAGEM (OPCIONAL)</label>
-      <div style="display:flex;gap:10px;align-items:center">
-        <div class="passo-img-preview" style="width:60px;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          <i class="ph ph-image" style="opacity:0.3"></i>
-        </div>
-        <input type="file" accept="image/*" data-acao="preview-passo-imagem" style="font-size:0.7rem;flex:1" />
-        <input type="hidden" name="passo_imagem_${i}" value="" />
-        <input type="hidden" name="passo_imagem_storage_path_${i}" value="" />
-        <input type="hidden" name="passo_imagem_storage_bucket_${i}" value="" />
-      </div>
-    </div>`;
-  list.appendChild(div);
+  abrirNovoItemV2('dyn-passos', '.step-texto');
 }
 
 function previewPassoImagem(input) {
@@ -1580,100 +2296,127 @@ function previewPassoImagem(input) {
     toast('Imagem muito grande (máx 1MB)', 'error');
     return;
   }
+  const step = input.closest('.step');
   const reader = new FileReader();
-  const previewDiv = input.parentElement.querySelector('.passo-img-preview');
-  const hiddenInput = input.parentElement.querySelector('input[name^="passo_imagem_"]:not([name*="storage_"])');
-  const storagePathInput = input.parentElement.querySelector('input[name^="passo_imagem_storage_path_"]');
-  const storageBucketInput = input.parentElement.querySelector('input[name^="passo_imagem_storage_bucket_"]');
+  const preview = step ? step.querySelector('.step-img-preview') : null;
+  const thumb = step ? step.querySelector('.step-thumb') : null;
+  const hiddenImagem = step ? step.querySelector('[data-campo="imagem"]') : null;
+  const hiddenPath = step ? step.querySelector('[data-campo="imagem_path"]') : null;
+  const hiddenBucket = step ? step.querySelector('[data-campo="imagem_bucket"]') : null;
   input._pendingManualImageFile = file;
-  
+
   reader.onload = (e) => {
-    hiddenInput.value = e.target.result;
-    if (storagePathInput) storagePathInput.value = '';
-    if (storageBucketInput) storageBucketInput.value = '';
-    previewDiv.innerHTML = `<img src="${escHtml(e.target.result)}" style="width:100%;height:100%;object-fit:cover" />`;
+    if (hiddenImagem) hiddenImagem.value = e.target.result;
+    if (hiddenPath) hiddenPath.value = '';
+    if (hiddenBucket) hiddenBucket.value = '';
+    const img = `<img src="${escHtml(e.target.result)}" style="width:100%;height:100%;object-fit:cover" />`;
+    if (preview) preview.innerHTML = img;
+    if (thumb) thumb.innerHTML = img;
   };
   reader.readAsDataURL(file);
 }
 
-function novoManual()     { abrirModal(formManual()); }
-function editarManual(id) { abrirModal(formManual(DB.getById('manuais', id))); }
+function novoManual() {
+  abrirModal(formManual(), { v2: true, itemPublicado: false });
+}
+function editarManual(id) {
+  const m = DB.getById('manuais', id) || {};
+  abrirModal(formManual(m), { v2: true, itemPublicado: !!(m.id && m.publish_status !== 'draft') });
+}
 
 async function salvarManual(id) {
-  const list = document.getElementById('dyn-passos');
+  if (!validarObrigatorioV2('m-titulo', 'Informe o título.')) return;
+
   const existente = id ? DB.getById('manuais', id) : null;
   const oldStorageRefs = new Set(
     ((existente?.passos) || [])
       .filter(p => p && typeof p === 'object' && p.imagem_storage_path)
       .map(p => `${p.imagem_storage_bucket || 'manuais-imagens-smader'}::${p.imagem_storage_path}`)
   );
+  const ui = iniciarSalvamentoV2();
   const passos = [];
 
-  for (const div of Array.from(list.children)) {
-    const texto = div.querySelector('textarea').value.trim();
-    if (!texto) continue;
+  try {
+    for (const div of Array.from(document.getElementById('dyn-passos').children)) {
+      const texto = (div.querySelector('.step-texto')?.value || '').trim();
+      if (!texto) continue;
 
-    const fileInput = div.querySelector('input[type="file"]');
-    const imagemInput = div.querySelector('input[name^="passo_imagem_"]:not([name*="storage_"])');
-    const storagePathInput = div.querySelector('input[name^="passo_imagem_storage_path_"]');
-    const storageBucketInput = div.querySelector('input[name^="passo_imagem_storage_bucket_"]');
+      const fileInput = div.querySelector('input[type="file"]');
+      const imagemInput = div.querySelector('[data-campo="imagem"]');
+      const pathInput = div.querySelector('[data-campo="imagem_path"]');
+      const bucketInput = div.querySelector('[data-campo="imagem_bucket"]');
 
-    let imagem = imagemInput ? imagemInput.value : '';
-    let imagemStoragePath = storagePathInput ? storagePathInput.value.trim() : '';
-    let imagemStorageBucket = storageBucketInput ? storageBucketInput.value.trim() : '';
+      let imagem = imagemInput ? imagemInput.value : '';
+      let imagemStoragePath = pathInput ? pathInput.value.trim() : '';
+      let imagemStorageBucket = bucketInput ? bucketInput.value.trim() : '';
 
-    if (fileInput && fileInput._pendingManualImageFile) {
-      try {
-        const upload = await DB.uploadManualImageStorage(fileInput._pendingManualImageFile);
-        imagem = upload.url;
-        imagemStoragePath = upload.storage_path;
-        imagemStorageBucket = upload.storage_bucket;
-      } catch (error) {
-        toast(`Falha no upload da imagem: ${error?.message || 'erro desconhecido'}`, 'error');
-        return;
+      if (fileInput && fileInput._pendingManualImageFile) {
+        if (ui) ui.etapa('Enviando arquivo…');
+        try {
+          const upload = await DB.uploadManualImageStorage(fileInput._pendingManualImageFile);
+          imagem = upload.url;
+          imagemStoragePath = upload.storage_path;
+          imagemStorageBucket = upload.storage_bucket;
+        } catch (error) {
+          if (ui) ui.restaurar();
+          mostrarErroSalvar(`Falha no upload da imagem: ${error?.message || 'erro desconhecido'}`);
+          return;
+        }
       }
-    }
 
-    const passo = { texto, imagem };
-    if (imagemStoragePath) passo.imagem_storage_path = imagemStoragePath;
-    if (imagemStorageBucket) passo.imagem_storage_bucket = imagemStorageBucket;
-    passos.push(passo);
+      const passo = { texto, imagem };
+      if (imagemStoragePath) passo.imagem_storage_path = imagemStoragePath;
+      if (imagemStorageBucket) passo.imagem_storage_bucket = imagemStorageBucket;
+      passos.push(passo);
+    }
+  } catch (error) {
+    if (ui) ui.restaurar();
+    mostrarErroSalvar(`Não foi possível preparar os passos: ${error?.message || 'falha desconhecida'}`);
+    return;
   }
 
-  // Processa documentos: texto simples ou objeto com arquivo_id
   const docsList = document.getElementById('dyn-documentos');
   const documentos = Array.from(docsList.children).map(div => {
-    const tipoSelect = div.querySelector('select[name^="doc_tipo_"]');
-    const nomeInput = div.querySelector('input[name^="doc_nome_"]');
-    const arquivoSelect = div.querySelector('select[name^="doc_arquivo_"]');
-    
+    const tipoSelect = div.querySelector('.doc-tipo');
+    const nomeInput = div.querySelector('.doc-nome');
+    const arquivoIdInput = div.querySelector('.doc-arquivo-id');
+    const arquivoSelect = div.querySelector('.doc-arquivo select');
+
     if (tipoSelect && tipoSelect.value === 'arquivo') {
-      const arquivoId = arquivoSelect ? parseInt(arquivoSelect.value) : null;
+      const valorArquivo = (arquivoIdInput && arquivoIdInput.value)
+        || (arquivoSelect && arquivoSelect.value)
+        || '';
+      const arquivoId = parseInt(valorArquivo, 10) || null;
       if (arquivoId) {
-        // Buscar o nome do arquivo selecionado
         const arquivos = DB.get ? DB.get('arquivos') : [];
         const arquivo = arquivos.find(a => a.id === arquivoId);
         return {
           nome: arquivo ? arquivo.nome : 'Arquivo',
-          arquivo_id: arquivoId
+          arquivo_id: arquivoId,
         };
       }
+      return '';
     }
     return nomeInput ? nomeInput.value.trim() : '';
   }).filter(Boolean);
 
   const { icone, cor } = getIconeCorValues('manual');
   const dados = {
-    titulo:      document.getElementById('m-titulo').value.trim(),
-    categoria:   document.getElementById('m-categoria').value.trim(),
-    passos:      passos,
-    documentos:  documentos,
+    titulo: document.getElementById('m-titulo').value.trim(),
+    categoria: document.getElementById('m-categoria').value.trim(),
+    passos,
+    documentos,
     observacoes: document.getElementById('m-observacoes').value.trim(),
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  if (!(await salvarComFeedback('manuais', id, dados))) return;
+
+  if (ui) ui.etapa('Salvando…');
+  const ok = await salvarComFeedback('manuais', id, dados, { aoErro: mostrarErroSalvar });
+  if (!ok) {
+    if (ui) ui.restaurar();
+    return;
+  }
 
   const currentStorageRefs = new Set(
     passos
@@ -1690,7 +2433,9 @@ async function salvarManual(id) {
     }
   }
 
-  fecharModal(); toast('Manual salvo.'); renderManuais();
+  fecharModal(true);
+  toast('Manual salvo.');
+  renderManuais();
 }
 
 /* ============================================================
@@ -1749,86 +2494,148 @@ function getManuaisOptions(selectedIds = []) {
 }
 
 
+function etapaProcessoHTML(e = {}, i = 0) {
+  const titulo = e.titulo || '';
+  const descricao = e.descricao || '';
+  const manuaisIds = e.manuais_ids || [];
+  const id = novoIdItemV2();
+  const limpo = titulo.trim();
+  return `
+    <div class="step" data-id="${id}">
+      <div class="step-head" role="button" tabindex="0" aria-expanded="false">
+        <span class="drag-handle" title="Arrastar para reordenar"><i class="ph-bold ph-dots-six-vertical"></i></span>
+        <span class="step-num">${i + 1}</span>
+        <span class="step-thumb"><i class="ph-bold ph-flag"></i></span>
+        <span class="step-summary${limpo ? '' : ' empty'}">${limpo ? escHtml(limpo) : 'Etapa sem título'}</span>
+        <span class="step-tools">
+          <button class="step-tool" type="button" data-mover="-1" ${i === 0 ? 'disabled' : ''} title="Mover para cima" aria-label="Mover etapa ${i + 1} para cima"><i class="ph-bold ph-arrow-up"></i></button>
+          <button class="step-tool" type="button" data-mover="1" title="Mover para baixo" aria-label="Mover etapa ${i + 1} para baixo"><i class="ph-bold ph-arrow-down"></i></button>
+          <button class="step-tool danger" type="button" data-remover-item title="Remover etapa" aria-label="Remover etapa ${i + 1}"><i class="ph-bold ph-trash"></i></button>
+        </span>
+      </div>
+      <div class="step-content">
+        <div class="step-content-inner">
+          <div class="field">
+            <label class="step-rotulo" for="etapa-titulo-${id}">Título da etapa ${i + 1}</label>
+            <input id="etapa-titulo-${id}" class="etapa-titulo" value="${escHtml(titulo)}" placeholder="Título da etapa..." />
+          </div>
+          <div class="field">
+            <label for="etapa-desc-${id}">Descrição (opcional)</label>
+            <textarea id="etapa-desc-${id}" class="etapa-desc" rows="2" placeholder="Descrição da etapa...">${escHtml(descricao)}</textarea>
+          </div>
+          <div class="field">
+            <label for="etapa-manuais-${id}">Manuais vinculados <span style="font-weight:400;opacity:.7">(opcional)</span></label>
+            <input class="etapa-manuais-busca" aria-label="Filtrar manuais" placeholder="Filtrar manuais..." />
+            <select id="etapa-manuais-${id}" class="etapa-manuais" multiple aria-label="Manuais vinculados">${getManuaisOptions(manuaisIds)}</select>
+            <span class="hint">Segure Ctrl (ou Cmd) para selecionar vários. Use o filtro para achar mais rápido.</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function formProcesso(p = {}) {
-  const etapasHTML = (p.etapas || []).map((e, i) =>
-    _etapaItemHTML(i, e.titulo, e.descricao, e.manuais_ids || [])
-  ).join('');
+  const etapasHTML = (p.etapas || []).map((e, i) => etapaProcessoHTML(e, i)).join('');
+  const categorias = categoriasDe('processos');
+  const sairDoAr = !!(p.id && p.publish_status !== 'draft');
+  const totalEtapas = (p.etapas || []).length;
 
   return `
-    <h2 class="modal-title">${p.id ? 'Editar' : 'Novo'} Processo</h2>
-    <div class="form-grid">
-      <div class="form-group full"><label>Título</label><input id="p-titulo" value="${escHtml(p.titulo||'')}" /></div>
-      <div class="form-group full"><label>Categoria</label><input id="p-categoria" value="${escHtml(p.categoria||'')}" /></div>
-      <div class="form-group full">
-        <label>Ícone e cor do card</label>
-        ${iconPickerHTML(p.icone, p.cor, 'processo')}
+    <div class="modal-v2">
+      <div class="modal-head">
+        <h2 class="modal-title" id="modal-title" tabindex="-1">${p.id ? 'Editar' : 'Novo'} Processo</h2>
       </div>
-      <div class="form-group full">
-        <label>Etapas</label>
-        <div class="dyn-list" id="dyn-etapas">${etapasHTML}</div>
-        <button type="button" class="dyn-add" data-acao="add-etapa"><i class="ph-bold ph-plus"></i> Adicionar etapa</button>
+      <div class="modal-body">
+        <section class="form-section">
+          <div class="form-section-head"><span class="form-section-title">Identificação</span></div>
+          <div class="field field-primary">
+            <label for="p-titulo">Título</label>
+            <input id="p-titulo" value="${escHtml(p.titulo || '')}" />
+            <span class="field-error-msg">Informe o título.</span>
+          </div>
+          <div class="field">
+            <label for="p-categoria">Categoria</label>
+            <input id="p-categoria" list="p-categorias" value="${escHtml(p.categoria || '')}" placeholder="Ex: Administrativo, Técnico..." />
+            <datalist id="p-categorias">${categorias.map(c => `<option value="${escHtml(c)}"></option>`).join('')}</datalist>
+            <span class="hint">Digite livremente ou escolha uma categoria existente.</span>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-section-title">Aparência do card</span>
+            <span class="form-section-hint">opcional</span>
+          </div>
+          ${iconPickerCompactoHTML(p.icone, p.cor, 'processo')}
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-section-title">Etapas</span>
+            <span class="form-section-hint" id="etapas-hint">${totalEtapas} etapa${totalEtapas === 1 ? '' : 's'} · arraste para reordenar</span>
+          </div>
+          <p class="step-empty" id="etapas-empty" ${totalEtapas ? 'hidden' : ''}>Nenhuma etapa ainda. Clique em "Adicionar etapa" para começar.</p>
+          <div class="step-list" id="dyn-etapas" data-acordeao="etapa">${etapasHTML}</div>
+          <button type="button" class="dyn-add" data-acao="add-etapa"><i class="ph-bold ph-plus"></i> Adicionar etapa</button>
+        </section>
       </div>
-    </div>
-    ${renderPublishStatusActions('processo', p)}`;
+
+      <div class="unsaved-bar" id="unsaved-bar" role="status" aria-live="polite">
+        <p>Você tem alterações não salvas.</p>
+        <button class="btn btn-ghost" type="button" data-acao="descartar-alteracoes">Descartar</button>
+        <button class="btn btn-ghost" type="button" data-acao="salvar-rascunho">Salvar como rascunho${sairDoAr ? ' (sai do ar)' : ''}</button>
+        <button class="btn btn-primary" type="button" data-acao="continuar-editando">Continuar editando</button>
+      </div>
+
+      <div class="modal-footer">
+        ${publishFooterHTML('processo', p)}
+      </div>
+    </div>`;
 }
 
 function addEtapa() {
-  const list = document.getElementById('dyn-etapas');
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.innerHTML = _etapaItemHTML(i);
-  list.appendChild(div.firstElementChild);
+  abrirNovoItemV2('dyn-etapas', '.etapa-titulo');
 }
 
-function novoProcesso()     { abrirModal(formProcesso()); }
-function editarProcesso(id) { abrirModal(formProcesso(DB.getById('processos', id))); }
+function novoProcesso() {
+  abrirModal(formProcesso(), { v2: true, itemPublicado: false });
+}
+function editarProcesso(id) {
+  const p = DB.getById('processos', id) || {};
+  abrirModal(formProcesso(p), { v2: true, itemPublicado: !!(p.id && p.publish_status !== 'draft') });
+}
 
 async function salvarProcesso(id) {
+  if (!validarObrigatorioV2('p-titulo', 'Informe o título.')) return;
+
   const list = document.getElementById('dyn-etapas');
-  const etapas = Array.from(list.children).map(div => {
-    const sel = div.querySelector('select[name^="etapa_manuais_"]');
-    const manuais_ids = sel
-      ? Array.from(sel.selectedOptions).map(o => parseInt(o.value)).filter(Boolean)
-      : [];
-    return {
-      titulo:      div.querySelector('input').value.trim(),
-      descricao:   div.querySelector('textarea').value.trim(),
-      manuais_ids,
-    };
-  }).filter(e => e.titulo);
+  const etapas = Array.from(list.children).map(div => ({
+    titulo: (div.querySelector('.etapa-titulo')?.value || '').trim(),
+    descricao: (div.querySelector('.etapa-desc')?.value || '').trim(),
+    manuais_ids: Array.from(div.querySelector('.etapa-manuais')?.selectedOptions || [])
+      .map(o => parseInt(o.value))
+      .filter(Boolean),
+  })).filter(e => e.titulo);
 
   const { icone, cor } = getIconeCorValues('processo');
   const dados = {
-    titulo:    document.getElementById('p-titulo').value.trim(),
+    titulo: document.getElementById('p-titulo').value.trim(),
     categoria: document.getElementById('p-categoria').value.trim(),
     etapas,
     icone, cor,
     publish_status: getModalPublishStatus(),
   };
-  if (!dados.titulo) { toast('Título é obrigatório.','error'); return; }
-  if (!(await salvarComFeedback('processos', id, dados))) return;
-  fecharModal(); toast('Processo salvo.'); renderProcessos();
-}
 
-function _etapaItemHTML(i, titulo = '', descricao = '', manuais_ids = []) {
-  return `
-    <div class="dyn-item etapa-item" style="flex-direction:column;gap:6px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
-      <div style="display:flex;gap:6px;width:100%;align-items:flex-start">
-        <div style="flex:1;min-width:0;width:100%">
-          <input name="etapa_titulo_${i}" value="${escHtml(titulo)}" placeholder="Título da etapa..." style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none" />
-        </div>
-        <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
-      </div>
-      <textarea name="etapa_desc_${i}" placeholder="Descrição da etapa..." rows="2" style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:.82rem;outline:none;resize:vertical">${escHtml(descricao)}</textarea>
-      <div style="width:100%;min-width:0">
-        <label style="font-size:0.65rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Manuais vinculados <span style="font-weight:400;opacity:.7">(opcional)</span></label>
-        <select name="etapa_manuais_${i}" multiple style="width:100%;min-width:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.8rem;outline:none;min-height:60px;max-height:100px">
-          ${getManuaisOptions(manuais_ids)}
-        </select>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select">Limpar sele&ccedil;&atilde;o</button>
-        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">Segure Ctrl (ou Cmd) para selecionar múltiplos manuais.</p>
-      </div>
-    </div>`;
+  const ui = iniciarSalvamentoV2();
+  if (ui) ui.etapa('Salvando…');
+  const ok = await salvarComFeedback('processos', id, dados, { aoErro: mostrarErroSalvar });
+  if (!ok) {
+    if (ui) ui.restaurar();
+    return;
+  }
+  fecharModal(true);
+  toast('Processo salvo.');
+  renderProcessos();
 }
 
 /* ============================================================
@@ -3318,6 +4125,17 @@ const ACOES_ADMIN_CLIQUE = {
   'remover-arquivo-upload': () => removerArquivoUpload(),
   'selecionar-icone': (el) => selecionarIcone(el.dataset.field, el.dataset.valor),
   'selecionar-cor': (el) => selecionarCor(el.dataset.field, el.dataset.valor),
+  'toggle-icone-panel': (el) => toggleIconePanel(el.dataset.field),
+  'escolher-arquivo-doc': (el) => escolherArquivoDoc(el),
+  'limpar-arquivo-doc': (el) => limparArquivoDoc(el),
+  'remover-doc-item': (el) => {
+    const item = el.closest('.doc-item');
+    if (item) item.remove();
+    marcarSujoV2();
+  },
+  'descartar-alteracoes': () => descartarAlteracoes(),
+  'salvar-rascunho': () => salvarComoRascunho(),
+  'continuar-editando': () => esconderBarraAlteracoes(),
 
   // Acoes do HTML (grupo 4)
   'fazer-login': () => fazerLogin(),
