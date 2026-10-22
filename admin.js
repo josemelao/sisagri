@@ -870,7 +870,7 @@ function confirmarDelecao(colecao, id, nome, callback) {
   abrirModal(`
     <h2 class="modal-title">Confirmar exclusão</h2>
     <div class="confirm-box">
-      <p class="confirm-msg">Tem certeza que deseja excluir <strong>${escHtml(nome)}</strong>? Esta ação não pode ser desfeita.</p>
+      <p class="confirm-msg">Tem certeza que deseja excluir <strong title="${escHtml(nome)}">${escHtml(nome)}</strong>? Esta ação não pode ser desfeita.</p>
       <div class="confirm-actions">
         <button class="btn btn-ghost" data-acao="fechar-modal">Cancelar</button>
         <button class="btn btn-danger" data-acao="executar-delecao" data-colecao="${colecao}" data-id="${id}">
@@ -1333,16 +1333,19 @@ function renderPublishStatusActions(saveAcao, item = {}, dadosExtras = {}) {
 }
 
 function renderInlinePublishStatusControl(colecao, item = {}) {
-  const publishStatus = item.publish_status === 'draft' ? 'draft' : 'published';
-  const isPublished = publishStatus === 'published';
+  const isPublished = item.publish_status !== 'draft';
+  const titulo = isPublished
+    ? 'Publicado - clique para mover para rascunho'
+    : 'Rascunho - clique para publicar';
   return `
-    <label class="inline-publish-toggle" title="${isPublished ? 'Publicado' : 'Rascunho'}">
-      <span class="inline-publish-toggle__label">${isPublished ? 'Publicado' : 'Rascunho'}</span>
+    <label class="inline-publish-toggle" title="${titulo}">
+      <i class="ph-bold ${isPublished ? 'ph-eye' : 'ph-eye-closed'}" aria-hidden="true"></i>
       <span class="inline-publish-toggle__switch">
         <input
           type="checkbox"
           ${isPublished ? 'checked' : ''}
           data-acao="toggle-publish-inline" data-colecao="${colecao}" data-id="${item.id}"
+          aria-label="${titulo}"
         />
         <span class="inline-publish-toggle__slider"></span>
       </span>
@@ -1682,23 +1685,22 @@ function pintarFuncionarios(estado) {
     </div>
     <div class="admin-table-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>Cargo</th><th>Lota&#231;&#227;o</th><th>Departamento</th><th>A&#231;&#245;es</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Departamento</th><th>A&#231;&#245;es</th></tr></thead>
         <tbody>
           ${estado.itens.length ? estado.itens.map(f => `
             <tr>
-              <td><strong>${escHtml(f.nome)}</strong></td>
+              <td><strong title="${escHtml(f.nome)}">${escHtml(f.nome)}</strong></td>
               <td>${escHtml(f.cargo)}</td>
-              <td>${escHtml(f.lotacao || f.setor || '')}</td>
               <td>${escHtml(f.departamento || '')}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('funcionarios', f)}
-                <button class="btn btn-ghost btn-sm" data-acao="editar-funcionario" data-id="${f.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="funcionarios" data-id="${f.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-funcionario" data-id="${f.id}" title="Editar" aria-label="Editar ${escHtml(f.nome)}"><i class="ph-bold ph-pencil"></i></button>
+                <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="funcionarios" data-id="${f.id}" title="Excluir" aria-label="Excluir ${escHtml(f.nome)}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
             <tr>
-              <td colspan="5" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum funcionario encontrado para o filtro informado.</td>
+              <td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum funcionario encontrado para o filtro informado.</td>
             </tr>`}
         </tbody>
       </table>
@@ -1875,13 +1877,13 @@ function pintarManuais(estado) {
         <tbody>
           ${estado.itens.length ? estado.itens.map(m => `
             <tr>
-              <td><strong class="td-truncate">${escHtml(m.titulo)}</strong></td>
+              <td><strong class="td-truncate" title="${escHtml(m.titulo)}">${escHtml(m.titulo)}</strong></td>
               <td><span class="badge">${escHtml(m.categoria)}</span></td>
               <td>${(m.passos||[]).length}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('manuais', m)}
-                <button class="btn btn-ghost btn-sm" data-acao="editar-manual" data-id="${m.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(m.titulo)}" data-acao="confirmar-delecao" data-colecao="manuais" data-id="${m.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-manual" data-id="${m.id}" title="Editar" aria-label="Editar ${escHtml(m.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+                <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(m.titulo)}" data-acao="confirmar-delecao" data-colecao="manuais" data-id="${m.id}" title="Excluir" aria-label="Excluir ${escHtml(m.titulo)}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
             </tr>
           `).join('') : `
@@ -2521,13 +2523,13 @@ function pintarProcessos(estado) {
       <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Etapas</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(p => `
         <tr>
-          <td><strong class="td-truncate">${escHtml(p.titulo)}</strong></td>
+          <td><strong class="td-truncate" title="${escHtml(p.titulo)}">${escHtml(p.titulo)}</strong></td>
           <td><span class="badge">${escHtml(p.categoria)}</span></td>
           <td>${(p.etapas||[]).length}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('processos', p)}
-                <button class="btn btn-ghost btn-sm" data-acao="editar-processo" data-id="${p.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(p.titulo)}" data-acao="confirmar-delecao" data-colecao="processos" data-id="${p.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-processo" data-id="${p.id}" title="Editar" aria-label="Editar ${escHtml(p.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+                <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(p.titulo)}" data-acao="confirmar-delecao" data-colecao="processos" data-id="${p.id}" title="Excluir" aria-label="Excluir ${escHtml(p.titulo)}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2726,8 +2728,8 @@ function pintarArquivos(estado) {
           <td class="admin-col-arquivo-tags">${(a.tags||[]).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
               <td><div class="td-actions td-actions--with-status">
                 ${renderInlinePublishStatusControl('arquivos', a)}
-                <button class="btn btn-ghost btn-sm" data-acao="editar-arquivo" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-                <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.nome)}" data-acao="confirmar-delecao" data-colecao="arquivos" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-arquivo" data-id="${a.id}" title="Editar" aria-label="Editar ${escHtml(a.nome)}"><i class="ph-bold ph-pencil"></i></button>
+                <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(a.nome)}" data-acao="confirmar-delecao" data-colecao="arquivos" data-id="${a.id}" title="Excluir" aria-label="Excluir ${escHtml(a.nome)}"><i class="ph-bold ph-trash"></i></button>
               </div></td>
         </tr>`).join('') : `
         <tr>
@@ -2930,15 +2932,15 @@ function pintarVeiculos(estado) {
       <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrim&#244;nio</th><th>Situa&#231;&#227;o</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(v => `
         <tr>
-          <td><strong>${escHtml(v.nome)}</strong></td>
+          <td><strong title="${escHtml(v.nome)}">${escHtml(v.nome)}</strong></td>
           <td>${escHtml(v.marca)} ${escHtml(v.modelo)} (${escHtml(v.ano)})</td>
           <td>${escHtml(v.placa)}</td>
           <td>${escHtml(v.patrimonio)}</td>
           <td><span class="badge" style="${v.situacao==='Em operação'?'background:#e6f4ea;color:#2d6a4f':'background:#fff3e0;color:#7a4f00'}">${escHtml(v.situacao)}</span></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('veiculos', v)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-veiculo" data-id="${v.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(v.nome)}" data-acao="confirmar-delecao" data-colecao="veiculos" data-id="${v.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-veiculo" data-id="${v.id}" title="Editar" aria-label="Editar ${escHtml(v.nome)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(v.nome)}" data-acao="confirmar-delecao" data-colecao="veiculos" data-id="${v.id}" title="Excluir" aria-label="Excluir ${escHtml(v.nome)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -3116,13 +3118,13 @@ function pintarSistemas(estado) {
       <thead><tr><th>Nome</th><th>&#211;rg&#227;o</th><th>URL</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
-          <td><strong>${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
+          <td><strong title="${escHtml(s.nome)}">${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
           <td>${escHtml(s.orgao)}</td>
-          <td class="td-truncate"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></td>
+          <td><div class="td-truncate"><a href="${escHtml(escUrl(s.url))}" target="_blank" style="color:var(--accent)">${escHtml(s.url)}</a></div></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('sistemas', s)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-sistema" data-id="${s.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="sistemas" data-id="${s.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-sistema" data-id="${s.id}" title="Editar" aria-label="Editar ${escHtml(s.nome)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="sistemas" data-id="${s.id}" title="Excluir" aria-label="Excluir ${escHtml(s.nome)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -3332,13 +3334,13 @@ function pintarServicos(estado) {
       <thead><tr><th>Nome</th><th>Categoria</th><th>P&#250;blico</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
-          <td><strong class="td-truncate">${escHtml(s.nome)}</strong></td>
+          <td><strong class="td-truncate" title="${escHtml(s.nome)}">${escHtml(s.nome)}</strong></td>
           <td><span class="badge">${escHtml(s.categoria)}</span></td>
-          <td class="td-truncate">${escHtml(s.publico)}</td>
+          <td><div class="td-truncate" title="${escHtml(s.publico)}">${escHtml(s.publico)}</div></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('servicos', s)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-servico" data-id="${s.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="servicos" data-id="${s.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar" aria-label="Editar ${escHtml(s.nome)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(s.nome)}" data-acao="confirmar-delecao" data-colecao="servicos" data-id="${s.id}" title="Excluir" aria-label="Excluir ${escHtml(s.nome)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -3486,13 +3488,13 @@ function pintarAvisos(estado) {
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
-          <td><strong class="td-truncate">${escHtml(a.titulo)}</strong></td>
+          <td><strong class="td-truncate" title="${escHtml(a.titulo)}">${escHtml(a.titulo)}</strong></td>
           <td><span class="badge">${escHtml(a.tipo)}</span></td>
-          <td>${escHtml(a.local||'ï¿½')}</td>
+          <td>${escHtml(a.local||'—')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('avisos', a)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-aviso" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="avisos" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-aviso" data-id="${a.id}" title="Editar" aria-label="Editar ${escHtml(a.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="avisos" data-id="${a.id}" title="Excluir" aria-label="Excluir ${escHtml(a.titulo)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr>
@@ -3575,18 +3577,18 @@ function pintarAgenda(estado) {
       <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(e => {
         const periodo = e.tipo === 'prazo' && !e.data
-          ? `${escHtml(formatDateBR(e.data_fim || 'ï¿½'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
-          : `${escHtml(formatDateBR(e.data || 'ï¿½'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
+          ? `${escHtml(formatDateBR(e.data_fim || '—'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
+          : `${escHtml(formatDateBR(e.data || '—'))}${e.hora ? ` ${escHtml(e.hora)}` : ''}${e.data_fim ? ` ? ${escHtml(formatDateBR(e.data_fim))}` : ''}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`;
         return `
         <tr>
-          <td><strong class="td-truncate">${escHtml(e.titulo)}</strong></td>
+          <td><strong class="td-truncate" title="${escHtml(e.titulo)}">${escHtml(e.titulo)}</strong></td>
           <td><span class="badge">${escHtml(e.tipo)}</span></td>
           <td>${periodo}</td>
-          <td>${escHtml(e.local||'ï¿½')}</td>
+          <td>${escHtml(e.local||'—')}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('agendaEventos', e)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-evento" data-id="${e.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(e.titulo)}" data-acao="confirmar-delecao" data-colecao="agendaEventos" data-id="${e.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-evento" data-id="${e.id}" title="Editar" aria-label="Editar ${escHtml(e.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(e.titulo)}" data-acao="confirmar-delecao" data-colecao="agendaEventos" data-id="${e.id}" title="Excluir" aria-label="Excluir ${escHtml(e.titulo)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -3741,15 +3743,15 @@ function pintarEscala(estado) {
         const status = getFeriasStatus(f.periodo_inicio, f.periodo_fim);
         return `
         <tr>
-          <td><strong>${escHtml(f.nome)}</strong></td>
+          <td><strong title="${escHtml(f.nome)}">${escHtml(f.nome)}</strong></td>
           <td>${escHtml(f.cargo)}</td>
           <td>${escHtml(formatDateBR(f.periodo_inicio))}</td>
           <td>${escHtml(formatDateBR(f.periodo_fim))}</td>
           <td><span class="badge" style="${status==='em_curso'?'background:#e6f4ea;color:#2d6a4f':''}">${escHtml(status)}</span></td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('escalaFerias', f)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-ferias" data-id="${f.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="escalaFerias" data-id="${f.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-ferias" data-id="${f.id}" title="Editar" aria-label="Editar ${escHtml(f.nome)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(f.nome)}" data-acao="confirmar-delecao" data-colecao="escalaFerias" data-id="${f.id}" title="Excluir" aria-label="Excluir ${escHtml(f.nome)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`;
       }).join('') : `
@@ -3830,13 +3832,13 @@ function pintarAcesso(estado) {
       <thead><tr><th>T&#237;tulo</th><th>URL</th><th>&#205;cone</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
-          <td><strong>${escHtml(a.titulo)}</strong></td>
-          <td class="td-truncate"><a href="${escHtml(escUrl(a.url))}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></td>
+          <td><strong title="${escHtml(a.titulo)}">${escHtml(a.titulo)}</strong></td>
+          <td><div class="td-truncate"><a href="${escHtml(escUrl(a.url))}" target="_blank" style="color:var(--accent)">${escHtml(a.url)}</a></div></td>
           <td>${escHtml(a.icone)}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('acessoRapido', a)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-acesso" data-id="${a.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="acessoRapido" data-id="${a.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-acesso" data-id="${a.id}" title="Editar" aria-label="Editar ${escHtml(a.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(a.titulo)}" data-acao="confirmar-delecao" data-colecao="acessoRapido" data-id="${a.id}" title="Excluir" aria-label="Excluir ${escHtml(a.titulo)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum atalho encontrado para o filtro informado.</td></tr>`}
@@ -3907,12 +3909,12 @@ function pintarInfoSimples(colecao, estado, heading) {
       <thead><tr><th>T&#237;tulo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(item => `
         <tr>
-          <td><strong>${escHtml(item.titulo)}</strong></td>
+          <td><strong title="${escHtml(item.titulo)}">${escHtml(item.titulo)}</strong></td>
           <td>${(item.campos||[]).length} campos</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl(colecao, item)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-info-simples" data-colecao="${colecao}" data-id="${item.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(item.titulo)}" data-acao="confirmar-delecao" data-colecao="${colecao}" data-id="${item.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-info-simples" data-colecao="${colecao}" data-id="${item.id}" title="Editar" aria-label="Editar ${escHtml(item.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(item.titulo)}" data-acao="confirmar-delecao" data-colecao="${colecao}" data-id="${item.id}" title="Excluir" aria-label="Excluir ${escHtml(item.titulo)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="3" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum bloco encontrado para o filtro informado.</td></tr>`}
@@ -4050,13 +4052,13 @@ function pintarInfoOrgaos(estado) {
       <thead><tr><th>T&#237;tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(o => `
         <tr>
-          <td><strong>${escHtml(o.titulo)}</strong></td>
-          <td class="td-truncate">${escHtml(o.nome_completo)}</td>
+          <td><strong title="${escHtml(o.titulo)}">${escHtml(o.titulo)}</strong></td>
+          <td><div class="td-truncate" title="${escHtml(o.nome_completo)}">${escHtml(o.nome_completo)}</div></td>
           <td>${(o.campos||[]).length}</td>
           <td><div class="td-actions td-actions--with-status">
             ${renderInlinePublishStatusControl('infoOrgaos', o)}
-            <button class="btn btn-ghost btn-sm" data-acao="editar-orgao" data-id="${o.id}"><i class="ph-bold ph-pencil"></i> Editar</button>
-            <button class="btn btn-danger btn-sm" data-nome="${escHtml(o.titulo)}" data-acao="confirmar-delecao" data-colecao="infoOrgaos" data-id="${o.id}"><i class="ph-bold ph-trash"></i></button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-acao="editar-orgao" data-id="${o.id}" title="Editar" aria-label="Editar ${escHtml(o.titulo)}"><i class="ph-bold ph-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" data-nome="${escHtml(o.titulo)}" data-acao="confirmar-delecao" data-colecao="infoOrgaos" data-id="${o.id}" title="Excluir" aria-label="Excluir ${escHtml(o.titulo)}"><i class="ph-bold ph-trash"></i></button>
           </div></td>
         </tr>`).join('') : `
         <tr><td colspan="4" style="padding:14px;color:var(--text-muted);text-align:center">Nenhum orgao encontrado para o filtro informado.</td></tr>`}
