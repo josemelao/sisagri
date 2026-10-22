@@ -1801,22 +1801,25 @@ function novoFuncionario()    { abrirModalV2(formFuncionario()); }
 function editarFuncionario(id){ const f = DB.getById('funcionarios', id); abrirModalV2(formFuncionario(f), f); }
 
 async function salvarFuncionario(id) {
+  if (!validarObrigatorioV2('f-nome', 'Informe o nome completo.')) return;
   const existente = id ? DB.getById('funcionarios', id) : null;
   const removeFoto = document.getElementById('f-remover-foto').value === '1';
   let fotoFinal = removeFoto ? '' : (existente?.foto || '');
   let fotoStoragePathFinal = removeFoto ? '' : (existente?.foto_storage_path || '');
   let fotoStorageBucketFinal = removeFoto ? '' : (existente?.foto_storage_bucket || '');
 
+  const ui = iniciarSalvamentoV2();
+
   if (funcionarioFotoUploadPendente) {
+    if (ui) ui.etapa('Enviando foto…');
     try {
-      iniciarAcaoAdmin('Enviando foto...');
       const upload = await DB.uploadFuncionarioFotoStorage(funcionarioFotoUploadPendente);
       fotoFinal = upload.url;
       fotoStoragePathFinal = upload.storage_path;
       fotoStorageBucketFinal = upload.storage_bucket;
     } catch (error) {
-      concluirAcaoAdmin();
-      toast(`Falha no upload: ${error?.message || 'erro desconhecido'}`, 'error');
+      if (ui) ui.restaurar();
+      mostrarErroSalvar(`Falha no upload: ${error?.message || 'erro desconhecido'}`);
       return;
     }
   }
@@ -1840,8 +1843,11 @@ async function salvarFuncionario(id) {
     descricao:     document.getElementById('f-descricao').value.trim(),
     publish_status: getModalPublishStatus(),
   };
-  if (!validarObrigatorioV2('f-nome', 'Informe o nome completo.')) return;
-  if (!(await salvarComFeedback('funcionarios', id, dados))) return;
+  if (ui) ui.etapa('Salvando…');
+  if (!(await salvarComFeedback('funcionarios', id, dados, { aoErro: mostrarErroSalvar }))) {
+    if (ui) ui.restaurar();
+    return;
+  }
   if (existente?.foto_storage_path && (removeFoto || (fotoStoragePathFinal && fotoStoragePathFinal !== existente.foto_storage_path))) {
     DB.deleteFuncionarioFotoStorage(existente.foto_storage_path, existente.foto_storage_bucket).catch((error) => {
       console.warn('[Admin] Falha ao remover foto antiga do Storage:', error);
@@ -2874,9 +2880,11 @@ async function salvarArquivo(id) {
   let finalStoragePath = removeArquivo ? '' : (existente?.storage_path || '');
   let finalStorageBucket = removeArquivo ? '' : (existente?.storage_bucket || '');
 
+  const ui = iniciarSalvamentoV2();
+
   if (arquivoUploadPendente) {
+    if (ui) ui.etapa('Enviando arquivo…');
     try {
-      iniciarAcaoAdmin('Enviando arquivo...');
       const upload = await DB.uploadArquivoStorage(arquivoUploadPendente);
       finalUrl = upload.url;
       finalArquivoData = '';
@@ -2884,8 +2892,8 @@ async function salvarArquivo(id) {
       finalStoragePath = upload.storage_path;
       finalStorageBucket = upload.storage_bucket;
     } catch (error) {
-      concluirAcaoAdmin();
-      toast(`Falha no upload: ${error?.message || 'erro desconhecido'}`, 'error');
+      if (ui) ui.restaurar();
+      mostrarErroSalvar(`Falha no upload: ${error?.message || 'erro desconhecido'}`);
       return;
     }
   }
@@ -2902,7 +2910,11 @@ async function salvarArquivo(id) {
     publish_status: getModalPublishStatus(),
   };
 
-  if (!(await salvarComFeedback('arquivos', id, dados))) return;
+  if (ui) ui.etapa('Salvando…');
+  if (!(await salvarComFeedback('arquivos', id, dados, { aoErro: mostrarErroSalvar }))) {
+    if (ui) ui.restaurar();
+    return;
+  }
   if (existente?.storage_path && (removeArquivo || (finalStoragePath && finalStoragePath !== existente.storage_path))) {
     DB.deleteArquivoStorage(existente.storage_path, existente.storage_bucket).catch((error) => {
       console.warn('[Admin] Falha ao remover arquivo antigo do Storage:', error);
