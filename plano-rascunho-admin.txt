@@ -31,6 +31,25 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
+SESSAO 2026-10-22 — BLOCO 13 / T13.1 (hash routing)
+=========================================================================
+
+  - T13.1 (commit c451d9c, validado pelo dono em 2026-10-22): o app publico
+    passou a rotear por hash (#/dashboard, #/funcionarios...). F5 mantem a
+    pagina, link direto abre a pagina certa, voltar/avancar do navegador
+    aplica a pagina sem criar entrada nova e hash invalido cai no dashboard
+    com a URL corrigida. navigateTo grava o hash com pushState (nao duplica
+    a entrada da pagina atual); initNavigation le o hash no boot,
+    canonicaliza "#pagina" para "#/pagina" e escuta hashchange. Os 14
+    href="#" viraram href="#/pagina" (11 da sidebar, 1 do dashboard e 2
+    "Ver todos"). 8 testes novos. db.js/admin.js intocados.
+  - Prova: npm run check exit 0 (250 testes, 0 falhas); e2e 13 passed /
+    2 skipped; checagem no navegador real (link direto #/manuais, clique
+    -> #/funcionarios, voltar -> #/manuais, F5 -> #/manuais, hash invalido
+    -> #/dashboard, sem erros de pagina).
+  - PENDENTE: T13.2 (SEO).
+
+=========================================================================
 SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4 + T12.5
 =========================================================================
 

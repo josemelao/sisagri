@@ -1759,13 +1759,19 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 
 | Tarefa | Ação | Validação | Esforço |
 |---|---|---|---|
-| T13.1 | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
+| T13.1 ✅ | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
 | T13.2 | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
 | T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
 | T13.6 | Higiene de repositório | `plano-refatoracao-v1.3.md` (mojibake real) regenerado/arquivado; branch fantasma `codex/fase1-...` e `origin/master` órfã **com confirmação do dono**; ADRs; `README.md` de setup | S |
 | T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `.opencode/plan/2026-10-21-item-frescor-dados-publico.md` | M |
+
+### Registro de execução — 2026-10-22 (T13.1)
+
+**T13.1 — roteamento por hash (commit `c451d9c`; validado pelo dono em 2026-10-22):** o app público agora usa `#/dashboard`, `#/funcionarios` etc. `initNavigation` lê o hash no boot (F5/link direto), canonicaliza `#pagina` para `#/pagina`, escuta `hashchange` (voltar/avançar sem criar entrada) e cai no dashboard com a URL corrigida quando o hash é inválido. `navigateTo` grava o hash com `pushState` e não duplica a entrada da página atual. Os 14 `href="#"` viraram `href="#/página"`. 8 testes novos; `db.js`/`admin.js` intocados.
+**Prova:** `npm run check` exit 0 (250 testes, 0 falhas) · e2e 13 passed / 2 skipped · navegador real: link direto, clique, voltar, F5 e hash inválido.
+**Pendente:** T13.2 (SEO).
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual não intencional (screenshots)
