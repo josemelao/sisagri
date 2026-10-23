@@ -63,7 +63,8 @@ SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
   - NAO foi feito: limpeza de branches (aguarda autorizacao explicita),
     T13.3-T13.5/T13.7, deploy para main, regeneracao de dados.js.
   - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos de lint).
-  - Estado: aguardando validacao do dono e commit. Nada foi commitado.
+  - Commit c2a3cfc em 2026-10-22; push para origin/codex/fase3. main segue
+    sem merge. Proximas etapas: T13.3 a T13.7 e deploy no fim do bloco.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.1 + T13.2 (hash routing + SEO)

@@ -1798,8 +1798,9 @@ preview movidos para `docs/arquivo/` com índice; `docs/adr/` criado com 4 ADRs;
 lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
 (`script.js`, `admin.js`, `db.js`, `dados.js`, HTML/CSS) foi alterado.
 **Prova:** `npm run check` exit 0 (257 testes, 0 falhas, 21 avisos de lint).
-**Pendente:** T13.3, T13.4, T13.5, T13.7, limpeza de branches (com autorização),
-commit e deploy. O plano de ações restantes está em
+**Commit/push:** `c2a3cfc` em `origin/codex/fase3` (2026-10-22); `main` sem merge.
+**Pendente:** T13.3, T13.4, T13.5, T13.7, limpeza de branches (com autorização)
+e deploy. O plano de ações restantes está em
 `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
