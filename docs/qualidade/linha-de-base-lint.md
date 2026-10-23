@@ -5,6 +5,10 @@
 **Objetivo:** ter o número do "hoje" para que qualquer piora seja visível. Este
 documento **não** propõe correção nenhuma.
 
+> **Nota (2026-10-22):** documento histórico do Bloco 4. As contagens de testes
+> e avisos abaixo são da data original; para o número atual, rode
+> `npm run check`.
+
 ---
 
 ## Ferramentas instaladas

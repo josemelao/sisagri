@@ -79,9 +79,20 @@ Quando parar e alinhar antes:
 - `admin.js`
 - `dados.js`
 - `db.js`
+- `js/core/utils.js` (`escapeHtml`, `escapeAttr` e utilitários)
+- `js/admin/list-controller.js` (listas do admin)
+
+### Apoio
+- `scripts/` — servidor local (`serve.mjs`) e guardas de qualidade
+- `tests/unit/` — testes `node:test`
+- `tests/e2e/` — Playwright
+- `assets/`, `robots.txt`, `sitemap.xml` — imagens e SEO
+- `docs/` — ADRs, segurança, qualidade e planos arquivados
 
 ### Arquivo operacional
 - `plano-rascunho-admin.txt` (se existir, tratar como handoff vigente)
+- `v2_plano_refatoração.md` (plano mestre)
+- `README.md` (setup, testes e deploy)
 
 ### Modelo mental do sistema
 **Fluxo público:** `index.html` → `dados.js` / Supabase / `db.js` → `script.js`
@@ -107,6 +118,7 @@ Preservar:
 - `data-page`
 - classes usadas por JS
 - boot screen e hooks de navegação
+- rotas por hash `#/pagina` e canonicalização de `#pagina`
 
 Evitar:
 - mover grandes blocos de markup
@@ -132,6 +144,7 @@ Preservar:
 - filtro por `publish_status`
 - busca global e paginação
 - chaves persistidas (`MODULE_SEARCH_STATE_KEY` e similares)
+- roteamento por hash (`#/pagina`) e histórico de navegação
 
 Ao alterar:
 - preferir patch local
@@ -167,6 +180,7 @@ Preservar:
 - inicialização após `dbInit()`
 - fallback quando Supabase falhar
 - assinaturas chamadas pelo HTML
+- listas controladas por `js/admin/list-controller.js`
 
 Ao tocar em CRUD:
 - manter compatibilidade com `publish_status`
@@ -207,6 +221,7 @@ Preservar:
 - nomes de chaves persistidas
 - fallback para formatos antigos
 - fallback local se Supabase falhar
+- URLs assinadas de buckets privados e cache em memória
 
 Regras Supabase:
 - nunca expor `service_role` no frontend
@@ -278,6 +293,13 @@ Se houver risco de expor rascunhos no frontend, **parar e avisar antes de implem
 1. validar impacto no público
 2. validar impacto na persistência
 3. validar impacto no fluxo de publicação
+
+### Comandos de verificação
+- `npm run serve` — app em `http://localhost:5173` (ou `PORT=5180`)
+- `npm run check` — sintaxe + lint + guarda de `innerHTML` + testes unitários
+- `npm run test:e2e` — Playwright; login/listagem do admin exigem
+  `SISAGRI_ADMIN_EMAIL` e `SISAGRI_ADMIN_PASSWORD`
+- `npm run syntax` — checagem rápida dos JS principais
 
 ---
 

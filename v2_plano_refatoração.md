@@ -8,8 +8,8 @@
 **Revisão 2 (2026-10-19):** incorpora os 5 achados dos Advisors de segurança (`N1`–`N5`) e os blocos **0.5**, **3b** e **3c**. O Bloco 0 foi executado e validado.
 **Revisão 3 (2026-10-19):** situa a execução real. Blocos **0**, **0.5**, **1**, **2**, **3** (parte de tabela) e **3c** **concluídos**; Bloco **3b** está **parcial** (parte 1 = gate do Storage). `0002`, `0003` e `0004` estão **aplicadas em produção**. Os registros dentro dos Blocos 3 e 3c descrevem as divergências em relação ao previsto.
 **Revisão 4 (2026-10-20):** Bloco **3b** **concluído** (parte 2: `0008`/`0009`, URL assinada e buckets privados, validado no site real) e Bloco **3c/13** **concluído** (`0010`/`0011`). Bloco **6** concluído, incluindo T6.5 (232 casos no projeto de teste). Deploy `c3f1c90` no ar. Tudo em `origin/main` (base `33e7111` + commits de docs).
-**Revisão 5 (2026-10-21):** saneamento de rastreabilidade. Blocos **1, 2, 3, 3c e 4** marcados como concluídos (estavam `[ ]` apesar de executados). **T7.2** marcado como feito no Bloco 4.1. Migrations do Bloco 8 renumeradas: `0006`/`0007` **já existem** (`rls_papeis`, `fn_grants`) → passam a **`0012_sync_identity_sequences`**, **`0013_replace_collection`** e **`0014_updated_at`**. Handlers inline medidos: **43** (`script.js`) + **135** (`admin.js`) + **18** (HTML). MCP passou a ter `get_advisors` e `functions`. Mascaramento de campos sensíveis **adiado por decisão do dono** (2026-10-21).
-**`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono. **Nesta máquina (2026-10-21): commits locais em `codex/fase3`, sem `push`.**
+**Revisão 5 (2026-10-21):** saneamento de rastreabilidade. Blocos **1, 2, 3, 3c e 4** marcados como concluídos (estavam `[ ]` apesar de executados). **T7.2** marcado como feito no Bloco 4.1. Migrations do Bloco 8 renumeradas: `0006`/`0007` **já existem** (`rls_papeis`, `fn_grants`) → passam a **`0012_sync_identity_sequences`**, **`0013_replace_collection`** e **`0014_updated_at`**. Handlers inline medidos na época: **43** (`script.js`) + **135** (`admin.js`) + **18** (HTML); em 2026-10-22 o inventário é **0** (commits `0d1e476`/`7f89e5a`). O MCP do teste tem `functions`; `get_advisors` não está no catálogo desta sessão (2026-10-22). Mascaramento de campos sensíveis **adiado por decisão do dono** (2026-10-21).
+**`main`:** produção. **Nada** vai para `main` ou para o remoto sem validação explícita do dono. **Nesta máquina (2026-10-22): branch local `codex3`, rastreando `origin/codex/fase3`; os commits do Bloco 12/13 foram enviados, mas `main` segue sem merge.**
 **Origem:** correção da v1 a partir de auditoria real do banco executada em 2026-10-19 (somente leitura).
 
 ---
@@ -292,6 +292,9 @@ Reativar "Allow new users to sign up" no dashboard. **Não fazer** sem decidir j
 **Objetivo:** ligar a checagem de senhas comprometidas (HaveIBeenPwned) — o Advisor `auth_leaked_password_protection` está disparando.
 
 ### Tarefas
+
+> **Status 2026-10-22:** bloqueado no plano Free do Supabase; o dono aceitou a
+> limitação em 2026-10-20. Reavaliar apenas se houver upgrade de plano.
 
 - [ ] **T0.5.1 — Ligar a proteção**
   Dashboard → **Authentication** → seção de senha (**Settings** / **Policies** / **Password security**, depende da versão) → ligar **"Leaked password protection"**.
@@ -1251,12 +1254,15 @@ Antes/depois, contagem idêntica do conteúdo público:
 Network do navegador (sessão anônima): a resposta de cada coleção deve ter **apenas** `published`.
 
 ### Checklist
-- [ ] consultas anônimas pedem `publish_status=eq.published`
-- [ ] contagens públicas **idênticas** à baseline (0 regressão de conteúdo)
-- [ ] admin **continua** vendo rascunhos
-- [ ] campo ausente → rascunho (teste verde)
-- [ ] `escala_ferias` usa `publish_status`
-- [ ] filtro do cliente preservado
+- [x] consultas anônimas pedem `publish_status=eq.published`
+- [x] contagens públicas **idênticas** à baseline (0 regressão de conteúdo)
+- [x] admin **continua** vendo rascunhos
+- [x] campo ausente → rascunho (teste verde)
+- [x] `escala_ferias` usa `publish_status`
+- [x] filtro do cliente preservado
+
+> Checkboxes atualizados em 2026-10-22: o Bloco 7 foi concluído nos commits
+> `e03c7c0` e `0e8180e`; o checklist tinha ficado para trás.
 
 ### Rollback
 `git checkout -- db.js`.
@@ -1357,11 +1363,13 @@ Migrations de reversão + `git checkout -- db.js`.
   `scripts/check-innerhtml.mjs` + `scripts/innerhtml-baseline.json`, no
   `npm run check`. Inventário medido: `script.js` 55 atribuições / **29 com
   interpolação**; `admin.js` 17 / **11**. Sobe só com `--atualizar` explícito.
-- [ ] **T9.4 — Remover handlers inline (M4)**
-  43 em `script.js` + 135 em `admin.js` + 18 no HTML (medido em 2026-10-21) → `data-action` + delegação.
-  **Estratégia:** um módulo por commit, com teste após cada um. Inventário deve chegar a 0.
-- [ ] **T9.5 — CSP**
-  Só **depois** do T9.4. `meta` CSP em `index.html` e `admin.html`, começando com `Report-Only` e depois aplicando:
+- [x] **T9.4 — Remover handlers inline (M4)** — feito nos commits `0d1e476`
+  e `7f89e5a` (2026-10-21). O inventário atual mede **0** `onclick=` em
+  `index.html`, `admin.html`, `script.js` e `admin.js`; os handlers foram para
+  `data-action` + delegação.
+- [x] **T9.5 — CSP** — feito em `7f89e5a`. `meta` CSP aplicada em `index.html`
+  e `admin.html`, com `supabase-js` fixo em `2.118.0` + SRI. Não há
+  `unsafe-inline` para script; o app não usa handler inline.
   `default-src 'self'; script-src 'self' <cdn exato>; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co`.
 
 ### Validação (prova)
@@ -1385,8 +1393,8 @@ CSP: app funciona e o console **não** registra violações.
 - [ ] teste de XSS no admin: sem fluxo automatizado (login real pendente); a
       correção do `data-nome` foi validada por inspeção
 - [x] `check-innerhtml.mjs` verde
-- [ ] inventário de handlers inline = 0
-- [ ] CSP aplicada sem violação no console
+- [x] inventário de handlers inline = 0
+- [x] CSP aplicada sem violação no console
 - [x] Instagram com `<`, `"`, `&` no caption não quebra o grid
 
 ### Rollback
@@ -1490,9 +1498,9 @@ no painel, campo "Site oficial".
 - [ ] **T10.1 — Rotacionar o token (ação humana, 🤝)**
   Meta for Developers: gerar token novo e **invalidar o antigo**. O token atual já circulou em URL/localStorage — considerar comprometido.
 - [ ] **T10.2 — Edge Function como proxy**
-  `instagram/index.ts` lê o token de **Supabase Secrets**, com cache de 5 min e CORS restrito ao domínio do app.
-- [ ] **T10.3 — Limpar o frontend**
-  `script.js`: chamar a função em vez de `graph.instagram.com`; remover `ig_access_token` do `localStorage` e o campo de token da UI; **limpar** a chave antiga de quem já a tem.
+  `instagram/index.ts` lê o token de **Supabase Secrets**, com cache de 5 min e CORS restrito ao domínio do app. **Código pronto; deploy pendente** (ação humana).
+- [x] **T10.3 — Limpar o frontend**
+  `script.js`: chamar a função em vez de `graph.instagram.com`; remover `ig_access_token` do `localStorage` e o campo de token da UI; **limpar** a chave antiga de quem já a tem. Feito e coberto por testes; o widget mostra indisponibilidade enquanto a function não é publicada.
 - [ ] **T10.4 — Ativar o feature de functions no MCP**
   A URL do MCP hoje é `...&features=database,docs`. Para deploy da function, reconfigurar para incluir `functions` e reautenticar (mesmo fluxo do `/mcps`). Alternativa: deploy pelo CLI/dashboard.
 
@@ -1764,8 +1772,8 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
-| T13.6 | Higiene de repositório | `plano-refatoracao-v1.3.md` (mojibake real) regenerado/arquivado; branch fantasma `codex/fase1-...` e `origin/master` órfã **com confirmação do dono**; ADRs; `README.md` de setup | S |
-| T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `.opencode/plan/2026-10-21-item-frescor-dados-publico.md` | M |
+| T13.6 🟡 | Higiene de repositório | `README.md`, ADRs e arquivo de planos antigos feitos em 2026-10-22; branch fantasma e `origin/master` órfã **pendentes de confirmação do dono** | S |
+| T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md` | M |
 
 ### Registro de execução — 2026-10-22 (T13.1)
 
@@ -1782,13 +1790,26 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **Prova:** `npm run check` exit 0 (257 testes, 0 falhas) · e2e 16 passed / 2 skipped · Lighthouse SEO **100** · `robots.txt`, `sitemap.xml` e `og-image.png` respondem 200.
 **Pendente:** T13.3 (acessibilidade pública).
 
+### Registro de execução — 2026-10-22 (higiene)
+
+**Higiene (sem runtime):** `README.md` raiz criado; planos v1.2, v1.3 e de
+preview movidos para `docs/arquivo/` com índice; `docs/adr/` criado com 4 ADRs;
+`AGENTS.md` atualizado com a estrutura atual; docs de segurança, RBAC, Storage e
+lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
+(`script.js`, `admin.js`, `db.js`, `dados.js`, HTML/CSS) foi alterado.
+**Prova:** `npm run check` exit 0 (257 testes, 0 falhas, 21 avisos de lint).
+**Pendente:** T13.3, T13.4, T13.5, T13.7, limpeza de branches (com autorização),
+commit e deploy. O plano de ações restantes está em
+`C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
+
 ### Checklist do bloco
-- [ ] nenhuma mudança visual não intencional (screenshots)
-- [ ] Lighthouse SEO ≥ 90 e a11y ≥ 90
-- [ ] app funciona com CDN bloqueado
+- [ ] nenhuma mudança visual indesejada (screenshots) — depende do T13.4
+- [x] Lighthouse SEO ≥ 90 — **100** em 2026-10-22
+- [ ] Lighthouse a11y ≥ 90 — depende do T13.3
+- [ ] app funciona com CDN bloqueado — depende do T13.5
 - [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
-- [ ] `AGENTS.md` atualizado com a nova arquitetura
-- [ ] nenhuma branch apagada sem autorização explícita
+- [x] `AGENTS.md` atualizado com a nova arquitetura (2026-10-22)
+- [ ] nenhuma branch apagada sem autorização explícita — limpeza ainda não feita
 
 ---
 
@@ -1852,6 +1873,10 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 
 ## 10. Decisões abertas (precisam do dono)
 
+> **Atualização 2026-10-22:** 1, 2, 3, 4, 8, 9 e 10 estão resolvidas; 5 segue
+> adiada; **6 (Instagram)** e **7 (branches)** continuam abertas. A tabela
+> abaixo é o registro histórico da abertura.
+
 | # | Decisão | Trava | Recomendação |
 |---|---|---|---|
 | 1 | Executar o **Bloco 0** agora? | blocos 1–3 | **Sim.** Leva 5 min e é o único risco com exploração trivial hoje |
@@ -1867,9 +1892,11 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 
 ## 11. O que este plano não faz
 
-- Não decide a matriz de permissões por você (Bloco 6 precisa da sua decisão).
+- A matriz de permissões foi aprovada em 2026-10-19 (T6.0.1/T6.0.2); áreas
+  seguem fora de escopo.
 - Não define o visual da repaginação (Bloco 12 precisa de design aprovado).
-- Não faz push para `main` nem para o remoto em nenhum momento.
+- Não faz push para `main` sem autorização explícita; pushes em `codex/fase3`
+  foram autorizados em 2026-10-21 e 2026-10-22.
 - Não promete que o app fica 100% seguro com o Bloco 0: o Bloco 0 apenas fecha a porta de entrada. A correção estrutural é o Bloco 3.
 - Não resolve o **histórico**: a URL do arquivo do rascunho `id=45` já circulou como endereço público. Torna-la privada no Bloco 3b impede acesso futuro por um caminho novo, mas não apaga o conhecimento de quem já viu. Isso é registro, não tarefa.
 

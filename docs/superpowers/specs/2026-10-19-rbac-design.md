@@ -3,6 +3,9 @@
 **Data:** 2026-10-19
 **Aprovado por:** dono do projeto, em 2026-10-19 (conversa com o agente)
 **Escopo:** papéis `admin` / `servidor` / público, com garantia no banco.
+**Status:** implementado em 2026-10-20 (migrations `rbac_papel` e `rls_papeis`;
+42 policies de conteúdo + 9 de Storage). Permissões por área seguem fora de
+escopo.
 
 ## 1. Decisões do dono
 

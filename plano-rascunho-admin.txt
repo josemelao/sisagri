@@ -1,34 +1,69 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
 Atualizado em: 2026-10-22
-Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy c3f1c90 em 2026-10-20)
+Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
-ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
+ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
 =========================================================================
 
-  - Repo clonado em C:\Users\Usuario\Desktop\SisAgri. A maquina antiga
-    (C:\Users\PICHAU) nao existe mais; os caminhos abaixo foram corrigidos.
-  - Branch local codex/fase3, criada de main (d210411). O trabalho vai nela.
+  - Repo em C:\Users\PICHAU\Desktop\SisAgri.
+  - Branch local codex3, rastreando origin/codex/fase3. O trabalho vai nela.
+  - main = producao; origin/main em d210411. O site publicado ainda e anterior
+    ao Bloco 12/13 (hash routing, SEO, robots e sitemap nao estao no ar).
   - POLITICA DESTA FASE: commit local SIM, push NAO. Nada vai para o remoto
     sem o dono pedir explicitamente.
-  - EXCECAO AUTORIZADA em 2026-10-21: o dono pediu push de codex/fase3
-    (commits do Bloco 11 + registro do Bloco 12). Fora disso, push segue
-    proibido sem pedido explicito.
-  - EXCECAO AUTORIZADA em 2026-10-22: o dono pediu push de codex/fase3
-    (Onda 1, Onda 2, T12.6, ajustes pos-entrega e este registro).
+  - EXCECAO AUTORIZADA em 2026-10-21: push de codex/fase3 (Bloco 11 + registro
+    do Bloco 12).
+  - EXCECAO AUTORIZADA em 2026-10-22: push de codex/fase3 (Onda 1, Onda 2,
+    T12.6, T13.1, T13.2 e registros). O merge para main NAO foi feito.
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
-    O MCP oficial atual TEM get_advisors e (no teste) functions. A limitacao
-    registrada nas PENDENTE 2/7 era da URL antiga (features=database,docs).
-  - Producao conferida em 2026-10-21 via MCP: 10 migrations, 16 tabelas,
-    0 avisos de seguranca.
-  - Teste conferido em 2026-10-21: 12 migrations, 16 tabelas, 0 avisos,
-    3 buckets privados, 0 edge functions.
+    Nesta sessao o catalogo do MCP nao expos get_advisors; conferir no
+    dashboard antes de afirmar "0 avisos".
+  - Producao conferida em 2026-10-22 via MCP: 13 migrations (0002-0014),
+    16 tabelas; ultima conferencia de avisos em 2026-10-21: 0.
+  - Teste conferido em 2026-10-22 via MCP: 15 migrations (0001-0014),
+    16 tabelas, 3 buckets privados, 0 edge functions; avisos: 0 na ultima
+    conferencia.
   - MASCARAMENTO ADIADO por decisao do dono em 2026-10-21: os campos
     sensiveis seguem publicos ate nova ordem (ver PENDENTE 9, item 3).
-  - Plano de acao desta fase:
-    C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
+  - Plano mestre: v2_plano_refatoração.md.
+  - Plano de acoes restantes:
+    C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
+=========================================================================
+
+  - README.md raiz criado: setup, testes, Supabase, deploy, estrutura e
+    pendencias conhecidas.
+  - Planos superados movidos para docs/arquivo/ (git mv, historico preservado):
+      plano-refatoracao-v1.2.md  (concluido em 2026-03-25)
+      plano-refatoracao-v1.3.md  (mojibake; superado pelo plano v2)
+      plano-implementação-preview-arquivos.md (implementado; plano dizia
+      "commit pendente")
+    Indice em docs/arquivo/README.md.
+  - docs/adr/ criado com 4 ADRs: hash routing, publish_status fail-closed,
+    Storage com URL assinada e SEO em project site.
+  - AGENTS.md atualizado com js/core/utils.js, js/admin/list-controller.js,
+    scripts/, tests/, assets/, robots/sitemap, docs/, hash routing e comandos
+    de verificacao.
+  - Docs corrigidos:
+      docs/seguranca/auditoria-rls-2026-10-19.md (secao 7: orfao resolvido,
+      senha vazada bloqueada pelo Free, get_advisors fora do MCP atual)
+      docs/superpowers/specs/2026-10-20-storage-url-assinada.md (decisao #10
+      encerrada; pendencias do 3c resolvidas)
+      docs/superpowers/specs/2026-10-19-rbac-design.md (status implementado)
+      docs/qualidade/linha-de-base-lint.md (nota historica)
+  - v2_plano_refatoração.md: checkboxes de T7, T9.4/T9.5 e T10.3 corrigidos;
+    decisoes 1,2,3,4,8,9,10 marcadas como resolvidas; T13.6 parcial.
+  - Plano de acoes restantes:
+      C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+  - NAO foi feito: limpeza de branches (aguarda autorizacao explicita),
+    T13.3-T13.5/T13.7, deploy para main, regeneracao de dados.js.
+  - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos de lint).
+  - Estado: aguardando validacao do dono e commit. Nada foi commitado.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.1 + T13.2 (hash routing + SEO)
@@ -205,8 +240,8 @@ SESSAO 2026-10-22 — BLOCO 12 / ONDA 1 ENTREGUE (T12.0.2 + Manuais/Processos)
 =========================================================================
 
   - T12.0.1 (spec) e T12.0.2 (prototipo estatico) APROVADOS pelo dono em
-    2026-10-22. Prototipo em
-    C:\Users\Usuario\.opencode\plan\2026-10-22-bloco12-prototipo.html.
+    2026-10-22. O prototipo ficou na maquina antiga; o arquivo
+    2026-10-22-bloco12-prototipo.html nao existe nesta maquina.
   - Escopo re-escopado na aprovacao (vale para o resto do Bloco 12):
       T12.2 uploads  -> feedback minimo (spinner/"Enviando arquivo..."),
                         sem progresso real e sem cancelar;
@@ -363,7 +398,7 @@ SESSAO 2026-10-21 — BLOCO 9d CONCLUIDO (commit 7f89e5a) — CSP APLICADA
   - Proximo: Bloco 10 (deploy da function do Instagram + rotacao do token,
     depende do dono); depois 11, 12 e 13. No 13 entra a T13.7 (frescor do
     app publico sem F5), ja especificada em
-    C:\Users\Usuario\.opencode\plan\2026-10-21-item-frescor-dados-publico.md
+    C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
     -> planejada para o fim do bloco, NAO antecipar.
 
 =========================================================================
@@ -678,7 +713,7 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 =========================================================================
 
 Plano vigente (substitui a v1):
-  C:\Users\Usuario\Desktop\SisAgri\v2_plano_refatoração.md
+  C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 CONCLUIDO: 9a (SisUtils + guarda de CI), 9b (escape na saida +
@@ -688,7 +723,7 @@ Plano vigente (substitui a v1):
      digitacao (fb67e1b) e 9d (CSP + SRI, 7f89e5a) concluidos e validados.
   -> Bloco 13: T13.7 (frescor do app publico sem F5) planejada para o fim do
      bloco; especificacao em
-     C:\Users\Usuario\.opencode\plan\2026-10-21-item-frescor-dados-publico.md
+     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
      -> NAO antecipar sem decisao explicita do dono.
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
@@ -697,8 +732,8 @@ Plano vigente (substitui a v1):
   -> Os registros dentro dos Blocos 3, 3c e 4 descrevem as divergencias do previsto.
 
 Evidencia:
-  C:\Users\Usuario\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
-  C:\Users\Usuario\Desktop\SisAgri\supabase\README.md
+  C:\Users\PICHAU\Desktop\SisAgri\docs\seguranca\auditoria-rls-2026-10-19.md
+  C:\Users\PICHAU\Desktop\SisAgri\supabase\README.md
 
 Historico (v1, NAO existe nesta maquina e nao deve ser usado como plano):
   `2026-10-19-plano-acao-robustez.md` — citado em sessoes antigas em
@@ -792,7 +827,7 @@ O que esta fechado, medido:
             privados desde 2026-10-20; manuais publico)
 
 Backup local (nao versionado, fora do repo):
-  C:\Users\Usuario\Desktop\SisAgri-backup-storage\
+  C:\Users\PICHAU\Desktop\SisAgri-backup-storage\
     rascunho-id45-teste.pdf      87.377 bytes
     orfao-arquivos-smader.pdf 1.460.078 bytes
 

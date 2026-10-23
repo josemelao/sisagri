@@ -14,6 +14,10 @@
 > **N1** também. Os números desta auditoria refletem o *antes* e continuam válidos
 > como linha de base. O *depois* está em `supabase/README.md`.
 >
+> **Atualização (2026-10-22):** a seção 7 foi corrigida para refletir o Bloco
+> 3c, o bloqueio do Leaked Password Protection no plano Free e o catálogo atual
+> do MCP. O restante do documento continua sendo a linha de base de 2026-10-19.
+>
 > **N5 — parcialmente resolvido.** O rascunho `arquivos.id = 45` e o objeto órfão
 > de 1,4 MB foram **apagados** (com backup local antes) e as duas URLs passaram a
 > responder **400**. O objeto do rascunho, porém, **esteve publicamente acessível
@@ -194,9 +198,9 @@ storage_path   = arquivos/1774662485424-29012026171821_614-Remessa.pdf
 | Item | Situação |
 |---|---|
 | URL do arquivo do rascunho `id=45` | **Já esteve publicamente acessível.** Não há como "desexpor" o conhecimento de quem já viu. Registro histórico, não tarefa. |
-| Objeto órfão em `arquivos-smader` | Aguarda decisão do dono (Bloco 3c). |
-| `auth_leaked_password_protection` | Bloco 0.5 executado — pendente confirmação do aviso removido no dashboard. |
-| `get_advisors` via MCP | Indisponível no conjunto de ferramentas do MCP conectado. Consulta feita manualmente no dashboard. |
+| Objeto órfão em `arquivos-smader` | **Resolvido no Bloco 3c (2026-10-20):** rascunho `id=45` e objeto órfão apagados com backup local; 13 órfãos restantes mantidos privados, sem exclusão. |
+| `auth_leaked_password_protection` | **Bloqueado pelo plano Free** do Supabase; o dono aceitou a limitação em 2026-10-20. Reavaliar só com upgrade de plano. |
+| `get_advisors` via MCP | O catálogo do MCP desta sessão (2026-10-22) não expõe `get_advisors`; a última conferência manual no dashboard foi em 2026-10-21 (0 avisos). |
 
 ---
 

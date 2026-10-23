@@ -38,6 +38,8 @@ Por que não Edge Function nesta fase:
 - Menos peças: nenhum deploy, nenhum secret novo, nenhum cold start.
 - A autorização do dono para a Edge Function (decisão #10) fica reservada para
   o caso que a RLS não conseguir expressar. Hoje não é o caso.
+  **Decisão encerrada em 2026-10-22:** a RLS resolveu; a Edge Function não será
+  necessária para URL assinada.
 
 Custo aceito: o `anon` passa a poder **assinar** URLs de objetos publicados e
 listar apenas esses nomes. Isso é equivalente ao que o site já publica; rascunho
@@ -145,12 +147,15 @@ Passos previstos para essa validação de app:
 ## 8. Fora de escopo
 
 - Fechar `manuais-imagens-smader` — implementado depois no 3c/13 (`0010`/`0011`).
-- Apagar objetos órfãos ou o arquivo do rascunho `id=45` (decisão #9).
-- Mascarar campos sensíveis (pendência separada do Bloco 6).
+- Apagar objetos órfãos ou o arquivo do rascunho `id=45` (decisão #9) —
+  **resolvido no Bloco 3c (2026-10-20):** rascunho e órfão apagados com backup;
+  13 órfãos restantes mantidos privados, sem exclusão.
+- Mascarar campos sensíveis (pendência separada do Bloco 6) — adiada pelo dono.
 - Rotação de chaves/URL já conhecida: registro, não tarefa.
 
-## 9. Pendência para o dono
+## 9. Pendência histórica — projeto de teste
 
-Para o teste ponta a ponta, preciso da **anon/publishable key do projeto de
-teste** (a chave pública do `zoywmvuswyosehlddmma`, não a `service_role`). Ela é
-segura no browser; sem ela, a validação para no SQL e no teste unitário.
+O projeto de teste `zoywmvuswyosehlddmma` foi configurado. A chave pública
+(anon/publishable) usada nos testes **não é versionada**; nunca use
+`service_role` no browser. Se a validação ponta a ponta for repetida, configure
+a chave no ambiente local.
