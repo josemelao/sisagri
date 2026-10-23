@@ -1773,7 +1773,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 ✅ | CDN confiável | Phosphor, fontes e `supabase-js@2.118.0` locais; CSP só `'self'` para script/estilo/fonte; e2e com unpkg, jsDelivr e Google Fonts bloqueados | M |
 | T13.6 ✅ | Higiene de repositório | `README.md`, ADRs, arquivo de planos antigos e limpeza de branches feitos em 2026-10-22; restaram `codex/fase3` e `main` | S |
-| T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md` | M |
+| T13.7 ✅ | Frescor ao entrar no módulo: cache imediato + revalidação em segundo plano + `DB.resolveStorageUrls()` + re-render só do módulo ativo | edição do admin aparece ao trocar de módulo sem F5; falha de rede mantém a tela; 6 testes novos | M |
 
 ### Registro de execução — 2026-10-22 (T13.1)
 
@@ -1802,7 +1802,14 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **T13.5 — CDN confiável (commit `4d010e3`; validado pelo dono em 2026-10-22):** Phosphor (regular/bold), as quatro famílias tipográficas e `supabase-js@2.118.0` foram vendorizados em `vendor/` e `assets/fonts/`. `index.html` e `admin.html` passaram a carregar tudo de `'self'`, sem `unpkg`, `jsDelivr` ou Google Fonts; os `preconnect` foram removidos. A CSP ficou `script-src 'self'`, `style-src 'self' 'unsafe-inline'` e `font-src 'self'`; o resto (Supabase, Office viewer e imagens externas) foi preservado. O `supabase-js` local tem SHA-384 documentado e testado. Novo e2e bloqueia as três CDNs e exige boot, navegação, login do painel, fontes/ícones locais, `window.supabase` e zero violações de CSP. `db.js`, `admin.js`, `dados.js`, auth, persistência e `publish_status` intocados.
 **Prova:** `npm run check` exit 0 (258 testes, 0 falhas, 21 avisos de lint) · e2e completo 23 passed / 2 skipped (admin sem credenciais) · e2e `cdn.spec.mjs` 1/1 com unpkg, jsDelivr e Google Fonts bloqueados · `csp.spec.mjs` 3/3 · conferência visual do dashboard e do login do admin.
 **Push:** pendente de autorização; `main` segue sem merge.
-**Pendente:** T13.4, T13.7 e deploy.
+**Pendente:** T13.4 e deploy; T13.7 concluído no registro abaixo.
+
+### Registro de execução — 2026-10-22 (T13.7)
+
+**T13.7 — frescor ao entrar no módulo (commit `2284576`; validado pelo dono em 2026-10-22):** ao navegar para `funcionarios`, `manuais`, `processos`, `arquivos`, `veiculos`, `sistemas` ou `servicos`, o SPA mostra o cache imediatamente e revalida a coleção em segundo plano. O render só acontece depois do sucesso; falha de rede mantém a tela atual. O boot não duplica a busca; `hashchange`/voltar/avançar também revalidam. Resposta atrasada não renderiza módulo que já saiu da tela, e detalhe aberto bloqueia o re-render. `funcionarios`, `manuais` e `arquivos` renovam URLs assinadas antes do render; busca, paginação e scroll são preservados. `informacoes`, `agenda` e `relatorios` ficam fora deste primeiro escopo. `db.js`, `admin.js`, `dados.js`, auth, persistência e `publish_status` intocados.
+**Prova:** `npm run check` exit 0 (264 testes, 0 falhas, 21 avisos de lint) · e2e completo 23 passed / 2 skipped (admin sem credenciais) · 6 testes novos em `tests/unit/script-sync-navegacao.test.mjs`.
+**Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge.
+**Pendente:** T13.4 e deploy.
 
 ### Registro de execução — 2026-10-22 (higiene)
 
@@ -1818,7 +1825,7 @@ lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
 `codex/homologacao-admin` e `codex/homologacao-refatoracao-v1.1.x`. Todas
 tinham **0 commits exclusivos** em relação a `origin/main`; restaram apenas
 `codex/fase3` (ativa) e `main` (produção).
-**Pendente na época:** T13.3, T13.4, T13.5, T13.7 e deploy; T13.3 e T13.5 concluídos nos registros acima. O plano de ações restantes
+**Pendente na época:** T13.3, T13.4, T13.5, T13.7 e deploy; T13.3, T13.5 e T13.7 concluídos nos registros acima. O plano de ações restantes
 está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
@@ -1826,7 +1833,7 @@ está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 - [x] Lighthouse SEO ≥ 90 — **100** em 2026-10-22
 - [x] Lighthouse a11y ≥ 90 — **100** em 11 rotas (2026-10-22)
 - [x] app funciona com CDN bloqueado — **sim** em 2026-10-22 (T13.5)
-- [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
+- [x] aba do index reflete edição ao entrar no módulo, sem F5 — **sim** em 2026-10-22 (T13.7; módulos de coleção única)
 - [x] `AGENTS.md` atualizado com a nova arquitetura (2026-10-22)
 - [x] nenhuma branch apagada sem autorização explícita — autorizada em 2026-10-22; 4 remotas + 1 local apagadas
 

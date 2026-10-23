@@ -66,11 +66,31 @@ SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
       codex/homologacao-refatoracao-v1.1.x apagadas; todas com 0 commits
       exclusivos em relacao a origin/main.
       Restaram: codex3/codex/fase3 (ativa) e main (producao).
-  - NAO foi feito: T13.4/T13.7, deploy para main, regeneracao de dados.js.
-    T13.3 e T13.5 concluidos nas sessoes seguintes.
+  - NAO foi feito: T13.4, deploy para main, regeneracao de dados.js.
+    T13.3, T13.5 e T13.7 concluidos nas sessoes seguintes.
   - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos de lint).
   - Commit c2a3cfc em 2026-10-22; push para origin/codex/fase3. main segue
-    sem merge. Proximas etapas: T13.4 e T13.7; deploy no fim do bloco.
+    sem merge. Proximas etapas: T13.4; deploy no fim do bloco.
+
+=========================================================================
+SESSAO 2026-10-22 — BLOCO 13 / T13.7 (frescor ao entrar no modulo)
+=========================================================================
+
+  - T13.7 (commit 2284576, validado pelo dono em 2026-10-22): ao navegar
+    para funcionarios, manuais, processos, arquivos, veiculos, sistemas ou
+    servicos, o SPA mostra o cache na hora e revalida a colecao em segundo
+    plano. O render so ocorre depois do sucesso; falha de rede mantem a tela
+    atual. Boot nao duplica busca; hashchange/voltar/avancar tambem
+    revalidam. Resposta atrasada nao renderiza modulo fora da tela; detalhe
+    aberto bloqueia o re-render. funcionarios/manuais/arquivos renovam URLs
+    assinadas antes do render; busca, paginacao e scroll preservados.
+    informacoes/agenda/relatorios ficam fora do primeiro escopo.
+    db.js/admin.js/dados.js, auth, persistencia e publish_status intocados.
+  - Prova: npm run check exit 0 (264 testes, 0 falhas, 21 avisos); e2e
+    completo 23 passed / 2 skipped (admin sem credenciais); 6 testes novos
+    em tests/unit/script-sync-navegacao.test.mjs.
+  - Push para origin/codex/fase3 em 2026-10-22; main segue sem merge.
+  - PENDENTE: T13.4 e deploy.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.5 (CDN confiavel)
@@ -90,7 +110,8 @@ SESSAO 2026-10-22 — BLOCO 13 / T13.5 (CDN confiavel)
     CDNs bloqueadas; csp.spec 3/3; conferencia visual do dashboard e do
     login do admin.
   - Push pendente de autorizacao; main segue sem merge.
-  - PENDENTE: T13.4, T13.7 e deploy.
+  - PENDENTE na epoca: T13.4, T13.7 e deploy; T13.7 concluido no registro
+    acima.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.3 (acessibilidade publica)
@@ -112,8 +133,8 @@ SESSAO 2026-10-22 — BLOCO 13 / T13.3 (acessibilidade publica)
     arquivos, informacoes, veiculos, sistemas, servicos, agenda e
     relatorios.
   - Push para origin/codex/fase3 em 2026-10-22; main segue sem merge.
-  - PENDENTE na epoca: T13.4, T13.5, T13.7 e deploy; T13.5 concluido na
-    sessao seguinte.
+  - PENDENTE na epoca: T13.4, T13.5, T13.7 e deploy; T13.5 e T13.7
+    concluidos nos registros acima.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.1 + T13.2 (hash routing + SEO)
@@ -771,10 +792,10 @@ Plano vigente (substitui a v1):
      tabelas/listas, 71db11a), 3 (admin.js modais/formularios, a82e957 +
      fixes 6a85171/292f79e) e 4 (HTML, 0d1e476), fix das buscas por
      digitacao (fb67e1b) e 9d (CSP + SRI, 7f89e5a) concluidos e validados.
-  -> Bloco 13: T13.7 (frescor do app publico sem F5) planejada para o fim do
-     bloco; especificacao em
-     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
-     -> NAO antecipar sem decisao explicita do dono.
+  -> Bloco 13: T13.7 (frescor ao entrar no modulo) CONCLUIDA em 2026-10-22
+     (commit 2284576). T13.1, T13.2, T13.3, T13.5 e T13.6 tambem concluidas;
+     resta T13.4 (CSS em camadas). Registro em
+     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md.
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
   -> Bloco 3b CONCLUIDO em 2026-10-20 (parte 1 + parte 2: 0008/0009,

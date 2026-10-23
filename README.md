@@ -102,8 +102,8 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
   produção já está com Cidade Ocidental.
 - Edge Function do Instagram ainda não publicada (widget mostra indisponível).
 - Cobertura e2e do admin depende de credenciais reais.
-- Acessibilidade pública (T13.3) e CDN local (T13.5) concluídas em 2026-10-22;
-  restam T13.4 (CSS em camadas) e T13.7 (frescor do app público).
+- Acessibilidade pública (T13.3), CDN local (T13.5) e frescor ao entrar no
+  módulo (T13.7) concluídas em 2026-10-22; resta T13.4 (CSS em camadas).
 
 O plano detalhado de ações restantes fica, no ambiente local, em
 `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
