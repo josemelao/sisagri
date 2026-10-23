@@ -1,0 +1,248 @@
+/* T13.4 · camada 08 — responsivo e overlay do menu mobile */
+/* ============================================================
+   RESPONSIVO (mobile)
+   ============================================================ */
+@media (max-width: 768px) {
+
+  .manual-tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .manual-paginacao {
+    gap: 6px;
+  }
+
+
+  .manual-passo-footer {
+    flex-direction: column;
+  }
+
+  .btn-passo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-side {
+    position: static;
+    width: 100%;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .main-content {
+    margin-left: 0;
+    max-width: 100vw;
+    padding: 24px 18px 40px;
+    padding-top: 70px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title { font-size: 1.6rem; }
+
+  .detail-panel { padding: 28px 20px 60px; }
+
+  .detail-info-grid { grid-template-columns: 1fr; }
+
+  .list-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 440px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-side {
+    position: static;
+    width: 100%;
+  }
+
+  .relatorio-print-header {
+    flex-direction: column;
+  }
+
+  .relatorio-block-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .relatorio-toolbar {
+    flex-direction: column-reverse;
+  }
+
+  .relatorio-toolbar-btn {
+    justify-content: center;
+  }
+}
+
+@media print {
+  body {
+    background: var(--white);
+  }
+
+  .sidebar,
+  .hamburger,
+  .page:not(#page-relatorios),
+  #page-relatorios .page-header,
+  #page-relatorios .relatorios-grid,
+  #page-relatorios .relatorio-toolbar {
+    display: none !important;
+  }
+
+  .main-content,
+  #page-relatorios,
+  #page-relatorios .relatorios-shell,
+  #page-relatorios .relatorio-view,
+  #page-relatorios .relatorio-print-area,
+  #page-relatorios .relatorio-print-doc {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: var(--white) !important;
+  }
+
+  .relatorio-print-doc {
+    padding: 0 !important;
+    color: #000 !important;
+  }
+
+  .relatorio-table-wrap {
+    overflow: visible;
+  }
+
+  .relatorio-table th {
+    background: #f1f1f1 !important;
+    color: #000 !important;
+    font-size: 0.55rem !important;
+  }
+
+  .relatorio-table th,
+  .relatorio-table td {
+    white-space: normal;
+    font-size: 0.61rem !important;
+    padding: 4px 4px !important;
+  }
+
+  .relatorio-blocks {
+    gap: 7px;
+  }
+
+  .relatorio-block {
+    padding: 9px 10px;
+    border-radius: 10px;
+  }
+
+  .relatorio-block-head {
+    margin-bottom: 5px;
+  }
+
+  .relatorio-block-head h3 {
+    font-size: 0.92rem;
+    margin-bottom: 2px;
+  }
+
+  .relatorio-block-head p {
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .relatorio-block-fields {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 5px 7px;
+  }
+
+  .relatorio-field {
+    padding: 5px 6px;
+    border-radius: 7px;
+    gap: 2px;
+  }
+
+  .relatorio-field-label {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
+
+  .relatorio-field-value {
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .relatorio-subsection {
+    margin-top: 7px;
+    padding-top: 6px;
+  }
+
+  .relatorio-subsection-title {
+    font-size: 0.62rem;
+    margin-bottom: 5px;
+  }
+
+  .relatorio-doc-list {
+    gap: 4px;
+  }
+
+  .relatorio-doc-item {
+    padding: 5px 6px;
+    border-radius: 7px;
+    gap: 6px;
+  }
+
+  .relatorio-doc-index {
+    font-size: 0.68rem;
+  }
+
+  .relatorio-doc-text {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .relatorio-block,
+  .relatorio-field,
+  .relatorio-print-header {
+    break-inside: avoid;
+  }
+}
+
+/* ============================================================
+   OVERLAY para fechar sidebar no mobile
+   ============================================================ */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 90;
+}
+
+.sidebar-backdrop.visible { display: block; }
+

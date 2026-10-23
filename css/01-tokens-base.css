@@ -1,0 +1,89 @@
+/* ============================================================
+SMADER — Sistema Interno da Secretaria de Agricultura
+   style.css — Estilos principais
+   ============================================================ */
+
+/* ---------- VARIÁVEIS DE DESIGN ---------- */
+:root {
+  --bg: #f4f5f0;
+  --surface: #ffffff;
+  --surface-2: #eef0ea;
+  --border: #dde0d5;
+  /* Tokens derivados (T13.4): valores repetidos que ainda eram literais. */
+  --white: #ffffff;
+  --border-strong: #dbe2d7;
+  --text-strong: #5f6858;
+
+  --text-primary: #1a1f14;
+  --text-secondary: #5a6354;
+  --text-muted: #8a9482;
+
+  --accent: #2d6a4f;
+  --accent-light: #e8f0eb;
+  --accent-hover: #235c42;
+
+  --sidebar-bg: #1c2b1e;
+  --sidebar-text: #c8d5c4;
+  --sidebar-active-bg: #2d6a4f;
+  --sidebar-active-text: #ffffff;
+  --sidebar-hover-bg: #253228;
+  --sidebar-width: 260px;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.09);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.14);
+
+  --transition: 0.22s ease;
+  --font-serif: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ---------- RESET & BASE ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text-primary);
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body.app-loading {
+  overflow: hidden;
+}
+
+body.app-loading .sidebar,
+body.app-loading .main-content {
+  visibility: hidden;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input { font-family: inherit; }
+
+/* Foco visível para navegação por teclado (T13.3) */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.detail-panel:focus-visible {
+  outline-offset: -3px;
+}
+

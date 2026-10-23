@@ -1,0 +1,1089 @@
+/* T13.4 · camada 06 — dashboard inferior, calendario, eventos e instagram */
+/* ============================================================
+   DASHBOARD — Linha inferior: Férias + Acesso Rápido
+   ============================================================ */
+.dash-bottom-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.dash-bottom-row > * {
+  min-width: 0;
+}
+
+.dash-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dash-instagram-widget {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cabeçalho compartilhado dos blocos */
+.dash-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.dash-block-header i { font-size: 1rem; color: var(--accent); }
+.dash-block-header span { flex: 1; }
+
+.dash-block-link {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: background var(--transition);
+}
+.dash-block-link:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+
+/* Mensagem vazia */
+.dash-empty {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ---- ESCALA DE FÉRIAS ---- */
+.ferias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ferias-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  transition: border-color var(--transition);
+  position: relative;
+  min-width: 0;
+}
+
+.ferias-item--ativo {
+  background: #e8f5ee;
+  border-color: #a8d5bb;
+}
+
+.ferias-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-serif);
+  flex-shrink: 0;
+}
+
+.ferias-avatar--foto {
+  object-fit: cover;
+  border: none;
+  background: none;
+  font-size: 0;
+}
+
+.ferias-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ferias-nome {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ferias-cargo {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ferias-periodo {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.ferias-periodo i { font-size: 0.78rem; }
+
+/* Barra de progresso para "em curso" */
+.ferias-barra {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.ferias-barra-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.ferias-badge-ativo {
+  font-size: 0.62rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: white;
+  padding: 2px 7px;
+  border-radius: 20px;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---- ACESSO RÁPIDO ---- */
+.acesso-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.acesso-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ac, var(--accent));
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition), border-color var(--transition),
+              transform var(--transition), box-shadow var(--transition);
+}
+
+.acesso-btn i {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.acesso-btn span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.acesso-btn:hover {
+  background: color-mix(in srgb, var(--ac, var(--accent)) 8%, var(--surface));
+  border-color: var(--ac, var(--accent));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.acesso-btn--coringa {
+  color: var(--text-muted);
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.acesso-btn--coringa:hover {
+  opacity: 1;
+  border-color: var(--text-muted);
+  background: var(--surface-2);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsivo: empilha antes de encostar na sidebar */
+@media (max-width: 1100px) {
+  .dash-bottom-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .ferias-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ferias-badge-ativo {
+    margin-left: 57px;
+  }
+}
+
+/* Responsivo: stack em mobile */
+@media (max-width: 600px) {
+  .dash-bottom-row { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   MÓDULO ARQUIVOS — Filtro por tags
+   ============================================================ */
+
+/* Contador no cabeçalho */
+.arquivos-contador-badge {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 8px;
+  align-self: flex-start;
+}
+
+/* Seção de filtro completa */
+.tag-filter-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tag-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* Barra de pills de tags */
+.tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  width: 100%;
+}
+
+#arquivos-extensoes:empty::before {
+  content: "Nenhuma extensão identificada nos arquivos atuais.";
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+/* Cada botão de tag */
+.tag-filter-btn {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition), transform var(--transition);
+  user-select: none;
+}
+
+.tag-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.tag-filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.25);
+}
+
+/* Botão limpar filtros */
+.tag-limpar-btn {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 50px;
+  padding: 0 16px;
+}
+
+.tag-limpar-btn:hover {
+  color: #c0392b;
+  background: #fdf0ee;
+}
+
+.arquivos-search-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.arquivos-search-row .module-search {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.arquivos-limpar-btn {
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .arquivos-search-row {
+    flex-direction: column;
+  }
+
+  .arquivos-limpar-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Tags inline dentro do card do arquivo */
+.arquivo-tags-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 4px;
+  justify-content: flex-end;
+  align-content: flex-start;
+  overflow: hidden;
+  min-height: 24px;
+}
+
+.arquivo-card {
+  transform-origin: center top;
+  will-change: transform, opacity;
+  min-height: 122px;
+  justify-content: space-between;
+}
+
+.list-card[data-reflow-id],
+.agenda-card[data-reflow-id] {
+  transform-origin: center top;
+  will-change: transform, opacity;
+}
+
+.arquivo-tag {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+
+/* Tag destacada quando está no filtro ativo */
+.arquivo-tag.highlight {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.arquivo-tag-more {
+  background: color-mix(in srgb, var(--text-secondary) 10%, var(--surface));
+  color: var(--text-secondary);
+}
+
+/* Estado vazio quando nenhum arquivo bate com o filtro */
+.arquivos-vazio {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.arquivos-vazio i { font-size: 2.5rem; opacity: 0.4; }
+.arquivos-vazio p { font-size: 0.88rem; }
+.arquivos-vazio span {
+  max-width: 420px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.arquivos-vazio button {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--accent);
+  padding: 6px 16px;
+  border: 1.5px solid var(--accent);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  background: transparent;
+}
+
+.arquivos-vazio button:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.arquivos-pagination[hidden] {
+  display: none;
+}
+
+.arquivos-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.arquivos-pagination-summary {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.arquivos-page-numbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.arquivos-page-btn {
+  font-family: var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition), transform var(--transition);
+}
+
+.arquivos-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.arquivos-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.arquivos-page-btn--number {
+  min-width: 40px;
+  padding: 0 12px;
+}
+
+.arquivos-page-btn--number.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.18);
+}
+
+.arquivos-page-ellipsis {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 2px;
+}
+
+@media (max-width: 640px) {
+  .arquivos-pagination {
+    justify-content: center;
+  }
+
+  .arquivos-pagination-summary {
+    width: 100%;
+    text-align: center;
+  }
+
+  .arquivos-page-numbers {
+    order: -1;
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   DASHBOARD — Layout de duas colunas
+   ============================================================ */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+
+.dashboard-main { min-width: 0; }
+
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+  width: 300px;
+  min-width: 0;
+  align-self: start;
+}
+
+/* Widget genérico da coluna direita */
+.side-widget {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  /* sem overflow:hidden — deixa o conteúdo fluir corretamente */
+}
+
+.side-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 0;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+/* Widget fechado: sem borda embaixo do header */
+.side-widget[data-open="false"] .side-widget-header {
+  border-bottom: none;
+  border-radius: var(--radius-md);
+}
+
+/* Botão de toggle dentro do header */
+.widget-toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 0 13px 16px;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition);
+  min-width: 0;
+}
+
+.widget-toggle-btn:hover { color: var(--accent); }
+.widget-toggle-btn i:first-child { font-size: 1rem; color: var(--accent); flex-shrink: 0; }
+.widget-toggle-btn span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Chevron rotates when open */
+.widget-chevron {
+  font-size: 0.8rem !important;
+  color: var(--text-muted) !important;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+
+.side-widget[data-open="true"] .widget-chevron {
+  transform: rotate(180deg);
+}
+
+/* Body wrapper */
+.side-widget-body {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  overflow: hidden;
+  will-change: height, opacity;
+  transform: translateZ(0);
+  opacity: 1;
+}
+
+.side-widget[data-open="false"] .side-widget-body {
+  opacity: 0;
+}
+
+/* Tooltip flutuante do calendário */
+.cal-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: var(--sidebar-bg);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  min-width: 200px;
+  max-width: 260px;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cal-tooltip[hidden] { display: none; }
+
+.cal-tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cal-tip-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.cal-tip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-tip-titulo {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.cal-tip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.4;
+}
+
+.cal-tip-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ct) 22%, rgba(255,255,255,0.1));
+  border: 1px solid color-mix(in srgb, var(--ct) 42%, transparent);
+  color: #f7fbf5;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cal-tip-hora {
+  background: rgba(255,255,255,0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.7);
+}
+
+.cal-tip-multi {
+  background: rgba(255,255,255,0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.7);
+}
+
+/* Separador entre múltiplos eventos no tooltip */
+.cal-tip-item + .cal-tip-item {
+  padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ============================================================
+   CALENDÁRIO
+   ============================================================ */
+.cal-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.cal-nav button {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: background var(--transition), color var(--transition);
+}
+
+.cal-nav button:hover { background: var(--accent-light); color: var(--accent); }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 10px;
+}
+
+.cal-dow {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: default;
+  position: relative;
+  transition: background var(--transition);
+}
+
+.cal-day-num {
+  line-height: 1;
+}
+
+.cal-cell.empty { pointer-events: none; }
+
+.cal-cell.today {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+/* Marcadores de eventos do dia */
+.cal-markers {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: calc(100% - 8px);
+  pointer-events: none;
+}
+
+.cal-marker {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--mc, var(--accent));
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
+}
+
+.cal-cell.today .cal-marker {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.55);
+}
+
+.cal-cell:not(.empty):not(.today):hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+.eventos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.evento-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.evento-item:last-child { border-bottom: none; }
+.evento-item:hover { background: var(--surface-2); }
+
+.evento-date-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  line-height: 1.1;
+}
+
+.evento-dia { font-size: 1.1rem; font-weight: 700; font-family: var(--font-serif); }
+.evento-mes { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+.evento-body { flex: 1; min-width: 0; }
+
+.evento-titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.evento-hoje-tag {
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: white;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.evento-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.evento-meta span { display: flex; align-items: center; gap: 3px; }
+.evento-meta i { font-size: 0.75rem; }
+
+.evento-desc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.eventos-vazio {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 20px 16px;
+  text-align: center;
+}
+
+/* ============================================================
+   INSTAGRAM
+   ============================================================ */
+.ig-follow-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--accent);
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--accent-light);
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+
+.ig-follow-btn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+
+/* Caixa de instrução de token */
+.ig-info-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ig-info-box > i { font-size: 1.1rem; color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.ig-info-box strong { display: block; font-size: 0.78rem; color: var(--text-primary); margin-bottom: 4px; }
+.ig-info-box p { line-height: 1.5; margin-bottom: 8px; }
+
+.ig-token-row {
+  display: flex;
+  gap: 6px;
+}
+
+.ig-token-row input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.ig-token-row input:focus { border-color: var(--accent); }
+
+.ig-token-row button {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: white;
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+
+.ig-token-row button:hover { background: var(--accent-hover); }
+
+/* Grid de posts do Instagram */
+.ig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 3px;
+}
+
+.ig-post {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 4px;
+  display: block;
+  background: var(--surface-2);
+}
+
+.ig-post img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.ig-post:hover img { transform: scale(1.05); }
+
+.ig-post-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.ig-post:hover .ig-post-overlay { opacity: 1; }
+
+.ig-loading, .ig-error, .ig-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ig-error i, .ig-loading i { font-size: 1.4rem; opacity: 0.5; }
+.ig-error small { font-size: 0.7rem; opacity: 0.7; }
+
+/* Estado vazio genérico de módulo */
+.modulo-vazio {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 32px 0;
+  text-align: center;
+}
+
