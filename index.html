@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- CSP (Bloco 9d): fontes medidas em tests/e2e/csp.spec.mjs -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob: https://*.supabase.co https://view.officeapps.live.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob: https://*.supabase.co https://view.officeapps.live.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <title>SisAgri — Secretaria de Agricultura de Cidade Ocidental</title>
   <meta name="description" content="Portal da Secretaria de Agricultura de Cidade Ocidental: funcionários, manuais, processos, arquivos, veículos, sistemas, serviços e agenda em um só lugar." />
   <link rel="canonical" href="https://josemelao.github.io/sisagri/" />
@@ -27,12 +27,11 @@
   <meta name="twitter:image" content="https://josemelao.github.io/sisagri/assets/og-image.png" />
 
   <link rel="stylesheet" href="style.css" />
-  <!-- Ícones leves via Phosphor Icons (CDN) -->
-  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js" defer></script>
-  <!-- Tipografia via Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <!-- Ícones Phosphor vendorizados (T13.5) -->
+  <link rel="stylesheet" href="vendor/phosphor/regular/style.css" />
+  <link rel="stylesheet" href="vendor/phosphor/bold/style.css" />
+  <!-- Tipografia local (T13.5) -->
+  <link rel="stylesheet" href="assets/fonts/fonts.css" />
 </head>
 <body class="app-loading">
 
@@ -801,7 +800,7 @@
   <!-- Dados e camada de abstração (carregar antes do script.js) -->
   <script src="js/core/utils.js"></script>
 <script src="dados.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+  <script src="vendor/supabase-js/supabase-js-2.118.0.js"></script>
   <script src="db.js"></script>
   <script src="script.js"></script>
 </body>

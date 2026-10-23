@@ -6,7 +6,7 @@ Aplicação **SisAgri / SMADER** em frontend vanilla (`HTML + CSS + JavaScript`)
 - painel administrativo em `admin.html` e `admin.js`
 - dados base em `dados.js`
 - persistência e integração em `db.js`
-- Supabase JS v2 via CDN
+- Supabase JS v2, Phosphor e fontes vendorizados localmente (T13.5)
 - fallback local
 
 Objetivo deste agente: executar mudanças **pequenas, seguras, econômicas em tokens e com máxima compatibilidade**.
