@@ -1772,7 +1772,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
-| T13.6 🟡 | Higiene de repositório | `README.md`, ADRs e arquivo de planos antigos feitos em 2026-10-22; branch fantasma e `origin/master` órfã **pendentes de confirmação do dono** | S |
+| T13.6 ✅ | Higiene de repositório | `README.md`, ADRs, arquivo de planos antigos e limpeza de branches feitos em 2026-10-22; restaram `codex/fase3` e `main` | S |
 | T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md` | M |
 
 ### Registro de execução — 2026-10-22 (T13.1)
@@ -1799,9 +1799,13 @@ lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
 (`script.js`, `admin.js`, `db.js`, `dados.js`, HTML/CSS) foi alterado.
 **Prova:** `npm run check` exit 0 (257 testes, 0 falhas, 21 avisos de lint).
 **Commit/push:** `c2a3cfc` em `origin/codex/fase3` (2026-10-22); `main` sem merge.
-**Pendente:** T13.3, T13.4, T13.5, T13.7, limpeza de branches (com autorização)
-e deploy. O plano de ações restantes está em
-`C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
+**Limpeza de branches (2026-10-22, autorizada pelo dono):** apagadas a local
+`codex/fase2` e as remotas `master`, `codex/fase2`,
+`codex/homologacao-admin` e `codex/homologacao-refatoracao-v1.1.x`. Todas
+tinham **0 commits exclusivos** em relação a `origin/main`; restaram apenas
+`codex/fase3` (ativa) e `main` (produção).
+**Pendente:** T13.3, T13.4, T13.5, T13.7 e deploy. O plano de ações restantes
+está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual indesejada (screenshots) — depende do T13.4
@@ -1810,7 +1814,7 @@ e deploy. O plano de ações restantes está em
 - [ ] app funciona com CDN bloqueado — depende do T13.5
 - [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
 - [x] `AGENTS.md` atualizado com a nova arquitetura (2026-10-22)
-- [ ] nenhuma branch apagada sem autorização explícita — limpeza ainda não feita
+- [x] nenhuma branch apagada sem autorização explícita — autorizada em 2026-10-22; 4 remotas + 1 local apagadas
 
 ---
 
@@ -1874,9 +1878,9 @@ e deploy. O plano de ações restantes está em
 
 ## 10. Decisões abertas (precisam do dono)
 
-> **Atualização 2026-10-22:** 1, 2, 3, 4, 8, 9 e 10 estão resolvidas; 5 segue
-> adiada; **6 (Instagram)** e **7 (branches)** continuam abertas. A tabela
-> abaixo é o registro histórico da abertura.
+> **Atualização 2026-10-22:** 1, 2, 3, 4, 7, 8, 9 e 10 estão resolvidas; 5
+> segue adiada; **6 (Instagram)** continua aberta. A tabela abaixo é o registro
+> histórico da abertura.
 
 | # | Decisão | Trava | Recomendação |
 |---|---|---|---|

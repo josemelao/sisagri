@@ -57,11 +57,16 @@ SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
       docs/superpowers/specs/2026-10-19-rbac-design.md (status implementado)
       docs/qualidade/linha-de-base-lint.md (nota historica)
   - v2_plano_refatoração.md: checkboxes de T7, T9.4/T9.5 e T10.3 corrigidos;
-    decisoes 1,2,3,4,8,9,10 marcadas como resolvidas; T13.6 parcial.
+    decisoes 1,2,3,4,7,8,9,10 marcadas como resolvidas; T13.6 concluido.
   - Plano de acoes restantes:
       C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
-  - NAO foi feito: limpeza de branches (aguarda autorizacao explicita),
-    T13.3-T13.5/T13.7, deploy para main, regeneracao de dados.js.
+  - Limpeza de branches FEITA em 2026-10-22, com autorizacao do dono:
+      locais: codex/fase2 apagada (estava em d210411, contida em origin/main)
+      remotas: master, codex/fase2, codex/homologacao-admin e
+      codex/homologacao-refatoracao-v1.1.x apagadas; todas com 0 commits
+      exclusivos em relacao a origin/main.
+      Restaram: codex3/codex/fase3 (ativa) e main (producao).
+  - NAO foi feito: T13.3-T13.5/T13.7, deploy para main, regeneracao de dados.js.
   - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos de lint).
   - Commit c2a3cfc em 2026-10-22; push para origin/codex/fase3. main segue
     sem merge. Proximas etapas: T13.3 a T13.7 e deploy no fim do bloco.
