@@ -897,13 +897,56 @@ function initNavigation() {
       navigateTo(card.dataset.nav);
     });
   });
+
+  // Roteamento por hash (T13.1): F5, link direto e voltar/avançar.
+  const inicial = paginaDoHash();
+  if (inicial) {
+    aplicarPagina(inicial);
+    const canonico = "#/" + inicial;
+    if (location.hash !== canonico) history.replaceState(null, "", canonico);
+  } else {
+    aplicarPagina("dashboard");
+    history.replaceState(null, "", "#/dashboard");
+  }
+
+  window.addEventListener("hashchange", () => {
+    const pagina = paginaDoHash();
+    if (!pagina) {
+      history.replaceState(null, "", "#/dashboard");
+      aplicarPagina("dashboard");
+      return;
+    }
+    aplicarPagina(pagina);
+  });
+}
+
+/**
+ * Lê a página pedida no hash. Aceita "#/manuais" e "#manuais".
+ * Retorna "" quando o hash está vazio ou aponta para página inexistente.
+ */
+function paginaDoHash() {
+  const bruto = String(location.hash || "").replace(/^#\/?/, "").trim();
+  if (!bruto) return "";
+  const pagina = bruto.split("/")[0];
+  return document.getElementById("page-" + pagina) ? pagina : "";
 }
 
 /**
  * Navega para uma página específica pelo ID.
  * @param {string} pageId - Ex: "dashboard", "funcionarios"
+ * @param {object} [opcoes]
+ * @param {boolean} [opcoes.atualizarHash=true] - grava "#/pagina" no histórico
  */
-function navigateTo(pageId) {
+function navigateTo(pageId, opcoes = {}) {
+  aplicarPagina(pageId);
+
+  if (opcoes.atualizarHash === false) return;
+  const alvo = "#/" + pageId;
+  if (location.hash === alvo) return;
+  history.pushState(null, "", alvo);
+}
+
+function aplicarPagina(pageId) {
   ensureModuleInitialized(pageId);
 
   // Oculta todas as páginas
@@ -921,7 +964,8 @@ function navigateTo(pageId) {
   closeMobileSidebar();
 
   // Scroll para o topo
-  document.getElementById("main-content").scrollTo({ top: 0 });
+  const main = document.getElementById("main-content");
+  if (main && typeof main.scrollTo === "function") main.scrollTo({ top: 0 });
 }
 
 function ensureModuleInitialized(pageId) {
