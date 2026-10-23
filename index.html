@@ -67,7 +67,7 @@
       <span class="nav-label">Menu principal</span>
       <ul>
         <li>
-          <a href="#/dashboard" class="nav-item active" data-page="dashboard">
+          <a href="#/dashboard" class="nav-item active" data-page="dashboard" aria-current="page">
             <i class="ph-bold ph-squares-four"></i>
             <span>Dashboard</span>
           </a>
@@ -150,7 +150,7 @@
   <main class="main-content" id="main-content">
 
     <!-- Botão hamburger (mobile) -->
-    <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+    <button class="hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
       <i class="ph-bold ph-list"></i>
     </button>
 
@@ -184,47 +184,47 @@
           <div class="cards-grid">
             <div class="card card-nav" data-nav="funcionarios">
               <div class="card-icon" style="--c: #3d7a5e"><i class="ph-bold ph-users"></i></div>
-              <div class="card-info"><h3>Funcionários</h3><p>Equipe, contatos e substituições</p></div>
+              <div class="card-info"><h2>Funcionários</h2><p>Equipe, contatos e substituições</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="manuais">
               <div class="card-icon" style="--c: #5c7a3d"><i class="ph-bold ph-book-open"></i></div>
-              <div class="card-info"><h3>Manuais</h3><p>Procedimentos e orientações</p></div>
+              <div class="card-info"><h2>Manuais</h2><p>Procedimentos e orientações</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="processos">
               <div class="card-icon" style="--c: #7a5c3d"><i class="ph-bold ph-flow-arrow"></i></div>
-              <div class="card-info"><h3>Processos</h3><p>Fluxos e etapas de trabalho</p></div>
+              <div class="card-info"><h2>Processos</h2><p>Fluxos e etapas de trabalho</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="arquivos">
               <div class="card-icon" style="--c: #3d5c7a"><i class="ph-bold ph-folder-open"></i></div>
-              <div class="card-info"><h3>Arquivos</h3><p>Documentos e formulários</p></div>
+              <div class="card-info"><h2>Arquivos</h2><p>Documentos e formulários</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="informacoes">
               <div class="card-icon" style="--c: #6b3d7a"><i class="ph-bold ph-info"></i></div>
-              <div class="card-info"><h3>Informações</h3><p>Dados jurídicos e institucionais</p></div>
+              <div class="card-info"><h2>Informações</h2><p>Dados jurídicos e institucionais</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="veiculos">
               <div class="card-icon" style="--c: #7a3d3d"><i class="ph-bold ph-truck"></i></div>
-              <div class="card-info"><h3>Veículos</h3><p>Frota e patrimônio da secretaria</p></div>
+              <div class="card-info"><h2>Veículos</h2><p>Frota e patrimônio da secretaria</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="sistemas">
               <div class="card-icon" style="--c: #3d6a7a"><i class="ph-bold ph-monitor"></i></div>
-              <div class="card-info"><h3>Sistemas</h3><p>Acesso aos sistemas externos</p></div>
+              <div class="card-info"><h2>Sistemas</h2><p>Acesso aos sistemas externos</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="servicos">
               <div class="card-icon" style="--c: #7a6b3d"><i class="ph-bold ph-wrench"></i></div>
-              <div class="card-info"><h3>Serviços</h3><p>Serviços prestados à população</p></div>
+              <div class="card-info"><h2>Serviços</h2><p>Serviços prestados à população</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
             <div class="card card-nav" data-nav="agenda">
               <div class="card-icon" style="--c: #7a3d5c"><i class="ph-bold ph-bell-ringing"></i></div>
-              <div class="card-info"><h3>Avisos / Agenda</h3><p>Comunicados e eventos da secretaria</p></div>
+              <div class="card-info"><h2>Avisos / Agenda</h2><p>Comunicados e eventos da secretaria</p></div>
               <i class="ph-bold ph-arrow-right card-arrow"></i>
             </div>
           </div>
@@ -342,7 +342,7 @@
       <div class="list-grid" id="func-list"></div>
 
       <!-- Detalhe do funcionário (modal) -->
-      <div class="detail-overlay" id="func-detail-overlay">
+      <div class="detail-overlay" hidden id="func-detail-overlay">
         <div class="detail-panel" id="func-detail-panel">
           <button class="detail-close" id="func-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -376,7 +376,7 @@
       <div class="list-grid" id="manuais-list"></div>
 
       <!-- Detalhe do manual (modal) -->
-      <div class="detail-overlay" id="manual-detail-overlay">
+      <div class="detail-overlay" hidden id="manual-detail-overlay">
         <div class="detail-panel" id="manual-detail-panel">
           <button class="detail-close" id="manual-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -410,7 +410,7 @@
       <div class="list-grid" id="processos-list"></div>
 
       <!-- Detalhe do processo (modal) -->
-      <div class="detail-overlay" id="processo-detail-overlay">
+      <div class="detail-overlay" hidden id="processo-detail-overlay">
         <div class="detail-panel" id="processo-detail-panel">
           <button class="detail-close" id="processo-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -464,7 +464,7 @@
       <div class="arquivos-pagination" id="arquivos-pagination"></div>
 
       <!-- Detalhe do arquivo -->
-      <div class="detail-overlay" id="arquivo-detail-overlay">
+      <div class="detail-overlay" hidden id="arquivo-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="arquivo-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -526,21 +526,21 @@
       <div class="list-grid" id="orgaos-list"></div>
 
       <!-- Overlays de detalhe compartilhados pelo módulo -->
-      <div class="detail-overlay" id="juridico-detail-overlay">
+      <div class="detail-overlay" hidden id="juridico-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="juridico-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="juridico-detail-content"></div>
         </div>
       </div>
 
-      <div class="detail-overlay" id="municipio-detail-overlay">
+      <div class="detail-overlay" hidden id="municipio-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="municipio-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="municipio-detail-content"></div>
         </div>
       </div>
 
-      <div class="detail-overlay" id="orgaos-detail-overlay">
+      <div class="detail-overlay" hidden id="orgaos-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="orgaos-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="orgaos-detail-content"></div>
@@ -571,7 +571,7 @@
 
       <div class="list-grid" id="veiculos-list"></div>
 
-      <div class="detail-overlay" id="veiculo-detail-overlay">
+      <div class="detail-overlay" hidden id="veiculo-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="veiculo-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -604,7 +604,7 @@
 
       <div class="list-grid" id="sistemas-list"></div>
 
-      <div class="detail-overlay" id="sistema-detail-overlay">
+      <div class="detail-overlay" hidden id="sistema-detail-overlay">
         <div class="detail-panel" id="sistema-detail-panel">
           <button class="detail-close" id="sistema-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="sistema-detail-content"></div>
@@ -636,7 +636,7 @@
       <div class="list-grid" id="servicos-list"></div>
 
       <!-- Detalhe do serviço -->
-      <div class="detail-overlay" id="servico-detail-overlay">
+      <div class="detail-overlay" hidden id="servico-detail-overlay">
         <div class="detail-panel" id="servico-detail-panel">
           <button class="detail-close" id="servico-detail-close">
             <i class="ph-bold ph-x"></i>
@@ -705,7 +705,7 @@
       </div>
 
       <!-- Detail: Aviso -->
-      <div class="detail-overlay" id="aviso-detail-overlay">
+      <div class="detail-overlay" hidden id="aviso-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="aviso-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="aviso-detail-content"></div>
@@ -713,7 +713,7 @@
       </div>
 
       <!-- Detail: Evento -->
-      <div class="detail-overlay" id="evento-detail-overlay">
+      <div class="detail-overlay" hidden id="evento-detail-overlay">
         <div class="detail-panel">
           <button class="detail-close" id="evento-detail-close"><i class="ph-bold ph-x"></i></button>
           <div id="evento-detail-content"></div>

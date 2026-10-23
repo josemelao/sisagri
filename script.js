@@ -375,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initDashBottom();
     initSearch();
     initMobile();
+    initAcessibilidade();
     initLightbox();
     initAcoesDelegadas();
     modulosInicializados.add("dashboard");
@@ -893,8 +894,15 @@ function initNavigation() {
   // Cards do dashboard que navegam para módulos
   const navCards = document.querySelectorAll(".card-nav");
   navCards.forEach(card => {
-    card.addEventListener("click", () => {
-      navigateTo(card.dataset.nav);
+    card.setAttribute("role", "link");
+    card.setAttribute("tabindex", "0");
+    const abrir = () => navigateTo(card.dataset.nav);
+    card.addEventListener("click", abrir);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        abrir();
+      }
     });
   });
 
@@ -957,7 +965,10 @@ function aplicarPagina(pageId) {
 
   // Atualiza item ativo na sidebar
   document.querySelectorAll(".nav-item").forEach(n => {
-    n.classList.toggle("active", n.dataset.page === pageId);
+    const ativo = n.dataset.page === pageId;
+    n.classList.toggle("active", ativo);
+    if (ativo) n.setAttribute("aria-current", "page");
+    else n.removeAttribute("aria-current");
   });
 
   // Fecha sidebar no mobile após navegar
@@ -2745,7 +2756,7 @@ function renderGlobalResults(results, resultsBox, input) {
   resultsBox.innerHTML = shown.map((r, i) => {
     const contexto = buildContexto(r);
     return `
-      <div class="search-result-item search-result-item--enter" data-index="${i}" style="--search-enter-delay:${Math.min(i, 5) * 26}ms">
+      <div class="search-result-item search-result-item--enter" data-index="${i}" role="button" tabindex="0" style="--search-enter-delay:${Math.min(i, 5) * 26}ms">
         <div class="result-linha-1">
           <span class="result-modulo">${escapeHtml(r.modulo)}</span>
           <span class="result-item-nome">${highlightMatch(r.itemNome, q)}</span>
@@ -2763,6 +2774,12 @@ function renderGlobalResults(results, resultsBox, input) {
       input.value = "";
       resultsBox.classList.remove("visible");
       resultsBox.innerHTML = "";
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        el.click();
+      }
     });
   });
 
@@ -2789,9 +2806,31 @@ function truncarContexto(texto, query, maxLen = 60) {
 /* ============================================================
    HELPERS — Overlay de detalhe
    ============================================================ */
+const DETAIL_FOCUS_RETURN = new WeakMap();
+
+const DETAIL_LABELS = {
+  "func-detail-overlay": "Detalhes do funcionário",
+  "manual-detail-overlay": "Detalhes do manual",
+  "processo-detail-overlay": "Detalhes do processo",
+  "arquivo-detail-overlay": "Detalhes do arquivo",
+  "juridico-detail-overlay": "Informações jurídicas",
+  "municipio-detail-overlay": "Informações do município",
+  "orgaos-detail-overlay": "Órgãos externos",
+  "veiculo-detail-overlay": "Detalhes do veículo",
+  "sistema-detail-overlay": "Detalhes do sistema",
+  "servico-detail-overlay": "Detalhes do serviço",
+  "aviso-detail-overlay": "Detalhes do aviso",
+  "evento-detail-overlay": "Detalhes do evento",
+};
+
 function openDetail(overlayId) {
   const overlay = document.getElementById(overlayId);
   if (!overlay) return;
+
+  const ativo = document.activeElement;
+  if (ativo && ativo !== document.body && !overlay.contains(ativo)) {
+    DETAIL_FOCUS_RETURN.set(overlay, ativo);
+  }
 
   overlay.hidden = false;
   overlay.classList.remove("is-closing");
@@ -2799,6 +2838,11 @@ function openDetail(overlayId) {
   requestAnimationFrame(() => {
     overlay.classList.add("open");
     document.body.style.overflow = "hidden"; // previne scroll do fundo
+    const painel = overlay.querySelector(".detail-panel");
+    if (painel) {
+      if (!painel.hasAttribute("tabindex")) painel.setAttribute("tabindex", "-1");
+      painel.focus({ preventScroll: true });
+    }
   });
 }
 
@@ -2866,12 +2910,18 @@ function closeDetail(overlayId) {
     if (panel) panel.classList.remove("open");
   });
 
+  const returnFocus = DETAIL_FOCUS_RETURN.get(overlay);
   overlay.classList.add("is-closing");
 
   window.setTimeout(() => {
     overlay.hidden = true;
     resetDetailPanels(overlayId);
     document.body.style.overflow = "";
+
+    if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === "function") {
+      returnFocus.focus({ preventScroll: true });
+    }
+    DETAIL_FOCUS_RETURN.delete(overlay);
 
     requestAnimationFrame(() => {
       overlay.classList.remove("open", "is-closing");
@@ -2945,6 +2995,41 @@ document.addEventListener("keydown", (e) => {
     closeDetail(overlay.id);
   });
   document.body.style.overflow = "";
+});
+
+// Mantém o Tab dentro do painel de detalhe aberto
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+
+  const overlay = document.querySelector(".detail-overlay.open");
+  if (!overlay) return;
+
+  const painel = overlay.querySelector(".detail-panel") || overlay;
+  const focaveis = Array.from(overlay.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+  if (!focaveis.length) {
+    e.preventDefault();
+    painel.focus({ preventScroll: true });
+    return;
+  }
+
+  const primeiro = focaveis[0];
+  const ultimo = focaveis[focaveis.length - 1];
+
+  if (!overlay.contains(document.activeElement)) {
+    e.preventDefault();
+    primeiro.focus();
+    return;
+  }
+
+  if (e.shiftKey && (document.activeElement === primeiro || document.activeElement === painel)) {
+    e.preventDefault();
+    ultimo.focus();
+  } else if (!e.shiftKey && document.activeElement === ultimo) {
+    e.preventDefault();
+    primeiro.focus();
+  }
 });
 
 
@@ -4640,9 +4725,13 @@ function initMobile() {
   backdrop.classList.add("sidebar-backdrop");
   document.body.appendChild(backdrop);
 
+  hamburger.setAttribute("aria-expanded", sidebar.classList.contains("open") ? "true" : "false");
+
   hamburger.addEventListener("click", () => {
-    sidebar.classList.toggle("open");
-    backdrop.classList.toggle("visible");
+    const aberto = sidebar.classList.toggle("open");
+    backdrop.classList.toggle("visible", aberto);
+    hamburger.setAttribute("aria-expanded", aberto ? "true" : "false");
+    hamburger.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
   });
 
   backdrop.addEventListener("click", closeMobileSidebar);
@@ -4651,8 +4740,66 @@ function initMobile() {
 function closeMobileSidebar() {
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.querySelector(".sidebar-backdrop");
+  const hamburger = document.getElementById("hamburger");
   if (sidebar) sidebar.classList.remove("open");
   if (backdrop) backdrop.classList.remove("visible");
+  if (hamburger) {
+    hamburger.setAttribute("aria-expanded", "false");
+    hamburger.setAttribute("aria-label", "Abrir menu");
+  }
+}
+
+/* ============================================================
+   ACESSIBILIDADE — atributos e teclado dos componentes públicos
+   ============================================================ */
+function initAcessibilidade() {
+  document.querySelectorAll(".detail-overlay").forEach((overlay) => {
+    overlay.hidden = true;
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    if (!overlay.hasAttribute("aria-label")) {
+      overlay.setAttribute("aria-label", DETAIL_LABELS[overlay.id] || "Detalhes");
+    }
+    overlay.querySelectorAll(".detail-close").forEach((btn) => {
+      if (!btn.hasAttribute("aria-label")) btn.setAttribute("aria-label", "Fechar");
+    });
+  });
+
+  document.querySelectorAll(".widget-toggle-btn[data-target]").forEach((btn) => {
+    if (!btn.hasAttribute("aria-controls")) {
+      btn.setAttribute("aria-controls", "body-" + btn.dataset.target);
+    }
+  });
+
+  document.querySelectorAll("input[placeholder]:not([aria-label])").forEach((input) => {
+    input.setAttribute("aria-label", input.placeholder);
+  });
+
+  const aplicarCards = (raiz = document) => {
+    raiz.querySelectorAll("[data-acao]").forEach((el) => {
+      if (el.matches("button, a, input, select, textarea")) return;
+      if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+    });
+  };
+  aplicarCards();
+
+  if (typeof MutationObserver !== "undefined") {
+    new MutationObserver(() => aplicarCards()).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const alvo = e.target && typeof e.target.closest === "function"
+      ? e.target.closest('[role="button"][data-acao]')
+      : null;
+    if (!alvo || alvo.matches("button, a, input, select, textarea")) return;
+    e.preventDefault();
+    alvo.click();
+  });
 }
 
 
