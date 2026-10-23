@@ -31,7 +31,7 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
-SESSAO 2026-10-22 — BLOCO 13 / T13.1 (hash routing)
+SESSAO 2026-10-22 — BLOCO 13 / T13.1 + T13.2 (hash routing + SEO)
 =========================================================================
 
   - T13.1 (commit c451d9c, validado pelo dono em 2026-10-22): o app publico
@@ -47,7 +47,33 @@ SESSAO 2026-10-22 — BLOCO 13 / T13.1 (hash routing)
     2 skipped; checagem no navegador real (link direto #/manuais, clique
     -> #/funcionarios, voltar -> #/manuais, F5 -> #/manuais, hash invalido
     -> #/dashboard, sem erros de pagina).
-  - PENDENTE: T13.2 (SEO).
+  - T13.2 (commit 2332c05, validado pelo dono em 2026-10-22): SEO do app
+    publico. index.html ganhou title descritivo (SisAgri — Secretaria de
+    Agricultura de Cidade Ocidental), description (154 chars), canonical,
+    theme-color, Open Graph e Twitter (imagem 1200x630 em
+    assets/og-image.png, gerada a partir da marca). admin.html recebeu
+    noindex, nofollow. Novos robots.txt (libera o app, bloqueia o admin e
+    aponta o sitemap) e sitemap.xml (so a raiz; rotas por hash nao sao
+    indexadas como paginas). scripts/serve.mjs passou a servir .xml.
+    7 testes unitarios + 3 e2e. db.js/admin.js intocados. Em GitHub Pages
+    project site o crawler le o robots.txt da raiz do host, nao o de
+    /sisagri/; por isso o noindex do admin.html e a garantia real (o
+    robots.txt documenta a intencao).
+  - Prova T13.2: npm run check exit 0 (257 testes, 0 falhas); e2e 16
+    passed / 2 skipped; Lighthouse SEO 100 (Chrome headless via
+    CHROME_PATH do Playwright); robots/sitemap/og-image respondem 200 no
+    servidor local.
+  - ATENCAO (deploy): o site publicado em josemelao.github.io/sisagri
+    ainda e o deploy antigo do main. robots.txt/sitemap.xml/SEO so
+    aparecem depois de merge para main; por isso o 404 ao abrir o robots
+    agora. Push do T13.1+T13.2 para origin/codex/fase3 em 2026-10-22;
+    main segue sem merge/deploy.
+  - PENDENCIA DE DADOS (nao tocada): dados.js ainda tem 26 referencias a
+    Luziania (URLs de sistemas, endereco, IBGE, populacao, Instagram
+    smader_luziania). O Supabase de producao ja esta com Cidade Ocidental
+    (sistemas e funcionarios); o dados.js e o fallback antigo. Trocar
+    exige decidir se o fallback sera regenerado a partir do Supabase.
+  - PENDENTE: T13.3 (acessibilidade publica).
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4 + T12.5

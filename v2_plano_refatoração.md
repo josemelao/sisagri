@@ -1760,7 +1760,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | Tarefa | Ação | Validação | Esforço |
 |---|---|---|---|
 | T13.1 ✅ | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
-| T13.2 | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
+| T13.2 ✅ | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
 | T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
@@ -1771,7 +1771,16 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 
 **T13.1 — roteamento por hash (commit `c451d9c`; validado pelo dono em 2026-10-22):** o app público agora usa `#/dashboard`, `#/funcionarios` etc. `initNavigation` lê o hash no boot (F5/link direto), canonicaliza `#pagina` para `#/pagina`, escuta `hashchange` (voltar/avançar sem criar entrada) e cai no dashboard com a URL corrigida quando o hash é inválido. `navigateTo` grava o hash com `pushState` e não duplica a entrada da página atual. Os 14 `href="#"` viraram `href="#/página"`. 8 testes novos; `db.js`/`admin.js` intocados.
 **Prova:** `npm run check` exit 0 (250 testes, 0 falhas) · e2e 13 passed / 2 skipped · navegador real: link direto, clique, voltar, F5 e hash inválido.
-**Pendente:** T13.2 (SEO).
+**Pendente:** T13.2 (SEO) — implementado no registro abaixo.
+
+### Registro de execução — 2026-10-22 (T13.2)
+
+**T13.2 — SEO (commit `2332c05`; validado pelo dono em 2026-10-22):** `index.html` ganhou title descritivo (**SisAgri — Secretaria de Agricultura de Cidade Ocidental**), `description` (154 chars), `canonical`, `theme-color`, Open Graph e Twitter Card, com imagem 1200×630 em `assets/og-image.png` gerada a partir da marca. `admin.html` recebeu `noindex, nofollow`. Novos `robots.txt` (libera o app, bloqueia `/sisagri/admin.html` e aponta o sitemap) e `sitemap.xml` (só a raiz — rotas por hash não são indexadas como páginas separadas). `scripts/serve.mjs` passou a servir `.xml`. 7 testes unitários + 3 e2e; `db.js`/`admin.js` intocados. Em GitHub Pages project site o crawler lê o `robots.txt` da raiz do host, não o de `/sisagri/`; o `noindex` do `admin.html` é a garantia real.
+**Deploy:** o site publicado ainda é o deploy antigo do `main`; `robots.txt`, `sitemap.xml` e as tags só aparecem depois de merge para `main`. O 404 ao abrir o `robots` agora é esperado.
+**Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge/deploy.
+**Pendência de dados:** `dados.js` ainda tem 26 referências a Luziânia (URLs de sistemas, endereço, IBGE, população, Instagram `smader_luziania`). O Supabase de produção já está com Cidade Ocidental (sistemas e funcionários); o `dados.js` é o fallback antigo. Falta decidir se ele será regenerado a partir do Supabase.
+**Prova:** `npm run check` exit 0 (257 testes, 0 falhas) · e2e 16 passed / 2 skipped · Lighthouse SEO **100** · `robots.txt`, `sitemap.xml` e `og-image.png` respondem 200.
+**Pendente:** T13.3 (acessibilidade pública).
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual não intencional (screenshots)
