@@ -1,0 +1,9 @@
+# GitHub Pages project site: https://josemelao.github.io/sisagri/
+# Em project site o crawler le o /robots.txt da raiz do host, nao o de
+# /sisagri/; este arquivo documenta a intencao e vale em dominio proprio.
+# O admin.html tambem leva <meta name="robots" content="noindex, nofollow">.
+User-agent: *
+Allow: /
+Disallow: /sisagri/admin.html
+
+Sitemap: https://josemelao.github.io/sisagri/sitemap.xml
