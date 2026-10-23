@@ -1,0 +1,16 @@
+# Normaliza fim de linha para evitar divergencia entre maquinas.
+# O vendor precisa ficar byte a byte igual ao publicado: o SHA-384 do
+# supabase-js e verificado por teste e pelo atributo integrity do HTML.
+* text=auto eol=lf
+vendor/** text eol=lf
+
+# Binarios: nunca normalizar (o renormalize corrompeu a fonte em 2026-10-23).
+*.woff2 binary
+*.woff binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
