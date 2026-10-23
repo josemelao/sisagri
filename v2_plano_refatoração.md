@@ -1771,7 +1771,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | T13.2 ✅ | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
 | T13.3 ✅ | Acessibilidade pública | Lighthouse a11y **100** em 11 rotas; teclado em sidebar/cards/painéis, foco preso e retorno; 6 e2e novos | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
-| T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
+| T13.5 ✅ | CDN confiável | Phosphor, fontes e `supabase-js@2.118.0` locais; CSP só `'self'` para script/estilo/fonte; e2e com unpkg, jsDelivr e Google Fonts bloqueados | M |
 | T13.6 ✅ | Higiene de repositório | `README.md`, ADRs, arquivo de planos antigos e limpeza de branches feitos em 2026-10-22; restaram `codex/fase3` e `main` | S |
 | T13.7 | Frescor no app público: refresh ao voltar o foco (manuais/arquivos/funcionarios, com debounce) + `DB.resolveStorageUrls()` + re-render do módulo ativo | aba já aberta reflete edição do admin sem F5; sem refresh em cascata; detalhe em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md` | M |
 
@@ -1795,7 +1795,14 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **T13.3 — acessibilidade pública (commit `c0ad1c1`; validado pelo dono em 2026-10-22):** cards do dashboard e das listas passaram a ser focáveis e abrem com Enter/Espaço; painéis de detalhe viraram `dialog` com foco inicial, Tab preso ao painel e retorno de foco ao fechar; overlays fechados ficam com `hidden` e fora da tabulação; a sidebar marca `aria-current="page"`; o menu mobile anuncia `aria-expanded`/`aria-controls`; botões de fechar e inputs de busca ganharam nome acessível; headings do dashboard corrigidos para `h1`→`h2`; contraste AA ajustado em textos secundários e foco visível padronizado com `:focus-visible`. 6 testes e2e novos em `tests/e2e/acessibilidade.spec.mjs`. `db.js`, `admin.js`, `dados.js`, persistência, auth e `publish_status` intocados.
 **Prova:** `npm run check` exit 0 (257 testes, 0 falhas, 21 avisos de lint) · e2e completo 22 passed / 2 skipped (admin sem credenciais) · e2e a11y 6/6 · Lighthouse a11y **100** em dashboard, funcionários, manuais, processos, arquivos, informações, veículos, sistemas, serviços, agenda e relatórios.
 **Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge.
-**Pendente:** T13.4, T13.5, T13.7 e deploy.
+**Pendente:** T13.4, T13.7 e deploy; T13.5 concluído no registro abaixo.
+
+### Registro de execução — 2026-10-22 (T13.5)
+
+**T13.5 — CDN confiável (commit `4d010e3`; validado pelo dono em 2026-10-22):** Phosphor (regular/bold), as quatro famílias tipográficas e `supabase-js@2.118.0` foram vendorizados em `vendor/` e `assets/fonts/`. `index.html` e `admin.html` passaram a carregar tudo de `'self'`, sem `unpkg`, `jsDelivr` ou Google Fonts; os `preconnect` foram removidos. A CSP ficou `script-src 'self'`, `style-src 'self' 'unsafe-inline'` e `font-src 'self'`; o resto (Supabase, Office viewer e imagens externas) foi preservado. O `supabase-js` local tem SHA-384 documentado e testado. Novo e2e bloqueia as três CDNs e exige boot, navegação, login do painel, fontes/ícones locais, `window.supabase` e zero violações de CSP. `db.js`, `admin.js`, `dados.js`, auth, persistência e `publish_status` intocados.
+**Prova:** `npm run check` exit 0 (258 testes, 0 falhas, 21 avisos de lint) · e2e completo 23 passed / 2 skipped (admin sem credenciais) · e2e `cdn.spec.mjs` 1/1 com unpkg, jsDelivr e Google Fonts bloqueados · `csp.spec.mjs` 3/3 · conferência visual do dashboard e do login do admin.
+**Push:** pendente de autorização; `main` segue sem merge.
+**Pendente:** T13.4, T13.7 e deploy.
 
 ### Registro de execução — 2026-10-22 (higiene)
 
@@ -1811,14 +1818,14 @@ lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
 `codex/homologacao-admin` e `codex/homologacao-refatoracao-v1.1.x`. Todas
 tinham **0 commits exclusivos** em relação a `origin/main`; restaram apenas
 `codex/fase3` (ativa) e `main` (produção).
-**Pendente na época:** T13.3, T13.4, T13.5, T13.7 e deploy; T13.3 concluído no registro acima. O plano de ações restantes
+**Pendente na época:** T13.3, T13.4, T13.5, T13.7 e deploy; T13.3 e T13.5 concluídos nos registros acima. O plano de ações restantes
 está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual indesejada (screenshots) — depende do T13.4
 - [x] Lighthouse SEO ≥ 90 — **100** em 2026-10-22
 - [x] Lighthouse a11y ≥ 90 — **100** em 11 rotas (2026-10-22)
-- [ ] app funciona com CDN bloqueado — depende do T13.5
+- [x] app funciona com CDN bloqueado — **sim** em 2026-10-22 (T13.5)
 - [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
 - [x] `AGENTS.md` atualizado com a nova arquitetura (2026-10-22)
 - [x] nenhuma branch apagada sem autorização explícita — autorizada em 2026-10-22; 4 remotas + 1 local apagadas
