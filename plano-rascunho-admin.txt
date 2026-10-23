@@ -46,18 +46,24 @@ SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4
     tentativa. Em Funcionarios o nome passou a ser validado ANTES do
     upload (antes subia a foto e so depois reclamava). Sem progresso real,
     sem cancelar; db.js intocado. 4 testes novos.
-  - T12.4 (IMPLEMENTADO, aguardando validacao manual e commit): filtro
-    pesquisavel acima de s-manuais e s-processos (Sistemas) e de
-    sv-processos (Servicos, mesmo componente). filtrarOpcoesSelect esconde
-    as opcoes que nao casam (ignora acento/caixa) e mantem visivel a opcao
-    ja selecionada; aviso aria-live quando nada corresponde; digitar no
-    filtro nao marca o modal como alterado. O vinculo continua array de
-    ids - nenhum campo novo em manuais/processos. 6 testes novos.
+  - T12.4 funcional (commit 577402f): filtro pesquisavel nos vinculos de
+    Sistemas (manuais/processos) e Servicos (processos), sem tocar no
+    contrato de salvamento. 6 testes novos.
+  - T12.4 visual (commit 7ccc72e, validado pelo dono em 2026-10-22): os
+    selects nativos de vinculo viraram o picker de "Documentos necessarios"
+    do Manual: busca, lista rolavel, badge de categoria, chips com "x" e
+    "Limpar selecao". O <select multiple> continua no DOM, oculto, como
+    fonte da verdade (salvarSistema/salvarServico inalterados).
+    "Documentos necessarios" de Servicos tambem passou a usar o markup do
+    Manual (doc-item + seletor de arquivo com busca). 9 testes cobrem
+    interacao do picker, limpar selecao, markup e salvamento. Verificado
+    com Playwright: chip, marcar/desmarcar, remover pelo x, foco na busca
+    e layout das duas telas.
   - Modelo de dados e contratos preservados: DB.*, publish_status, IDs,
     classes, chaves persistidas e formato de documentos inalterados.
-  - Prova: npm run check exit 0 (222 testes, 0 falhas); e2e 13 passed /
+  - Prova: npm run check exit 0 (225 testes, 0 falhas); e2e 13 passed /
     2 skipped (admin sem credenciais); validacao manual do dono em T12.1.1
-    e T12.2.
+    e T12.2; checagem visual do picker com Playwright em 2026-10-22.
   - PENDENTE DO BLOCO 12: T12.5 (acessibilidade das 13 listas). Depois:
     Bloco 13 (T13.1 hash routing, T13.2 SEO, T13.3 a11y publica, T13.4 CSS
     tokens, T13.6 higiene, T13.7 frescor).
