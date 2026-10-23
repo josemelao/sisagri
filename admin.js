@@ -193,10 +193,48 @@ function animateAdminTableReflow(section, renderFn) {
   });
 }
 
+/**
+ * Seletor estavel para devolver o foco depois que a secao e re-renderizada.
+ * Prefere o id e, quando o controle nao tem id (botoes das listas), usa os
+ * data-attributes que o proprio HTML ja carrega. Retorna '' quando nao ha
+ * como reencontrar o controle.
+ */
+function seletorFocoAdmin(el) {
+  if (!el || el.nodeType !== 1) return '';
+  if (el.id) return '#' + el.id;
+  const dados = el.dataset || {};
+  if (!dados.acao) return '';
+  let seletor = `[data-acao="${dados.acao}"]`;
+  if (dados.id) seletor += `[data-id="${dados.id}"]`;
+  if (dados.delta) seletor += `[data-delta="${dados.delta}"]`;
+  if (dados.colecao) seletor += `[data-colecao="${dados.colecao}"]`;
+  return seletor;
+}
+
 function renderAdminSectionWithTableAnimation(section, html) {
+  const ativo = typeof document !== 'undefined' ? document.activeElement : null;
+  const foco = section && ativo && typeof section.contains === 'function' && section.contains(ativo)
+    ? seletorFocoAdmin(ativo)
+    : '';
+
   animateAdminTableReflow(section, () => {
     section.innerHTML = html;
   });
+
+  if (!foco || !section) return;
+  const dadosFoco = (ativo && ativo.dataset) || {};
+  let proximo = section.querySelector(foco);
+  // Na ultima pagina o botao "Proxima" (ou "Anterior" na primeira) nasce
+  // desabilitado e nao aceita foco. Nesse caso o foco vai para o botao oposto,
+  // que continua habilitado, em vez de cair no body.
+  if (proximo && proximo.disabled && dadosFoco.delta) {
+    const oposto = dadosFoco.delta === '1' ? '-1' : '1';
+    const alternativa = section.querySelector(
+      `[data-acao="${dadosFoco.acao}"][data-delta="${oposto}"]`,
+    );
+    if (alternativa && !alternativa.disabled) proximo = alternativa;
+  }
+  if (proximo && typeof proximo.focus === 'function') proximo.focus();
 }
 function getDbStatusMessage(status) {
   if (status.provider === 'supabase' && status.writesReachSupabase) {
@@ -1685,19 +1723,20 @@ function pintarFuncionarios(estado) {
           id="funcionarios-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-funcionarios"
-          placeholder="Buscar por nome, cargo ou lotacao..."
+          aria-label="Buscar funcionários por nome, cargo ou lotação" placeholder="Buscar por nome, cargo ou lotacao..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Funcionários">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-funcionarios" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Funcionários">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-funcionario"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>Cargo</th><th>Departamento</th><th>A&#231;&#245;es</th></tr></thead>
+        <caption class="sr-only">Funcionários</caption>
+        <thead><tr><th scope="col">Nome</th><th scope="col">Cargo</th><th scope="col">Departamento</th><th scope="col">A&#231;&#245;es</th></tr></thead>
         <tbody>
           ${estado.itens.length ? estado.itens.map(f => `
             <tr>
@@ -1879,19 +1918,20 @@ function pintarManuais(estado) {
           id="manuais-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-manuais"
-          placeholder="Buscar por titulo ou categoria..."
+          aria-label="Buscar manuais por título ou categoria" placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Manuais">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-manuais" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Manuais">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-manual"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap">
       <table>
-        <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Passos</th><th>A&#231;&#245;es</th></tr></thead>
+        <caption class="sr-only">Manuais</caption>
+        <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">Categoria</th><th scope="col">Passos</th><th scope="col">A&#231;&#245;es</th></tr></thead>
         <tbody>
           ${estado.itens.length ? estado.itens.map(m => `
             <tr>
@@ -2516,18 +2556,19 @@ function pintarProcessos(estado) {
           id="processos-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-processos"
-          placeholder="Buscar por titulo ou categoria..."
+          aria-label="Buscar processos por título ou categoria" placeholder="Buscar por titulo ou categoria..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Processos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-processos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Processos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-processo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo</th><th>Categoria</th><th>Etapas</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Processos</caption>
+      <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">Categoria</th><th scope="col">Etapas</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(p => `
         <tr>
           <td><strong class="td-truncate" title="${escHtml(p.titulo)}">${escHtml(p.titulo)}</strong></td>
@@ -2716,18 +2757,19 @@ function pintarArquivos(estado) {
           id="arquivos-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-arquivos"
-          placeholder="Buscar por nome, tipo ou tag..."
+          aria-label="Buscar arquivos por nome, tipo ou tag" placeholder="Buscar por nome, tipo ou tag..."
           style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Arquivos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-arquivos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Arquivos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-arquivo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table class="admin-table-arquivos">
-      <thead><tr><th>Nome</th><th>Tipo</th><th>Tags</th><th>Ações</th></tr></thead>
+      <caption class="sr-only">Arquivos</caption>
+      <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Tags</th><th scope="col">Ações</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
           <td class="admin-col-arquivo-nome"><strong class="arquivo-nome-wrap" title="${escHtml(a.nome)}">${escHtml(a.nome)}</strong></td>
@@ -2931,18 +2973,19 @@ function pintarVeiculos(estado) {
           id="veiculos-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-veiculos"
-          placeholder="Buscar por nome, modelo, placa..."
+          aria-label="Buscar veículos por nome, modelo ou placa" placeholder="Buscar por nome, modelo, placa..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Veículos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-veiculos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Veículos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-veiculo"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Marca/Modelo</th><th>Placa</th><th>Patrim&#244;nio</th><th>Situa&#231;&#227;o</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Veículos</caption>
+      <thead><tr><th scope="col">Nome</th><th scope="col">Marca/Modelo</th><th scope="col">Placa</th><th scope="col">Patrim&#244;nio</th><th scope="col">Situa&#231;&#227;o</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(v => `
         <tr>
           <td><strong title="${escHtml(v.nome)}">${escHtml(v.nome)}</strong></td>
@@ -3118,18 +3161,19 @@ function pintarSistemas(estado) {
           id="sistemas-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-sistemas"
-          placeholder="Buscar por nome, orgao ou url..."
+          aria-label="Buscar sistemas por nome, órgão ou URL" placeholder="Buscar por nome, orgao ou url..."
           style="width:280px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Sistemas">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-sistemas" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Sistemas">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-sistema"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>&#211;rg&#227;o</th><th>URL</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Sistemas</caption>
+      <thead><tr><th scope="col">Nome</th><th scope="col">&#211;rg&#227;o</th><th scope="col">URL</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
           <td><strong title="${escHtml(s.nome)}">${escHtml(s.nome)}</strong><br><small style="color:var(--text-muted)">${escHtml(s.nome_completo)}</small></td>
@@ -3423,18 +3467,19 @@ function pintarServicos(estado) {
           id="servicos-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-servicos"
-          placeholder="Buscar por nome, categoria ou publico..."
+          aria-label="Buscar serviços por nome, categoria ou público" placeholder="Buscar por nome, categoria ou publico..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Serviços">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-servicos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Serviços">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-servico"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Nome</th><th>Categoria</th><th>P&#250;blico</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Serviços</caption>
+      <thead><tr><th scope="col">Nome</th><th scope="col">Categoria</th><th scope="col">P&#250;blico</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(s => `
         <tr>
           <td><strong class="td-truncate" title="${escHtml(s.nome)}">${escHtml(s.nome)}</strong></td>
@@ -3589,18 +3634,19 @@ function pintarAvisos(estado) {
           id="avisos-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-avisos"
-          placeholder="Buscar por titulo, tipo ou local..."
+          aria-label="Buscar avisos por título, tipo ou local" placeholder="Buscar por titulo, tipo ou local..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Avisos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-avisos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Avisos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-aviso"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Avisos</caption>
+      <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">Tipo</th><th scope="col">Local</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
           <td><strong class="td-truncate" title="${escHtml(a.titulo)}">${escHtml(a.titulo)}</strong></td>
@@ -3678,18 +3724,19 @@ function pintarAgenda(estado) {
           id="agenda-search"
           value="${escHtml(estado.query)}"
           data-acao="buscar-agenda"
-          placeholder="Buscar por titulo, tipo, local..."
+          aria-label="Buscar eventos por título, tipo ou local" placeholder="Buscar por titulo, tipo, local..."
           style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem"
         />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Eventos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-agenda" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Eventos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-evento"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo</th><th>Tipo</th><th>Per&#237;odo</th><th>Local</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Eventos</caption>
+      <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">Tipo</th><th scope="col">Per&#237;odo</th><th scope="col">Local</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(e => {
         const periodo = e.tipo === 'prazo' && !e.data
           ? `${escHtml(formatDateBR(e.data_fim || '—'))}${e.hora_fim ? ` ${escHtml(e.hora_fim)}` : ''}`
@@ -3843,16 +3890,17 @@ function pintarEscala(estado) {
       <h1 class="admin-section-title">Escala de F&#233;rias</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="escala-search" value="${escHtml(estado.query)}" data-acao="buscar-escala" placeholder="Buscar por funcionario, cargo..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <input id="escala-search" value="${escHtml(estado.query)}" data-acao="buscar-escala" aria-label="Buscar férias por funcionário ou cargo" placeholder="Buscar por funcionario, cargo..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Escala de Férias">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-escala" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Escala de Férias">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-escala"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>Funcion&#225;rio</th><th>Cargo</th><th>In&#237;cio</th><th>Fim</th><th>Status</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Escala de Férias</caption>
+      <thead><tr><th scope="col">Funcion&#225;rio</th><th scope="col">Cargo</th><th scope="col">In&#237;cio</th><th scope="col">Fim</th><th scope="col">Status</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(f => {
         const status = getFeriasStatus(f.periodo_inicio, f.periodo_fim);
         return `
@@ -3935,17 +3983,18 @@ function pintarAcesso(estado) {
       <h1 class="admin-section-title">Acesso R&#225;pido</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="acesso-search" value="${escHtml(estado.query)}" data-acao="buscar-acesso" placeholder="Buscar por titulo, url ou icone..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <input id="acesso-search" value="${escHtml(estado.query)}" data-acao="buscar-acesso" aria-label="Buscar atalhos por título, URL ou ícone" placeholder="Buscar por titulo, url ou icone..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Acesso Rápido">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-acesso" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Acesso Rápido">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-acesso"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">Configure os bot&#245;es de acesso r&#225;pido do dashboard. M&#225;ximo recomendado: 6 bot&#245;es.</p>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo</th><th>URL</th><th>&#205;cone</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Acesso Rápido</caption>
+      <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">URL</th><th scope="col">&#205;cone</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(a => `
         <tr>
           <td><strong title="${escHtml(a.titulo)}">${escHtml(a.titulo)}</strong></td>
@@ -4013,16 +4062,17 @@ function pintarInfoSimples(colecao, estado, heading) {
       <h1 class="admin-section-title">${heading}</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="infosimples-search-${colecao}" value="${escHtml(estado.query)}" data-acao="buscar-info-simples" data-colecao="${colecao}" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <input id="infosimples-search-${colecao}" value="${escHtml(estado.query)}" data-acao="buscar-info-simples" data-colecao="${colecao}" aria-label="Buscar informações por título ou campos" placeholder="Buscar por titulo ou campos..." style="width:300px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Informações">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-simples" data-colecao="${colecao}" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Informações">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-info-simples" data-colecao="${colecao}"><i class="ph-bold ph-plus"></i> Novo bloco</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">${heading}</caption>
+      <thead><tr><th scope="col">T&#237;tulo</th><th scope="col">Campos</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(item => `
         <tr>
           <td><strong title="${escHtml(item.titulo)}">${escHtml(item.titulo)}</strong></td>
@@ -4156,16 +4206,17 @@ function pintarInfoOrgaos(estado) {
       <h1 class="admin-section-title">&#211;rg&#227;os Externos</h1>
       <div class="admin-section-header-spacer"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="orgaos-search" value="${escHtml(estado.query)}" data-acao="buscar-info-orgaos" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
-        <span class="badge">${estado.total} de ${estado.totalColecao}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
-        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''}>Proxima</button>
+        <input id="orgaos-search" value="${escHtml(estado.query)}" data-acao="buscar-info-orgaos" aria-label="Buscar órgãos por sigla, nome ou campos" placeholder="Buscar por sigla, nome ou campos..." style="width:320px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Órgãos Externos">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-info-orgaos" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Órgãos Externos">Proxima</button>
       </div>
       <button class="btn btn-primary" data-acao="novo-orgao"><i class="ph-bold ph-plus"></i> Novo</button>
     </div>
     <div class="admin-table-wrap"><table>
-      <thead><tr><th>T&#237;tulo (sigla)</th><th>Nome completo</th><th>Campos</th><th>A&#231;&#245;es</th></tr></thead>
+      <caption class="sr-only">Órgãos Externos</caption>
+      <thead><tr><th scope="col">T&#237;tulo (sigla)</th><th scope="col">Nome completo</th><th scope="col">Campos</th><th scope="col">A&#231;&#245;es</th></tr></thead>
       <tbody>${estado.itens.length ? estado.itens.map(o => `
         <tr>
           <td><strong title="${escHtml(o.titulo)}">${escHtml(o.titulo)}</strong></td>
