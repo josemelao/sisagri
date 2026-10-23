@@ -173,7 +173,7 @@ async function compararPublico() {
   }
 }
 
-async function compararLoginAdmin(credenciais) {
+async function capturarLoginsAdmin() {
   for (const viewport of viewports) {
     const contextoA = await h.novoContextoAdmin(browser, viewport);
     const contextoB = await h.novoContextoAdmin(browser, viewport);
@@ -186,36 +186,68 @@ async function compararLoginAdmin(credenciais) {
     await pageB.locator('#login-screen').waitFor({ state: 'visible', timeout: 30_000 });
     await h.prepararPagina(pageA);
     await h.prepararPagina(pageB);
-
     await compararPagina(`admin-login-${viewport.nome}`, pageA, pageB);
-
-    if (credenciais) {
-      await h.fazerLoginAdmin(pageA, servidorA.url, credenciais);
-      await h.fazerLoginAdmin(pageB, servidorB.url, credenciais);
-      await h.prepararPagina(pageA);
-      await h.prepararPagina(pageB);
-      await compararPagina(`admin-overview-${viewport.nome}`, pageA, pageB);
-    }
 
     await contextoA.close();
     await contextoB.close();
   }
 }
 
-async function compararSecoesAdmin(credenciais) {
-  const alvos = h.VIEWPORTS_ADMIN_SECOES.filter((nome) =>
-    viewports.some((viewport) => viewport.nome === nome)
-  );
-  for (const nomeViewport of alvos) {
-    const viewport = h.VIEWPORTS.find((item) => item.nome === nomeViewport);
-    if (!viewport) continue;
-    const contextoA = await h.novoContextoAdmin(browser, viewport);
-    const contextoB = await h.novoContextoAdmin(browser, viewport);
+async function abrirAdminLogado(page, base) {
+  await page.goto(`${base}/admin.html`, { waitUntil: 'domcontentloaded' });
+  await page.locator('#admin-app').waitFor({ state: 'visible', timeout: 30_000 });
+  await page.waitForTimeout(500);
+}
+
+async function compararAdmin(credenciais) {
+  await capturarLoginsAdmin();
+  if (!credenciais) return;
+
+  // Um unico login por ref; a sessao e reaproveitada nos demais viewports.
+  const viewportLogin = h.VIEWPORTS.find((item) => item.nome === '1366');
+  const contextoLoginA = await h.novoContextoAdmin(browser, viewportLogin);
+  const contextoLoginB = await h.novoContextoAdmin(browser, viewportLogin);
+  const pageLoginA = await contextoLoginA.newPage();
+  const pageLoginB = await contextoLoginB.newPage();
+
+  await h.fazerLoginAdmin(pageLoginA, servidorA.url, credenciais);
+  await h.fazerLoginAdmin(pageLoginB, servidorB.url, credenciais);
+
+  const estadoA = await contextoLoginA.storageState();
+  const estadoB = await contextoLoginB.storageState();
+  await contextoLoginA.close();
+  await contextoLoginB.close();
+
+  for (const viewport of viewports) {
+    const contextoA = await h.novoContextoAdmin(browser, viewport, estadoA);
+    const contextoB = await h.novoContextoAdmin(browser, viewport, estadoB);
     const pageA = await contextoA.newPage();
     const pageB = await contextoB.newPage();
 
-    await h.fazerLoginAdmin(pageA, servidorA.url, credenciais);
-    await h.fazerLoginAdmin(pageB, servidorB.url, credenciais);
+    await abrirAdminLogado(pageA, servidorA.url);
+    await abrirAdminLogado(pageB, servidorB.url);
+    await h.prepararPagina(pageA);
+    await h.prepararPagina(pageB);
+    await compararPagina(`admin-overview-${viewport.nome}`, pageA, pageB);
+
+    await contextoA.close();
+    await contextoB.close();
+  }
+
+  const alvosSecoes = h.VIEWPORTS_ADMIN_SECOES.filter((nome) =>
+    viewports.some((viewport) => viewport.nome === nome)
+  );
+
+  for (const nomeViewport of alvosSecoes) {
+    const viewport = h.VIEWPORTS.find((item) => item.nome === nomeViewport);
+    if (!viewport) continue;
+    const contextoA = await h.novoContextoAdmin(browser, viewport, estadoA);
+    const contextoB = await h.novoContextoAdmin(browser, viewport, estadoB);
+    const pageA = await contextoA.newPage();
+    const pageB = await contextoB.newPage();
+
+    await abrirAdminLogado(pageA, servidorA.url);
+    await abrirAdminLogado(pageB, servidorB.url);
 
     for (const secao of h.SECOES_ADMIN) {
       if (secao === 'overview') continue;
@@ -273,8 +305,7 @@ async function principal() {
     browser = await chromium.launch();
 
     await compararPublico();
-    await compararLoginAdmin(credenciais);
-    if (credenciais) await compararSecoesAdmin(credenciais);
+    await compararAdmin(credenciais);
 
     console.log('');
     console.log(`Comparacoes: ${comparacoes} | Falhas: ${falhas}`);

@@ -154,21 +154,27 @@ export async function novoContextoPublico(browser, viewport) {
   return contexto;
 }
 
-export async function novoContextoAdmin(browser, viewport) {
+export async function novoContextoAdmin(browser, viewport, estado) {
   return browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: 1,
     locale: 'pt-BR',
     timezoneId: 'America/Sao_Paulo',
     reducedMotion: 'reduce',
+    ...(estado ? { storageState: estado } : {}),
   });
 }
 
-/** Preparacao comum: relogio fixo e animacoes neutralizadas. */
+/** Preparacao comum: relogio fixo e animacoes neutralizadas (idempotente). */
 export async function prepararPagina(page) {
   await page.clock.setFixedTime(DATA_FIXA);
-  await page.addStyleTag({
-    content: '*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important;}',
+  await page.evaluate(() => {
+    if (document.getElementById('__visual_freeze')) return;
+    const estilo = document.createElement('style');
+    estilo.id = '__visual_freeze';
+    estilo.textContent =
+      '*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important;}';
+    document.head.appendChild(estilo);
   });
 }
 
