@@ -31,7 +31,7 @@ ESTADO NESTA MAQUINA (2026-10-21) — leia antes do "ESTADO DO REMOTO"
     C:\Users\Usuario\.opencode\plan\2026-10-21-plano-correcoes-sisagri.md
 
 =========================================================================
-SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4
+SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4 + T12.5
 =========================================================================
 
   - T12.1.1 (commit 806ad4b): validarObrigatorioV2 aceita .field e
@@ -59,14 +59,27 @@ SESSAO 2026-10-22 — BLOCO 12 / T12.1.1 + T12.2 + T12.4
     interacao do picker, limpar selecao, markup e salvamento. Verificado
     com Playwright: chip, marcar/desmarcar, remover pelo x, foco na busca
     e layout das duas telas.
+  - T12.5 (commit 8a7584e, validado pelo dono em 2026-10-22): acessibilidade
+    das 13 listas (14 tabelas - Informacoes tem duas). Cada lista ganhou:
+    aria-label na busca; contador "X de Y" e "Pagina X de Y" como regiao
+    viva (role=status, aria-live=polite, aria-atomic); botoes com rotulo
+    "Pagina anterior - <modulo>" / "Proxima - <modulo>"; <caption
+    class="sr-only"> e <th scope="col"> na tabela. O re-render da secao
+    devolve o foco ao mesmo controle; se ele ficar desabilitado (ultima
+    pagina), o foco vai para o botao oposto em vez de cair no body.
+    aria-sort NAO foi adicionado: as listas nao tem ordenacao por clique
+    (o sort do motor e fixo por nome/id). 17 testes novos; classe
+    .sr-only em admin.html. db.js/script.js intocados.
   - Modelo de dados e contratos preservados: DB.*, publish_status, IDs,
     classes, chaves persistidas e formato de documentos inalterados.
-  - Prova: npm run check exit 0 (225 testes, 0 falhas); e2e 13 passed /
+  - Prova: npm run check exit 0 (242 testes, 0 falhas); e2e 13 passed /
     2 skipped (admin sem credenciais); validacao manual do dono em T12.1.1
-    e T12.2; checagem visual do picker com Playwright em 2026-10-22.
-  - PENDENTE DO BLOCO 12: T12.5 (acessibilidade das 13 listas). Depois:
-    Bloco 13 (T13.1 hash routing, T13.2 SEO, T13.3 a11y publica, T13.4 CSS
-    tokens, T13.6 higiene, T13.7 frescor).
+    e T12.2; checagem visual do picker com Playwright em 2026-10-22;
+    checagem de foco real no navegador em T12.5 (Proxima -> Anterior na
+    ultima pagina).
+  - BLOCO 12 CONCLUIDO em 2026-10-22 (T12.0 a T12.6, com o T12.5 validado
+    pelo dono). Proximo: Bloco 13 (T13.1 hash routing, T13.2 SEO, T13.3
+    a11y publica, T13.4 CSS tokens, T13.6 higiene, T13.7 frescor).
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 12 / AJUSTES POS-ONDA 2 (modal, listas, titulo)

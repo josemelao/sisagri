@@ -1717,7 +1717,13 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **T12.4 — vínculo pesquisável (funcional: commit `577402f`):** filtro nos vínculos de Sistemas (`s-manuais`, `s-processos`) e Serviços (`sv-processos`) sem mudar o contrato de salvamento — o `<select multiple>` segue sendo a fonte da verdade.
 **T12.4 — UI do picker (commit `7ccc72e`; validado pelo dono em 2026-10-22):** os selects nativos deram lugar ao picker de "Documentos necessários" do Manual — busca, lista rolável, badge de categoria, chips com "×" e "Limpar seleção". O campo "Documentos necessários" de Serviços passou a usar o mesmo markup do Manual (`doc-item` + seletor de arquivo), e `salvarServico` lê o novo markup mantendo o payload `{nome, arquivo_id}`. 9 testes (substituem os 6 anteriores).
 **Prova:** `npm run check` exit 0 (225 testes, 0 falhas) · e2e 13 passed / 2 skipped (admin sem credenciais) · validação manual do dono em T12.1.1 e T12.2 · checagem visual do picker com Playwright.
-**Pendente:** T12.5 (acessibilidade das 13 listas) e, depois, Bloco 13.
+**Pendente:** T12.5 (acessibilidade das 13 listas) — implementado em 2026-10-22 (ver registro abaixo); depois, Bloco 13.
+
+### Registro de execução — 2026-10-22 (T12.5)
+
+**T12.5 — acessibilidade das listas (commit `8a7584e`; validado pelo dono em 2026-10-22):** nas 13 listas (14 tabelas — Informações tem duas), cada busca ganhou `aria-label`; o contador “X de Y” e o indicador “Pagina X de Y” viraram regiões vivas (`role="status"`, `aria-live="polite"`, `aria-atomic="true"`); os botões passaram a ter `aria-label="Página anterior — <módulo>"` / `"Próxima — <módulo>"`; cada tabela ganhou `<caption class="sr-only">` e `<th scope="col">`; e o re-render da seção devolve o foco ao mesmo controle (se ele nascer desabilitado na última página, o foco vai para o botão oposto em vez de cair no `body`). `aria-sort` não foi adicionado porque não há ordenação por clique de coluna. 17 testes novos e classe `.sr-only` em `admin.html`; `db.js`/`script.js` intocados.
+**Prova:** `npm run check` exit 0 (242 testes, 0 falhas) · e2e 13 passed / 2 skipped · checagem de foco no navegador real (Próxima → Anterior na última página).
+**Pendente:** Bloco 12 concluído; próximo é o Bloco 13.
 
 ### Tarefas de implementação (só depois da aprovação)
 
@@ -1726,7 +1732,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 - [x] **T12.2 — Uploads com feedback mínimo** — *(feito em Manuais, Arquivos e Funcionários)* botão vira spinner com `Enviando arquivo…`/`Enviando foto…` → `Salvando…`, sem % e sem cancelar; falha permite tentar de novo.
 - [x] **T12.3 — Feedback global de ação** — *(onda 1 em Manuais/Processos e onda 2 nos demais)* toda gravação emite estado visível e resultado explícito (não depender de toast de 3 s).
 - [x] **T12.4 — Vínculos pesquisáveis pai → filho** — *(feito: etapa, sistema e serviço; picker com busca, chips e badge de categoria no padrão de "Documentos necessários")* `sistema` escolhe processos e manuais com busca; `processo` (etapa) escolhe manuais com busca; sem novo campo em `manuais`.
-- [ ] **T12.5 — Acessibilidade do admin** — *(modal v2 feito)* foco preso, `Esc`, retorno de foco, `aria-live`, labels associados e reordenação por teclado; falta varrer as 13 listas.
+- [x] **T12.5 — Acessibilidade do admin** — *(feito; validado em 2026-10-22)* modal v2 com foco preso, `Esc`, retorno de foco e `aria-live`; as 13 listas ganharam busca rotulada, contador/página em região viva, paginação rotulada, `caption`/`scope` e retorno de foco após re-render.
 - [x] **T12.6 — Listas e cabeçalho** — *(feito)* células em até 2 linhas com `title`, altura de linha uniforme, ações só com ícone (lápis/olho/lixeira) com `aria-label`, cabeçalho em duas linhas na tela pequena (título + "Novo" / busca + paginação) e Funcionários sem a coluna "Lotação".
 
 ### Validação (prova)
@@ -1740,7 +1746,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 - [ ] progresso de upload real — re-escopado para feedback mínimo (T12.2)
 - [x] erro preserva dados (modal v2)
 - [x] feedback em < 200 ms (modal v2)
-- [ ] teclado completo (modal v2 ok; listas pendentes)
+- [x] teclado completo (modal v2 + listas: foco preservado ao paginar)
 - [x] listas normalizadas (T12.6)
 
 ---
