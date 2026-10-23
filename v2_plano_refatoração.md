@@ -1702,21 +1702,29 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **Entregue — T12.6:** commit `376780b`. Nas 13 tabelas: texto principal com clamp de 2 linhas + `title`, altura uniforme (56 px), `badge` em uma linha, ações só com ícone (lápis/lixeira) com `title` e `aria-label`, status inline com olho aberto/fechado mantendo o switch, cabeçalho de seção em duas linhas abaixo de 899 px e Funcionários sem a coluna "Lotação".
 **Correção de texto:** o fallback `'ï¿½'` (em dash corrompido em commit antigo) foi trocado por `'—'` nas listas de Avisos e Agenda.
 **Prova:** `npm run check` exit 0 (207 testes, 0 falhas) · screenshots Playwright em 1280, 820 e 430 · nenhum erro de console.
-**Pendente:** T12.2 (feedback de upload), T12.4 (seletor pesquisável pai → filho em `sistema`; `processo` já feito), T12.5 (listas) e a validação inline dos obrigatórios nas 11 telas da Onda 2 (ver T12.1.1).
+**Pendente na época:** T12.2, T12.4 (`sistema`), T12.1.1 e T12.5 — os três primeiros entregues em 2026-10-22 (ver registro abaixo); segue aberto só o T12.5.
 
 ### Registro de execução — 2026-10-22 (ajustes pós-Onda 2)
 
 **Correções:** `6df52a1` fecha o modal após salvar (o sucesso de `DB.save` zera `_modalV2.sujo`; erro mantém aberto) e centraliza as células de uma linha. `fea2a21`/`e11d9a0` tornam a coluna de título responsiva, valor final `clamp(180px, 28vw, 400px)` + `min-width: 0`; URLs de Sistemas e Ações seguem com `.td-truncate--curto` (`min(260px, 30vw)`).
 **Prova:** `npm run check` exit 0 (209 testes, 0 falhas) · Playwright em 1920/1366/1024/768/390 · sem erros de console. Em 390 px permanece a limitação pré-existente de layout do admin (seção estreita + rolagem horizontal da tabela).
-**Pendente:** validação inline dos obrigatórios nas 11 telas da Onda 2 (hoje só Manuais/Processos), T12.2, T12.4 (`sistema`) e T12.5 (listas).
+**Pendente na época:** T12.1.1, T12.2, T12.4 (`sistema`) e T12.5 (listas) — os três primeiros entregues em 2026-10-22 (ver registro abaixo); segue aberto só o T12.5.
+
+### Registro de execução — 2026-10-22 (T12.1.1 + T12.2 + T12.4)
+
+**T12.1.1 — validação inline (commit `806ad4b`):** `validarObrigatorioV2` passou a aceitar `.field` e `.form-group`, cria a mensagem sob demanda e marca `aria-invalid`/`aria-describedby`. As 14 checagens das 11 telas da Onda 2 trocaram toast por foco + borda vermelha + mensagem abaixo do campo; CSS de `select` com erro incluído. 3 testes novos.
+**T12.2 — upload com feedback mínimo (commit `636c2ef`):** em Arquivos e Funcionários o botão Salvar desabilita e mostra `Enviando arquivo…`/`Enviando foto…` → `Salvando…`; falha de upload vai para o `#save-error` do rodapé e restaura o botão, e o arquivo pendente é preservado para nova tentativa. Em Funcionários o nome passou a ser validado **antes** do upload. Sem progresso real, sem cancelar; `db.js` intocado. 4 testes novos.
+**T12.4 — vínculo pesquisável (implementado; aguardando validação e commit):** `formSistema` ganhou filtro acima de `s-manuais` e `s-processos`; `formServico` ganhou o mesmo em `sv-processos` (mesmo componente). `filtrarOpcoesSelect` esconde as opções que não casam (ignora acento/caixa) e mantém visível a opção já selecionada; aviso `aria-live` quando nada corresponde; digitar no filtro não marca o modal como alterado. O vínculo continua array de ids — nenhum campo novo em `manuais`/`processos`. 6 testes novos.
+**Prova:** `npm run check` exit 0 (222 testes, 0 falhas) · e2e 13 passed / 2 skipped (admin sem credenciais) · validação manual do dono em T12.1.1 e T12.2.
+**Pendente:** T12.5 (acessibilidade das 13 listas) e, depois, Bloco 13.
 
 ### Tarefas de implementação (só depois da aprovação)
 
 - [x] **T12.1 — Modal com máquina de estados** — *(onda 1 em Manuais/Processos; onda 2 nos 11 formulários restantes)* não permite duplo envio; resposta visível em < 200 ms; erro mantém o formulário com os dados.
-- [ ] **T12.1.1 — Validação inline dos obrigatórios nas 11 telas da Onda 2** — hoje só Manuais/Processos usam `validarObrigatorioV2`; as demais apenas mostram toast. Generalizar para `.form-group` + foco, borda vermelha e mensagem abaixo do campo.
-- [ ] **T12.2 — Uploads com feedback mínimo** — *re-escopado:* botão vira spinner com `Enviando arquivo…` → `Salvando…`, sem % e sem cancelar; falha permite tentar de novo. *(onda 1 feita em Manuais)*
+- [x] **T12.1.1 — Validação inline dos obrigatórios nas 11 telas da Onda 2** — *(feito)* `validarObrigatorioV2` generalizado para `.form-group` + foco, borda vermelha e mensagem abaixo do campo.
+- [x] **T12.2 — Uploads com feedback mínimo** — *(feito em Manuais, Arquivos e Funcionários)* botão vira spinner com `Enviando arquivo…`/`Enviando foto…` → `Salvando…`, sem % e sem cancelar; falha permite tentar de novo.
 - [x] **T12.3 — Feedback global de ação** — *(onda 1 em Manuais/Processos e onda 2 nos demais)* toda gravação emite estado visível e resultado explícito (não depender de toast de 3 s).
-- [ ] **T12.4 — Vínculos pesquisáveis pai → filho** — *re-escopado:* `sistema` escolhe processos e manuais com busca; `processo` (etapa) escolhe manuais com busca; sem novo campo em `manuais`. *(etapa feita; falta sistema)*
+- [x] **T12.4 — Vínculos pesquisáveis pai → filho** — *(feito: etapa, sistema e serviço)* `sistema` escolhe processos e manuais com busca; `processo` (etapa) escolhe manuais com busca; sem novo campo em `manuais`.
 - [ ] **T12.5 — Acessibilidade do admin** — *(modal v2 feito)* foco preso, `Esc`, retorno de foco, `aria-live`, labels associados e reordenação por teclado; falta varrer as 13 listas.
 - [x] **T12.6 — Listas e cabeçalho** — *(feito)* células em até 2 linhas com `title`, altura de linha uniforme, ações só com ícone (lápis/olho/lixeira) com `aria-label`, cabeçalho em duas linhas na tela pequena (título + "Novo" / busca + paginação) e Funcionários sem a coluna "Lotação".
 

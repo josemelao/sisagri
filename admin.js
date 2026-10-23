@@ -561,6 +561,10 @@ if (_modalContentEl) {
       filtrarArquivosDoc(e.target);
       return;
     }
+    if (e.target.classList && e.target.classList.contains('select-busca')) {
+      filtrarOpcoesSelect(e.target);
+      return;
+    }
     if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
     marcarSujoV2();
     const boxErro = document.getElementById('save-error');
@@ -3167,6 +3171,31 @@ function getSistemaLinksOptions(colecao, selectedIds = []) {
   }).join('');
 }
 
+/**
+ * Filtra as opcoes de um <select multiple> pela busca acima dele.
+ * Regras: nao altera a selecao, e opcao ja marcada continua visivel mesmo
+ * sem casar com o termo (para o usuario nao "perder" o que escolheu).
+ */
+function filtrarOpcoesSelect(input) {
+  const select = document.getElementById(input.dataset.alvo);
+  if (!select) return;
+  const termo = normalizeSearchText(input.value);
+  let visiveis = 0;
+  Array.from(select.options).forEach((opcao) => {
+    const alvo = normalizeSearchText(opcao.textContent);
+    const mostra = !termo || opcao.selected || alvo.includes(termo);
+    opcao.hidden = !mostra;
+    if (mostra) visiveis += 1;
+  });
+  const grupo = input.parentElement;
+  const vazio = grupo ? grupo.querySelector('.select-busca-vazio') : null;
+  if (vazio) {
+    vazio.textContent = (visiveis > 0 || !termo)
+      ? ''
+      : (vazio.dataset.vazio || 'Nenhum resultado corresponde à busca.');
+  }
+}
+
 function renderServicoDocumentosFields(documentos = []) {
   const lista = documentos.length ? documentos : [''];
   return `
@@ -3285,19 +3314,23 @@ function formSistema(s = {}) {
       <div class="form-grid">
         <div class="form-group full">
           <label>Manuais relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <input type="search" class="select-busca" data-alvo="s-manuais" aria-label="Filtrar manuais" placeholder="Filtrar manuais..." />
           <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
             ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
           </select>
+          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum manual corresponde à busca."></p>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
         </div>
         <div class="form-group full">
           <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <input type="search" class="select-busca" data-alvo="s-processos" aria-label="Filtrar processos" placeholder="Filtrar processos..." />
           <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
             ${getSistemaLinksOptions('processos', s.processos_ids || [])}
           </select>
+          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum processo corresponde à busca."></p>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
         </div>
       </div>`, 'Opcional')}`,
     publishFooterHTML('sistema', s), s);
@@ -3420,11 +3453,13 @@ function formServico(s = {}) {
         </div>
         <div class="form-group full">
           <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <input type="search" class="select-busca" data-alvo="sv-processos" aria-label="Filtrar processos" placeholder="Filtrar processos..." />
           <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
             ${getSistemaLinksOptions('processos', s.processos_ids || [])}
           </select>
+          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum processo corresponde à busca."></p>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos.</p>
+          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
         </div>
       </div>`, 'Anexos e vínculos')}
 
