@@ -13,8 +13,9 @@ framework. A persistência usa **Supabase** quando configurado e mantém
 |---|---|
 | `index.html` | shell da SPA pública (rotas por hash: `#/dashboard`, `#/funcionarios`, ...) |
 | `script.js` | navegação, busca, filtros, paginação e renderização pública |
-| `style.css` | estilo global do app público |
+| `css/` | estilos do app público em 9 camadas numeradas, carregadas na ordem `01`→`09` |
 | `admin.html` | shell do painel administrativo |
+| `admin.css` | estilos do painel administrativo (extraído do HTML no T13.4) |
 | `admin.js` | login, CRUD, status e integração do admin |
 | `dados.js` | snapshot de fallback em `window.DADOS_INICIAIS` |
 | `db.js` | camada de persistência, Supabase, sessão e URLs assinadas |
@@ -26,6 +27,22 @@ framework. A persistência usa **Supabase** quando configurado e mantém
 | `assets/` | imagens e card Open Graph |
 | `robots.txt` / `sitemap.xml` | SEO do site público |
 | `docs/` | segurança, qualidade, ADRs e planos arquivados |
+
+As camadas do app público são carregadas nesta ordem, declarada no `index.html`
+(não há `@import` entre elas):
+
+1. `css/01-tokens-base.css` — tokens de design, reset e base
+2. `css/02-shell.css` — boot, sidebar e conteúdo principal
+3. `css/03-header-search.css` — barra de busca
+4. `css/04-dashboard.css` — cards principais e grades de lista
+5. `css/05-detail.css` — painel de detalhes e lightbox
+6. `css/06-widgets.css` — dashboard inferior, calendário, eventos e Instagram
+7. `css/07-pages.css` — avisos/agenda, serviços, sistemas e informações
+8. `css/08-responsive.css` — responsivo e overlay do menu mobile
+9. `css/09-forms-preview.css` — formulários, vínculos e preview de arquivos
+
+Cada camada mantém os `@media` no lugar em que estavam: a ordem de carga é a
+mesma do `style.css` original, então a cascata não mudou.
 
 ## Rodar localmente
 
@@ -57,7 +74,14 @@ O Playwright usa a porta 5173 por padrão (`playwright.config.mjs`).
 ```bash
 npm run check       # sintaxe + lint + guarda de innerHTML + testes unitários
 npm run test:e2e    # Playwright
+npm run visual:diff -- <refA> <refB>   # compara CSS renderizado entre dois commits
 ```
+
+`npm run visual:diff` serve para refactor de CSS sem mudança visual: compara
+`getComputedStyle` de todos os elementos (inclusive `::before`/`::after`) e o
+screenshot pixel a pixel entre duas refs do git. Aceita `--only=fingerprint`,
+`--only=shots`, `--escopo=publico|admin`, `--rotas=` e `--viewports=`. As telas
+logadas exigem as credenciais do admin no ambiente.
 
 Os testes e2e de login/listagem do admin são pulados sem credenciais. Para
 executá-los, defina `SISAGRI_ADMIN_EMAIL` e `SISAGRI_ADMIN_PASSWORD` no ambiente.

@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 Aplicação **SisAgri / SMADER** em frontend vanilla (`HTML + CSS + JavaScript`), com:
-- app público em `index.html`, `script.js` e `style.css`
+- app público em `index.html`, `script.js` e `css/` (9 camadas)
 - painel administrativo em `admin.html` e `admin.js`
 - dados base em `dados.js`
 - persistência e integração em `db.js`
@@ -74,7 +74,8 @@ Quando parar e alinhar antes:
 ### Arquivos principais
 - `index.html`
 - `script.js`
-- `style.css`
+- `css/` (estilos do público em 9 camadas, carregadas na ordem `01`→`09`)
+- `admin.css` (estilos do painel administrativo)
 - `admin.html`
 - `admin.js`
 - `dados.js`
@@ -234,10 +235,13 @@ Proibido sem autorização:
 - remover fallback local
 - reescrever toda a API `DB.*`
 
-### `style.css`
-Papel: estilo global do app público.
+### `css/` (antes: `style.css`)
+Papel: estilos do app público, divididos em 9 camadas numeradas (`01-tokens-base`
+a `09-forms-preview`).
 
 Regras:
+- a ordem de carga é a dos `<link>` no `index.html` (`01`→`09`); não usar `@import`
+- cada `@media` fica na camada em que já está: não mover entre arquivos
 - alterações localizadas
 - preferir classes específicas
 - evitar efeito colateral em `body`, sidebar, layout principal, botões e inputs genéricos
@@ -246,6 +250,7 @@ Proibido sem pedir:
 - refatorar CSS inteiro
 - renomear classes amplamente usadas
 - alterar variáveis globais sem necessidade
+- renomear ou reordenar as camadas (quebra a cascata)
 
 ### `plano-rascunho-admin.txt`
 Papel: documento operacional de handoff entre agentes.
