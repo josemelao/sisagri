@@ -25,6 +25,8 @@ let agendaEventos = [];
 let escalaFerias  = [];
 let acessoRapido  = [];
 const modulosInicializados = new Set();
+const sincronizacoesEmAndamento = new Set();
+let paginaAtiva = "";
 let globalSearchIndex = [];
 let globalSearchIndexReady = false;
 let globalSearchIndexBuilding = false;
@@ -909,11 +911,11 @@ function initNavigation() {
   // Roteamento por hash (T13.1): F5, link direto e voltar/avançar.
   const inicial = paginaDoHash();
   if (inicial) {
-    aplicarPagina(inicial);
+    aplicarPagina(inicial, { sincronizar: false });
     const canonico = "#/" + inicial;
     if (location.hash !== canonico) history.replaceState(null, "", canonico);
   } else {
-    aplicarPagina("dashboard");
+    aplicarPagina("dashboard", { sincronizar: false });
     history.replaceState(null, "", "#/dashboard");
   }
 
@@ -940,6 +942,88 @@ function paginaDoHash() {
 }
 
 /**
+ * Modulos que ganham frescor ao entrar: mostra o cache na hora e revalida a
+ * colecao em segundo plano. `storage` renova as URLs assinadas antes do render.
+ */
+const MODULE_SYNC = {
+  funcionarios: {
+    colecao: "funcionarios",
+    storage: true,
+    render: () => applyFuncionariosSearch(),
+  },
+  manuais: {
+    colecao: "manuais",
+    storage: true,
+    render: () => applyManuaisSearch(),
+  },
+  processos: {
+    colecao: "processos",
+    render: () => applyProcessosSearch(),
+  },
+  arquivos: {
+    colecao: "arquivos",
+    storage: true,
+    render: () => {
+      sanitizeArquivosFilters();
+      renderTagFilter();
+      renderExtensaoFilter();
+      renderArquivos();
+    },
+  },
+  veiculos: {
+    colecao: "veiculos",
+    render: () => applyVeiculosSearch(),
+  },
+  sistemas: {
+    colecao: "sistemas",
+    render: () => applySistemasSearch(),
+  },
+  servicos: {
+    colecao: "servicos",
+    render: () => applyServicosSearch(),
+  },
+};
+
+/**
+ * Revalida a colecao do modulo ativo sem bloquear a navegacao.
+ * Falha de rede nao limpa a tela: o DOM so e trocado depois do sucesso.
+ */
+async function sincronizarModulo(pageId) {
+  const config = MODULE_SYNC[pageId];
+  if (!config || !window.DB?.refreshCollection) return;
+  if (navigator.onLine === false) return;
+  if (sincronizacoesEmAndamento.has(pageId)) return;
+
+  sincronizacoesEmAndamento.add(pageId);
+  try {
+    await DB.refreshCollection(config.colecao);
+
+    if (config.storage && typeof DB.resolveStorageUrls === "function") {
+      try {
+        await DB.resolveStorageUrls(config.colecao);
+      } catch (erro) {
+        console.warn("[App] Falha ao renovar URLs assinadas; mantendo as atuais.", erro);
+      }
+    }
+
+    if (paginaAtiva !== pageId) return;
+    if (document.querySelector && document.querySelector(".detail-overlay.open")) return;
+
+    carregarDados();
+    const main = document.getElementById("main-content");
+    const scrollTop = main ? main.scrollTop : 0;
+    config.render();
+    if (main && typeof main.scrollTo === "function" && scrollTop > 0) {
+      main.scrollTo({ top: scrollTop });
+    }
+  } catch (erro) {
+    console.warn(`[App] Falha ao sincronizar ${pageId}; mantendo os dados atuais.`, erro);
+  } finally {
+    sincronizacoesEmAndamento.delete(pageId);
+  }
+}
+
+/**
  * Navega para uma página específica pelo ID.
  * @param {string} pageId - Ex: "dashboard", "funcionarios"
  * @param {object} [opcoes]
@@ -954,8 +1038,9 @@ function navigateTo(pageId, opcoes = {}) {
   history.pushState(null, "", alvo);
 }
 
-function aplicarPagina(pageId) {
+function aplicarPagina(pageId, opcoes = {}) {
   ensureModuleInitialized(pageId);
+  paginaAtiva = pageId;
 
   // Oculta todas as páginas
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -977,6 +1062,8 @@ function aplicarPagina(pageId) {
   // Scroll para o topo
   const main = document.getElementById("main-content");
   if (main && typeof main.scrollTo === "function") main.scrollTo({ top: 0 });
+
+  if (opcoes.sincronizar !== false) sincronizarModulo(pageId);
 }
 
 function ensureModuleInitialized(pageId) {
