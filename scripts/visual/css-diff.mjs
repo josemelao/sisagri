@@ -41,9 +41,16 @@ const rotas = filtroRotas?.length ? h.ROTAS.filter((rota) => filtroRotas.include
 const viewports = filtroViewports?.length
   ? h.VIEWPORTS.filter((viewport) => filtroViewports.includes(viewport.nome))
   : h.VIEWPORTS;
+const escopo = [...opcoes]
+  .find((opcao) => opcao.startsWith('--escopo='))
+  ?.replace('--escopo=', '') ?? 'ambos';
+const rodarPublico = escopo !== 'admin';
+const rodarAdmin = escopo !== 'publico';
 
 if (refs.length !== 2) {
-  console.error('uso: node scripts/visual/css-diff.mjs <refA> <refB> [--only=fingerprint|shots]');
+  console.error(
+    'uso: node scripts/visual/css-diff.mjs <refA> <refB> [--only=fingerprint|shots] [--escopo=ambos|publico|admin] [--rotas=...] [--viewports=...]'
+  );
   process.exit(2);
 }
 
@@ -105,6 +112,7 @@ function compararEstilos(elementosA, elementosB) {
 
 async function compararPagina(nome, pageA, pageB) {
   comparacoes += 1;
+  const inicioComparacao = Date.now();
   const problemas = [];
 
   if (compararFingerprint) {
@@ -141,7 +149,10 @@ async function compararPagina(nome, pageA, pageB) {
   }
 
   if (problemas.length === 0) {
-    if (verbose) console.log(`[OK]    ${nome}`);
+    if (verbose) {
+      const segundos = ((Date.now() - inicioComparacao) / 1000).toFixed(1);
+      console.log(`[OK]    ${nome} (${segundos}s)`);
+    }
     return;
   }
 
@@ -294,7 +305,9 @@ async function principal() {
   }
 
   console.log(`Comparando ${refA} (A) com ${refB} (B)`);
-  console.log(`Fingerprint: ${compararFingerprint ? 'sim' : 'nao'} | Screenshots: ${compararShots ? 'sim' : 'nao'}`);
+  console.log(
+    `Fingerprint: ${compararFingerprint ? 'sim' : 'nao'} | Screenshots: ${compararShots ? 'sim' : 'nao'} | Escopo: ${escopo}`
+  );
 
   h.criarWorktree(refA, WT_A);
   h.criarWorktree(refB, WT_B);
@@ -304,8 +317,8 @@ async function principal() {
     servidorB = await h.iniciarServidor(WT_B, h.PORTA_B);
     browser = await chromium.launch();
 
-    await compararPublico();
-    await compararAdmin(credenciais);
+    if (rodarPublico) await compararPublico();
+    if (rodarAdmin) await compararAdmin(credenciais);
 
     console.log('');
     console.log(`Comparacoes: ${comparacoes} | Falhas: ${falhas}`);
