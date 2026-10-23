@@ -561,10 +561,6 @@ if (_modalContentEl) {
       filtrarArquivosDoc(e.target);
       return;
     }
-    if (e.target.classList && e.target.classList.contains('select-busca')) {
-      filtrarOpcoesSelect(e.target);
-      return;
-    }
     if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
     marcarSujoV2();
     const boxErro = document.getElementById('save-error');
@@ -2171,8 +2167,8 @@ function filtrarArquivosDoc(input) {
     vazio.hidden = visiveis > 0;
     if (!visiveis) {
       vazio.textContent = picker.querySelector('.doc-arquivo-opcao')
-        ? 'Nenhum arquivo corresponde à busca.'
-        : 'Nenhum arquivo cadastrado. Cadastre em Arquivos.';
+        ? (picker.dataset.vazioBusca || 'Nenhum arquivo corresponde à busca.')
+        : (picker.dataset.vazioNenhum || 'Nenhum arquivo cadastrado. Cadastre em Arquivos.');
     }
   }
 }
@@ -2286,17 +2282,6 @@ function formManual(m = {}) {
         ${publishFooterHTML('manual', m)}
       </div>
     </div>`;
-}
-
-function getArquivosOptions(selectedId) {
-  const arquivos = DB.get ? DB.get('arquivos') : [];
-  const selectedIds = Array.isArray(selectedId)
-    ? selectedId
-    : (selectedId ? [selectedId] : []);
-  return arquivos.map(a => {
-    const label = withDraftSuffix(`${a.nome} (${a.tipo})`, a);
-    return `<option value="${escHtml(a.id)}" ${isSelectedOptionValue(selectedIds, a.id) ? 'selected' : ''}>${escHtml(label)}</option>`;
-  }).join('');
 }
 
 function addDocumento() {
@@ -3066,6 +3051,7 @@ function clearAdminMultiSelect(selectRef) {
     : selectRef;
   if (!select) return;
   Array.from(select.options).forEach(option => { option.selected = false; });
+  if (select.id) atualizarVinculoChips(select.id);
 }
 
 function clearVeiculoMultiSelect(selectId) {
@@ -3171,63 +3157,130 @@ function getSistemaLinksOptions(colecao, selectedIds = []) {
   }).join('');
 }
 
-/**
- * Filtra as opcoes de um <select multiple> pela busca acima dele.
- * Regras: nao altera a selecao, e opcao ja marcada continua visivel mesmo
- * sem casar com o termo (para o usuario nao "perder" o que escolheu).
- */
-function filtrarOpcoesSelect(input) {
-  const select = document.getElementById(input.dataset.alvo);
-  if (!select) return;
-  const termo = normalizeSearchText(input.value);
-  let visiveis = 0;
-  Array.from(select.options).forEach((opcao) => {
-    const alvo = normalizeSearchText(opcao.textContent);
-    const mostra = !termo || opcao.selected || alvo.includes(termo);
-    opcao.hidden = !mostra;
-    if (mostra) visiveis += 1;
-  });
-  const grupo = input.parentElement;
-  const vazio = grupo ? grupo.querySelector('.select-busca-vazio') : null;
-  if (vazio) {
-    vazio.textContent = (visiveis > 0 || !termo)
-      ? ''
-      : (vazio.dataset.vazio || 'Nenhum resultado corresponde à busca.');
+/** Chip de um vinculo ja escolhido (mesmo visual dos documentos do manual). */
+function vinculoChipHTML(alvo, id, nome) {
+  return `
+    <span class="doc-chip" title="${escHtml(nome)}">
+      <i class="ph-bold ph-file-text"></i>
+      <span class="doc-chip-nome">${escHtml(nome)}</span>
+      <button type="button" class="doc-chip-remove" data-acao="remover-vinculo" data-alvo="${escHtml(alvo)}" data-id="${escHtml(id)}" title="Remover vínculo" aria-label="Remover ${escHtml(nome)}"><i class="ph-bold ph-x"></i></button>
+    </span>`;
+}
+
+function vinculoChipsHTML(colecao, alvo, selectedIds, singular) {
+  const selecionados = (DB.get(colecao) || [])
+    .filter(item => isSelectedOptionValue(selectedIds, item.id));
+  if (!selecionados.length) {
+    return `<span class="doc-arquivo-atual-vazio">Nenhum ${escHtml(singular)} selecionado</span>`;
   }
+  return selecionados
+    .map(item => vinculoChipHTML(alvo, item.id, withDraftSuffix(item.titulo || '', item)))
+    .join('');
+}
+
+/** Opcoes do picker de vinculos, no padrao do seletor de arquivos dos manuais. */
+function vinculoOpcoesHTML(colecao, alvo, selectedIds) {
+  const itens = DB.get(colecao) || [];
+  return itens.map(item => {
+    const label = withDraftSuffix(item.titulo || '', item);
+    const ativo = isSelectedOptionValue(selectedIds, item.id);
+    const categoria = item.categoria || '';
+    return `
+      <button type="button"
+        class="doc-arquivo-opcao ${ativo ? 'active' : ''}"
+        role="option" aria-selected="${ativo}"
+        data-acao="alternar-vinculo"
+        data-alvo="${escHtml(alvo)}"
+        data-id="${item.id}"
+        data-nome="${escHtml(label)}"
+        data-tipo="${escHtml(categoria)}"
+        title="${escHtml(label)}">
+        <span class="doc-arquivo-nome">${escHtml(label)}</span>
+        ${categoria ? `<span class="badge">${escHtml(categoria)}</span>` : ''}
+      </button>`;
+  }).join('');
+}
+
+/** Busca + lista rolavel de vinculos (mesma casca de "Documentos necessarios"). */
+function vinculoPickerHTML(colecao, alvo, selectedIds, textos) {
+  const opcoes = vinculoOpcoesHTML(colecao, alvo, selectedIds);
+  return `
+    <div class="doc-arquivo-picker"
+         data-vazio-busca="${escHtml(textos.vazioBusca)}"
+         data-vazio-nenhum="${escHtml(textos.vazioNenhum)}">
+      <input class="doc-arquivo-busca" placeholder="${escHtml(textos.placeholder)}" aria-label="${escHtml(textos.ariaBusca)}" autocomplete="off" />
+      <div class="doc-arquivo-lista" role="listbox" aria-multiselectable="true" aria-label="${escHtml(textos.ariaLista)}" ${opcoes ? '' : 'hidden'}>${opcoes}</div>
+      <p class="doc-arquivo-vazio" ${opcoes ? 'hidden' : ''}>${opcoes ? '' : escHtml(textos.vazioNenhum)}</p>
+    </div>`;
+}
+
+/** Marca/desmarca um vinculo; o <select> oculto continua sendo a fonte da verdade. */
+function alternarVinculo(botao) {
+  const alvo = botao.dataset.alvo;
+  const select = document.getElementById(alvo);
+  if (!select) return;
+  const opcao = Array.from(select.options)
+    .find(item => String(item.value) === String(botao.dataset.id));
+  if (!opcao) return;
+  opcao.selected = !opcao.selected;
+  botao.classList.toggle('active', opcao.selected);
+  botao.setAttribute('aria-selected', String(opcao.selected));
+  atualizarVinculoChips(alvo);
+  marcarSujoV2();
+}
+
+/** Remove o vinculo pelo "x" do chip e devolve o foco para a busca. */
+function removerVinculo(botao) {
+  const alvo = botao.dataset.alvo;
+  const select = document.getElementById(alvo);
+  if (!select) return;
+  const opcao = Array.from(select.options)
+    .find(item => String(item.value) === String(botao.dataset.id));
+  if (opcao) opcao.selected = false;
+  const picker = document.querySelector(`.vinculo-picker[data-alvo="${alvo}"]`);
+  if (picker) {
+    const botaoOpcao = picker.querySelector(`.doc-arquivo-opcao[data-id="${botao.dataset.id}"]`);
+    if (botaoOpcao) {
+      botaoOpcao.classList.remove('active');
+      botaoOpcao.setAttribute('aria-selected', 'false');
+    }
+  }
+  atualizarVinculoChips(alvo);
+  marcarSujoV2();
+  if (picker) {
+    const busca = picker.querySelector('.doc-arquivo-busca');
+    if (busca) busca.focus();
+  }
+}
+
+/** Redesenha os chips a partir do estado atual do <select>. */
+function atualizarVinculoChips(alvo) {
+  const select = document.getElementById(alvo);
+  if (!select) return;
+  const picker = document.querySelector(`.vinculo-picker[data-alvo="${alvo}"]`);
+  const box = picker ? picker.querySelector('.vinculo-chips') : null;
+  if (!box) return;
+  if (picker && typeof picker.querySelectorAll === 'function') {
+    picker.querySelectorAll('.doc-arquivo-opcao').forEach(botao => {
+      const opcao = Array.from(select.options)
+        .find(item => String(item.value) === String(botao.dataset.id));
+      const ativo = Boolean(opcao && opcao.selected);
+      botao.classList.toggle('active', ativo);
+      botao.setAttribute('aria-selected', String(ativo));
+    });
+  }
+  const singular = picker.dataset.singular || 'item';
+  const selecionados = Array.from(select.options).filter(opcao => opcao.selected);
+  box.innerHTML = selecionados.length
+    ? selecionados.map(opcao => vinculoChipHTML(alvo, opcao.value, opcao.textContent)).join('')
+    : `<span class="doc-arquivo-atual-vazio">Nenhum ${escHtml(singular)} selecionado</span>`;
 }
 
 function renderServicoDocumentosFields(documentos = []) {
   const lista = documentos.length ? documentos : [''];
   return `
     <div class="dyn-list" id="dyn-servico-documentos">
-      ${lista.map((doc, i) => {
-        const isObj = typeof doc === 'object' && doc !== null;
-        const arquivoId = isObj ? doc.arquivo_id : null;
-        const nome = isObj ? (doc.nome || '') : (doc || '');
-        const tipo = arquivoId ? 'arquivo' : 'texto';
-        return `
-          <div class="dyn-item doc-item" style="flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
-            <div style="display:flex;gap:8px;align-items:center;width:100%">
-              <select name="sv_doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-                <option value="texto" ${tipo === 'texto' ? 'selected' : ''}>Texto</option>
-                <option value="arquivo" ${tipo === 'arquivo' ? 'selected' : ''}>Arquivo</option>
-              </select>
-              <div style="flex:1;min-width:0;width:100%">
-                <input name="sv_doc_nome_${i}" value="${escHtml(nome)}" placeholder="Nome do documento..." style="width:100%;min-width:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" ${tipo === 'arquivo' ? 'disabled' : ''} />
-              </div>
-              <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
-            </div>
-            <div class="doc-arquivo-selector" style="display:${tipo === 'arquivo' ? 'flex' : 'none'};gap:8px;align-items:center;width:100%">
-              <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
-              <div style="flex:1;min-width:0;width:100%">
-                <select name="sv_doc_arquivo_${i}" style="width:100%;min-width:0;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-                  <option value="">Selecione um arquivo...</option>
-                  ${getArquivosOptions(arquivoId)}
-                </select>
-              </div>
-            </div>
-          </div>`;
-      }).join('')}
+      ${lista.map((doc) => manualDocHTML(doc)).join('')}
     </div>
     <button type="button" class="dyn-add" data-acao="add-servico-documento"><i class="ph-bold ph-plus"></i> Adicionar documento</button>
   `;
@@ -3235,31 +3288,14 @@ function renderServicoDocumentosFields(documentos = []) {
 
 function addServicoDocumento() {
   const list = document.getElementById('dyn-servico-documentos');
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'dyn-item doc-item';
-  div.style.cssText = 'flex-direction:column;gap:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)';
-  div.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center;width:100%">
-      <select name="sv_doc_tipo_${i}" class="doc-tipo-select" data-acao="toggle-doc-tipo" style="width:120px;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-        <option value="texto" selected>Texto</option>
-        <option value="arquivo">Arquivo</option>
-      </select>
-      <div style="flex:1;min-width:0;width:100%">
-        <input name="sv_doc_nome_${i}" value="" placeholder="Nome do documento..." style="width:100%;min-width:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem" class="doc-nome-input" />
-      </div>
-      <button type="button" class="dyn-remove" data-acao="remover-dyn-item"><i class="ph-bold ph-minus"></i></button>
-    </div>
-    <div class="doc-arquivo-selector" style="display:none;gap:8px;align-items:center;width:100%">
-      <label style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap">Vincular:</label>
-      <div style="flex:1;min-width:0;width:100%">
-        <select name="sv_doc_arquivo_${i}" style="width:100%;min-width:0;padding:6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem">
-          <option value="">Selecione um arquivo...</option>
-          ${getArquivosOptions(null)}
-        </select>
-      </div>
-    </div>`;
-  list.appendChild(div);
+  if (!list) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = manualDocHTML(null);
+  const item = wrap.firstElementChild;
+  list.appendChild(item);
+  marcarSujoV2();
+  const nome = item.querySelector('.doc-nome-input');
+  if (nome) nome.focus();
 }
 
 const SERVICO_CATEGORIAS_PADRAO = ['Trator', 'Capacitação', 'Insumos', 'Administrativo', 'Outro'];
@@ -3314,23 +3350,33 @@ function formSistema(s = {}) {
       <div class="form-grid">
         <div class="form-group full">
           <label>Manuais relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-          <input type="search" class="select-busca" data-alvo="s-manuais" aria-label="Filtrar manuais" placeholder="Filtrar manuais..." />
-          <select id="s-manuais" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-            ${getSistemaLinksOptions('manuais', s.manuais_ids || [])}
-          </select>
-          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum manual corresponde à busca."></p>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
+          <div class="vinculo-picker" data-alvo="s-manuais" data-singular="manual">
+            <div class="vinculo-chips">${vinculoChipsHTML('manuais', 's-manuais', s.manuais_ids || [], 'manual')}</div>
+            ${vinculoPickerHTML('manuais', 's-manuais', s.manuais_ids || [], {
+              placeholder: 'Buscar manual por título ou categoria...',
+              ariaBusca: 'Buscar manual',
+              ariaLista: 'Manuais disponíveis',
+              vazioBusca: 'Nenhum manual corresponde à busca.',
+              vazioNenhum: 'Nenhum manual cadastrado. Cadastre em Manuais.',
+            })}
+            <select id="s-manuais" multiple hidden aria-hidden="true" tabindex="-1">${getSistemaLinksOptions('manuais', s.manuais_ids || [])}</select>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="limpar-multi-select" data-alvo="s-manuais">Limpar seleção</button>
+          </div>
         </div>
         <div class="form-group full">
           <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-          <input type="search" class="select-busca" data-alvo="s-processos" aria-label="Filtrar processos" placeholder="Filtrar processos..." />
-          <select id="s-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-            ${getSistemaLinksOptions('processos', s.processos_ids || [])}
-          </select>
-          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum processo corresponde à busca."></p>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
+          <div class="vinculo-picker" data-alvo="s-processos" data-singular="processo">
+            <div class="vinculo-chips">${vinculoChipsHTML('processos', 's-processos', s.processos_ids || [], 'processo')}</div>
+            ${vinculoPickerHTML('processos', 's-processos', s.processos_ids || [], {
+              placeholder: 'Buscar processo por título ou categoria...',
+              ariaBusca: 'Buscar processo',
+              ariaLista: 'Processos disponíveis',
+              vazioBusca: 'Nenhum processo corresponde à busca.',
+              vazioNenhum: 'Nenhum processo cadastrado. Cadastre em Processos.',
+            })}
+            <select id="s-processos" multiple hidden aria-hidden="true" tabindex="-1">${getSistemaLinksOptions('processos', s.processos_ids || [])}</select>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="limpar-multi-select" data-alvo="s-processos">Limpar seleção</button>
+          </div>
         </div>
       </div>`, 'Opcional')}`,
     publishFooterHTML('sistema', s), s);
@@ -3453,13 +3499,18 @@ function formServico(s = {}) {
         </div>
         <div class="form-group full">
           <label>Processos relacionados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-          <input type="search" class="select-busca" data-alvo="sv-processos" aria-label="Filtrar processos" placeholder="Filtrar processos..." />
-          <select id="sv-processos" multiple style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.82rem;outline:none;min-height:64px;max-height:110px">
-            ${getSistemaLinksOptions('processos', s.processos_ids || [])}
-          </select>
-          <p class="form-hint select-busca-vazio" aria-live="polite" data-vazio="Nenhum processo corresponde à busca."></p>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
-          <p class="form-hint">Segure Ctrl (ou Cmd) para selecionar múltiplos. Use o filtro para achar mais rápido.</p>
+          <div class="vinculo-picker" data-alvo="sv-processos" data-singular="processo">
+            <div class="vinculo-chips">${vinculoChipsHTML('processos', 'sv-processos', s.processos_ids || [], 'processo')}</div>
+            ${vinculoPickerHTML('processos', 'sv-processos', s.processos_ids || [], {
+              placeholder: 'Buscar processo por título ou categoria...',
+              ariaBusca: 'Buscar processo',
+              ariaLista: 'Processos disponíveis',
+              vazioBusca: 'Nenhum processo corresponde à busca.',
+              vazioNenhum: 'Nenhum processo cadastrado. Cadastre em Processos.',
+            })}
+            <select id="sv-processos" multiple hidden aria-hidden="true" tabindex="-1">${getSistemaLinksOptions('processos', s.processos_ids || [])}</select>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="limpar-multi-select" data-alvo="sv-processos">Limpar seleção</button>
+          </div>
         </div>
       </div>`, 'Anexos e vínculos')}
 
@@ -3474,14 +3525,19 @@ function formServico(s = {}) {
 async function salvarServico(id) {
   const docsList = document.getElementById('dyn-servico-documentos');
   const documentos = Array.from(docsList.children).map(div => {
-    const tipoSelect = div.querySelector('select[name^="sv_doc_tipo_"]');
-    const nomeInput = div.querySelector('input[name^="sv_doc_nome_"]');
-    const arquivoSelect = div.querySelector('select[name^="sv_doc_arquivo_"]');
+    const tipoSelect = div.querySelector('.doc-tipo');
+    const nomeInput = div.querySelector('.doc-nome');
+    const arquivoIdInput = div.querySelector('.doc-arquivo-id');
+    const arquivoSelect = div.querySelector('.doc-arquivo select');
 
     if (tipoSelect && tipoSelect.value === 'arquivo') {
-      const arquivoId = arquivoSelect ? parseInt(arquivoSelect.value) : null;
+      const valorArquivo = (arquivoIdInput && arquivoIdInput.value)
+        || (arquivoSelect && arquivoSelect.value)
+        || '';
+      const arquivoId = parseInt(valorArquivo, 10) || null;
       if (arquivoId) {
-        const arquivo = DB.get('arquivos').find(a => a.id === arquivoId);
+        const arquivos = DB.get ? DB.get('arquivos') : [];
+        const arquivo = arquivos.find(a => a.id === arquivoId);
         return {
           nome: arquivo ? arquivo.nome : 'Arquivo',
           arquivo_id: arquivoId
@@ -4325,6 +4381,8 @@ const ACOES_ADMIN_CLIQUE = {
   'toggle-icone-panel': (el) => toggleIconePanel(el.dataset.field),
   'escolher-arquivo-doc': (el) => escolherArquivoDoc(el),
   'limpar-arquivo-doc': (el) => limparArquivoDoc(el),
+  'alternar-vinculo': (el) => alternarVinculo(el),
+  'remover-vinculo': (el) => removerVinculo(el),
   'remover-doc-item': (el) => {
     const item = el.closest('.doc-item');
     if (item) item.remove();
