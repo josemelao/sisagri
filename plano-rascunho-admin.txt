@@ -66,10 +66,33 @@ SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
       codex/homologacao-refatoracao-v1.1.x apagadas; todas com 0 commits
       exclusivos em relacao a origin/main.
       Restaram: codex3/codex/fase3 (ativa) e main (producao).
-  - NAO foi feito: T13.3-T13.5/T13.7, deploy para main, regeneracao de dados.js.
+  - NAO foi feito: T13.4/T13.5/T13.7, deploy para main, regeneracao de
+    dados.js. T13.3 concluido na sessao seguinte.
   - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos de lint).
   - Commit c2a3cfc em 2026-10-22; push para origin/codex/fase3. main segue
-    sem merge. Proximas etapas: T13.3 a T13.7 e deploy no fim do bloco.
+    sem merge. Proximas etapas: T13.4 a T13.7 e deploy no fim do bloco.
+
+=========================================================================
+SESSAO 2026-10-22 — BLOCO 13 / T13.3 (acessibilidade publica)
+=========================================================================
+
+  - T13.3 (commit c0ad1c1, validado pelo dono em 2026-10-22): cards do
+    dashboard e das listas agora sao focaveis e abrem com Enter/Espaco;
+    paineis de detalhe viraram dialog com foco inicial, Tab preso ao painel
+    e retorno de foco ao fechar; overlays fechados ficam com hidden e fora
+    da tabulacao; a sidebar marca aria-current; o menu mobile anuncia
+    aria-expanded/aria-controls; botoes de fechar e buscas ganharam nome
+    acessivel; headings do dashboard corrigidos (h1 -> h2); contraste AA
+    ajustado em textos secundarios e foco visivel com :focus-visible.
+    6 testes e2e novos em tests/e2e/acessibilidade.spec.mjs.
+    db.js/admin.js/dados.js, persistencia, auth e publish_status intocados.
+  - Prova: npm run check exit 0 (257 testes, 0 falhas, 21 avisos); e2e
+    completo 22 passed / 2 skipped (admin sem credenciais); e2e a11y 6/6;
+    Lighthouse a11y 100 em dashboard, funcionarios, manuais, processos,
+    arquivos, informacoes, veiculos, sistemas, servicos, agenda e
+    relatorios.
+  - Push para origin/codex/fase3 em 2026-10-22; main segue sem merge.
+  - PENDENTE: T13.4, T13.5, T13.7 e deploy.
 
 =========================================================================
 SESSAO 2026-10-22 — BLOCO 13 / T13.1 + T13.2 (hash routing + SEO)

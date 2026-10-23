@@ -1769,7 +1769,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 |---|---|---|---|
 | T13.1 ✅ | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
 | T13.2 ✅ | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
-| T13.3 | Acessibilidade pública | Lighthouse a11y ≥ 90; teclado em sidebar/cards/painéis | M |
+| T13.3 ✅ | Acessibilidade pública | Lighthouse a11y **100** em 11 rotas; teclado em sidebar/cards/painéis, foco preso e retorno; 6 e2e novos | M |
 | T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
 | T13.5 | CDN confiável | `supabase-js@2.x.y` fixo + SRI; Phosphor e fontes locais; app renderiza com CDN bloqueado | M |
 | T13.6 ✅ | Higiene de repositório | `README.md`, ADRs, arquivo de planos antigos e limpeza de branches feitos em 2026-10-22; restaram `codex/fase3` e `main` | S |
@@ -1788,7 +1788,14 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge/deploy.
 **Pendência de dados:** `dados.js` ainda tem 26 referências a Luziânia (URLs de sistemas, endereço, IBGE, população, Instagram `smader_luziania`). O Supabase de produção já está com Cidade Ocidental (sistemas e funcionários); o `dados.js` é o fallback antigo. Falta decidir se ele será regenerado a partir do Supabase.
 **Prova:** `npm run check` exit 0 (257 testes, 0 falhas) · e2e 16 passed / 2 skipped · Lighthouse SEO **100** · `robots.txt`, `sitemap.xml` e `og-image.png` respondem 200.
-**Pendente:** T13.3 (acessibilidade pública).
+**Pendente:** T13.3 (acessibilidade pública) — concluído no registro abaixo.
+
+### Registro de execução — 2026-10-22 (T13.3)
+
+**T13.3 — acessibilidade pública (commit `c0ad1c1`; validado pelo dono em 2026-10-22):** cards do dashboard e das listas passaram a ser focáveis e abrem com Enter/Espaço; painéis de detalhe viraram `dialog` com foco inicial, Tab preso ao painel e retorno de foco ao fechar; overlays fechados ficam com `hidden` e fora da tabulação; a sidebar marca `aria-current="page"`; o menu mobile anuncia `aria-expanded`/`aria-controls`; botões de fechar e inputs de busca ganharam nome acessível; headings do dashboard corrigidos para `h1`→`h2`; contraste AA ajustado em textos secundários e foco visível padronizado com `:focus-visible`. 6 testes e2e novos em `tests/e2e/acessibilidade.spec.mjs`. `db.js`, `admin.js`, `dados.js`, persistência, auth e `publish_status` intocados.
+**Prova:** `npm run check` exit 0 (257 testes, 0 falhas, 21 avisos de lint) · e2e completo 22 passed / 2 skipped (admin sem credenciais) · e2e a11y 6/6 · Lighthouse a11y **100** em dashboard, funcionários, manuais, processos, arquivos, informações, veículos, sistemas, serviços, agenda e relatórios.
+**Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge.
+**Pendente:** T13.4, T13.5, T13.7 e deploy.
 
 ### Registro de execução — 2026-10-22 (higiene)
 
@@ -1804,13 +1811,13 @@ lint corrigidos; handoff e este plano atualizados. Nenhum arquivo de runtime
 `codex/homologacao-admin` e `codex/homologacao-refatoracao-v1.1.x`. Todas
 tinham **0 commits exclusivos** em relação a `origin/main`; restaram apenas
 `codex/fase3` (ativa) e `main` (produção).
-**Pendente:** T13.3, T13.4, T13.5, T13.7 e deploy. O plano de ações restantes
+**Pendente na época:** T13.3, T13.4, T13.5, T13.7 e deploy; T13.3 concluído no registro acima. O plano de ações restantes
 está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
 - [ ] nenhuma mudança visual indesejada (screenshots) — depende do T13.4
 - [x] Lighthouse SEO ≥ 90 — **100** em 2026-10-22
-- [ ] Lighthouse a11y ≥ 90 — depende do T13.3
+- [x] Lighthouse a11y ≥ 90 — **100** em 11 rotas (2026-10-22)
 - [ ] app funciona com CDN bloqueado — depende do T13.5
 - [ ] aba do index aberta reflete edição feita no admin ao voltar o foco (T13.7)
 - [x] `AGENTS.md` atualizado com a nova arquitetura (2026-10-22)
