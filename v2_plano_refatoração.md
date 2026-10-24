@@ -1770,7 +1770,7 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 | T13.1 ✅ | Roteamento por hash (`#/dashboard`…) | F5 mantém a página; botão voltar; 14 `href="#"` migrados | M |
 | T13.2 ✅ | SEO: `description`, Open Graph, `sitemap.xml`, `robots.txt`, `canonical` | `curl` devolve conteúdo no HTML; Lighthouse SEO ≥ 90 | G |
 | T13.3 ✅ | Acessibilidade pública | Lighthouse a11y **100** em 11 rotas; teclado em sidebar/cards/painéis, foco preso e retorno; 6 e2e novos | M |
-| T13.4 | CSS em camadas + tokens | comparação por screenshot das 11 páginas (sem mudança visual não intencional) | G |
+| T13.4 ✅ | CSS em camadas + tokens | fingerprint + screenshot das 11 páginas em 5 viewports, 0 falhas; 270 testes | G |
 | T13.5 ✅ | CDN confiável | Phosphor, fontes e `supabase-js@2.118.0` locais; CSP só `'self'` para script/estilo/fonte; e2e com unpkg, jsDelivr e Google Fonts bloqueados | M |
 | T13.6 ✅ | Higiene de repositório | `README.md`, ADRs, arquivo de planos antigos e limpeza de branches feitos em 2026-10-22; restaram `codex/fase3` e `main` | S |
 | T13.7 ✅ | Frescor ao entrar no módulo: cache imediato + revalidação em segundo plano + `DB.resolveStorageUrls()` + re-render só do módulo ativo | edição do admin aparece ao trocar de módulo sem F5; falha de rede mantém a tela; 6 testes novos | M |
@@ -1811,6 +1811,15 @@ Depois de P6–P11: fechar a spec do T12.0.1 e montar o **protótipo estático
 **Push:** `origin/codex/fase3` em 2026-10-22; `main` segue sem merge.
 **Pendente:** T13.4 e deploy.
 
+### Registro de execução — 2026-10-23 (T13.4)
+
+**T13.4 — CSS em camadas + tokens (commits `d95f627`, `c212036`, `7582c01`, `96a7d62`, `53ee41e`; validado pelo dono em 2026-10-23):** o `style.css` (3.728 linhas) virou 9 camadas numeradas em `css/01-tokens-base.css` … `css/09-forms-preview.css`, carregadas na ordem declarada no `index.html` (sem `@import` entre elas); os 13 `@media` continuam na camada em que estavam, então a cascata é a mesma. O CSS inline do `admin.html` (909 linhas / ~40 KB) saiu para `admin.css`, com o `<link>` na mesma posição: o HTML caiu de 1.150 para 240 linhas. Tokens: 50 literais de cor trocados por `var()` (25 no público, 25 no admin) e 6 tokens novos (`--white`, `--border-strong`, `--text-strong` no público; `--white`, `--sidebar-bg`, `--sidebar-text` no admin). Nenhuma classe, id ou token foi renomeado; `script.js`, `db.js`, auth, persistência e `publish_status` intocados.
+**Rede de segurança:** `scripts/visual/harness.mjs` + `scripts/visual/css-diff.mjs` (`npm run visual:diff`) comparam `getComputedStyle` de todos os elementos (inclusive `::before`/`::after`) e screenshot pixel a pixel entre duas refs do git, em 5 viewports, com login no admin reaproveitado por `storageState`. `.gitattributes` normaliza fim de linha e protege binários — o `git add --renormalize` havia corrompido 1 byte de `Phosphor-Bold.woff2`, restaurado e conferido por hash.
+**Prova:** gate 0 (HEAD~1 vs HEAD sem mudança de app) **97/0** · tokens público **97/0** · tokens admin **36/0** · extração do admin **36/0** · camadas do público **55/55 fingerprint + 22/22 screenshots** · `npm run check` exit 0 (270 testes, 0 falhas) · conferência manual do dono no público e no admin.
+**Push:** pendente de autorização; `main` segue sem merge.
+**Extra (mesma data, commit `6f4c84c`):** "Manuais vinculados" dentro da etapa de *editar processo* passou a usar o mesmo seletor de vínculos de "Documentos necessários" / "Manuais relacionados" (busca + lista rolável + chips + "Limpar seleção"). O `<select multiple>` continua no DOM, oculto, como fonte da verdade — `manuais_ids` e o salvamento não mudaram. Verificado no navegador: busca, marcar, remover chip e limpar seleção, sem erro de console.
+**Pendente:** deploy.
+
 ### Registro de execução — 2026-10-22 (higiene)
 
 **Higiene (sem runtime):** `README.md` raiz criado; planos v1.2, v1.3 e de
@@ -1829,7 +1838,7 @@ tinham **0 commits exclusivos** em relação a `origin/main`; restaram apenas
 está em `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
 
 ### Checklist do bloco
-- [ ] nenhuma mudança visual indesejada (screenshots) — depende do T13.4
+- [x] nenhuma mudança visual indesejada (screenshots) — **sim** em 2026-10-23 (T13.4: gates 97/0, 97/0, 36/0, 36/0, 55/55 fingerprint e 22/22 screenshots)
 - [x] Lighthouse SEO ≥ 90 — **100** em 2026-10-22
 - [x] Lighthouse a11y ≥ 90 — **100** em 11 rotas (2026-10-22)
 - [x] app funciona com CDN bloqueado — **sim** em 2026-10-22 (T13.5)

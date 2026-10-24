@@ -1,5 +1,5 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-22
+Atualizado em: 2026-10-23
 Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
@@ -31,6 +31,52 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - Plano mestre: v2_plano_refatoração.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-23 — BLOCO 13 / T13.4 (CSS EM CAMADAS + TOKENS)
+=========================================================================
+
+  - T13.4 CONCLUIDO e validado pelo dono em 2026-10-23 (conferencia manual
+    no publico e no admin). Refactor estrutural puro: zero mudanca visual,
+    sem @layer, sem renomear classe/id/token, JS intocado.
+  - Publico (commits d95f627 tokens, 96a7d62 camadas): style.css (3.728
+    linhas) dividido em 9 camadas numeradas em css/ (01-tokens-base ...
+    09-forms-preview), carregadas na ordem dos <link> do index.html e sem
+    @import entre elas. Os 13 @media continuam na camada de origem, entao a
+    cascata e a mesma. 25 literais de cor viraram var() e entraram 3 tokens
+    (--white, --border-strong, --text-strong). style.css removido.
+  - Admin (commits c212036 tokens, 7582c01 extracao): o CSS inline do
+    admin.html (909 linhas / ~40 KB) saiu verbatim para admin.css, com o
+    <link> na mesma posicao; admin.html caiu de 1.150 para 240 linhas.
+    25 literais viraram var() e entraram 3 tokens (--white, --sidebar-bg,
+    --sidebar-text). Prova de igualdade byte a byte do bloco extraido.
+  - Rede de seguranca (commits 45cc267, 0478c8c, 1d737f7):
+    scripts/visual/harness.mjs + css-diff.mjs, expostos em
+    npm run visual:diff. Comparam getComputedStyle de todos os elementos
+    (inclusive ::before/::after) e screenshot pixel a pixel entre duas refs
+    do git, em 5 viewports, com login do admin reaproveitado por
+    storageState e filtro --escopo=publico|admin. .gitattributes normaliza
+    fim de linha e protege binarios (o git add --renormalize havia corrompido
+    1 byte de Phosphor-Bold.woff2; restaurado e conferido por hash).
+  - Testes: tests/unit/css-layers.test.mjs (6 testes, RED -> GREEN) garante
+    as 9 camadas na ordem, ausencia de @import e ausencia de style.css.
+  - Prova: gate 0 (sem mudanca de app) 97/0 | tokens publico 97/0 | tokens
+    admin 36/0 | extracao do admin 36/0 | camadas 55/55 fingerprint + 22/22
+    screenshots | npm run check exit 0 (270 testes, 0 falhas).
+  - Docs (commit 53ee41e): README com a tabela e a ordem das 9 camadas e
+    npm run visual:diff; AGENTS.md com css/ e admin.css e a regra de nao
+    reordenar as camadas.
+  - Extra da mesma data (commit 6f4c84c): "Manuais vinculados" dentro da
+    etapa de editar processo passou a usar o mesmo seletor de "Documentos
+    necessarios" / "Manuais relacionados" (busca + lista rolavel + chips +
+    "Limpar selecao"). O <select multiple> continua no DOM, oculto, como
+    fonte da verdade: manuais_ids e o salvamento nao mudaram. Removidos o
+    handler .etapa-manuais-busca, 2 early-returns e 2 regras CSS mortas;
+    tests/unit/admin-modal-v2.test.mjs atualizado. Verificado no navegador
+    (busca, marcar, remover chip, limpar selecao, 0 erros de console).
+  - 9 commits locais a frente de origin/codex/fase3 (antes do commit destas
+    docs). Nada foi enviado; main segue sem merge.
+  - PENDENTE: deploy para main.
 
 =========================================================================
 SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
@@ -793,8 +839,9 @@ Plano vigente (substitui a v1):
      fixes 6a85171/292f79e) e 4 (HTML, 0d1e476), fix das buscas por
      digitacao (fb67e1b) e 9d (CSP + SRI, 7f89e5a) concluidos e validados.
   -> Bloco 13: T13.7 (frescor ao entrar no modulo) CONCLUIDA em 2026-10-22
-     (commit 2284576). T13.1, T13.2, T13.3, T13.5 e T13.6 tambem concluidas;
-     resta T13.4 (CSS em camadas). Registro em
+     (commit 2284576). T13.1, T13.2, T13.3, T13.4 (CSS em camadas, commits
+     d95f627..53ee41e, validado em 2026-10-23), T13.5 e T13.6 tambem
+     concluidas: o Bloco 13 esta fechado e so o deploy resta. Registro em
      C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md.
   -> Bloco 6 CONCLUIDO em 2026-10-20 (role em app_admins + 42 policies de
      conteudo + 9 de Storage). Falta: mascaramento de campos sensiveis.
