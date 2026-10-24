@@ -11,9 +11,9 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **8** (`0002` a `0009`) |
+| Migrations aplicadas em produção | **13** (`0002` a `0014`) |
 | Migrations criadas e ainda **não aplicadas** em produção | **0** |
-| `supabase_migrations.schema_migrations` | `20261019205209`, `20261019205211`, `20261019221229`, `20261020023304`, `20261020023320`, `20261020130953`, `20261020151915`, `20261020152424` |
+| `supabase_migrations.schema_migrations` | **13** linhas, uma por migration (`0002` a `0014`) |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
 | Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
@@ -44,6 +44,9 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0009_storage_buckets_privados.sql` | Bloco 3b2: `public=false` em arquivos/funcionários | **Aplicada em produção em 2026-10-20** |
 | `migrations/0010_manuais_imagens_policy.sql` | Bloco 3c/13: `SELECT` de Storage para imagem de manual publicado | **Aplicada em produção em 2026-10-20** |
 | `migrations/0011_manuais_imagens_bucket_privado.sql` | Bloco 3c/13: `public=false` em `manuais-imagens-smader` | **Aplicada em produção em 2026-10-20** |
+| `migrations/0012_sync_identity_sequences.sql` | Bloco 8 (T8.3): sincroniza as sequences de identity das 14 tabelas de conteúdo | **Aplicada em produção** |
+| `migrations/0013_replace_collection.sql` | Bloco 8 (T8.4): RPC `replace_collection` (transação única, allowlist de tabelas, `security invoker`) | **Aplicada em produção** |
+| `migrations/0014_updated_at.sql` | Bloco 8 (T8.5): `updated_at` + trigger nas 14 tabelas de conteúdo | **Aplicada em produção** |
 | `tests/00a_seed_auth.sql` | contas de teste do T6.5 (rodar antes da `0002`) | Só projeto de teste |
 | `tests/00b_seed_dados.sql` | papel servidor, buckets e seed do T6.5 (rodar após a `0007`) | Só projeto de teste |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
@@ -372,19 +375,23 @@ Em um projeto Supabase **de teste** (nunca o de produção), na ordem:
     publicado
 14. `migrations/0011_manuais_imagens_bucket_privado.sql` — deixa o bucket de
     manuais privado; no teste atual foi aplicada em 2026-10-20
-15. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
-16. `tests/07_manuais_imagens_storage.sql` — policy de imagem de manual
+15. `migrations/0012_sync_identity_sequences.sql` — sincroniza as sequences
+    com o maior id de cada tabela (rodar **depois** do seed)
+16. `migrations/0013_replace_collection.sql` — RPC de importação em transação única
+17. `migrations/0014_updated_at.sql` — `updated_at` + trigger nas 14 tabelas
+18. `tests/06_matriz_rbac.sql` — T6.5 (4 personas × 14 coleções × 4 ações)
+19. `tests/07_manuais_imagens_storage.sql` — policy de imagem de manual
 
 **Pré-requisito da `0002`:** ela revoga EXECUTE de `public.rls_auto_enable()`,
 que existe em produção mas não em projeto novo. Crie a função com a definição
 de produção antes de aplicar a `0002`; caso contrário a migration falha com
 `42883` e é revertida por inteiro.
 
-O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As 12
-migrations (0001–0011) foram aplicadas; os **3 buckets** estão privados, e o
+O projeto de teste em uso (2026-10-20) é `zoywmvuswyosehlddmma`. As migrations
+`0001`–`0014` foram aplicadas; os **3 buckets** estão privados, e o
 teste tem 0 objetos reais. O T6.5 fechou verde: **232 casos, 0 falhas**; o
 teste 07 também fechou com **0 falhas** após a `0011`. Produção tem
-`0008`–`0011`; código deployado (`c3f1c90`) e validado em 2026-10-20.
+`0002`–`0014`; código deployado (`c3f1c90`) e validado em 2026-10-20.
 
 Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte
 `db.js` para o projeto de teste em uma cópia local. O T6.5 em si não precisa de
