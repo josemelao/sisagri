@@ -134,7 +134,11 @@ test('formProcesso: secoes, acordeao de etapas e barra de alteracoes', async () 
 
   assert.match(html, /class="step-list" id="dyn-etapas" data-acordeao="etapa"/);
   assert.match(html, /id="etapas-hint"/);
-  assert.match(html, /class="etapa-manuais-busca"/);
+  // A etapa usa o mesmo seletor de vinculos de "Documentos necessarios":
+  // busca + lista + chips, com o <select> oculto como fonte da verdade.
+  assert.match(html, /class="vinculo-picker" data-alvo="etapa-manuais-i\d+" data-singular="manual"/);
+  assert.match(html, /class="doc-arquivo-busca"/);
+  assert.match(html, /class="etapa-manuais" multiple hidden/);
   assert.match(html, /data-acao="add-etapa"/);
   assert.match(html, /data-acao="salvar-modal" data-salvar="processo"/);
   assert.match(html, /id="unsaved-bar"/);

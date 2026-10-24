@@ -599,7 +599,6 @@ if (_modalContentEl) {
       filtrarArquivosDoc(e.target);
       return;
     }
-    if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
     marcarSujoV2();
     const boxErro = document.getElementById('save-error');
     if (boxErro) boxErro.classList.remove('visible');
@@ -615,7 +614,6 @@ if (_modalContentEl) {
 
   _modalContentEl.addEventListener('change', (e) => {
     if (!_modalV2) return;
-    if (e.target.classList && e.target.classList.contains('etapa-manuais-busca')) return;
     if (e.target.classList && e.target.classList.contains('doc-arquivo-busca')) return;
     marcarSujoV2();
   });
@@ -777,17 +775,6 @@ function iniciarAcordeaoV2(list) {
   });
 
   list.addEventListener('input', (e) => {
-    const busca = e.target.closest('.etapa-manuais-busca');
-    if (busca) {
-      const select = busca.closest('.field')?.querySelector('.etapa-manuais');
-      const termo = normalizeSearchText(busca.value);
-      if (select) {
-        Array.from(select.options).forEach((opt) => {
-          opt.hidden = !!termo && !normalizeSearchText(opt.textContent).includes(termo);
-        });
-      }
-      return;
-    }
     const campo = e.target.closest(cfg.resumo);
     if (!campo) return;
     const el = campo.closest('.step');
@@ -2626,10 +2613,19 @@ function etapaProcessoHTML(e = {}, i = 0) {
             <textarea id="etapa-desc-${id}" class="etapa-desc" rows="2" placeholder="Descrição da etapa...">${escHtml(descricao)}</textarea>
           </div>
           <div class="field">
-            <label for="etapa-manuais-${id}">Manuais vinculados <span style="font-weight:400;opacity:.7">(opcional)</span></label>
-            <input class="etapa-manuais-busca" aria-label="Filtrar manuais" placeholder="Filtrar manuais..." />
-            <select id="etapa-manuais-${id}" class="etapa-manuais" multiple aria-label="Manuais vinculados">${getManuaisOptions(manuaisIds)}</select>
-            <span class="hint">Segure Ctrl (ou Cmd) para selecionar vários. Use o filtro para achar mais rápido.</span>
+            <label>Manuais vinculados <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+            <div class="vinculo-picker" data-alvo="etapa-manuais-${id}" data-singular="manual">
+              <div class="vinculo-chips">${vinculoChipsHTML('manuais', `etapa-manuais-${id}`, manuaisIds, 'manual')}</div>
+              ${vinculoPickerHTML('manuais', `etapa-manuais-${id}`, manuaisIds, {
+                placeholder: 'Buscar manual por título ou categoria...',
+                ariaBusca: 'Buscar manual',
+                ariaLista: 'Manuais disponíveis',
+                vazioBusca: 'Nenhum manual corresponde à busca.',
+                vazioNenhum: 'Nenhum manual cadastrado. Cadastre em Manuais.',
+              })}
+              <select id="etapa-manuais-${id}" class="etapa-manuais" multiple hidden aria-hidden="true" tabindex="-1">${getManuaisOptions(manuaisIds)}</select>
+              <button type="button" class="btn btn-ghost btn-sm" data-acao="limpar-multi-select" data-alvo="etapa-manuais-${id}">Limpar seleção</button>
+            </div>
           </div>
         </div>
       </div>
