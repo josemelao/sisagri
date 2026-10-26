@@ -12,6 +12,12 @@
  *  - O botão "Exportar dados.js" gera este arquivo atualizado para
  *    substituição permanente (quando quiser "commitar" os dados).
  *
+ * COLEÇÕES GERADAS:
+ *  - funcionarios, manuais, processos, arquivos, veiculos e escalaFerias
+ *    são geradas por scripts/gerar-dados-fallback.mjs a partir dos
+ *    registros publicados na produção. Não edite à mão: rode o gerador.
+ *    O gerador omite PII (cpf, matricula, chassi, renavam).
+ *
  * MIGRAÇÃO PARA SUPABASE:
  *  - Substituir a leitura de window.DADOS_INICIAIS por chamadas
  *    ao Supabase Client em db.js. A interface da aplicação não muda.
@@ -23,204 +29,1349 @@ window.DADOS_INICIAIS = {
   funcionarios: [
     {
       id: 1,
-      nome: "Ana Paula Ferreira",
-      cargo: "Engenheira Agrônoma",
-      setor: "Fiscalização e Defesa Agropecuária",
-      telefone: "(62) 3311-2001",
-      email: "ana.ferreira@smader.go.gov.br",
-      foto: "",
-      descricao: "Responsável pela fiscalização de insumos agrícolas, aplicação de normas sanitárias em propriedades rurais e emissão de laudos técnicos. Coordena vistorias de campo e atende produtores no Escritório Regional."
+      nome: "João Victor Aragão da Silva",
+      cargo: "Secretário de Agricultura",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502351870-foto-1.jpg"
     },
     {
       id: 2,
-      nome: "Carlos Eduardo Lima",
-      cargo: "Engenheiro Agrônomo Sênior",
-      setor: "Fiscalização e Defesa Agropecuária",
-      telefone: "(62) 3311-2003",
-      email: "carlos.lima@smader.go.gov.br",
-      foto: "",
-      descricao: "Coordena a equipe de fiscalização, elabora relatórios gerenciais e responde à chefia pelo setor. Atua como substituto da chefia quando necessário. Especialista em agrotóxicos e certificação de sementes."
+      nome: "Railson Rodrigues Do Nascimento",
+      cargo: "Subsecretário de Agricultura",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Subsecretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502353083-foto-2.jpg"
     },
     {
       id: 3,
-      nome: "Márcia Oliveira Santos",
-      cargo: "Técnica Administrativa",
-      setor: "Administração e Finanças",
-      telefone: "(62) 3311-2010",
-      email: "marcia.santos@smader.go.gov.br",
-      foto: "",
-      descricao: "Responsável pelo protocolo e tramitação de documentos, controle de ponto, gestão de contratos de fornecedores e suporte administrativo geral da secretaria. Ponto focal para solicitações de materiais."
+      nome: "Adson Botelho Junior",
+      cargo: "Gerente de Cadastro do Sim",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Inspeção Municipal",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502353828-foto-3.jpg"
     },
     {
       id: 4,
-      nome: "Roberto Alves Nascimento",
-      cargo: "Analista de TI",
-      setor: "Infraestrutura e Tecnologia",
-      telefone: "(62) 3311-2030",
-      email: "roberto.nascimento@smader.go.gov.br",
-      foto: "",
-      descricao: "Gerencia a infraestrutura de TI da secretaria, oferece suporte técnico aos servidores, administra os sistemas internos e controla os equipamentos patrimoniais de informática."
+      nome: "André Luiz Magalhães Del Sarto Melo",
+      cargo: "Diretor de Desenvolvimento Rural",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Desenvolvimento Rural",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502354709-foto-4.jpg"
     },
     {
       id: 5,
-      nome: "Fernanda Costa Braga",
-      cargo: "Agente de Desenvolvimento Rural",
-      setor: "Extensão Rural e Assistência Técnica",
-      telefone: "(62) 3311-2040",
-      email: "fernanda.braga@smader.go.gov.br",
-      foto: "",
-      descricao: "Presta assistência técnica a agricultores familiares, coordena programas de extensão rural, elabora projetos para captação de recursos junto ao governo federal e realiza cadastramento no Pronaf."
+      nome: "Caleb Garcês Araújo",
+      cargo: "Assessor de Gabinete IV",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502355519-foto-5.jpg"
     },
     {
       id: 6,
-      nome: "José Antônio Pereira",
-      cargo: "Chefe de Departamento",
-      setor: "Gabinete e Gestão",
-      telefone: "(62) 3311-2000",
-      email: "jose.pereira@smader.go.gov.br",
-      foto: "",
-      descricao: "Chefia o Departamento Técnico, coordena as equipes de fiscalização e extensão, assina documentos oficiais e representa a secretaria em reuniões externas. Ponto de escalonamento para demandas complexas."
-    }
+      nome: "Felipe dos Santos Felix",
+      cargo: "Diretor de Agricultura",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Agricultura",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502356367-foto-6.jpg"
+    },
+    {
+      id: 7,
+      nome: "Flávia Pereira Silva",
+      cargo: "Supervisora de Serviços Administrativos I",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502357230-foto-7.jpg"
+    },
+    {
+      id: 8,
+      nome: "José Luiz Mendes Pereira",
+      cargo: "Assessor de Extensão Rural",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Assessoria de Extensão Rural",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502358003-foto-8.jpg"
+    },
+    {
+      id: 9,
+      nome: "José Tadeu de Moraes Junior",
+      cargo: "Agente Administrativo",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Estatutários",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502358770-foto-9.jpg"
+    },
+    {
+      id: 10,
+      nome: "Lizandra Renata Pereira Chrisostomo",
+      cargo: "Assessora de Gabinete III",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Inspeção Municipal",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502359592-foto-10.jpg"
+    },
+    {
+      id: 11,
+      nome: "Nerisvaldo Pereira da Silva",
+      cargo: "Tratorista",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Desenvolvimento Rural",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Estatutários",
+      descricao: null,
+      foto_storage_path: "funcionarios/1774659784148-nerisvaldo.jpeg"
+    },
+    {
+      id: 12,
+      nome: "Rogério Martins de Carvalho",
+      cargo: "Assessor de Gabinete III",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502360406-foto-12.jpg"
+    },
+    {
+      id: 13,
+      nome: "Valter Lisboa da Costa",
+      cargo: "Gerente de Capacitação Rural",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Diretoria de Desenvolvimento Rural",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1774659822155-valtinha.jpeg"
+    },
+    {
+      id: 14,
+      nome: "Elida Maria Alves de Miranda",
+      cargo: "Assessora Legislativa",
+      lotacao: "Secretaria Municipal de Governo",
+      departamento: "Gabinete Do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1792502361094-foto-14.jpg"
+    },
+    {
+      id: 15,
+      nome: "Marcio Aranha da Costa",
+      cargo: "Supervisor de Serviços Administrativos I",
+      lotacao: "Secretaria de Agricultura E Desenv Rural",
+      departamento: "Gabinete do Secretário",
+      orgao: "Governo Municipal de Cidade Ocidental",
+      vinculo: "Comissão",
+      descricao: null,
+      foto_storage_path: "funcionarios/1777484157427-Maricio-Aranha.jpeg"
+    },
   ],
 
   manuais: [
     {
       id: 1,
-      titulo: "Manual de Protocolo de Documentos",
+      titulo: "Manual de Ofícios - Geral",
       categoria: "Administrativo",
+      descricao: null,
+      observacoes: "Este manual serve para orientar, de forma geral, como fazer um ofício, cada ofício tem demandas diferentes, podem ter anexo, podem ser direcionados a um ou mais destinatários, etc",
       passos: [
-        { texto: "Receber o documento físico ou digital na recepção ou e-mail institucional.", imagem: "https://images.unsplash.com/photo-1586769852044-692d6e3703a0?q=80&w=400&auto=format&fit=crop" },
-        { texto: "Registrar no sistema SEI com tipo, assunto e interessado.", imagem: "https://images.unsplash.com/photo-1568667256549-094345857637?q=80&w=400&auto=format&fit=crop" },
-        { texto: "Atribuir número de protocolo e imprimir o recibo para o solicitante.", imagem: "https://images.unsplash.com/photo-1554224155-1696413565d3?q=80&w=400&auto=format&fit=crop" },
-        { texto: "Encaminhar o processo ao setor responsável via SEI ou fisicamente.", imagem: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=400&auto=format&fit=crop" },
-        { texto: "Registrar a tramitação na planilha de controle mensal do setor.", imagem: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=400&auto=format&fit=crop" }
+        {
+          texto: "Abra um ofício para usar como modelo, de preferência um que esteja relacionado com o mesmo tema para facilitar na adaptação.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775072817251-Screenshot_1.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3MjgxNzI1MS1TY3JlZW5zaG90XzEucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.Tu0uUt1IkHNVPYM1bFI03_BbhEFQDUsg91XBJo-ISM4",
+          imagem_storage_path: "manuais/1775072817251-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "No cabeçalho do ofício, altere o número sequencial do mesmo (verifique qual foi o último ofício gerado, se o último foi o 99, este será o 100). Atualize a data (dia/mês/ano).",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775072817749-Screenshot_2.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3MjgxNzc0OS1TY3JlZW5zaG90XzIucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.FJfIngJsnO7SLuCZVxXMyrHvFYUBwZS7zitX7mAZuxA",
+          imagem_storage_path: "manuais/1775072817749-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Ainda no cabeçalho, coloque o vocativo pertinente ao destinatário do documento, o nome do destinatário, o cargo do destinatário, e a cidade em que ele se situa.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775074170856-Screenshot_3.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3NDE3MDg1Ni1TY3JlZW5zaG90XzMucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.uMCS2ndzAtv1W1kRAkhDriYapF_zMi_kBRiRQu13wpA",
+          imagem_storage_path: "manuais/1775074170856-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "No 'Assunto', coloque um resumo geral do objetivo do ofício, pode ser 'encaminhamento', 'solicitação', 'resposta', etc. Exemplo: 'Encaminhamento de folhas de ponto - março/2026'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775074171744-Screenshot_4.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3NDE3MTc0NC1TY3JlZW5zaG90XzQucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.CrTKfWBYTKcl17CvBlZ_9D-4Xpr4ZRNw64BLouui6_g",
+          imagem_storage_path: "manuais/1775074171744-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "No corpo do ofício, indique novamente a quem o documento está sendo direcionado.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775074172091-Screenshot_5.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3NDE3MjA5MS1TY3JlZW5zaG90XzUucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.-UqMsEjo82uQRbYCcViM0U6FTISPRD9pTHu6nwv5Ffc",
+          imagem_storage_path: "manuais/1775074172091-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "O conteúdo do ofício para simplificar pode ser divido em 3 partes (Saudação com a demanda do ofício; justificativa/detalhes/especificações/informações complementares da demanda; e por último a conclusão da demanda com agradecimento)",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775074172398-Screenshot_6.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3NDE3MjM5OC1TY3JlZW5zaG90XzYucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.OO0wgF8-gD9zgId0ZzJJ0jG8nbYyzoUn08ikGa3x6BQ",
+          imagem_storage_path: "manuais/1775074172398-Screenshot_6.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Por fim, todo ofício deve ser assinado, na maioria das vezes será sempre o Secretário, mas em via de regra, o ofício é assinado por quem faz a demanda. Inserir nome, cargo e matrícula/decreto de nomeação",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/sign/manuais-imagens-smader/manuais/1775074172944-Screenshot_7.png?token=eyJraWQiOiIwYWI1ZDU3Zi04ZjQyLTQzMTEtODI0YS02MjYwYzVlYWJhMjYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtYW51YWlzLWltYWdlbnMtc21hZGVyL21hbnVhaXMvMTc3NTA3NDE3Mjk0NC1TY3JlZW5zaG90XzcucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc5MjUyNDA2OCwiZXhwIjoxNzkyNTI3NjY4fQ.s1ZjawGdr1xXpLyE1bSk5A_Spt8euCE8mUbb0QTVWnQ",
+          imagem_storage_path: "manuais/1775074172944-Screenshot_7.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
       ],
-      documentos: ["Documento original ou cópia autenticada", "Formulário de requerimento preenchido", "CPF/CNPJ do solicitante", "Comprovante de endereço (quando exigido)"],
-      observacoes: "Documentos recebidos após as 17h são protocolados no próximo dia útil. Documentos incompletos devem ser devolvidos com justificativa escrita."
+      documentos: [
+        {
+          nome: "Modelo - Ofício",
+          arquivo_id: 3
+        }
+      ]
     },
     {
       id: 2,
-      titulo: "Manual de Emissão de ART",
+      titulo: "Manual de Ofício - ChatGPT",
       categoria: "Técnico",
+      descricao: null,
+      observacoes: "Manual de como criar ofícios usando o ChatGPT (chatgpt.com). Este manual serve como base para entender como solicitar ao ChatGPT para criar o conteúdo do ofício, caso use o Prefeitura Virtual, o procedimento é mesmo, mas o conteudo precisa ser inserido no documento diretamente no sistema do Prefeitura Virtual (Ver guia Manual de Ofício - Prefeitura Virtual)",
       passos: [
-        { texto: "O profissional deve acessar o portal do CREA-GO e preencher o formulário de ART.", imagem: "" },
-        { texto: "Recolher a taxa de ART via GRU no banco conveniado.", imagem: "" },
-      { texto: "Protocolizar a ART assinada e o comprovante de pagamento na SMADER.", imagem: "" },
-        { texto: "O setor técnico realiza a análise documental em até 5 dias úteis.", imagem: "" },
-        { texto: "Após aprovação, a ART registrada é emitida e entregue ao solicitante.", imagem: "" }
+        {
+          texto: "Abra um ofício para usar de modelo. (De preferência um ofício que tenha a ver com o novo). Caso não tenha acesso a nenhum, há um modelo na página 'Arquivos'",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587430618-Screenshot_0.png",
+          imagem_storage_path: "manuais/1775587430618-Screenshot_0.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Abra o ChatGPT. (chatgpt.com)",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587447802-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775587447802-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Conforme Manual de Ofícios - Geral, o ofício é dividido em 3 'blocos': Saudação + Demanda, Corpo Geral do Oficio com a demanda detalhada, Conclusão da demanda.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587506578-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775587506578-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "O Ofício deve responder as seguintes perguntas: O que/Qual a demanda; Quantos; Para quem; Por que; Quando; Onde; e Como.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587507234-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775587507234-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Copie o conteúdo do ofício que você está usando como modelo. (apenas o que estiver entre a saudação, e a assinatura.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587507564-Screenshot_4.png",
+          imagem_storage_path: "manuais/1775587507564-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Faça a solicitação ao ChatGPT respondendo às perguntas do passo 4, e cole o conteúdo que você copiou do ofício para o ChatGPT usar como modelo.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587508076-Screenshot_5.png",
+          imagem_storage_path: "manuais/1775587508076-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Envie a mensagem para o ChatGPT.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587508388-Screenshot_6.png",
+          imagem_storage_path: "manuais/1775587508388-Screenshot_6.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "O ChatGPT irá responder com o conteúdo do novo ofício, certifique-se que ele contempla todas as informações que você pediu para ele inserir, e copie o conteúdo.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587508797-Screenshot_7.png",
+          imagem_storage_path: "manuais/1775587508797-Screenshot_7.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Vá até o documento que você está editando e clique com o botão direito ná área selecionada do texto antigo e depois selecione a opção 'Manter Somente Texto'. (conforme print)",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587509213-Screenshot_8.png",
+          imagem_storage_path: "manuais/1775587509213-Screenshot_8.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "O novo texto será copiado com exatamente a mesma formatação original do documento, mas terá algumas linhas em branco que o ChatGPT cria. Apenas apague as linhas em branco.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587509731-Screenshot_9.png",
+          imagem_storage_path: "manuais/1775587509731-Screenshot_9.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Atualize todos os dados do cabeçalho de acordo com o Manual de Ofícios - Geral. (Numero, data, destinatário e assunto). E o ofício estará pronto. Basta salvar com a nova numeração na pasta de ofícios. (Cuidado para não salvar por cima do ofício antigo)",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587510247-Screenshot_10.png",
+          imagem_storage_path: "manuais/1775587510247-Screenshot_10.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Exemplo de outro ofício com assunto diferente.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587511032-Screenshot_11.png",
+          imagem_storage_path: "manuais/1775587511032-Screenshot_11.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Adicionalmente, sempre que o ChatGPT te entregar um ofício, sempre leia e veja se está de acordo, se precisas modificar algo, e peça para ele. No exemplo da imagem, faltou informar 'Onde'. (Capela Nsa Sra Abadia no Mesquita)",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775587511466-Screenshot_12.png",
+          imagem_storage_path: "manuais/1775587511466-Screenshot_12.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
       ],
-      documentos: ["Formulário ART preenchido e assinado", "Comprovante de pagamento da taxa (GRU)", "Cópia do registro profissional (CREA)", "Projeto técnico detalhado (quando aplicável)"],
-      observacoes: "A ART deve ser registrada antes do início de qualquer obra ou serviço técnico."
+      documentos: [
+        {
+          nome: "Modelo - Ofício",
+          arquivo_id: 3
+        }
+      ]
     },
     {
       id: 3,
-      titulo: "Manual de Solicitação de Defesa Sanitária Animal",
-      categoria: "Sanitário",
+      titulo: "Manual de Ofício - Prefeitura Virtual",
+      categoria: "Técnico",
+      descricao: null,
+      observacoes: "Manual para criação e envio de ofícios através do sistema Prefeitura Virtual.\nRecomendo deixar a opção 'Publicar ao Assinar' sempre marcada como 'Sim', pois após a assinatura, o documento é enviado automaticamente, caso essa opção esteja como 'Não', o usuário deve, após a assinatura do secretário, clicar no botão 'Publicar'.",
       passos: [
-        { texto: "Produtor rural entra em contato pelo telefone (62) 3311-2001 ou comparece pessoalmente.", imagem: "" },
-        { texto: "Preencher o formulário de solicitação de vistoria sanitária.", imagem: "" },
-        { texto: "Aguardar agendamento pelo setor (prazo médio: 3 dias úteis).", imagem: "" },
-        { texto: "Receber o Médico Veterinário designado na propriedade na data agendada.", imagem: "" },
-        { texto: "Após vistoria, receber o relatório sanitário e atestado, quando aprovado.", imagem: "" }
+        {
+          texto: "Acesse o sistema Prefeitura Virtual (https://cidadeocidental.prefeituravirtual.app.br/). Na página inicial vá para o menu 'Administração'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590258209-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775590258209-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Selecione 'Protocolo Eletrônico'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590259118-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775590259118-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Selecione 'Documento Eletrônico'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590259463-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775590259463-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Tipo de Documento: 'Ofício'. Publicar ao Assinar: 'Sim'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590260013-Screenshot_4.png",
+          imagem_storage_path: "manuais/1775590260013-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Preencha o 'Nome do Interessado', 'Cargo do Interessado', 'Cidade' e 'Assunto' do ofício.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590260487-Screenshot_5.png",
+          imagem_storage_path: "manuais/1775590260487-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Selecionar Modelos'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590931480-Screenshot_6.png",
+          imagem_storage_path: "manuais/1775590931480-Screenshot_6.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Selecione o modelo de ofício da Agricultura.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590932276-Screenshot_7.png",
+          imagem_storage_path: "manuais/1775590932276-Screenshot_7.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Editar documento'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590932494-Screenshot_8.png",
+          imagem_storage_path: "manuais/1775590932494-Screenshot_8.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Selecione o conteúdo entre 'Senhor e Respeitosamente' e cole o conteúdo do ofício.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590932726-Screenshot_9.png",
+          imagem_storage_path: "manuais/1775590932726-Screenshot_9.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Concluir e Fechar'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590933062-Screenshot_10.png",
+          imagem_storage_path: "manuais/1775590933062-Screenshot_10.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Salvar' no final da página.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590933340-Screenshot_11.png",
+          imagem_storage_path: "manuais/1775590933340-Screenshot_11.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Gerar número de Documento'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590933666-Screenshot_12.png",
+          imagem_storage_path: "manuais/1775590933666-Screenshot_12.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Visualizar Documento' e confira se está tudo de acordo (cabeçaho, numeração, conteúdo do ofício, etc.).",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590933882-Screenshot_13.png",
+          imagem_storage_path: "manuais/1775590933882-Screenshot_13.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na aba 'Signatários do Documento', clique em 'Adicionar'",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590934190-Screenshot_14.png",
+          imagem_storage_path: "manuais/1775590934190-Screenshot_14.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Adicionar Signatários'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590934458-Screenshot_15.png",
+          imagem_storage_path: "manuais/1775590934458-Screenshot_15.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "No campo nome digite 'joão victor'. Clique em 'Aplicar Filtros'. Veja se apareceu o nome do João e clique no botão de clipe.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590934715-Screenshot_16.png",
+          imagem_storage_path: "manuais/1775590934715-Screenshot_16.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Digite o cargo do João: 'Secretário de Agricultura'. Clique em 'Salvar'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775590935018-Screenshot_17.png",
+          imagem_storage_path: "manuais/1775590935018-Screenshot_17.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na aba 'Envio Eletrônico', clique em 'Adicionar'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775591065520-Screenshot_18.png",
+          imagem_storage_path: "manuais/1775591065520-Screenshot_18.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Em 'Nome do Departamento' digite o nome do departamento de destino. Clique em 'Aplicar Filtros'. Procure na lista o departamento correto e clique em 'Selecionar', e por fim, clique em 'Vincular'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775591066195-Screenshot_19.png",
+          imagem_storage_path: "manuais/1775591066195-Screenshot_19.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique em 'Enviar Assinatura'",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775591357344-Screenshot_20.png",
+          imagem_storage_path: "manuais/1775591357344-Screenshot_20.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "O ofício está pronto e já foi para o Secretário Assinar. Assim que ele assinar o ofício será encaminhado automaticamente pois já configuramos a opção 'Publicar ao Assinar'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775591358168-Screenshot_21.png",
+          imagem_storage_path: "manuais/1775591358168-Screenshot_21.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
       ],
-      documentos: ["RG e CPF do produtor", "Documento de posse ou propriedade do imóvel rural", "Cadastro de Imóvel Rural (CAR)", "Nota fiscal dos animais (quando aplicável)"],
-      observacoes: "Em casos de suspeita de doença de notificação obrigatória, a vistoria é emergencial. Ligar para o plantão (62) 99999-0000."
+      documentos: [
+        {
+          nome: "Modelo - Ofício",
+          arquivo_id: 3
+        }
+      ]
     },
     {
       id: 4,
-      titulo: "Manual de Férias e Licenças",
-      categoria: "Recursos Humanos",
+      titulo: "Manual para Visualizar/Editar Ofícios Criados - Prefeitura Virtual",
+      categoria: "Técnico",
+      descricao: null,
+      observacoes: "Essa manual mostra como o usuário pode listar os ofícios criados pelo departamento de forma fácil e rápida.",
       passos: [
-        { texto: "Servidor preenche o formulário de solicitação com 30 dias de antecedência.", imagem: "" },
-        { texto: "Chefia imediata valida e assina o formulário.", imagem: "" },
-        { texto: "Processo é encaminhado ao Departamento de RH via SEI.", imagem: "" },
-        { texto: "RH confere direito e lança no sistema de folha de pagamento.", imagem: "" },
-        { texto: "Servidor recebe confirmação por e-mail com as datas homologadas.", imagem: "" }
+        {
+          texto: "Acesse o sistema Prefeitura Virtual (https://cidadeocidental.prefeituravirtual.app.br/). Na página inicial vá para o menu 'Administração'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775658733994-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775658733994-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Acesse 'Protocolo Eletrônico'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659613162-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775659613162-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Acesse 'Documento Eletrônico'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659613671-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775659613671-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Clique na 'Lupa' da barra de pesquisa.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659614012-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775659614012-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Caso queira filtrar os ofícios que aparecem, há várias opções, depois clique em 'Aplicar Filtros'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659614315-Screenshot_4.png",
+          imagem_storage_path: "manuais/1775659614315-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Os documentos listados aparecerão em baixo, com numeração de oficio, status atual, se ja foi assinado, se ja foi publicado, assunto, etc.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659614798-Screenshot_5.png",
+          imagem_storage_path: "manuais/1775659614798-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Caso queira editar ou excluir o ofício, basta clicar nos respectivos botões.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659615186-Screenshot_6.png",
+          imagem_storage_path: "manuais/1775659615186-Screenshot_6.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
       ],
-      documentos: ["Formulário de solicitação assinado pela chefia", "Documentação comprobatória (para licenças médicas)", "Laudo médico com CID (para afastamentos por saúde)"],
-      observacoes: "O gozo de férias deve ocorrer preferencialmente entre janeiro e março. Licenças médicas superiores a 15 dias são encaminhadas para perícia pelo IPASGO."
-    }
+      documentos: []
+    },
+    {
+      id: 5,
+      titulo: "Manual de Controle de Documentos Recebidos/Enviados - Prefeitura Virtual",
+      categoria: "Técnico",
+      descricao: null,
+      observacoes: "Manual para ensinar o usuário a visualizar documentos recebidos e enviados pelo departamento.",
+      passos: [
+        {
+          texto: "Acesse o sistema Prefeitura Virtual (https://cidadeocidental.prefeituravirtual.app.br/). Na página inicial vá para o menu 'Administração'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775659895185-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775659895185-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Acesse 'Protocolo Eletrônico'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660150249-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775660150249-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Acesse 'Controle de Documentos Eletrônicos'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660151136-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775660151136-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Nesta página voce pode selecionar se quer visualizar os documentos recebidos ou os documentos enviados.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660151807-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775660151807-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Em ambos os casos você pode aplicar filtros para refinar a lista de documentos exibidos.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660152138-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775660152138-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Os documentos são exibidos mais abaixo, de acordo com os filtros selecionados (se nao filtrar, mostrará todos).",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660152539-Screenshot_4.png",
+          imagem_storage_path: "manuais/1775660152539-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Por fim, voce pode clicar no botões de 'Visualizar', ou 'Fazer Download' do documento através dos respectivos botões.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775660152997-Screenshot_5.png",
+          imagem_storage_path: "manuais/1775660152997-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
+      ],
+      documentos: []
+    },
+    {
+      id: 6,
+      titulo: "Manual de Preenchimento de Requerimento para Autorização de Corte ou Poda de Árvores",
+      categoria: "Administrativo",
+      descricao: null,
+      observacoes: "É recomendado o preenchimento de todos os campos para facilitar o atendimento da equipe técnica. Se possível, preferir por informar um telefone que possua WhatsApp para melhor comunicação e envio de documentação pendente.",
+      passos: [
+        {
+          texto: "Na seção 'Identificação do Solicitante' é necessário preencher os dados pessoais da pessoa que está fazendo a solicitação.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775672515038-Screenshot_1.png",
+          imagem_storage_path: "manuais/1775672515038-Screenshot_1.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na seção 'Localização da Área', é necessário preencher os dados de onde o serviço deverá ser efetuado.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775672516349-Screenshot_2.png",
+          imagem_storage_path: "manuais/1775672516349-Screenshot_2.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na seção 'Requer Atividade', é necessário informar que tipo de serviço está sendo solicitado (corte/poda/ambos), quantas árvores serão afetadas por cada serviço, e se elas estão em área particular ou área pública.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775672518013-Screenshot_3.png",
+          imagem_storage_path: "manuais/1775672518013-Screenshot_3.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na seção 'Justificativa', é necessário informar o motivo da solicitação (por que o serviço está sendo solicitado). É recomendado informar riscos de queda, riscos de acidentes, danos à propriedade, etc.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775672519392-Screenshot_4.png",
+          imagem_storage_path: "manuais/1775672519392-Screenshot_4.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        },
+        {
+          texto: "Na seção 'Declaração de Responsabilidade', o servidor da Secretaria que está prestando atendimento preenche com seu nome e cargo, e o solicitante assina no campo de 'Assinatura'.",
+          imagem: "https://yiujxempodimegdoexqo.supabase.co/storage/v1/object/public/manuais-imagens-smader/manuais/1775672520566-Screenshot_5.png",
+          imagem_storage_path: "manuais/1775672520566-Screenshot_5.png",
+          imagem_storage_bucket: "manuais-imagens-smader"
+        }
+      ],
+      documentos: [
+        {
+          nome: "Requerimento de Corte/Poda de Árvore",
+          arquivo_id: 46
+        }
+      ]
+    },
   ],
 
   processos: [
     {
       id: 1,
-      titulo: "Processo de Cadastramento de Produtor Rural",
-      categoria: "Extensão Rural",
+      titulo: "Processo de Solicitação de Corte ou Poda de Árvore",
+      categoria: "Meio Ambiente",
+      descricao: null,
       etapas: [
-        { titulo: "Recepção e triagem", descricao: "Servidor recebe o produtor, verifica documentação básica e orienta sobre os requisitos do cadastro." },
-        { titulo: "Abertura de processo no SEI", descricao: "Técnico abre processo digital com todos os documentos digitalizados e número de protocolo gerado." },
-        { titulo: "Análise técnica", descricao: "Engenheiro agrônomo responsável analisa a documentação e realiza visita à propriedade, se necessário." },
-        { titulo: "Aprovação e emissão de cadastro", descricao: "Chefia aprova e o sistema emite o Cadastro de Produtor Rural com número de registro." },
-        { titulo: "Entrega ao produtor", descricao: "Produtor é notificado e retira o documento no balcão ou recebe por correio." }
+        {
+          titulo: "Recepção e triagem",
+          descricao: "A pessoa solicitante vai até a Secretaria de Agricultura localizada na Subprefeitura do Jardim ABC munida dos seguintes documentos:\n- Documento com foto (CPF/RG/CNH/etc...);\n- Comprovante de Residência;\n- Foto das árvores a serem podadas/cortadas.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Preenchimento do Requerimento",
+          descricao: "A pessoa solicitante deve preencher o 'Requerimento para Autorização de Corte e/ou Poda de Árvores', fornecido pela Secretaria.",
+          manuais_ids: [6]
+        },
+        {
+          titulo: "Envio da Documentação",
+          descricao: "Tendo em mãos as cópias do documento com foto, comprovante de residência, foto das árvores e requerimento preenchido, a Secretaria de Agricultura encaminha todos esses documentos para a Secretaria do Meio Ambiente, que então darão prosseguimento  ao pleito.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Realização do Serviço",
+          descricao: "Após análise por parte da equipe técnica da Secretaria do Meio \nAmbiente, é emitida uma Autorização de corte/poda que deve ser encaminhada ao setor responsável da Subprefeitura do Jardim ABC para realização do serviço",
+          manuais_ids: []
+        }
       ]
     },
     {
       id: 2,
-      titulo: "Processo de Fiscalização de Agrotóxicos",
-      categoria: "Fiscalização",
+      titulo: "Processo de Solicitação de Serviços de Trator e Implementos",
+      categoria: "Administrativo",
+      descricao: null,
       etapas: [
-        { titulo: "Planejamento da operação", descricao: "Equipe define cronograma mensal de vistorias por região, priorizando denúncias e estabelecimentos de alto risco." },
-        { titulo: "Notificação prévia (quando aplicável)", descricao: "Estabelecimentos são notificados com antecedência mínima de 48h, exceto em operações investigativas." },
-        { titulo: "Vistoria in loco", descricao: "Fiscais verificam laudos, validade, armazenamento e receituário agronômico dos produtos." },
-        { titulo: "Lavratura de Auto de Infração", descricao: "Irregularidades documentadas em formulário padronizado, com prazo de defesa de 20 dias úteis." },
-        { titulo: "Encaminhamento e penalidade", descricao: "Processo administrativo segue para julgamento. Penalidades podem incluir advertência, multa ou apreensão." }
+        {
+          titulo: "Requerimento do Serviço",
+          descricao: "O produtor rural solicitante pode ir até a Secretaria de Agricultura ou solicitar o serviço através do WhatsApp institucional da Secretaria. (61 99613-6573)",
+          manuais_ids: []
+        },
+        {
+          titulo: "Protocolar a Solicitação",
+          descricao: "Ao solicitar o serviço, o produtor deve passar todas as informações necessárias para que a Secretaria possa emitir o boleto correspondente à quantidade de horas de prestação de serviço necessário.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Emissão de Boleto",
+          descricao: "Com todas as informações necessárias, a Secretaria irá emitir a GRU para o produtor pagar.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Agendamento do Serviço",
+          descricao: "Após pagamento da GRU, o produtor deve enviar o comprovante de pagamento da mesma para a Secretaria dar baixa no boleto e realizar o planejamento de realização do serviço.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Realização do Serviço",
+          descricao: "Após agendamento do serviço, a Secretaria entrará em contato com o produtor para confirmar a data de realização do serviço e proceder para o atendimento na data agendada.",
+          manuais_ids: []
+        }
       ]
     },
     {
       id: 3,
-      titulo: "Processo de Aprovação de Projeto para Financiamento Rural",
-      categoria: "Crédito e Fomento",
+      titulo: "Processo de Realização de Eventos",
+      categoria: "Administrativo",
+      descricao: null,
       etapas: [
-        { titulo: "Orientação ao produtor", descricao: "Agente de extensão rural orienta o produtor sobre linhas de crédito disponíveis e documentação exigida." },
-      { titulo: "Elaboração do projeto técnico", descricao: "Engenheiro ou técnico da SMADER elabora o projeto com memorial descritivo, orçamento e cronograma." },
-      { titulo: "Análise da SMADER", descricao: "Departamento técnico revisa o projeto em até 10 dias úteis, podendo solicitar ajustes." },
-      { titulo: "Encaminhamento à instituição financeira", descricao: "Projeto aprovado é encaminhado ao banco credenciado com parecer técnico da SMADER." },
-        { titulo: "Liberação de recursos", descricao: "Instituição financeira realiza análise de crédito e libera os recursos na conta do produtor." }
+        {
+          titulo: "Planejamento do Evento",
+          descricao: "A Secretaria deve realizar o planejamento da execução do evento em questão.\nQuestões a serem planejadas: Quando? Quem? Onde? Como? Recursos Necessários? Apoio de outras Secretarias? Processos de contratação?",
+          manuais_ids: []
+        },
+        {
+          titulo: "Informações Básicas",
+          descricao: "Definir nome do evento, data, horário, local definido, responsável geral.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Estrutura do Evento",
+          descricao: "Palco ou tenda, mesas e cadeiras, energia elétrica, iluminação, som (microfone, caixa), equipamentos (data show, telão), extensões e cabos",
+          manuais_ids: []
+        },
+        {
+          titulo: "Infraestrutura",
+          descricao: "Banheiros (fixo ou químico), água (bebedouro ou galão), lixeiras, limpeza antes/durante/depois, tapumes ou isolamento, sinalização do local",
+          manuais_ids: []
+        },
+        {
+          titulo: "Alimentação",
+          descricao: "Coffee break ou alimentação, água para equipe e participantes, apoio de cozinha ou servidores.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Segurança e Apoio",
+          descricao: "Segurança (guarda ou vigilância), apoio do trânsito, ambulância ou primeiros socorros, bombeiros (se necessário).",
+          manuais_ids: []
+        },
+        {
+          titulo: "Comunicação",
+          descricao: "Convites, divulgação (redes sociais, grupos), lista de presença ou inscrições, cerimonial (ordem de falas).",
+          manuais_ids: []
+        },
+        {
+          titulo: "Equipe",
+          descricao: "Responsável pela organização, recepção do público, apoio na estrutura, acompanhamento de autoridades.",
+          manuais_ids: []
+        },
+        {
+          titulo: "Enviar Ofícios",
+          descricao: "Solicitação de espaço, solicitação de alimentação, solicitação de segurança, solicitação de trânsito, solicitação de estrutura (tendas, palco, som), solicitação de banheiros químicos, solicitação de limpeza, solicitação de iluminação, etc.",
+          manuais_ids: [1, 2, 3]
+        },
+        {
+          titulo: "No dia do evento",
+          descricao: "Chegar com antecedência, conferir estrutura, testar som e energia, conferir alimentação, recepcionar participantes, registrar (fotos e lista)",
+          manuais_ids: []
+        }
       ]
-    }
+    },
   ],
 
   arquivos: [
-    { id: 1,  nome: "Formulário de Requerimento Geral",   tipo: "PDF",  tags: ["formulário", "modelo"],            url: "" },
-    { id: 2,  nome: "Planilha de Controle de Ponto",      tipo: "XLSX", tags: ["planilha", "rh"],                  url: "" },
-    { id: 3,  nome: "Modelo de Ofício Interno",           tipo: "DOCX", tags: ["ofício", "modelo", "outro"],     url: "" },
-    { id: 4,  nome: "Manual SEI — Guia Rápido",           tipo: "PDF",  tags: ["manual"],                          url: "" },
-    { id: 5,  nome: "Relatório Mensal de Fiscalização",   tipo: "PDF",  tags: ["relatório"],                       url: "" },
-    { id: 6,  nome: "Planilha de Controle de Veículos",   tipo: "XLSX", tags: ["planilha", "veículos"],            url: "" },
-    { id: 7,  nome: "Ata de Reunião — Modelo Padrão",     tipo: "DOCX", tags: ["modelo"],                          url: "" },
-    { id: 8,  nome: "Contrato de Prestação de Serviços",  tipo: "PDF",  tags: ["contrato", "modelo"],              url: "" },
-    { id: 9,  nome: "Laudo Técnico Agronômico — Modelo",  tipo: "DOCX", tags: ["modelo"],                          url: "" },
-    { id: 10, nome: "Portaria Interna nº 001/2024",       tipo: "PDF",  tags: ["portaria", "decreto"],             url: "" },
-    { id: 11, nome: "Planilha de Orçamento Anual",        tipo: "XLSX", tags: ["planilha", "financeiro"],          url: "" },
-    { id: 12, nome: "Comunicado Interno — Modelo",        tipo: "DOCX", tags: ["outro", "modelo"],                url: "" }
+    {
+      id: 3,
+      nome: "Modelo - Ofício",
+      tipo: "DOCX",
+      tags: ["modelo", "ofício"],
+      arquivo_nome: "Modelo - Ofício.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067093212-Modelo-Oficio.docx"
+    },
+    {
+      id: 4,
+      nome: "Modelo - Branco - Agricultura",
+      tipo: "DOCX",
+      tags: ["modelo"],
+      arquivo_nome: "Modelo - Branco - Agricultura.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067110260-Modelo-Branco-Agricultura.docx"
+    },
+    {
+      id: 5,
+      nome: "Modelo - Branco - Prefeitura",
+      tipo: "DOCX",
+      tags: ["modelo"],
+      arquivo_nome: "Modelo - Branco - Prefeitura.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067125275-Modelo-Branco-Prefeitura.docx"
+    },
+    {
+      id: 6,
+      nome: "Modelo - Carta de Referência",
+      tipo: "DOCX",
+      tags: ["modelo"],
+      arquivo_nome: "Modelo - Carta de Referencia.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067140963-Modelo-Carta-de-Referencia.docx"
+    },
+    {
+      id: 7,
+      nome: "Modelo - Concessão - Seloart",
+      tipo: "DOCX",
+      tags: ["modelo", "outro"],
+      arquivo_nome: "Modelo - Concessão-Seloart.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067152812-Modelo-Concessao-Seloart.docx"
+    },
+    {
+      id: 8,
+      nome: "Modelo - Controle de Combustível",
+      tipo: "DOCX",
+      tags: ["modelo", "planilha", "relatório", "veículos"],
+      arquivo_nome: "Modelo - Controle Combustível.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067163715-Modelo-Controle-Combustivel.docx"
+    },
+    {
+      id: 9,
+      nome: "Modelo - DFD",
+      tipo: "DOCX",
+      tags: ["contrato", "modelo"],
+      arquivo_nome: "Modelo - DFD.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067173588-Modelo-DFD.docx"
+    },
+    {
+      id: 10,
+      nome: "Modelo - ETP",
+      tipo: "DOCX",
+      tags: ["contrato", "modelo"],
+      arquivo_nome: "Modelo - ETP.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067183635-Modelo-ETP.docx"
+    },
+    {
+      id: 11,
+      nome: "Modelo - TR",
+      tipo: "DOCX",
+      tags: ["contrato", "modelo"],
+      arquivo_nome: "Modelo - TR.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067193452-Modelo-TR.docx"
+    },
+    {
+      id: 12,
+      nome: "Modelo - Prestação de Contas de Viagens",
+      tipo: "DOCX",
+      tags: ["financeiro", "formulário", "modelo", "rh"],
+      arquivo_nome: "Modelo - Prestação de Contas.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067205124-Modelo-Prestacao-de-Contas.docx"
+    },
+    {
+      id: 13,
+      nome: "Modelo - Relatório de Viagem",
+      tipo: "DOCX",
+      tags: ["financeiro", "formulário", "modelo", "rh"],
+      arquivo_nome: "Modelo - Relatório de Viagem.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067215260-Modelo-Relatorio-de-Viagem.docx"
+    },
+    {
+      id: 14,
+      nome: "Modelo - Solicitação de Diária",
+      tipo: "DOCX",
+      tags: ["financeiro", "formulário", "modelo", "ofício", "rh"],
+      arquivo_nome: "Modelo - Solicitação de Diária.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067226140-Modelo-Solicitacao-de-Diaria.docx"
+    },
+    {
+      id: 15,
+      nome: "Logos (com e sem fundo)",
+      tipo: "ZIP",
+      tags: ["imagem"],
+      arquivo_nome: "Logos.zip",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067243715-Logos.zip"
+    },
+    {
+      id: 16,
+      nome: "Logo Agricultura - com fundo",
+      tipo: "JPG/JPEG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo Agricultura - com fundo.jpg",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067265787-Logo-Agricultura-com-fundo.jpg"
+    },
+    {
+      id: 17,
+      nome: "Logo Agricultura - com fundo",
+      tipo: "PDF",
+      tags: ["imagem"],
+      arquivo_nome: "Logo Agricultura - com fundo.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067274899-Logo-Agricultura-com-fundo.pdf"
+    },
+    {
+      id: 18,
+      nome: "Logo Agricultura - sem fundo",
+      tipo: "PNG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo Agricultura - sem fundo.png",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067283027-Logo-Agricultura-sem-fundo.png"
+    },
+    {
+      id: 19,
+      nome: "Logo Ocidental - com fundo",
+      tipo: "PDF",
+      tags: ["imagem"],
+      arquivo_nome: "Logo Ocidental - com fundo.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067295947-Logo-Ocidental-com-fundo.pdf"
+    },
+    {
+      id: 20,
+      nome: "Logo Ocidental - sem fundo",
+      tipo: "PNG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo Ocidental - sem fundo.png",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067307100-Logo-Ocidental-sem-fundo.png"
+    },
+    {
+      id: 21,
+      nome: "Logo SIM - com fundo",
+      tipo: "PNG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo SIM - com fundo.png",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067319460-Logo-SIM-com-fundo.png"
+    },
+    {
+      id: 22,
+      nome: "Logo SIM - sem fundo",
+      tipo: "PNG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo SIM - sem fundo.png",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067328523-Logo-SIM-sem-fundo.png"
+    },
+    {
+      id: 23,
+      nome: "Logo João - sem fundo",
+      tipo: "PNG",
+      tags: ["imagem"],
+      arquivo_nome: "Logo João - sem fundo.png",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067338524-Logo-Joao-sem-fundo.png"
+    },
+    {
+      id: 24,
+      nome: "Modelo - Formulário (usar como base)",
+      tipo: "XLSX",
+      tags: ["formulário", "modelo", "planilha"],
+      arquivo_nome: "Modelo - Formulário (usar como base).xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067358851-Modelo-Formulario-usar-como-base-.xlsx"
+    },
+    {
+      id: 25,
+      nome: "Modelo - Ordem de Serviço",
+      tipo: "XLSX",
+      tags: ["formulário", "modelo", "planilha"],
+      arquivo_nome: "Modelo - Ordem de Serviço.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067370435-Modelo-Ordem-de-Servico.xlsx"
+    },
+    {
+      id: 26,
+      nome: "Modelo - Requerimento de serviço",
+      tipo: "XLSX",
+      tags: ["formulário", "modelo", "planilha"],
+      arquivo_nome: "Modelo - Requerimento de serviço.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067381979-Modelo-Requerimento-de-servico.xlsx"
+    },
+    {
+      id: 27,
+      nome: "Modelo - Certificado SIM (Canva)",
+      tipo: "Outro",
+      tags: ["modelo", "outro"],
+      arquivo_nome: null,
+      storage_bucket: null,
+      storage_path: null
+    },
+    {
+      id: 28,
+      nome: "Formulários - SIM",
+      tipo: "ZIP",
+      tags: ["formulário", "modelo"],
+      arquivo_nome: "SIM.rar",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067405339-SIM.rar"
+    },
+    {
+      id: 29,
+      nome: "Aquisição de Peças de Manutenção de Grades e Arados",
+      tipo: "ZIP",
+      tags: ["contrato", "financeiro", "ofício"],
+      arquivo_nome: "Aquisição de Peças de Manutenção de Grades e Arados.rar",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067430771-Aquisicao-de-Pecas-de-Manutencao-de-Grades-e-Arados.rar"
+    },
+    {
+      id: 30,
+      nome: "Aquisição de Trado Holandês",
+      tipo: "ZIP",
+      tags: ["contrato", "financeiro", "ofício"],
+      arquivo_nome: "Aquisição de Trado Holandês.rar",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067465475-Aquisicao-de-Trado-Holandes.rar"
+    },
+    {
+      id: 31,
+      nome: "Contratação de Trio-Elétrico - Festa Marmelo 2026",
+      tipo: "ZIP",
+      tags: ["contrato", "financeiro", "ofício"],
+      arquivo_nome: "Contratação de Trio-Elétrico - Festa Marmelo 2026.rar",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067483835-Contratacao-de-Trio-Eletrico-Festa-Marmelo-2026.rar"
+    },
+    {
+      id: 32,
+      nome: "Dados Secretaria Agricultura 2025",
+      tipo: "XLSX",
+      tags: ["planilha", "relatório"],
+      arquivo_nome: "Dados Secretaria Agricultura 2025.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067515083-Dados-Secretaria-Agricultura-2025.xlsx"
+    },
+    {
+      id: 33,
+      nome: "DFD Predio Agricutura",
+      tipo: "DOCX",
+      tags: ["contrato", "modelo"],
+      arquivo_nome: "DFD Predio Agricutura.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067523123-DFD-Predio-Agricutura.docx"
+    },
+    {
+      id: 34,
+      nome: "Estrutura de Cargos da Prefeitura",
+      tipo: "XLSX",
+      tags: ["planilha", "rh"],
+      arquivo_nome: "Estrutura de Cargos da Prefeitura.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067533452-Estrutura-de-Cargos-da-Prefeitura.xlsx"
+    },
+    {
+      id: 35,
+      nome: "Formulário de Visita Técnica - MAPEA CAMPO",
+      tipo: "PDF",
+      tags: ["formulário"],
+      arquivo_nome: "Formulário de Visita Técnica - MAPEA CAMPO.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067546099-Formulario-de-Visita-Tecnica-MAPEA-CAMPO.pdf"
+    },
+    {
+      id: 36,
+      nome: "Minuta - Declaração de Capacidade Técnica - PROMAQ",
+      tipo: "DOCX",
+      tags: ["minuta", "relatório"],
+      arquivo_nome: "Minuta - Declaração de Capacidade Técnica - PROMAQ.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067561235-Minuta-Declaracao-de-Capacidade-Tecnica-PROMAQ.docx"
+    },
+    {
+      id: 37,
+      nome: "Minuta - Plano de Trabalho - Solicitação de kits de irrigação e mandiocultura",
+      tipo: "DOCX",
+      tags: ["minuta", "relatório"],
+      arquivo_nome: "Minuta - Plano de Trabalho - Solicitação de kits de irrigação e mandiocultura.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067569284-Minuta-Plano-de-Trabalho-Solicitacao-de-kits-de-irrigacao-e-mandiocultura.docx"
+    },
+    {
+      id: 38,
+      nome: "PCA 2026 - Agricultura",
+      tipo: "XLSX",
+      tags: ["financeiro", "planilha"],
+      arquivo_nome: "PCA 2026 - Agricultura.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067578731-PCA-2026-Agricultura.xlsx"
+    },
+    {
+      id: 39,
+      nome: "Projeto - MAPEA CAMPO",
+      tipo: "DOCX",
+      tags: ["relatório"],
+      arquivo_nome: "Projeto - MAPEA CAMPO.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067588019-Projeto-MAPEA-CAMPO.docx"
+    },
+    {
+      id: 40,
+      nome: "Projeto de Lei - PORTEIRA DENTRO",
+      tipo: "DOCX",
+      tags: ["contrato", "minuta"],
+      arquivo_nome: "Projeto de Lei - PORTEIRA DENTRO.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067599627-Projeto-de-Lei-PORTEIRA-DENTRO.docx"
+    },
+    {
+      id: 41,
+      nome: "Relatório Técnico - PROMAQ",
+      tipo: "DOCX",
+      tags: ["relatório"],
+      arquivo_nome: "Relatório Técnico - PROMAQ.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067611675-Relatorio-Tecnico-PROMAQ.docx"
+    },
+    {
+      id: 42,
+      nome: "Termo Doação Mitsubishi L200",
+      tipo: "PDF",
+      tags: ["veículos"],
+      arquivo_nome: "Veiculos - Termo Doação Mitsubishi L200.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067626931-Veiculos-Termo-Doacao-Mitsubishi-L200.pdf"
+    },
+    {
+      id: 43,
+      nome: "Manual CAF",
+      tipo: "PDF",
+      tags: ["manual"],
+      arquivo_nome: "Manual CAF.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775067640435-Manual-CAF.pdf"
+    },
+    {
+      id: 46,
+      nome: "Requerimento de Corte/Poda de Árvore",
+      tipo: "PDF",
+      tags: ["formulário", "modelo"],
+      arquivo_nome: "Requerimento de Corte ou Poda.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1775671751606-Requerimento-de-Corte-ou-Poda.pdf"
+    },
+    {
+      id: 47,
+      nome: "Modelo - Ordem de Serviço Trator - Antigo",
+      tipo: "PDF",
+      tags: ["formulário", "modelo"],
+      arquivo_nome: "Ordem de Serviço - Trator.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787664358994-Ordem-de-Servico-Trator.pdf"
+    },
+    {
+      id: 48,
+      nome: "Modelo - Ordem de Serviço Trator - Antigo",
+      tipo: "XLSX",
+      tags: ["formulário", "modelo", "planilha"],
+      arquivo_nome: "Modelo - Requerimento de serviço.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787663823060-Modelo-Requerimento-de-servico.xlsx"
+    },
+    {
+      id: 49,
+      nome: "Relatório de CAFs Emitidas - até 18-08-2026",
+      tipo: "XLSX",
+      tags: ["planilha", "relatório"],
+      arquivo_nome: "CAFs Emitidas.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787664052252-CAFs-Emitidas.xlsx"
+    },
+    {
+      id: 50,
+      nome: "Controle de Abastecimento",
+      tipo: "XLSX",
+      tags: ["planilha", "relatório"],
+      arquivo_nome: null,
+      storage_bucket: "arquivos-smader",
+      storage_path: null
+    },
+    {
+      id: 51,
+      nome: "Modelo - Autodeclaração de Renda  - CAF",
+      tipo: "DOCX",
+      tags: ["formulário", "modelo"],
+      arquivo_nome: "MODELO - Autodeclaração de Renda Famliar.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787920551183-MODELO-Autodeclaracao-de-Renda-Famliar.docx"
+    },
+    {
+      id: 52,
+      nome: "MODELO - Autodeclaração de Identidade Ética - CAF",
+      tipo: "PDF",
+      tags: ["formulário", "modelo"],
+      arquivo_nome: "AUTODECLARAÇÃO DE IDENTIDADE ÉTICA E DE PERTENCIMENTO ÉTNICO.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787920619062-AUTODECLARACAO-DE-IDENTIDADE-ETICA-E-DE-PERTENCIMENTO-ETNICO.pdf"
+    },
+    {
+      id: 53,
+      nome: "Termo de Responsabilidade - Microtrator",
+      tipo: "DOCX",
+      tags: ["formulário", "veículos"],
+      arquivo_nome: "Termo Responsabilidade Microtrator.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925071965-Termo-Responsabilidade-Microtrator.docx"
+    },
+    {
+      id: 54,
+      nome: "Plano de Trabalho - Kit de Mandiocultura",
+      tipo: "DOCX",
+      tags: ["minuta"],
+      arquivo_nome: "Plano de Trabalho - Doação de Kit de Mandiocultura.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925126037-Plano-de-Trabalho-Doacao-de-Kit-de-Mandiocultura.docx"
+    },
+    {
+      id: 55,
+      nome: "Autorização Retirada CONAB",
+      tipo: "DOCX",
+      tags: ["minuta", "modelo"],
+      arquivo_nome: "Autorização Retirada - Osman.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925308117-Autorizacao-Retirada-Osman.docx"
+    },
+    {
+      id: 56,
+      nome: "Termo de Responsabilidade - Microtrator",
+      tipo: "PDF",
+      tags: ["formulário", "veículos"],
+      arquivo_nome: "Termo de Responsabilidade - Microtrator.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925357229-Termo-de-Responsabilidade-Microtrator.pdf"
+    },
+    {
+      id: 57,
+      nome: "Termo de Doação - Kit de Mandiocultura - CODEVASF",
+      tipo: "PDF",
+      tags: ["contrato"],
+      arquivo_nome: "Termo_de_Doacao_-_kit_Mandiocultura_-_Cidade_Ociental_-_Proc._888-2025_assinado_assinado.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925440405-Termo_de_Doacao_-_kit_Mandiocultura_-_Cidade_Ociental_-_Proc._888-2025_assinado_assinado.pdf"
+    },
+    {
+      id: 58,
+      nome: "Relatório Técnico de Consumo de Combustível",
+      tipo: "PDF",
+      tags: ["relatório", "veículos"],
+      arquivo_nome: "Relatorio Combustivel - SMADER.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925520885-Relatorio-Combustivel-SMADER.pdf"
+    },
+    {
+      id: 59,
+      nome: "Relatório Técnico de Consumo de Combustível",
+      tipo: "DOCX",
+      tags: ["modelo", "relatório"],
+      arquivo_nome: "Relatorio Combustivel - SMADER - 24-06.docx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925548541-Relatorio-Combustivel-SMADER-24-06.docx"
+    },
+    {
+      id: 60,
+      nome: "Listagem DUAM Trator 1",
+      tipo: "PDF",
+      tags: ["planilha", "relatório"],
+      arquivo_nome: "LISTAGEM DE BAIXA de serviço de trator janeiro a abril 2026 (1).pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925614476-LISTAGEM-DE-BAIXA-de-servico-de-trator-janeiro-a-abril-2026-1-.pdf"
+    },
+    {
+      id: 61,
+      nome: "Listagem DUAM Trator 2",
+      tipo: "PDF",
+      tags: ["planilha", "relatório"],
+      arquivo_nome: "TAXA DE SERVIÇO DE TRATOR - PERIODO 01-01-2025 A 17-03-2026.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925654709-TAXA-DE-SERVICO-DE-TRATOR-PERIODO-01-01-2025-A-17-03-2026.pdf"
+    },
+    {
+      id: 62,
+      nome: "Aviso de Férias - 2025",
+      tipo: "PDF",
+      tags: ["modelo", "rh"],
+      arquivo_nome: "AVISO DE FÉRIAS 2025 - AGRICULTURA.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925704621-AVISO-DE-FERIAS-2025-AGRICULTURA.pdf"
+    },
+    {
+      id: 63,
+      nome: "Termo de Responsabilidade - Vale Transporte",
+      tipo: "PDF",
+      tags: ["formulário", "modelo", "rh"],
+      arquivo_nome: "Termo de Responsabilidade Vales Transportes.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1787925776349-Termo-de-Responsabilidade-Vales-Transportes.pdf"
+    },
+    {
+      id: 64,
+      nome: "Ordem de Serviço - Trator",
+      tipo: "PDF",
+      tags: ["formulário", "relatório"],
+      arquivo_nome: "Ordem de Serviço - Trator.pdf",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1792673782707-Ordem-de-Servico-Trator.pdf"
+    },
+    {
+      id: 65,
+      nome: "Modelo - Ordem de Serviço - Trator",
+      tipo: "XLSX",
+      tags: ["formulário", "modelo", "planilha", "relatório"],
+      arquivo_nome: "Modelo - Requerimento de serviço.xlsx",
+      storage_bucket: "arquivos-smader",
+      storage_path: "arquivos/1792673817987-Modelo-Requerimento-de-servico.xlsx"
+    },
   ],
 
   veiculos: [
     {
-      id: 1, nome: "Trator Agrícola I", tipo: "Trator", icone: "ph-tractor", cor: "#5c7a3d",
-      marca: "New Holland", modelo: "TL 75E", ano: "2018", cor_veiculo: "Azul",
-      placa: "ABC-1234", patrimonio: "PAT-0042", chassi: "9BWZZZ377VT004251",
-      renavam: "00123456789", combustivel: "Diesel", situacao: "Em operação",
-      motorista: "Carlos Eduardo Lima (CNH Cat. E)", localizacao: "Pátio da Secretaria — Setor Técnico",
-      obs: "Utilizado em atividades de mecanização agrícola. Manutenção preventiva semestral. Última revisão: março/2024."
+      id: 1,
+      nome: "Trator YTO EX854",
+      tipo: "Trator",
+      marca: "YTO",
+      modelo: "EX854",
+      ano: "2025",
+      placa: "YEX-8545",
+      patrimonio: "054625",
+      combustivel: "Diesel",
+      situacao: "Em operação",
+      localizacao: "Pátio da Secretaria",
+      motoristas: "João Batista / Carlos Lima",
+      observacoes: "Utilizado para gradagem, aragem e apoio em ações de mecanização rural.",
+      arquivo_ids: [],
+      motorista_ids: [11, 13],
+      icone: "ph-tractor",
+      cor: "#7a3d3d",
+      cor_veiculo: "Vermelho"
     },
     {
-      id: 2, nome: "Trator Agrícola II", tipo: "Trator", icone: "ph-tractor", cor: "#7a5c3d",
-      marca: "Massey Ferguson", modelo: "MF 275", ano: "2015", cor_veiculo: "Vermelho",
-      placa: "DEF-5678", patrimonio: "PAT-0028", chassi: "9BWZZZ377VT008831",
-      renavam: "00987654321", combustivel: "Diesel", situacao: "Em manutenção",
-      motorista: "Roberto Alves Nascimento (CNH Cat. E)", localizacao: "Oficina Municipal — aguardando peça",
-      obs: "Em manutenção corretiva desde abril/2024. Previsão de retorno: maio/2024. Contato da oficina: (62) 3311-3500."
+      id: 2,
+      nome: "Trator New Holland TT4.75",
+      tipo: "Trator",
+      marca: "New Holland",
+      modelo: "TT4.75",
+      ano: "2020",
+      placa: "NEW-4750",
+      patrimonio: "048890",
+      combustivel: "Diesel",
+      situacao: "Em operação",
+      localizacao: "Operação",
+      motoristas: "Marcos Silva",
+      observacoes: "Usado no transporte de calcário, insumos e apoio logístico às operações rurais.",
+      arquivo_ids: [],
+      motorista_ids: [11, 13],
+      icone: "ph-tractor",
+      cor: "#3d5c7a",
+      cor_veiculo: "Azul"
     },
     {
-      id: 3, nome: "Caminhonete Oficial", tipo: "Caminhonete", icone: "ph-truck", cor: "#3d5c7a",
-      marca: "Chevrolet", modelo: "S10 LT 4x4", ano: "2021", cor_veiculo: "Branca",
-      placa: "GHI-9012", patrimonio: "PAT-0071", chassi: "9BGJSK19BJB123456",
-      renavam: "01122334455", combustivel: "Flex", situacao: "Em operação",
-      motorista: "Fernanda Costa Braga (CNH Cat. B)", localizacao: "Garagem da Prefeitura — Vaga 07",
-      obs: "Uso exclusivo para visitas técnicas e extensão rural. Saídas devem ser registradas no livro de bordo."
-    }
+      id: 3,
+      nome: "Caminhonete Mitsubishi L200",
+      tipo: "Caminhonete",
+      marca: "Mitsubishi",
+      modelo: "L200",
+      ano: "N/A",
+      placa: "PRP9B34",
+      patrimonio: "N/A",
+      combustivel: "Diesel",
+      situacao: "Em operação",
+      localizacao: "Gabinete / uso em campo",
+      motoristas: "Fernanda Braga / Equipe técnica",
+      observacoes: "Veículo leve para visitas técnicas, fiscalização e deslocamento administrativo.",
+      arquivo_ids: [42],
+      motorista_ids: [1, 4, 6, 11, 13],
+      icone: "ph-car",
+      cor: "#7a5c3d",
+      cor_veiculo: "Branco"
+    },
   ],
 
   sistemas: [
@@ -276,12 +1427,51 @@ window.DADOS_INICIAIS = {
   ],
 
   escalaFerias: [
-    { id: 1, funcionario_id: 3, nome: "Márcia Oliveira Santos",   cargo: "Técnica Administrativa",          periodo_inicio: "2026-03-10", periodo_fim: "2026-03-28", status: "em_curso" },
-    { id: 2, funcionario_id: 5, nome: "Fernanda Costa Braga",     cargo: "Agente de Desenvolvimento Rural", periodo_inicio: "2026-04-07", periodo_fim: "2026-04-25", status: "agendado" },
-    { id: 3, funcionario_id: 1, nome: "Ana Paula Ferreira",       cargo: "Engenheira Agrônoma",             periodo_inicio: "2026-06-02", periodo_fim: "2026-06-20", status: "agendado" },
-    { id: 4, funcionario_id: 4, nome: "Roberto Alves Nascimento", cargo: "Analista de TI",                  periodo_inicio: "2026-07-14", periodo_fim: "2026-08-01", status: "agendado" },
-    { id: 5, funcionario_id: 2, nome: "Carlos Eduardo Lima",      cargo: "Engenheiro Agrônomo Sênior",      periodo_inicio: "2026-09-08", periodo_fim: "2026-09-26", status: "agendado" },
-    { id: 6, funcionario_id: 6, nome: "José Antônio Pereira",     cargo: "Chefe de Departamento",           periodo_inicio: "2026-11-03", periodo_fim: "2026-11-21", status: "agendado" }
+    {
+      id: 1,
+      funcionario_id: 9,
+      nome: "José Tadeu de Moraes Junior",
+      cargo: "Agente Administrativo",
+      periodo_inicio: "2026-05-04",
+      periodo_fim: "2026-05-22",
+      status: "agendado"
+    },
+    {
+      id: 2,
+      funcionario_id: 3,
+      nome: "Adson Botelho Junior",
+      cargo: "Gerente de Cadastro do Sim",
+      periodo_inicio: "2026-09-02",
+      periodo_fim: "2026-10-02",
+      status: "agendado"
+    },
+    {
+      id: 3,
+      funcionario_id: 10,
+      nome: "Lizandra Renata Pereira Chrisostomo",
+      cargo: "Assessora de Gabinete III",
+      periodo_inicio: "2026-08-10",
+      periodo_fim: "2026-08-30",
+      status: "em_curso"
+    },
+    {
+      id: 4,
+      funcionario_id: 9,
+      nome: "José Tadeu de Moraes Junior",
+      cargo: "Agente Administrativo",
+      periodo_inicio: "2026-09-08",
+      periodo_fim: "2026-09-18",
+      status: "agendado"
+    },
+    {
+      id: 5,
+      funcionario_id: 5,
+      nome: "Caleb Garcês Araújo",
+      cargo: "Assessor de Gabinete IV",
+      periodo_inicio: "2026-09-01",
+      periodo_fim: "2026-09-30",
+      status: "agendado"
+    },
   ],
 
   acessoRapido: [
