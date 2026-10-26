@@ -9,6 +9,7 @@
  * - le apenas registros com publish_status = 'published';
  * - remove da saida os ids listados em EXCLUIDOS (lixo de teste conhecido);
  * - nunca grava PII: cpf, matricula, chassi e renavam ficam de fora;
+ * - nunca grava a escala de ferias (staff-only; bloco fixo em `[]`);
  * - preserva as demais colecoes de dados.js sem tocar no texto delas;
  * - saida deterministica (ordenada por id, uma propriedade por linha).
  *
@@ -30,7 +31,6 @@ const EXCLUIDOS = {
   processos: [5],
   arquivos: [67],
   veiculos: [4, 5],
-  escalaFerias: [],
 };
 
 /** Colecao em dados.js -> tabela no Supabase + colunas selecionadas. */
@@ -73,14 +73,8 @@ const COLECOES = [
       'arquivo_ids', 'motorista_ids', 'icone', 'cor', 'cor_veiculo',
     ],
   },
-  {
-    chave: 'escalaFerias',
-    tabela: 'escala_ferias',
-    colunas: [
-      'id', 'funcionario_id', 'nome', 'cargo', 'periodo_inicio',
-      'periodo_fim', 'status',
-    ],
-  },
+  // escalaFerias NAO entra: e staff-only e o dados.js e publico. O bloco em
+  // dados.js fica fixo em [] e o admin carrega a escala direto do Supabase.
 ];
 
 /** Listas que o renderer percorre com .map() nunca podem vir null. */

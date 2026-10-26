@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setBootProgress(12, "Carregando sistema", "Conectando ao banco e preparando a p\u00e1gina inicial.");
   // dbInit() carrega os dados (localStorage ou dados.js)
   // e s\u00f3 ent\u00e3o renderiza a aplica\u00e7\u00e3o
-  dbInit().then(() => {
+  dbInit({ escopo: "publico" }).then(() => {
     setBootProgress(52, "Dados carregados", "Organizando os m\u00f3dulos e sincronizando as informa\u00e7\u00f5es iniciais.");
     carregarDados();
     initDate();

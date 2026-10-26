@@ -156,6 +156,11 @@ test('vinculos entre colecoes apontam para ids existentes', () => {
   assert.deepEqual(problemas, []);
 });
 
+test('fallback publico nao carrega a escala de ferias', () => {
+  assert.equal(DADOS.escalaFerias.length, 0);
+  assert.ok(!/periodo_inicio/.test(TEXTO), 'escala com periodo no fallback publico');
+});
+
 test('dados.js fica abaixo do teto de tamanho do boot', () => {
   assert.ok(Buffer.byteLength(TEXTO) < 300 * 1024, 'dados.js passou de 300 KB');
 });

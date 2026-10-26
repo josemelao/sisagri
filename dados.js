@@ -13,10 +13,11 @@
  *    substituição permanente (quando quiser "commitar" os dados).
  *
  * COLEÇÕES GERADAS:
- *  - funcionarios, manuais, processos, arquivos, veiculos e escalaFerias
- *    são geradas por scripts/gerar-dados-fallback.mjs a partir dos
- *    registros publicados na produção. Não edite à mão: rode o gerador.
- *    O gerador omite PII (cpf, matricula, chassi, renavam).
+ *  - funcionarios, manuais, processos, arquivos e veiculos são geradas por
+ *    scripts/gerar-dados-fallback.mjs a partir dos registros publicados na
+ *    produção. Não edite à mão: rode o gerador.
+ *    O gerador omite PII (cpf, matricula, chassi, renavam) e a escala de
+ *    férias, que é staff-only.
  *
  * MIGRAÇÃO PARA SUPABASE:
  *  - Substituir a leitura de window.DADOS_INICIAIS por chamadas
@@ -1426,53 +1427,8 @@ window.DADOS_INICIAIS = {
     { id: 6, titulo: "Semana do Agricultor Familiar", data: "2026-05-19", data_fim: "2026-05-23", hora: "08:00", tipo: "evento", local: "Centro de Eventos de Cidade Ocidental", desc: "Evento anual com exposições, palestras e homenagens aos agricultores familiares do município." }
   ],
 
-  escalaFerias: [
-    {
-      id: 1,
-      funcionario_id: 9,
-      nome: "José Tadeu de Moraes Junior",
-      cargo: "Agente Administrativo",
-      periodo_inicio: "2026-05-04",
-      periodo_fim: "2026-05-22",
-      status: "agendado"
-    },
-    {
-      id: 2,
-      funcionario_id: 3,
-      nome: "Adson Botelho Junior",
-      cargo: "Gerente de Cadastro do Sim",
-      periodo_inicio: "2026-09-02",
-      periodo_fim: "2026-10-02",
-      status: "agendado"
-    },
-    {
-      id: 3,
-      funcionario_id: 10,
-      nome: "Lizandra Renata Pereira Chrisostomo",
-      cargo: "Assessora de Gabinete III",
-      periodo_inicio: "2026-08-10",
-      periodo_fim: "2026-08-30",
-      status: "em_curso"
-    },
-    {
-      id: 4,
-      funcionario_id: 9,
-      nome: "José Tadeu de Moraes Junior",
-      cargo: "Agente Administrativo",
-      periodo_inicio: "2026-09-08",
-      periodo_fim: "2026-09-18",
-      status: "agendado"
-    },
-    {
-      id: 5,
-      funcionario_id: 5,
-      nome: "Caleb Garcês Araújo",
-      cargo: "Assessor de Gabinete IV",
-      periodo_inicio: "2026-09-01",
-      periodo_fim: "2026-09-30",
-      status: "agendado"
-    },
-  ],
+  // Staff-only: nao entra no fallback publico. O admin carrega do Supabase.
+  escalaFerias: [],
 
   acessoRapido: [
     { id: 1, titulo: "Gmail",                url: "https://mail.google.com",               icone: "ph-google-logo",     cor: "#EA4335", coringa: false },
