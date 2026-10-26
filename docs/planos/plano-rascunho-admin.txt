@@ -1263,3 +1263,20 @@ SESSAO 2026-10-26 - ACESSO POR PERFIL (MASCARAMENTO + LOGIN NO INDEX)
     codigo (ordem em supabase/README.md) e testar login real de admin/servidor
     no index (SISAGRI_ADMIN_EMAIL/SISAGRI_ADMIN_PASSWORD no e2e). Depois da
     limpeza do PENDENTE 11, rodar de novo o gerador do fallback.
+  - Endurecimento pos-revisao (15461f3): logout captura o uid da sessao antes
+    de sair, limpa o HTML dos detalhes imediatamente (PII nao fica no DOM) e o
+    index escuta SIGNED_IN/SIGNED_OUT para refletir login/logout feito em outra
+    aba. O cache por identidade continua sendo apagado no logout.
+  - Fase 6 (1a512e0): refresh em voo ganhou _geracaoAuth e e descartado no
+    logout; o admin recarrega ao receber SIGNED_OUT de outra aba; o cache do
+    admin local usa :local (o index anon nunca le); erro de rede em
+    pode_editar nao derruba mais a sessao; limpeza de relatorios/detalhes
+    acontece antes do dbInit; fila offline antiga e migrada no admin; testes
+    de URL assinada agora leem a chave escopada certa.
+  - Revisao independente (2026-10-26): sem BLOCKER. Pendencias conscientes:
+    (a) producao ainda tem anon com SELECT em cpf/chassi ate aplicar a 0015;
+    (b) conta authenticated sem papel ainda le PII publicada (signup fechado e
+        guardrail documentado);
+    (c) probe REST direto do anon ainda nao esta no CI; rodar apos a 0015:
+        GET /rest/v1/funcionarios?select=cpf&limit=1 deve devolver 401/403;
+    (d) fallback offline do admin nao tem escala de ferias (staff-only).

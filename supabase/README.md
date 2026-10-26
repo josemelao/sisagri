@@ -439,3 +439,19 @@ Validado no projeto de teste em 2026-10-26:
 - `anon`: sem SELECT de tabela em funcionarios/veiculos, sem cpf/telefone/email/
   chassi/renavam, sem escala_ferias; nome/matricula/placa continuam true.
 - `authenticated`: SELECT de tabela e de cpf/renavam continua true.
+
+### Prova pos-deploy da 0015
+
+Com a anon key do `db.js`, a REST direta deve recusar as colunas sensiveis:
+
+    GET /rest/v1/funcionarios?select=cpf&limit=1          -> 401/403
+    GET /rest/v1/veiculos?select=chassi&limit=1          -> 401/403
+    GET /rest/v1/escala_ferias?select=id&limit=1         -> 401/403
+
+E deve continuar aceitando o que e publico:
+
+    GET /rest/v1/funcionarios?select=nome,matricula&limit=1 -> 200
+    GET /rest/v1/veiculos?select=placa,localizacao&limit=1  -> 200
+
+Essas quatro provas sao o gate manual depois da migration. O e2e do app nao
+substitui o probe direto: ele so confirma que o cliente pede as colunas certas.
