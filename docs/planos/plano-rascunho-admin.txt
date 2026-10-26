@@ -1225,3 +1225,41 @@ REGRAS QUE NAO PODEM SER QUEBRADAS
     proximo. Nao aplicar nada destrutivo sem autorizacao explicita.
   - Nao apagar objeto de Storage por SQL: o trigger storage.protect_delete
     bloqueia. Usar a Storage API (e lembrar que ela faz SELECT antes de DELETE).
+
+=========================================================================
+SESSAO 2026-10-26 - ACESSO POR PERFIL (MASCARAMENTO + LOGIN NO INDEX)
+=========================================================================
+
+  - Fase DB (710db59): db.js ganhou CAMPOS_PUBLICOS para funcionarios e
+    veiculos, COLECOES_INTERNAS com escalaFerias, _acessoInterno e
+    _carregarColecoesSupabase com Promise.allSettled. Uma colecao negada nao
+    derruba mais o boot; so cai no fallback local se TODAS falharem.
+  - Fase fallback (163f694): escalaFerias saiu do dados.js e do gerador; o
+    bloco ficou fixo em []. O index passou a chamar
+    dbInit({ escopo: 'publico' }), entao rascunho nunca aparece mesmo com
+    staff logado.
+  - Fase cache/auth (b3e11ca): DB.entrar/sair, usuarioAtual, temAcessoInterno e
+    aoMudarSessao. Cache local e fila offline passaram a usar
+    smader_db_v1:<uid|anon> e smader_pending_writes_v1:<uid|anon>; logout apaga
+    a identidade e as chaves globais antigas (que podiam guardar PII).
+  - Fase UI/mascaramento (6225b63): botao Entrar e modal no index (mesma sessao
+    do admin), estado no sidebar, CPF/telefone/email/chassi/RENAVAM
+    condicionados a acesso interno no detalhe, busca global e relatorios.
+    Relatorios e escala ficam ocultos para anon; hash #/relatorios cai no
+    dashboard. O detalhe de veiculo remove as linhas de chassi/RENAVAM no anon.
+  - Migration 0015 (40bc4d4): anon perde SELECT de tabela em funcionarios e
+    veiculos, recebe so as colunas publicas; escala_ferias fecha para anon e a
+    policy autenticada passa a exigir pode_editar().
+  - Validacao no projeto de teste (supabase-teste, 2026-10-26): anon_tbl_func
+    false, anon_cpf/telefone/email false, anon_matricula true, anon_tbl_veic
+    false, anon_chassi false, anon_placa true, anon_escala false;
+    authenticated mantem tabela e cpf/renavam true.
+  - Prova local: npm run check exit 0 (306 testes, 0 falhas). e2e:
+    publico.spec 10 passed / 1 skipped (login sem credenciais); suite completa
+    25 passed / 3 skipped / 1 falha intermitente pre-existente em
+    acessibilidade (teste 2, detalhe de processo). O teste 9 confirma no
+    navegador que o payload anon de funcionarios/veiculos nao tem PII.
+  - PENDENTE 12 (acao do dono): aplicar 0015 em producao DEPOIS do deploy do
+    codigo (ordem em supabase/README.md) e testar login real de admin/servidor
+    no index (SISAGRI_ADMIN_EMAIL/SISAGRI_ADMIN_PASSWORD no e2e). Depois da
+    limpeza do PENDENTE 11, rodar de novo o gerador do fallback.

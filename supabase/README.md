@@ -417,3 +417,25 @@ Depois disso, para ensaiar os Blocos 3b e 3c (Storage com URL assinada), aponte
   medidos, provas de acesso anon.
 - `v2_plano_refatoração.md` — plano em blocos, com validação e checklist por
   bloco.
+
+---
+
+## 0015 - colunas publicas e escala staff-only (2026-10-26)
+
+Ordem de deploy:
+1. subir o codigo com `CAMPOS_PUBLICOS` no `db.js` (index usa colunas
+   explicitas no anon);
+2. aplicar `0015_colunas_publicas.sql` em producao;
+3. validar o index anonimo e o login de admin/servidor.
+
+O que a migration faz:
+- revoga SELECT de tabela do `anon` em `funcionarios` e `veiculos`;
+- concede ao `anon` so as colunas publicas (matricula continua publica; cpf,
+  telefone, email, chassi e renavam ficam de fora);
+- revoga SELECT do `anon` em `escala_ferias` e troca a policy autenticada para
+  `pode_editar()`.
+
+Validado no projeto de teste em 2026-10-26:
+- `anon`: sem SELECT de tabela em funcionarios/veiculos, sem cpf/telefone/email/
+  chassi/renavam, sem escala_ferias; nome/matricula/placa continuam true.
+- `authenticated`: SELECT de tabela e de cpf/renavam continua true.

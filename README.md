@@ -83,8 +83,9 @@ screenshot pixel a pixel entre duas refs do git. Aceita `--only=fingerprint`,
 `--only=shots`, `--escopo=publico|admin`, `--rotas=` e `--viewports=`. As telas
 logadas exigem as credenciais do admin no ambiente.
 
-Os testes e2e de login/listagem do admin são pulados sem credenciais. Para
-executá-los, defina `SISAGRI_ADMIN_EMAIL` e `SISAGRI_ADMIN_PASSWORD` no ambiente.
+Os testes e2e de login/listagem do admin e o login do index (admin ou
+servidor) são pulados sem credenciais. Para executá-los, defina
+`SISAGRI_ADMIN_EMAIL` e `SISAGRI_ADMIN_PASSWORD` no ambiente.
 
 O baseline atual de lint é **0 erros** e alguns avisos; ver
 `docs/qualidade/linha-de-base-lint.md`.
@@ -99,10 +100,19 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
   status são tratados como rascunho.
 - Buckets de arquivos e imagens são privados; o app usa URLs assinadas.
 - As coleções públicas de `dados.js` (funcionários, manuais, processos,
-  arquivos, veículos e escala) são geradas da produção:
+  arquivos e veículos) são geradas da produção:
   `node scripts/gerar-dados-fallback.mjs` (aceita `--dry-run`). O gerador lê a
   chave anon do `db.js`, importa só `published`, exclui os ids de teste e nunca
-  grava PII (`cpf`, `matricula`, `chassi`, `renavam`).
+  grava PII (`cpf`, `matricula`, `chassi`, `renavam`). A escala de férias não
+  entra no fallback: é staff-only.
+- No index, o visitante anônimo vê a ficha pública (nome, cargo, matrícula e
+  dados institucionais). CPF, telefone, e-mail, chassi e RENAVAM exigem login
+  de admin/servidor. Relatórios e a escala de férias também são restritos. A
+  sessão é a mesma do painel admin (`dbInit({ escopo: 'publico' })`).
+- A migration `0015_colunas_publicas.sql` revoga o SELECT de tabela do `anon`
+  em `funcionarios`/`veiculos`, concede só as colunas públicas e fecha
+  `escala_ferias`. Aplicar **depois** do deploy do código com
+  `CAMPOS_PUBLICOS` (ordem documentada em `supabase/README.md`).
 - A Edge Function do Instagram e as migrations ficam em `supabase/`.
 
 ## Deploy
