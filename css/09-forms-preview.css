@@ -446,3 +446,5 @@
 #nav-relatorios[hidden] { display: none !important; }
 
 body.auth-modal-open { overflow: hidden; }
+
+#dash-acesso[hidden] { display: none !important; }

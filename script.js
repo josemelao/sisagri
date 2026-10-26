@@ -1115,12 +1115,14 @@ function atualizarAuthUI() {
   const email = document.getElementById("auth-email");
   const navRel = document.getElementById("nav-relatorios");
   const dashEscala = document.getElementById("dash-escala");
+  const dashAcesso = document.getElementById("dash-acesso");
 
   if (btnEntrar) btnEntrar.hidden = interno;
   if (box) box.hidden = !interno;
   if (email) email.textContent = interno && usuario ? (usuario.email || "Sess\u00e3o interna") : "";
   if (navRel) navRel.hidden = !interno;
   if (dashEscala) dashEscala.hidden = !interno;
+  if (dashAcesso) dashAcesso.hidden = !interno;
 }
 
 /**

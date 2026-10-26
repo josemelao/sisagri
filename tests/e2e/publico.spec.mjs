@@ -133,6 +133,7 @@ test.describe('app publico', () => {
     await expect(page.locator('#auth-usuario')).toBeHidden();
     await expect(page.locator('#nav-relatorios')).toBeHidden();
     await expect(page.locator('#dash-escala')).toBeHidden();
+    await expect(page.locator('#dash-acesso')).toBeHidden();
 
     await page.goto('/index.html#/relatorios');
     await esperarBoot(page);
@@ -204,10 +205,12 @@ test.describe('app publico', () => {
     await expect(page.locator('#auth-entrar')).toBeHidden();
     await expect(page.locator('#nav-relatorios')).toBeVisible();
     await expect(page.locator('#dash-escala')).toBeVisible();
+    await expect(page.locator('#dash-acesso')).toBeVisible();
 
     await page.locator('#auth-sair').click();
     await expect(page.locator('#auth-entrar')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nav-relatorios')).toBeHidden();
     await expect(page.locator('#dash-escala')).toBeHidden();
+    await expect(page.locator('#dash-acesso')).toBeHidden();
   });
 });

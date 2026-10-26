@@ -44,6 +44,7 @@ async function montar() {
   const email = criarElemento('span');
   const navRel = criarElemento('a');
   const dashEscala = criarElemento('div');
+  const dashAcesso = criarElemento('div');
 
   const h = carregarScripts(
     ['js/core/utils.js', 'db.js', 'script.js'],
@@ -63,6 +64,7 @@ async function montar() {
         'auth-email': email,
         'nav-relatorios': navRel,
         'dash-escala': dashEscala,
+        'dash-acesso': dashAcesso,
         'main-content': criarElemento('main'),
       },
     },
@@ -71,7 +73,7 @@ async function montar() {
   await h.get('_initLocal')();
   h.run('carregarDados()');
 
-  return { h, detalheFunc, detalheVeic, entrar, usuario, email, navRel, dashEscala };
+  return { h, detalheFunc, detalheVeic, entrar, usuario, email, navRel, dashEscala, dashAcesso };
 }
 
 test('anon nao ve CPF, telefone nem e-mail no detalhe do funcionario', async () => {
@@ -122,8 +124,8 @@ test('staff ve chassi e RENAVAM no detalhe do veiculo', async () => {
   assert.match(html, /RENAVAM-SENSIVEL/);
 });
 
-test('atualizarAuthUI esconde relatorios e escala para anon', async () => {
-  const { h, entrar, usuario, navRel, dashEscala } = await montar();
+test('atualizarAuthUI esconde relatorios, escala e acesso rapido para anon', async () => {
+  const { h, entrar, usuario, navRel, dashEscala, dashAcesso } = await montar();
 
   h.get('atualizarAuthUI')();
 
@@ -131,10 +133,11 @@ test('atualizarAuthUI esconde relatorios e escala para anon', async () => {
   assert.equal(usuario.hidden, true);
   assert.equal(navRel.hidden, true);
   assert.equal(dashEscala.hidden, true);
+  assert.equal(dashAcesso.hidden, true);
 });
 
 test('atualizarAuthUI mostra a sessao e libera itens internos', async () => {
-  const { h, entrar, usuario, email, navRel, dashEscala } = await montar();
+  const { h, entrar, usuario, email, navRel, dashEscala, dashAcesso } = await montar();
   h.run('_acessoInterno = true; _usuarioAtual = { id: "uid-1", email: "x@y.test" };');
 
   h.get('atualizarAuthUI')();
@@ -144,4 +147,5 @@ test('atualizarAuthUI mostra a sessao e libera itens internos', async () => {
   assert.equal(email.textContent, 'x@y.test');
   assert.equal(navRel.hidden, false);
   assert.equal(dashEscala.hidden, false);
+  assert.equal(dashAcesso.hidden, false);
 });
