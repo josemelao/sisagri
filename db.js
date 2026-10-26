@@ -313,21 +313,38 @@ let _modoPublico = false;
 /** Dados basicos do usuario logado: { id, email } ou null. */
 let _usuarioAtual = null;
 
+/**
+ * Geracao da sessao. Cada boot/logout incrementa; cargas iniciadas na geracao
+ * anterior sao descartadas para nao gravar dados de staff no cache anonimo.
+ */
+let _geracaoAuth = 0;
+
 async function _resolverAcessoInterno() {
   _usuarioAtual = null;
-  if (!_sb) return false;
+  if (!_sb) {
+    DB.motivoUltimoAcesso = 'sem_sessao';
+    return false;
+  }
   try {
     const { data: sessao, error: erroSessao } = await _sb.auth.getSession();
-    if (erroSessao || !sessao?.session) return false;
+    if (erroSessao || !sessao?.session) {
+      DB.motivoUltimoAcesso = erroSessao ? 'erro' : 'sem_sessao';
+      return false;
+    }
     _usuarioAtual = {
       id: sessao.session.user?.id || null,
       email: sessao.session.user?.email || '',
     };
     const { data: podeEditar, error: erroRpc } = await _sb.rpc('pode_editar');
-    if (erroRpc) return false;
+    if (erroRpc) {
+      DB.motivoUltimoAcesso = 'erro';
+      return false;
+    }
+    DB.motivoUltimoAcesso = podeEditar === true ? 'ok' : 'sem_permissao';
     return podeEditar === true;
   } catch (e) {
     console.warn('[DB] Falha ao verificar acesso interno; aplicando visao publica.', e);
+    DB.motivoUltimoAcesso = 'erro';
     return false;
   }
 }
@@ -707,6 +724,7 @@ function _colunasDaColecao(colecao, interno) {
 
 async function _loadSupabaseCollection(colecao) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
+  const geracao = _geracaoAuth;
 
   // Colecao interna (escala) nao e buscada no modo publico. Zera para nao
   // herdar o snapshot do dados.js/localStorage.
@@ -723,6 +741,8 @@ async function _loadSupabaseCollection(colecao) {
   // (_podeVerRascunhos=false), filtra por publicado.
   if (!_podeVerRascunhos) consulta = consulta.eq('publish_status', 'published');
   const { data, error } = await consulta.order('id', { ascending: true });
+  // Logout/login durante a consulta: a resposta pertence a outra identidade.
+  if (geracao !== _geracaoAuth) return;
   if (error) throw error;
   _db[colecao] = _normalizeCollectionData(colecao, data || []);
 }
@@ -735,17 +755,26 @@ async function _loadSupabaseCollection(colecao) {
  * justifica o fallback local.
  */
 async function _carregarColecoesSupabase(colecoes) {
+  const geracao = _geracaoAuth;
   const resultados = await Promise.allSettled(
     colecoes.map((colecao) => _loadSupabaseCollection(colecao))
   );
+  // Outro boot/login/logout aconteceu: nao mexe no _db da geracao nova.
+  if (geracao !== _geracaoAuth) return resultados;
   const falhas = resultados.filter((resultado) => resultado.status === 'rejected');
   if (resultados.length > 0 && falhas.length === resultados.length) {
     throw falhas[0].reason;
   }
   resultados.forEach((resultado, indice) => {
     if (resultado.status !== 'rejected') return;
-    // Colecao negada/indisponivel fica vazia; o renderer nunca ve `undefined`.
-    _db[colecoes[indice]] = [];
+    const colecao = colecoes[indice];
+    const codigo = String(resultado.reason?.code || '');
+    const status = Number(resultado.reason?.status || 0);
+    const negado = codigo === '42501' || codigo === 'PGRST301'
+      || status === 401 || status === 403;
+    // Negado: zera (perfil sem acesso). Falha transitoria: mantem o snapshot
+    // de dados.js em vez de sumir com a lista inteira.
+    if (negado || !_db[colecao]) _db[colecao] = [];
     console.warn(
       '[DB] Colecao indisponivel para este perfil:',
       resultado.reason?.message || resultado.reason
@@ -806,7 +835,10 @@ function _erroTransiente(error) {
 
 /** Identidade dona do cache local. Visitante anonimo usa "anon". */
 function _uidCache() {
-  return _usuarioAtual?.id || 'anon';
+  if (_usuarioAtual?.id) return _usuarioAtual.id;
+  // Sem sessao: o index publico usa "anon"; o admin local usa "local" para
+  // nao contaminar o cache que o index le no fallback offline.
+  return _modoPublico ? 'anon' : 'local';
 }
 
 /** Chave do snapshot local, separada por identidade. */
@@ -826,6 +858,8 @@ function _limparCacheIdentidade(uid) {
     [
       `${DB_CONFIG.LS_KEY}:${identidade}`,
       `${DB_CONFIG.PENDING_WRITES_KEY}:${identidade}`,
+      `${DB_CONFIG.LS_KEY}:local`,
+      `${DB_CONFIG.PENDING_WRITES_KEY}:local`,
       DB_CONFIG.LS_KEY,
       DB_CONFIG.PENDING_WRITES_KEY,
       DB_CONFIG.LEGACY_LS_KEY,
@@ -837,7 +871,19 @@ function _limparCacheIdentidade(uid) {
 
 function _lerPendentes() {
   try {
-    const lista = JSON.parse(localStorage.getItem(_chavePendentes()) || '[]');
+    const chave = _chavePendentes();
+    let bruto = localStorage.getItem(chave);
+    // Migra a fila global antiga uma unica vez, so no admin. No index publico
+    // ela pode conter payload de staff e nao deve ir para o cache anonimo.
+    if (!bruto && !_modoPublico) {
+      const legado = localStorage.getItem(DB_CONFIG.PENDING_WRITES_KEY);
+      if (legado) {
+        localStorage.setItem(chave, legado);
+        localStorage.removeItem(DB_CONFIG.PENDING_WRITES_KEY);
+        bruto = legado;
+      }
+    }
+    const lista = JSON.parse(bruto || '[]');
     return Array.isArray(lista) ? lista : [];
   } catch {
     return [];
@@ -1023,6 +1069,7 @@ async function dbInit(opcoes = {}) {
 }
 
 function _initLocal() {
+  _geracaoAuth += 1;
   _acessoInterno = false;
   _podeVerRascunhos = false;
   _usuarioAtual = null;
@@ -1090,6 +1137,7 @@ function _initLocal() {
 }
 
 async function _initSupabase(escopo = 'admin') {
+  _geracaoAuth += 1;
   _sb = _createSupabaseClient();
   // Reinit (ex.: apos login) nao pode anunciar fallback antes de tentar
   // carregar: mantem o status atual se a conexao ja estava provada.
@@ -1733,10 +1781,19 @@ const DB = {
 
   async adminLogout() {
     DB.papel = null;
+    _acessoInterno = false;
+    _podeVerRascunhos = false;
+    _geracaoAuth += 1;
+    if (!_sb) {
+      // Modo local puro: nao existe sessao nem cache de PII separado. Nao apaga
+      // o banco local do admin.
+      _usuarioAtual = null;
+      return;
+    }
     let uid = _usuarioAtual?.id || null;
     // Fallback: se a identidade ainda nao foi resolvida, le a sessao antes de
     // sair para apagar o cache correto.
-    if (!uid && _sb?.auth?.getSession) {
+    if (!uid && _sb.auth?.getSession) {
       try {
         const { data } = await _sb.auth.getSession();
         uid = data?.session?.user?.id || null;
@@ -1744,10 +1801,8 @@ const DB = {
         uid = null;
       }
     }
-    _acessoInterno = false;
     _limparCacheIdentidade(uid);
     _usuarioAtual = null;
-    if (!_sb) return;
     const { error } = await _sb.auth.signOut();
     if (error) {
       console.error('[DB] Falha no logout admin:', error);

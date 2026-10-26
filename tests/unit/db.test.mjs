@@ -289,7 +289,8 @@ test('DB.resolveStorageUrls + DB.get: injeta foto_url sem persistir', async () =
   assert.equal(h.run('_db.funcionarios[0].foto_url'), undefined, 'a URL assinada nao pode ir para _db');
 
   h.run('_persistLocal()');
-  const salvo = h.localStorage.getItem('smader_db_v1') || '';
+  const salvo = h.localStorage.getItem('smader_db_v1:local') || '';
+  assert.ok(salvo, 'deveria gravar o snapshot local');
   assert.ok(!salvo.includes('foto_url'), 'a URL assinada nao pode ir para o localStorage');
 });
 
@@ -338,7 +339,8 @@ test('DB.resolveStorageUrls + DB.get: injeta imagem_url_assinada nos passos de m
   assert.equal(h.run('_db.manuais[0].passos[0].imagem_url_assinada'), undefined, 'a URL assinada nao pode ir para _db');
 
   h.run('_persistLocal()');
-  const salvo = h.localStorage.getItem('smader_db_v1') || '';
+  const salvo = h.localStorage.getItem('smader_db_v1:local') || '';
+  assert.ok(salvo, 'deveria gravar o snapshot local');
   assert.ok(!salvo.includes('imagem_url_assinada'), 'a URL assinada nao pode ir para o localStorage');
 
   assert.ok(
@@ -407,7 +409,7 @@ test('_initLocal: migra a chave legada seagri_db_v1', async () => {
   await h.get('_initLocal')();
 
   assert.equal(h.get('DB').get('servicos')[0].nome, 'legado');
-  assert.ok(h.localStorage.getItem('smader_db_v1:anon'), 'deveria gravar na chave nova');
+  assert.ok(h.localStorage.getItem('smader_db_v1:local'), 'deveria gravar na chave nova');
   assert.equal(h.localStorage.getItem('seagri_db_v1'), null, 'deveria remover a chave antiga');
 });
 

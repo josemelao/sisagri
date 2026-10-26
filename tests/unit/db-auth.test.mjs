@@ -103,12 +103,15 @@ test('DB.aoMudarSessao assina o evento de auth e devolve cancelamento', () => {
   cancelar();
 });
 
-test('cache usa :anon sem sessao e :uid com sessao', () => {
+test('cache usa :anon no index, :local no admin e :uid com sessao', () => {
   const h = carregar();
   const chave = h.run('typeof _chaveCacheDb === "undefined" ? null : _chaveCacheDb');
   assert.ok(chave, '_chaveCacheDb ausente');
 
+  h.run('_modoPublico = true;');
   assert.equal(chave(), 'smader_db_v1:anon');
+  h.run('_modoPublico = false;');
+  assert.equal(chave(), 'smader_db_v1:local');
   h.run('_usuarioAtual = { id: "uid-9", email: "x@y.test" };');
   assert.equal(chave(), 'smader_db_v1:uid-9');
 });

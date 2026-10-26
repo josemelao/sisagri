@@ -1021,6 +1021,16 @@ function initAuthPublico() {
 
     const staff = await DB.isStaff();
     if (!staff) {
+      if (DB.motivoUltimoAcesso === 'erro') {
+        // Falha de rede/RPC nao prova falta de permissao: nao derruba a sessao
+        // compartilhada com o admin.
+        if (erro) {
+          erro.textContent = "N\u00e3o foi poss\u00edvel validar seu acesso agora. Tente novamente.";
+          erro.hidden = false;
+        }
+        if (submit) submit.disabled = false;
+        return;
+      }
       await DB.sair();
       if (erro) {
         erro.textContent = "Esta conta n\u00e3o tem acesso interno.";
@@ -1037,7 +1047,8 @@ function initAuthPublico() {
   });
 
   // Sessao valida sem papel: encerra para nao deixar sessao orfa no navegador.
-  if (DB.usuarioAtual() && !acessoInternoAtivo()) {
+  // Erro de rede nao conta como falta de permissao: mantem a sessao.
+  if (DB.usuarioAtual() && !acessoInternoAtivo() && DB.motivoUltimoAcesso === "sem_permissao") {
     DB.sair().catch((e) => console.warn("[App] Falha ao encerrar sessao sem papel.", e));
   }
 
@@ -1063,11 +1074,19 @@ async function recarregarAposAuth(acao) {
     // anterior (CPF, chassi, RENAVAM) e nao deve ficar no DOM depois do logout.
     document.querySelectorAll(".detail-overlay.open").forEach((el) => el.classList.remove("open"));
     document.querySelectorAll("[id$='-detail-content']").forEach((el) => { el.innerHTML = ""; });
+    resetRelatoriosView();
+    invalidateGlobalSearchIndex();
+    atualizarAuthUI();
 
     await dbInit({ escopo: "publico" });
+
+    // Sessao sem papel confirmada pelo banco: encerra. Erro de rede mantem.
+    if (DB.usuarioAtual() && !acessoInternoAtivo() && DB.motivoUltimoAcesso === "sem_permissao") {
+      await DB.sair();
+    }
+
     carregarDados();
     refreshLiveSections();
-    invalidateGlobalSearchIndex();
     scheduleGlobalSearchIndexBuild();
 
     resetRelatoriosView();

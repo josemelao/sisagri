@@ -61,6 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
     instalarFeedbackAcoesAdmin();
     atualizarStatusBanco();
     window.addEventListener('db:status-changed', handleDbStatusChanged);
+    // Sessao compartilhada: se o logout acontecer em outra aba, recarrega para
+    // nao deixar PII/rascunhos na tela do admin.
+    if (typeof DB.aoMudarSessao === 'function') {
+      DB.aoMudarSessao((evento) => {
+        if (evento === 'SIGNED_OUT') location.reload();
+      });
+    }
     if (await DB.isStaff()) {
       mostrarAdmin();
       initAdmin();

@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { carregarScripts } from '../helpers/load-script.mjs';
 
-const CHAVE = 'smader_pending_writes_v1:anon';
+const CHAVE = 'smader_pending_writes_v1:local';
 
 function carregar({ falhar = true, erro = { message: 'sem rede' } } = {}) {
   const estado = { falhar, erro };

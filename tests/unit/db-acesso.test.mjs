@@ -187,3 +187,47 @@ test('DB.get("escalaFerias") continua funcionando no painel admin', () => {
   const DB = h.get('DB');
   assert.equal(DB.get('escalaFerias').length, 1);
 });
+
+test('resposta atrasada de staff nao entra no _db depois do logout', async () => {
+  const h = carregar();
+  let resolver;
+  const consulta = {
+    select: () => consulta,
+    eq: () => consulta,
+    order: () => new Promise((resolve) => { resolver = resolve; }),
+  };
+  h.window.__clienteFake = {
+    from: () => consulta,
+    auth: { getSession: async () => ({ data: { session: null }, error: null }) },
+  };
+  h.run(
+    '_sb = window.__clienteFake; _db = {}; _acessoInterno = true; ' +
+    '_modoPublico = false; _usuarioAtual = { id: "uid-1" };'
+  );
+
+  const promessa = h.get('_loadSupabaseCollection')('funcionarios');
+  // Simula o logout: a geracao muda antes de a resposta chegar.
+  h.run('_geracaoAuth += 1; _usuarioAtual = null; _acessoInterno = false;');
+  resolver({
+    data: [{ id: 1, nome: 'X', cpf: '111', publish_status: 'published' }],
+    error: null,
+  });
+  await promessa;
+
+  assert.equal(h.get('_db').funcionarios, undefined);
+});
+
+test('falha transitoria preserva o snapshot local da colecao', async () => {
+  const h = carregar();
+  const { cliente } = criarClienteEspiao({
+    falhar: ['avisos'],
+    dados: { funcionarios: [{ id: 2, nome: 'Y', publish_status: 'published' }] },
+  });
+  injetar(h, cliente, true);
+  h.run('_db = { avisos: [{ id: 9, titulo: "snapshot", publish_status: "published" }] };');
+
+  await h.get('_carregarColecoesSupabase')(['avisos', 'funcionarios']);
+
+  assert.equal(h.get('_db').avisos[0].id, 9);
+  assert.equal(h.get('_db').funcionarios[0].id, 2);
+});
