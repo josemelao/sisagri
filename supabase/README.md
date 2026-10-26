@@ -11,9 +11,9 @@ Projeto Supabase: `yiujxempodimegdoexqo` (SisAgri / SMADER).
 
 | Fato | Valor |
 |---|---|
-| Migrations aplicadas em produção | **13** (`0002` a `0014`) |
+| Migrations aplicadas em produção | **14** (`0002` a `0015`) |
 | Migrations criadas e ainda **não aplicadas** em produção | **0** |
-| `supabase_migrations.schema_migrations` | **13** linhas, uma por migration (`0002` a `0014`) |
+| `supabase_migrations.schema_migrations` | **14** linhas, uma por migration (`0002` a `0015`) |
 | `0001_*` | snapshots do ponto de partida, **não aplicados** |
 | DDL em produção antes disso | feita **à mão**, pelo dashboard |
 | Achado C2 | **fechado** em 2026-10-19 (tabelas **e** Storage) |
@@ -428,6 +428,9 @@ Ordem de deploy:
 2. aplicar `0015_colunas_publicas.sql` em producao;
 3. validar o index anonimo e o login de admin/servidor.
 
+Aplicada em producao em 2026-10-26 (versao `20261026163105`), depois do deploy
+do codigo em `main`.
+
 O que a migration faz:
 - revoga SELECT de tabela do `anon` em `funcionarios` e `veiculos`;
 - concede ao `anon` so as colunas publicas (matricula continua publica; cpf,
@@ -439,6 +442,14 @@ Validado no projeto de teste em 2026-10-26:
 - `anon`: sem SELECT de tabela em funcionarios/veiculos, sem cpf/telefone/email/
   chassi/renavam, sem escala_ferias; nome/matricula/placa continuam true.
 - `authenticated`: SELECT de tabela e de cpf/renavam continua true.
+
+Validado em producao em 2026-10-26 (pos-deploy):
+- `anon`: tabela/cpf/telefone/email/chassi/renavam/escala negados; nome,
+  matricula, placa e localizacao liberados;
+- `authenticated`: tabela e cpf/chassi liberados;
+- index anonimo abriu com 16 funcionarios e 5 veiculos, sem erro de JavaScript
+  e sem PII nos detalhes; `escala_ferias` nao foi solicitada;
+- `admin.html` abriu na tela de login sem erro.
 
 ### Prova pos-deploy da 0015
 
@@ -452,6 +463,9 @@ E deve continuar aceitando o que e publico:
 
     GET /rest/v1/funcionarios?select=nome,matricula&limit=1 -> 200
     GET /rest/v1/veiculos?select=placa,localizacao&limit=1  -> 200
+
+Resultado em producao (2026-10-26): as tres primeiras devolveram **401**
+(`42501 permission denied`); as duas publicas devolveram **200**.
 
 Essas quatro provas sao o gate manual depois da migration. O e2e do app nao
 substitui o probe direto: ele so confirma que o cliente pede as colunas certas.

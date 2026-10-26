@@ -107,12 +107,13 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
   entra no fallback: é staff-only.
 - No index, o visitante anônimo vê a ficha pública (nome, cargo, matrícula e
   dados institucionais). CPF, telefone, e-mail, chassi e RENAVAM exigem login
-  de admin/servidor. Relatórios e a escala de férias também são restritos. A
-  sessão é a mesma do painel admin (`dbInit({ escopo: 'publico' })`).
+  de admin/servidor. Relatórios, a escala de férias e o bloco Acesso Rápido do
+  dashboard também ficam ocultos para o anônimo. A sessão é a mesma do painel
+  admin (`dbInit({ escopo: 'publico' })`).
 - A migration `0015_colunas_publicas.sql` revoga o SELECT de tabela do `anon`
   em `funcionarios`/`veiculos`, concede só as colunas públicas e fecha
-  `escala_ferias`. Aplicar **depois** do deploy do código com
-  `CAMPOS_PUBLICOS` (ordem documentada em `supabase/README.md`).
+  `escala_ferias`. Foi aplicada em produção em 2026-10-26, depois do deploy do
+  código com `CAMPOS_PUBLICOS` (ordem documentada em `supabase/README.md`).
 - A Edge Function do Instagram e as migrations ficam em `supabase/`.
 
 ## Deploy

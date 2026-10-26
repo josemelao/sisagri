@@ -1245,8 +1245,9 @@ SESSAO 2026-10-26 - ACESSO POR PERFIL (MASCARAMENTO + LOGIN NO INDEX)
   - Fase UI/mascaramento (6225b63): botao Entrar e modal no index (mesma sessao
     do admin), estado no sidebar, CPF/telefone/email/chassi/RENAVAM
     condicionados a acesso interno no detalhe, busca global e relatorios.
-    Relatorios e escala ficam ocultos para anon; hash #/relatorios cai no
-    dashboard. O detalhe de veiculo remove as linhas de chassi/RENAVAM no anon.
+    Relatorios, escala e o bloco Acesso Rapido do dashboard ficam ocultos para
+    anon; hash #/relatorios cai no dashboard. O detalhe de veiculo remove as
+    linhas de chassi/RENAVAM no anon.
   - Migration 0015 (40bc4d4): anon perde SELECT de tabela em funcionarios e
     veiculos, recebe so as colunas publicas; escala_ferias fecha para anon e a
     policy autenticada passa a exigir pode_editar().
@@ -1254,15 +1255,18 @@ SESSAO 2026-10-26 - ACESSO POR PERFIL (MASCARAMENTO + LOGIN NO INDEX)
     false, anon_cpf/telefone/email false, anon_matricula true, anon_tbl_veic
     false, anon_chassi false, anon_placa true, anon_escala false;
     authenticated mantem tabela e cpf/renavam true.
-  - Prova local: npm run check exit 0 (306 testes, 0 falhas). e2e:
+  - Prova local: npm run check exit 0 (308 testes, 0 falhas). e2e:
     publico.spec 10 passed / 1 skipped (login sem credenciais); suite completa
     25 passed / 3 skipped / 1 falha intermitente pre-existente em
     acessibilidade (teste 2, detalhe de processo). O teste 9 confirma no
     navegador que o payload anon de funcionarios/veiculos nao tem PII.
-  - PENDENTE 12 (acao do dono): aplicar 0015 em producao DEPOIS do deploy do
-    codigo (ordem em supabase/README.md) e testar login real de admin/servidor
-    no index (SISAGRI_ADMIN_EMAIL/SISAGRI_ADMIN_PASSWORD no e2e). Depois da
-    limpeza do PENDENTE 11, rodar de novo o gerador do fallback.
+  - PENDENTE 12 (parcial, 2026-10-26): codigo publicado em main (98e23e9) e
+    0015 aplicada em producao (versao 20261026163105), depois do deploy. Prova
+    REST anon: cpf/telefone/email 401, chassi/renavam 401, escala 401;
+    nome/matricula e placa/localizacao 200. Index abriu com 16 funcionarios e
+    5 veiculos sem erro de JS; admin abriu no login. Resta testar login real de
+    admin/servidor no index (SISAGRI_ADMIN_EMAIL/SISAGRI_ADMIN_PASSWORD no
+    e2e). Depois da limpeza do PENDENTE 11, rodar de novo o gerador do fallback.
   - Endurecimento pos-revisao (15461f3): logout captura o uid da sessao antes
     de sair, limpa o HTML dos detalhes imediatamente (PII nao fica no DOM) e o
     index escuta SIGNED_IN/SIGNED_OUT para refletir login/logout feito em outra
@@ -1274,9 +1278,11 @@ SESSAO 2026-10-26 - ACESSO POR PERFIL (MASCARAMENTO + LOGIN NO INDEX)
     acontece antes do dbInit; fila offline antiga e migrada no admin; testes
     de URL assinada agora leem a chave escopada certa.
   - Revisao independente (2026-10-26): sem BLOCKER. Pendencias conscientes:
-    (a) producao ainda tem anon com SELECT em cpf/chassi ate aplicar a 0015;
+    (a) RESOLVIDO em 2026-10-26: 0015 aplicada em producao; REST anon nega
+        cpf/chassi/escala;
     (b) conta authenticated sem papel ainda le PII publicada (signup fechado e
         guardrail documentado);
-    (c) probe REST direto do anon ainda nao esta no CI; rodar apos a 0015:
-        GET /rest/v1/funcionarios?select=cpf&limit=1 deve devolver 401/403;
+    (c) probe REST direto do anon executado em producao em 2026-10-26, mas
+        ainda nao esta no CI:
+        GET /rest/v1/funcionarios?select=cpf&limit=1 devolve 401/403;
     (d) fallback offline do admin nao tem escala de ferias (staff-only).
