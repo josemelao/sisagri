@@ -334,3 +334,113 @@
   color: var(--text-secondary);
   opacity: 1;
 }
+
+/* ============================================================
+   LOGIN DO INDEX — modal
+   ============================================================ */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 16, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.auth-overlay[hidden] { display: none; }
+
+.auth-modal {
+  position: relative;
+  width: min(430px, 100%);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+}
+
+.auth-modal h2 {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.auth-modal-desc {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.auth-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-modal label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.auth-modal input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.auth-modal input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
+}
+
+.auth-modal button[type="submit"] {
+  margin-top: 8px;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--white);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background var(--transition), opacity var(--transition);
+}
+
+.auth-modal button[type="submit"]:hover:not(:disabled) { background: var(--accent-hover); }
+.auth-modal button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
+
+.auth-erro {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #b42318;
+}
+
+.auth-erro[hidden] { display: none; }
+
+.auth-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  transition: background var(--transition), color var(--transition);
+}
+
+.auth-modal-close:hover { background: var(--surface-2); color: var(--text-primary); }
+
+#dash-escala[hidden] { display: none !important; }
+#nav-relatorios[hidden] { display: none !important; }

@@ -29,6 +29,7 @@ function montar(hashInicial = '') {
   const paginaDashboard = criarElemento('section');
   const paginaFuncionarios = criarElemento('section');
   const paginaManuais = criarElemento('section');
+  const paginaRelatorios = criarElemento('section');
   const main = criarElemento('main');
   main.scrollTo = () => {};
 
@@ -41,15 +42,18 @@ function montar(hashInicial = '') {
         'page-dashboard': paginaDashboard,
         'page-funcionarios': paginaFuncionarios,
         'page-manuais': paginaManuais,
+        'page-relatorios': paginaRelatorios,
         'main-content': main,
         sidebar: criarElemento('aside'),
       },
     },
   );
 
-  // O fake nao troca as paginas sozinho; devolve as tres secoes de teste.
+  // O fake nao troca as paginas sozinho; devolve as secoes de teste.
   h.window.document.querySelectorAll = (seletor) => (
-    seletor === '.page' ? [paginaDashboard, paginaFuncionarios, paginaManuais] : []
+    seletor === '.page'
+      ? [paginaDashboard, paginaFuncionarios, paginaManuais, paginaRelatorios]
+      : []
   );
 
   h.window.location.hash = hashInicial;
@@ -71,7 +75,7 @@ function montar(hashInicial = '') {
     modulosInicializados.add("manuais");
   `);
 
-  return { h, paginaDashboard, paginaFuncionarios, paginaManuais, pushes, replaces };
+  return { h, paginaDashboard, paginaFuncionarios, paginaManuais, paginaRelatorios, pushes, replaces };
 }
 
 test('navigateTo troca a pagina e grava o hash', () => {
@@ -139,6 +143,34 @@ test('hash invalido cai no dashboard e corrige a URL', () => {
 
   assert.equal(paginaDashboard.classList.contains('active'), true);
   assert.deepEqual(replaces, ['#/dashboard']);
+});
+
+test('anon nao abre relatorios por hash direto', () => {
+  const { h, paginaDashboard, paginaRelatorios, replaces } = montar('#/relatorios');
+
+  h.get('initNavigation')();
+
+  assert.equal(paginaRelatorios.classList.contains('active'), false);
+  assert.equal(paginaDashboard.classList.contains('active'), true);
+  assert.deepEqual(replaces, ['#/dashboard']);
+});
+
+test('staff abre relatorios por hash direto', () => {
+  const { h, paginaRelatorios } = montar('#/relatorios');
+  h.run('_acessoInterno = true;');
+
+  h.get('initNavigation')();
+
+  assert.equal(paginaRelatorios.classList.contains('active'), true);
+});
+
+test('anon que pede relatorios e redirecionado no navigateTo', () => {
+  const { h, paginaDashboard, pushes } = montar();
+
+  h.get('navigateTo')('relatorios');
+
+  assert.equal(paginaDashboard.classList.contains('active'), true);
+  assert.deepEqual(pushes, ['#/dashboard']);
 });
 
 test('navegar para a pagina atual nao duplica o historico', () => {

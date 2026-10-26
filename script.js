@@ -46,6 +46,13 @@ function filterPublished(list) {
   return list.filter(isPublished);
 }
 
+/** True quando a sessao atual pode ver dados internos (admin ou servidor). */
+function acessoInternoAtivo() {
+  return typeof DB !== "undefined"
+    && typeof DB.temAcessoInterno === "function"
+    && DB.temAcessoInterno() === true;
+}
+
 function findPublishedById(list, id) {
   if (!Array.isArray(list)) return null;
   const targetId = String(id);
@@ -333,6 +340,7 @@ window.addEventListener('db:collection-updated', () => {
 });
 
 function syncFeriasWhenPageBecomesActive() {
+  if (!acessoInternoAtivo()) return;
   if (document.visibilityState === 'hidden' || !window.DB?.refreshCollection) return;
   DB.refreshCollection('escalaFerias').catch((error) => {
     console.warn('[App] Falha ao sincronizar escalaFerias ao reativar a pagina.', error);
@@ -380,6 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initAcessibilidade();
     initLightbox();
     initAcoesDelegadas();
+    initAuthPublico();
     modulosInicializados.add("dashboard");
     setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experi\u00eancia.");
     return waitForInitialPaint();
@@ -938,7 +947,142 @@ function paginaDoHash() {
   const bruto = String(location.hash || "").replace(/^#\/?/, "").trim();
   if (!bruto) return "";
   const pagina = bruto.split("/")[0];
+  // Area restrita: hash direto sem login cai no dashboard.
+  if (pagina === "relatorios" && !acessoInternoAtivo()) return "";
   return document.getElementById("page-" + pagina) ? pagina : "";
+}
+
+/* ============================================================
+   LOGIN DO INDEX PUBLICO
+   Mesma sessao do admin. O login so libera dados internos; o filtro
+   de `published` continua valendo no index.
+   ============================================================ */
+function initAuthPublico() {
+  const btnEntrar = document.getElementById("auth-entrar");
+  const btnSair = document.getElementById("auth-sair");
+  const overlay = document.getElementById("login-overlay");
+  const form = document.getElementById("login-form");
+  const inputEmail = document.getElementById("login-email");
+  const inputSenha = document.getElementById("login-senha");
+  const erro = document.getElementById("login-erro");
+  const submit = document.getElementById("login-submit");
+  const fechar = document.getElementById("login-close");
+
+  if (!btnEntrar || !overlay || !form) return;
+
+  const abrirModal = () => {
+    if (erro) erro.hidden = true;
+    overlay.hidden = false;
+    document.body.classList.add("auth-modal-open");
+    setTimeout(() => inputEmail?.focus(), 20);
+  };
+
+  const fecharModal = () => {
+    overlay.hidden = true;
+    document.body.classList.remove("auth-modal-open");
+  };
+
+  btnEntrar.addEventListener("click", abrirModal);
+  fechar?.addEventListener("click", fecharModal);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) fecharModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !overlay.hidden) fecharModal();
+  });
+
+  btnSair?.addEventListener("click", async () => {
+    btnSair.disabled = true;
+    try {
+      await recarregarAposAuth(() => DB.sair());
+    } finally {
+      btnSair.disabled = false;
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (erro) erro.hidden = true;
+    if (submit) submit.disabled = true;
+
+    const email = String(inputEmail?.value || "").trim();
+    const senha = String(inputSenha?.value || "");
+    const resultado = await DB.entrar(email, senha);
+
+    if (!resultado.ok) {
+      if (erro) {
+        erro.textContent = resultado.erro;
+        erro.hidden = false;
+      }
+      if (submit) submit.disabled = false;
+      return;
+    }
+
+    const staff = await DB.isStaff();
+    if (!staff) {
+      await DB.sair();
+      if (erro) {
+        erro.textContent = "Esta conta n\u00e3o tem acesso interno.";
+        erro.hidden = false;
+      }
+      if (submit) submit.disabled = false;
+      return;
+    }
+
+    await recarregarAposAuth();
+    form.reset();
+    fecharModal();
+    if (submit) submit.disabled = false;
+  });
+
+  // Sessao valida sem papel: encerra para nao deixar sessao orfa no navegador.
+  if (DB.usuarioAtual() && !acessoInternoAtivo()) {
+    DB.sair().catch((e) => console.warn("[App] Falha ao encerrar sessao sem papel.", e));
+  }
+
+  atualizarAuthUI();
+}
+
+/** Recarrega os dados e a UI depois de login/logout. */
+async function recarregarAposAuth(acao) {
+  if (typeof acao === "function") await acao();
+  await dbInit({ escopo: "publico" });
+  carregarDados();
+  refreshLiveSections();
+  invalidateGlobalSearchIndex();
+  scheduleGlobalSearchIndexBuild();
+
+  // Fecha detalhes abertos: podem ter PII da sessao anterior.
+  document.querySelectorAll(".detail-overlay.open").forEach((el) => el.classList.remove("open"));
+  resetRelatoriosView();
+  atualizarAuthUI();
+
+  if (paginaAtiva === "relatorios" && !acessoInternoAtivo()) {
+    navigateTo("dashboard");
+    return;
+  }
+
+  const config = MODULE_SYNC[paginaAtiva];
+  if (config && typeof config.render === "function") config.render();
+}
+
+/** Mostra Entrar ou a sessao; esconde itens restritos para o anonimo. */
+function atualizarAuthUI() {
+  const interno = acessoInternoAtivo();
+  const usuario = typeof DB !== "undefined" && typeof DB.usuarioAtual === "function"
+    ? DB.usuarioAtual()
+    : null;
+  const btnEntrar = document.getElementById("auth-entrar");
+  const box = document.getElementById("auth-usuario");
+  const email = document.getElementById("auth-email");
+  const navRel = document.getElementById("nav-relatorios");
+  const dashEscala = document.getElementById("dash-escala");
+
+  if (btnEntrar) btnEntrar.hidden = interno;
+  if (box) box.hidden = !interno;
+  if (email) email.textContent = interno && usuario ? (usuario.email || "Sess\u00e3o interna") : "";
+  if (navRel) navRel.hidden = !interno;
+  if (dashEscala) dashEscala.hidden = !interno;
 }
 
 /**
@@ -1030,6 +1174,8 @@ async function sincronizarModulo(pageId) {
  * @param {boolean} [opcoes.atualizarHash=true] - grava "#/pagina" no histórico
  */
 function navigateTo(pageId, opcoes = {}) {
+  // Relatorios e area interna: sem login, volta para o dashboard.
+  if (pageId === "relatorios" && !acessoInternoAtivo()) pageId = "dashboard";
   aplicarPagina(pageId);
 
   if (opcoes.atualizarHash === false) return;
@@ -1039,6 +1185,10 @@ function navigateTo(pageId, opcoes = {}) {
 }
 
 function aplicarPagina(pageId, opcoes = {}) {
+  if (pageId === "relatorios" && !acessoInternoAtivo()) {
+    pageId = "dashboard";
+    if (location.hash !== "#/dashboard") history.replaceState(null, "", "#/dashboard");
+  }
   ensureModuleInitialized(pageId);
   paginaAtiva = pageId;
 
@@ -1136,15 +1286,16 @@ function openFuncionario(id) {
     ? `<img src="${escapeAttr(urlSegura(foto))}" class="detail-avatar-large detail-avatar-foto" alt="${escapeAttr(f.nome)}" />`
     : `<div class="detail-avatar-large">${escapeHtml(getInitials(f.nome))}</div>`;
   const lotacao = f.lotacao || f.setor || "";
+  const interno = acessoInternoAtivo();
   const camposInfo = [
     ["Matrí­cula", f.matricula],
     ["Lotação", lotacao],
     ["Vínculo", f.vinculo],
     ["Órgo", f.orgao],
     ["Data de admissão", formatDateBR(f.data_admissao)],
-    ["Telefone", f.telefone],
-    ["E-mail institucional", f.email],
-    ["CPF", f.cpf],
+    ["Telefone", interno ? f.telefone : null],
+    ["E-mail institucional", interno ? f.email : null],
+    ["CPF", interno ? f.cpf : null],
     ["Departamento", f.departamento],
   ].filter(([, valor]) => valor);
 
@@ -2631,7 +2782,8 @@ function rebuildGlobalSearchIndex() {
   // Atalhos de tier para clareza
   const T1 = 100; // nome/título principal
   const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
-  const T3 = 10;  // texto livre (descrição, observações, passos, campos de contato)
+  const T3 = 10;
+  const interno = acessoInternoAtivo();  // texto livre (descrição, observações, passos, campos de contato)
 
   funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };
@@ -2640,9 +2792,9 @@ function rebuildGlobalSearchIndex() {
       { tier: T2, label: "Cargo",       valor: f.cargo },
       { tier: T2, label: "Lotação",     valor: f.lotacao || f.setor },
       { tier: T2, label: "Matrícula",   valor: f.matricula },
-      { tier: T2, label: "E-mail",      valor: f.email },
-      { tier: T2, label: "Telefone",    valor: f.telefone },
-      { tier: T2, label: "CPF",         valor: f.cpf },
+      { tier: T2, label: "E-mail",      valor: interno ? f.email : "" },
+      { tier: T2, label: "Telefone",    valor: interno ? f.telefone : "" },
+      { tier: T2, label: "CPF",         valor: interno ? f.cpf : "" },
       { tier: T3, label: "Descrição",   valor: f.descricao },
     ], ir);
   });
@@ -2732,8 +2884,8 @@ function rebuildGlobalSearchIndex() {
       { tier: T2, label: "Situação",    valor: v.situacao },
       { tier: T2, label: "Patrimônio",  valor: v.patrimonio },
       { tier: T2, label: "Motorista",   valor: v.motorista },
-      { tier: T3, label: "Nº Série/Chassi", valor: v.chassi },
-      { tier: T3, label: "RENAVAM",     valor: v.renavam },
+      { tier: T3, label: "Nº Série/Chassi", valor: interno ? v.chassi : "" },
+      { tier: T3, label: "RENAVAM",     valor: interno ? v.renavam : "" },
       { tier: T3, label: "Localização", valor: v.localizacao },
       { tier: T3, label: "Observações", valor: v.obs },
     ], ir);
@@ -3367,6 +3519,10 @@ function openVeiculo(id) {
   const v = getPublishedVeiculoById(id);
   if (!v) return;
 
+  const interno = acessoInternoAtivo();
+  const chassiVisivel = interno ? v.chassi : "";
+  const renavamVisivel = interno ? v.renavam : "";
+
   const situacaoStyle = v.situacao === "Em operação"
     ? "background:#e6f4ea;color:#2d6a4f"
     : "background:#fff3e0;color:#7a4f00";
@@ -3430,8 +3586,8 @@ function openVeiculo(id) {
     <div class="detail-info-grid">
       <div class="detail-info-item"><label>Placa</label><span>${escapeHtml(v.placa)}</span></div>
       <div class="detail-info-item"><label>Nº Patrimônio</label><span>${escapeHtml(v.patrimonio)}</span></div>
-      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${escapeHtml(v.chassi)}</span></div>
-      <div class="detail-info-item"><label>RENAVAM</label><span>${escapeHtml(v.renavam)}</span></div>
+      <div class="detail-info-item"><label>Nº Série/Chassi</label><span style="font-size:.78rem">${escapeHtml(chassiVisivel)}</span></div>
+      <div class="detail-info-item"><label>RENAVAM</label><span>${escapeHtml(renavamVisivel)}</span></div>
       <div class="detail-info-item"><label>Cor</label><span>${escapeHtml(v.cor_veiculo)}</span></div>
       <div class="detail-info-item"><label>Combustível</label><span>${escapeHtml(v.combustivel)}</span></div>
     </div>
@@ -3451,6 +3607,12 @@ function openVeiculo(id) {
     <hr class="detail-divider">
     <div class="obs-box">${escapeHtml(v.obs)}</div>
   `;
+  if (!interno) {
+    document.querySelectorAll("#veiculo-detail-content .detail-info-item").forEach((item) => {
+      const label = item.querySelector("label")?.textContent || "";
+      if (label.includes("Chassi") || label.includes("RENAVAM")) item.remove();
+    });
+  }
   openDetail("veiculo-detail-overlay");
 }
 
@@ -4433,6 +4595,10 @@ function openEvento(id) {
 }
 
 function initRelatorios() {
+  if (!acessoInternoAtivo()) {
+    navigateTo("dashboard");
+    return;
+  }
   const grid = document.getElementById("relatorios-grid");
   const backBtn = document.getElementById("relatorio-back-btn");
   const printBtn = document.getElementById("relatorio-print-btn");
@@ -4462,6 +4628,10 @@ function resetRelatoriosView() {
 }
 
 function openRelatorio(tipo) {
+  if (!acessoInternoAtivo()) {
+    navigateTo("dashboard");
+    return;
+  }
   const grid = document.getElementById("relatorios-grid");
   const view = document.getElementById("relatorio-view");
   const area = document.getElementById("relatorio-print-area");
@@ -4567,17 +4737,22 @@ function relatorioBlocosHTML(blocos) {
 }
 
 function renderRelatorioFuncionarios() {
-  const colunas = ["Nome", "Matr\u00edcula", "Cargo", "Data de admiss\u00e3o", "Telefone", "E-mail", "CPF", "Departamento"];
-  const linhas = funcionarios.map(f => [
-    f.nome || "-",
-    f.matricula || "-",
-    f.cargo || "-",
-    formatDateBR(f.data_admissao),
-    f.telefone || "-",
-    f.email || "-",
-    f.cpf || "-",
-    f.departamento || "-",
-  ]);
+  const interno = acessoInternoAtivo();
+  const colunas = ["Nome", "Matr\u00edcula", "Cargo", "Data de admiss\u00e3o"];
+  if (interno) colunas.push("Telefone", "E-mail", "CPF");
+  colunas.push("Departamento");
+
+  const linhas = funcionarios.map(f => {
+    const linha = [
+      f.nome || "-",
+      f.matricula || "-",
+      f.cargo || "-",
+      formatDateBR(f.data_admissao),
+    ];
+    if (interno) linha.push(f.telefone || "-", f.email || "-", f.cpf || "-");
+    linha.push(f.departamento || "-");
+    return linha;
+  });
 
   return relatorioLayoutHTML({
     titulo: "Rela\u00e7\u00e3o de Funcion\u00e1rios",
@@ -4750,7 +4925,11 @@ function renderRelatorioHistoricoAgenda() {
 }
 
 function renderRelatorioVeiculos() {
-  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrim\u00f4nio", "N\u00ba S\u00e9rie/Chassi", "RENAVAM", "Combust\u00edvel", "Motorista(s)"];
+  const interno = acessoInternoAtivo();
+  const colunas = ["Nome", "Tipo", "Marca", "Modelo", "Ano", "Placa", "Patrim\u00f4nio"];
+  if (interno) colunas.push("N\u00ba S\u00e9rie/Chassi", "RENAVAM");
+  colunas.push("Combust\u00edvel", "Motorista(s)");
+
   const linhas = veiculos.map(v => {
     const motoristasPublicados = Array.isArray(v.motorista_ids) && v.motorista_ids.length
       ? v.motorista_ids
@@ -4760,7 +4939,7 @@ function renderRelatorioVeiculos() {
           .join(",\n")
       : String(v.motorista || "").replace(/\s*,\s*/g, ",\n");
 
-    return [
+    const linha = [
       v.nome || "-",
       v.tipo || "-",
       v.marca || "-",
@@ -4768,11 +4947,10 @@ function renderRelatorioVeiculos() {
       v.ano || "-",
       v.placa || "-",
       v.patrimonio || "-",
-      v.chassi || "-",
-      v.renavam || "-",
-      v.combustivel || "-",
-      motoristasPublicados || v.motorista || "-",
     ];
+    if (interno) linha.push(v.chassi || "-", v.renavam || "-");
+    linha.push(v.combustivel || "-", motoristasPublicados || v.motorista || "-");
+    return linha;
   });
 
   return relatorioLayoutHTML({

@@ -134,7 +134,7 @@
           </a>
         </li>
         <li>
-          <a href="#/relatorios" class="nav-item" data-page="relatorios">
+          <a href="#/relatorios" class="nav-item" data-page="relatorios" id="nav-relatorios">
             <i class="ph-bold ph-printer"></i>
             <span>Relatórios</span>
           </a>
@@ -147,6 +147,20 @@
         </li>
       </ul>
     </nav>
+
+    <div class="sidebar-auth" id="sidebar-auth">
+      <button type="button" class="auth-btn" id="auth-entrar">
+        <i class="ph-bold ph-sign-in"></i>
+        <span>Entrar</span>
+      </button>
+      <div class="auth-user" id="auth-usuario" hidden>
+        <div class="auth-user-info">
+          <span class="auth-user-label">Sessão interna</span>
+          <span class="auth-user-email" id="auth-email"></span>
+        </div>
+        <button type="button" class="auth-sair" id="auth-sair">Sair</button>
+      </div>
+    </div>
 
     <div class="sidebar-footer">
       <span>v1.1 - por José Tadeu</span>
@@ -240,7 +254,7 @@
           <div class="dash-bottom-row">
 
             <!-- ESCALA DE FÉRIAS -->
-            <div class="card dash-ferias">
+            <div class="card dash-ferias" id="dash-escala">
               <div class="dash-block-header">
                 <i class="ph-bold ph-umbrella"></i>
                 <span>Escala de Férias</span>
@@ -804,6 +818,29 @@
     </section>
 
   </main>
+
+  <!-- Login do index (mesma sessao do admin) -->
+  <div class="auth-overlay" id="login-overlay" hidden>
+    <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button type="button" class="auth-modal-close" id="login-close" aria-label="Fechar login">
+        <i class="ph-bold ph-x"></i>
+      </button>
+      <h2 id="login-title">Acesso interno</h2>
+      <p class="auth-modal-desc">
+        Entre com a conta de servidor para ver os dados completos. A matrícula
+        continua pública; CPF, chassi, RENAVAM, telefone e e-mail ficam
+        restritos a quem tem login.
+      </p>
+      <form id="login-form">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" autocomplete="username" required />
+        <label for="login-senha">Senha</label>
+        <input id="login-senha" type="password" autocomplete="current-password" required />
+        <p class="auth-erro" id="login-erro" role="alert" hidden></p>
+        <button type="submit" id="login-submit">Entrar</button>
+      </form>
+    </div>
+  </div>
 
   <!-- Dados e camada de abstração (carregar antes do script.js) -->
   <script src="js/core/utils.js"></script>
