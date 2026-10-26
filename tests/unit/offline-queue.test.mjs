@@ -1,8 +1,8 @@
 /**
  * Bloco 8 (T8.2) — fila de escrita offline.
  *
- * Falha transitoria (rede) entra na fila `smader_pending_writes_v1` e e
- * reenviada no boot/`online`, sem duplicar. Erro permanente (permissao/dado)
+ * Falha transitoria (rede) entra na fila `smader_pending_writes_v1:<uid|anon>` e
+ * e reenviada no boot/`online`, sem duplicar. Erro permanente (permissao/dado)
  * nao entra na fila.
  */
 
@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { carregarScripts } from '../helpers/load-script.mjs';
 
-const CHAVE = 'smader_pending_writes_v1';
+const CHAVE = 'smader_pending_writes_v1:anon';
 
 function carregar({ falhar = true, erro = { message: 'sem rede' } } = {}) {
   const estado = { falhar, erro };

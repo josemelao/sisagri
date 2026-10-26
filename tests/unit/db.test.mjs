@@ -407,7 +407,7 @@ test('_initLocal: migra a chave legada seagri_db_v1', async () => {
   await h.get('_initLocal')();
 
   assert.equal(h.get('DB').get('servicos')[0].nome, 'legado');
-  assert.ok(h.localStorage.getItem('smader_db_v1'), 'deveria gravar na chave nova');
+  assert.ok(h.localStorage.getItem('smader_db_v1:anon'), 'deveria gravar na chave nova');
   assert.equal(h.localStorage.getItem('seagri_db_v1'), null, 'deveria remover a chave antiga');
 });
 

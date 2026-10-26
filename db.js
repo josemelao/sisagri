@@ -804,9 +804,40 @@ function _erroTransiente(error) {
   return true;
 }
 
+/** Identidade dona do cache local. Visitante anonimo usa "anon". */
+function _uidCache() {
+  return _usuarioAtual?.id || 'anon';
+}
+
+/** Chave do snapshot local, separada por identidade. */
+function _chaveCacheDb() {
+  return `${DB_CONFIG.LS_KEY}:${_uidCache()}`;
+}
+
+/** Chave da fila de escritas pendentes, separada por identidade. */
+function _chavePendentes() {
+  return `${DB_CONFIG.PENDING_WRITES_KEY}:${_uidCache()}`;
+}
+
+/** Remove o cache (e a fila) de uma identidade, inclusive chaves antigas. */
+function _limparCacheIdentidade(uid) {
+  try {
+    const identidade = uid || 'anon';
+    [
+      `${DB_CONFIG.LS_KEY}:${identidade}`,
+      `${DB_CONFIG.PENDING_WRITES_KEY}:${identidade}`,
+      DB_CONFIG.LS_KEY,
+      DB_CONFIG.PENDING_WRITES_KEY,
+      DB_CONFIG.LEGACY_LS_KEY,
+    ].forEach((chave) => localStorage.removeItem(chave));
+  } catch (e) {
+    console.warn('[DB] Falha ao limpar o cache local:', e);
+  }
+}
+
 function _lerPendentes() {
   try {
-    const lista = JSON.parse(localStorage.getItem(DB_CONFIG.PENDING_WRITES_KEY) || '[]');
+    const lista = JSON.parse(localStorage.getItem(_chavePendentes()) || '[]');
     return Array.isArray(lista) ? lista : [];
   } catch {
     return [];
@@ -815,7 +846,7 @@ function _lerPendentes() {
 
 function _gravarPendentes(lista) {
   try {
-    localStorage.setItem(DB_CONFIG.PENDING_WRITES_KEY, JSON.stringify(lista));
+    localStorage.setItem(_chavePendentes(), JSON.stringify(lista));
   } catch (e) {
     console.warn('[DB] Nao foi possivel gravar a fila de escritas pendentes:', e);
   }
@@ -996,8 +1027,15 @@ function _initLocal() {
   _podeVerRascunhos = false;
   _usuarioAtual = null;
 
-  // 1. Tenta a chave atual do localStorage
-  const saved = localStorage.getItem(DB_CONFIG.LS_KEY);
+  // Index publico nunca le a chave global antiga: ela pode conter dados de uma
+  // sessao admin. O cache publico fica em smader_db_v1:anon.
+  if (_modoPublico) {
+    localStorage.removeItem(DB_CONFIG.LS_KEY);
+    localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
+  }
+
+  // 1. Tenta a chave atual, escopada por identidade
+  const saved = localStorage.getItem(_chaveCacheDb());
   if (saved) {
     try {
       _db = JSON.parse(saved);
@@ -1005,15 +1043,20 @@ function _initLocal() {
       _ensureAppConfig();
       _normalizeDbCollections();
       _applyLocalAppConfig();
-      console.info('[DB] Dados carregados do localStorage (SMADER).');
+      // Apos a primeira leitura escopada, a chave global antiga nao e mais
+      // necessaria (e pode conter PII).
+      localStorage.removeItem(DB_CONFIG.LS_KEY);
+      localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
+      console.info('[DB] Dados carregados do localStorage (identidade).');
       return Promise.resolve();
     } catch (e) {
       console.warn('[DB] localStorage atual corrompido. Tentando migração/backup.');
     }
   }
 
-  // 2. Compatibilidade: migra a chave antiga, se existir
-  const legacySaved = localStorage.getItem(DB_CONFIG.LEGACY_LS_KEY);
+  // 2. Compatibilidade: migra a chave global/antiga para a chave por identidade
+  const legacySaved = localStorage.getItem(DB_CONFIG.LS_KEY)
+    || localStorage.getItem(DB_CONFIG.LEGACY_LS_KEY);
   if (legacySaved) {
     try {
       _db = JSON.parse(legacySaved);
@@ -1023,7 +1066,8 @@ function _initLocal() {
       _applyLocalAppConfig();
       _persistLocal();
       localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
-      console.info('[DB] Dados migrados de seagri_db_v1 para smader_db_v1.');
+      localStorage.removeItem(DB_CONFIG.LS_KEY);
+      console.info('[DB] Dados migrados para a chave por identidade.');
       return Promise.resolve();
     } catch (e) {
       console.warn('[DB] localStorage legado corrompido. Usando dados padrão.');
@@ -1097,6 +1141,14 @@ async function _initSupabase(escopo = 'admin') {
       await DB.resolveStorageUrls();
     } catch (e) {
       console.warn('[DB] Falha ao assinar URLs do Storage:', e);
+    }
+    // Apos o Supabase carregar, a chave global antiga nao e mais necessaria e
+    // pode conter PII de sessoes anteriores.
+    try {
+      localStorage.removeItem(DB_CONFIG.LS_KEY);
+      localStorage.removeItem(DB_CONFIG.LEGACY_LS_KEY);
+    } catch (e) {
+      console.warn('[DB] Falha ao remover chaves antigas do cache:', e);
     }
     _persistLocal();
     _setDbStatus({
@@ -1645,13 +1697,56 @@ const DB = {
     return true;
   },
 
+  /**
+   * Login do index publico (mesma sessao do admin).
+   * Devolve { ok, erro } para a UI mostrar a mensagem sem logar PII.
+   */
+  async entrar(email, senha) {
+    if (!_sb) return { ok: false, erro: 'Banco de dados indisponível.' };
+    try {
+      const { data, error } = await _sb.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+      if (error) {
+        return { ok: false, erro: error.message || 'Não foi possível entrar.' };
+      }
+      if (data?.user) {
+        _usuarioAtual = {
+          id: data.user.id || null,
+          email: data.user.email || email,
+        };
+      }
+      return { ok: true };
+    } catch (e) {
+      console.error('[DB] Falha no login:', e);
+      return { ok: false, erro: 'Falha de conexão. Tente novamente.' };
+    }
+  },
+
+  /** Assina mudancas de sessao. Devolve a funcao de cancelamento. */
+  aoMudarSessao(cb) {
+    if (!_sb?.auth?.onAuthStateChange) return () => {};
+    const { data } = _sb.auth.onAuthStateChange((evento, sessao) => cb(evento, sessao));
+    return () => data?.subscription?.unsubscribe?.();
+  },
+
   async adminLogout() {
+    const uid = _usuarioAtual?.id || null;
     DB.papel = null;
+    _acessoInterno = false;
+    _limparCacheIdentidade(uid);
+    _usuarioAtual = null;
     if (!_sb) return;
     const { error } = await _sb.auth.signOut();
     if (error) {
       console.error('[DB] Falha no logout admin:', error);
     }
+  },
+
+  /** Logout do index publico (alias do logout da sessao compartilhada). */
+  async sair() {
+    return DB.adminLogout();
   },
 
   /** Gera o conteúdo do dados.js atualizado para download */
@@ -1685,7 +1780,7 @@ const DB = {
 function _persistLocal() {
   try {
     _persistLocalAppConfig();
-    localStorage.setItem(DB_CONFIG.LS_KEY, JSON.stringify(_db));
+    localStorage.setItem(_chaveCacheDb(), JSON.stringify(_db));
   } catch (e) {
     console.error('[DB] Falha ao salvar no localStorage:', e);
   }
@@ -1699,7 +1794,7 @@ window.addEventListener('online', () => {
 });
 
 window.addEventListener('storage', (event) => {
-  if (event.key === DB_CONFIG.LS_KEY && event.newValue) {
+  if (event.key === _chaveCacheDb() && event.newValue) {
     try {
       _db = JSON.parse(event.newValue);
       _ensureAppConfig();
