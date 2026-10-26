@@ -444,3 +444,5 @@
 
 #dash-escala[hidden] { display: none !important; }
 #nav-relatorios[hidden] { display: none !important; }
+
+body.auth-modal-open { overflow: hidden; }

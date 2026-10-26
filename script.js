@@ -31,6 +31,7 @@ let globalSearchIndex = [];
 let globalSearchIndexReady = false;
 let globalSearchIndexBuilding = false;
 let bootHideTimer = null;
+let authRecarregando = false;
 const MODULE_SEARCH_STATE_KEY = "smader_module_search_state_v1";
 
 function isPublished(item) {
@@ -1040,30 +1041,48 @@ function initAuthPublico() {
     DB.sair().catch((e) => console.warn("[App] Falha ao encerrar sessao sem papel.", e));
   }
 
+  // Sessao compartilhada entre abas: se o admin sair em outra aba, o index
+  // precisa parar de exibir PII. O flag evita recarregar duas vezes quando o
+  // login/logout acontece aqui.
+  DB.aoMudarSessao((evento) => {
+    if (authRecarregando) return;
+    if (evento !== "SIGNED_IN" && evento !== "SIGNED_OUT") return;
+    recarregarAposAuth().catch((e) => console.warn("[App] Falha ao recarregar sessao.", e));
+  });
+
   atualizarAuthUI();
 }
 
 /** Recarrega os dados e a UI depois de login/logout. */
 async function recarregarAposAuth(acao) {
-  if (typeof acao === "function") await acao();
-  await dbInit({ escopo: "publico" });
-  carregarDados();
-  refreshLiveSections();
-  invalidateGlobalSearchIndex();
-  scheduleGlobalSearchIndexBuild();
+  authRecarregando = true;
+  try {
+    if (typeof acao === "function") await acao();
 
-  // Fecha detalhes abertos: podem ter PII da sessao anterior.
-  document.querySelectorAll(".detail-overlay.open").forEach((el) => el.classList.remove("open"));
-  resetRelatoriosView();
-  atualizarAuthUI();
+    // Fecha e limpa detalhes imediatamente: o HTML pode conter PII da sessao
+    // anterior (CPF, chassi, RENAVAM) e nao deve ficar no DOM depois do logout.
+    document.querySelectorAll(".detail-overlay.open").forEach((el) => el.classList.remove("open"));
+    document.querySelectorAll("[id$='-detail-content']").forEach((el) => { el.innerHTML = ""; });
 
-  if (paginaAtiva === "relatorios" && !acessoInternoAtivo()) {
-    navigateTo("dashboard");
-    return;
+    await dbInit({ escopo: "publico" });
+    carregarDados();
+    refreshLiveSections();
+    invalidateGlobalSearchIndex();
+    scheduleGlobalSearchIndexBuild();
+
+    resetRelatoriosView();
+    atualizarAuthUI();
+
+    if (paginaAtiva === "relatorios" && !acessoInternoAtivo()) {
+      navigateTo("dashboard");
+      return;
+    }
+
+    const config = MODULE_SYNC[paginaAtiva];
+    if (config && typeof config.render === "function") config.render();
+  } finally {
+    authRecarregando = false;
   }
-
-  const config = MODULE_SYNC[paginaAtiva];
-  if (config && typeof config.render === "function") config.render();
 }
 
 /** Mostra Entrar ou a sessao; esconde itens restritos para o anonimo. */
@@ -2782,8 +2801,8 @@ function rebuildGlobalSearchIndex() {
   // Atalhos de tier para clareza
   const T1 = 100; // nome/título principal
   const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
-  const T3 = 10;
-  const interno = acessoInternoAtivo();  // texto livre (descrição, observações, passos, campos de contato)
+  const T3 = 10; // texto livre (descrição, observações, passos, campos de contato)
+  const interno = acessoInternoAtivo();
 
   funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };

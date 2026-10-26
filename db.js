@@ -1732,8 +1732,18 @@ const DB = {
   },
 
   async adminLogout() {
-    const uid = _usuarioAtual?.id || null;
     DB.papel = null;
+    let uid = _usuarioAtual?.id || null;
+    // Fallback: se a identidade ainda nao foi resolvida, le a sessao antes de
+    // sair para apagar o cache correto.
+    if (!uid && _sb?.auth?.getSession) {
+      try {
+        const { data } = await _sb.auth.getSession();
+        uid = data?.session?.user?.id || null;
+      } catch {
+        uid = null;
+      }
+    }
     _acessoInterno = false;
     _limparCacheIdentidade(uid);
     _usuarioAtual = null;
