@@ -98,6 +98,11 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
 - Conteúdo público só aparece com `publish_status = 'published'`. Itens sem
   status são tratados como rascunho.
 - Buckets de arquivos e imagens são privados; o app usa URLs assinadas.
+- As coleções públicas de `dados.js` (funcionários, manuais, processos,
+  arquivos, veículos e escala) são geradas da produção:
+  `node scripts/gerar-dados-fallback.mjs` (aceita `--dry-run`). O gerador lê a
+  chave anon do `db.js`, importa só `published`, exclui os ids de teste e nunca
+  grava PII (`cpf`, `matricula`, `chassi`, `renavam`).
 - A Edge Function do Instagram e as migrations ficam em `supabase/`.
 
 ## Deploy

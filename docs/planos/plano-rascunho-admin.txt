@@ -71,6 +71,39 @@ SESSAO 2026-10-26 — CORRECAO DO FALLBACK (dados.js)
     remoto; o deploy para main continua pendente.
 
 =========================================================================
+SESSAO 2026-10-26 (2) — HIGIENE DA RAIZ + FALLBACK COMPLETO
+=========================================================================
+
+  - Frente C (commit a75083b, chore(repo)): plano-rascunho-admin.txt e
+    v2_plano_refatoracao.md sairam da raiz para docs/planos/, com nome ASCII e
+    indice em docs/planos/README.md. Referencias atualizadas em AGENTS.md,
+    README.md, docs/arquivo/README.md,
+    docs/seguranca/auditoria-rls-2026-10-19.md e
+    scripts/check-draft-leak.mjs. AGENTS.md ganhou o mapa da raiz (runtime,
+    ferramenta e documentos) para a bagunca nao voltar. test-results/ e
+    graphify-out/ removidos do disco (gitignored e regeneraveis). Raiz agora:
+    17 arquivos + 11 pastas, sem plano solto.
+  - Frente B (commit c069122, feat(dados)): scripts/gerar-dados-fallback.mjs
+    gera as 6 colecoes restantes a partir da REST de producao (anon key lida
+    do db.js, filtro publish_status=eq.published, ids de teste excluidos,
+    saida deterministica). Contagens: funcionarios 15, manuais 6, processos 3,
+    arquivos 61, veiculos 3, escalaFerias 5. processos id=4 esta draft e ficou
+    fora (correto). dados.js com 84,8 KB.
+  - REGRA DE SEGURANCA NOVA: o repositorio e publico. O fallback gerado NAO
+    inclui cpf, matricula, chassi nem renavam (PII), e tambem deixou de fora
+    telefone/email pessoais. O gerador nunca grava PII, mesmo que a producao
+    tenha o campo.
+  - Teste novo tests/unit/dados-fallback.test.mjs (8 testes): colecoes, ids
+    unicos, ids de teste ausentes, zero PII, zero Luziania, campos minimos,
+    vinculos integros e teto de 300 KB.
+  - Prova: npm run check exit 0 (278 testes, 0 falhas).
+  - Commits desta sessao: a75083b (higiene) + c069122 (fallback). Nada foi
+    enviado ao remoto.
+  - PENDENTE 11 (acao do dono): limpeza dos dados de teste em producao. Ver a
+    secao PENDENTE 11 no fim deste documento. Depois da limpeza, rodar
+    `node scripts/gerar-dados-fallback.mjs` e commitar o novo snapshot.
+
+=========================================================================
 SESSAO 2026-10-23 — BLOCO 13 / T13.4 (CSS EM CAMADAS + TOKENS)
 =========================================================================
 
@@ -1156,6 +1189,26 @@ PENDENTE 10 — graphify com DOCUMENTACAO (build semantico, decisao do dono 2026
     3. conferir no GRAPH_REPORT.md se aparecem nos de documentacao e o commit atual.
   Custo/beneficio: util para perguntas tipo "onde esta documentado o T12.4";
   nao muda codigo nem banco. Sem pressa.
+
+PENDENTE 11 — LIMPEZA DOS DADOS DE TESTE EM PRODUCAO (acao do dono)
+  O MCP de producao e READ_ONLY; a execucao e pelo painel administrativo.
+  Antes: exportar os dados pelo painel e guardar fora do repo (backup).
+  Excluir (10 registros claros):
+    sistemas id=5 "aa" | servicos id=9 "q" | info_orgaos id=6 "teste"
+    agenda_eventos id=2 "teste event" | agenda_eventos id=3 "a"
+    funcionarios id=18 "a" | manuais id=7 "testes" | processos id=5 "teste"
+    veiculos id=4 "121111d" | veiculos id=5 "qeqweqwewe"
+  Despublicar e revisar (2):
+    arquivos id=67 (titulo "a"; o PDF pode ser real)
+    avisos id=2 ("nvo aviso"; pode ser aviso real com titulo errado)
+  Corrigir (1):
+    acesso_rapido id=2: trocar a URL de sessao do Roundcube por
+    https://sh-pro92.hostgator.com.br:2096/
+  Dependencias conferidas: nenhum array (manuais_ids, processos_ids,
+  arquivo_ids, motorista_ids) nem escala_ferias.funcionario_id referencia os
+  registros acima; a exclusao nao deixa vinculo orfao.
+  Depois: conferir o site publico, rodar node scripts/check-draft-leak.mjs
+  (15/15) e regerar o fallback com scripts/gerar-dados-fallback.mjs.
 
 =========================================================================
 REGRAS QUE NAO PODEM SER QUEBRADAS
