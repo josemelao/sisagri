@@ -6,7 +6,7 @@
 **Método:** MCP do Supabase (`list_tables`, `execute_sql`, `list_migrations`, `list_extensions`) + requisições PostgREST e Storage com a `anon key` pública de `db.js` + `GET /auth/v1/settings` + Advisors (dashboard).
 **Natureza:** 100% leitura. Nenhuma DDL, nenhum `write`, nenhum arquivo do app alterado.
 
-> Este documento é a **linha de base** do Bloco 1 do `v2_plano_refatoração.md`. Toda correção dos Blocos 3, 3b e 3c deve ser comparada com os números abaixo.
+> Este documento é a **linha de base** do Bloco 1 do `docs/planos/v2-plano-refatoracao.md`. Toda correção dos Blocos 3, 3b e 3c deve ser comparada com os números abaixo.
 >
 > **Atualização (2026-10-19, pós-correção):** o Bloco 3 foi **aplicado em
 > produção** (`0002_admin_gate`, `0003_hardening_leitura`) e o Storage recebeu a

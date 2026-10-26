@@ -145,7 +145,7 @@ Atenuante honesta: a URL **não** é descobrível pela API (o RLS esconde a linh
 ## 5. Protocolo de execução obrigatório (agentes de IA)
 
 ```
-1. LER: AGENTS.md → plano-rascunho-admin.txt → este doc (cabeçalho + bloco alvo).
+1. LER: AGENTS.md → docs/planos/plano-rascunho-admin.txt → este doc (cabeçalho + bloco alvo).
 2. CONFIRMAR: git branch --show-current == codex/fase2 ; git status limpo.
 3. ANUNCIAR antes de editar: "Bloco N — tarefa X.Y".
 4. EXECUTAR apenas as tarefas do bloco. Não antecipar o próximo bloco.

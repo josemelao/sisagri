@@ -88,11 +88,22 @@ Quando parar e alinhar antes:
 - `tests/unit/` — testes `node:test`
 - `tests/e2e/` — Playwright
 - `assets/`, `robots.txt`, `sitemap.xml` — imagens e SEO
-- `docs/` — ADRs, segurança, qualidade e planos arquivados
+- `docs/` — ADRs, segurança, qualidade, planos vivos e planos arquivados
+
+### Raiz — o que fica e por quê
+- **Runtime (não mover):** `index.html`, `admin.html`, `script.js`, `admin.js`,
+  `db.js`, `dados.js`, `admin.css`, `robots.txt`, `sitemap.xml` e as pastas
+  `css/`, `js/`, `assets/`, `vendor/`. O GitHub Pages publica a raiz do repo;
+  mover esses arquivos muda as URLs públicas e quebra o deploy.
+- **Ferramentas (não mover sem ajustar scripts):** `package.json`,
+  `package-lock.json`, `eslint.config.js`, `playwright.config.mjs`,
+  `.gitattributes`, `.gitignore`, `.github/`.
+- **Documentos de entrada:** `AGENTS.md` e `README.md`.
+- **Planos:** somente em `docs/planos/` (ver `docs/planos/README.md`).
 
 ### Arquivo operacional
-- `plano-rascunho-admin.txt` (se existir, tratar como handoff vigente)
-- `v2_plano_refatoração.md` (plano mestre)
+- `docs/planos/plano-rascunho-admin.txt` (se existir, tratar como handoff vigente)
+- `docs/planos/v2-plano-refatoracao.md` (plano mestre)
 - `README.md` (setup, testes e deploy)
 
 ### Modelo mental do sistema
@@ -252,7 +263,7 @@ Proibido sem pedir:
 - alterar variáveis globais sem necessidade
 - renomear ou reordenar as camadas (quebra a cascata)
 
-### `plano-rascunho-admin.txt`
+### `docs/planos/plano-rascunho-admin.txt`
 Papel: documento operacional de handoff entre agentes.
 
 Regras:
@@ -353,7 +364,7 @@ Ao concluir:
 3. **O que mudou**
 4. **Comandos de commit prontos** (quando a tarefa for etapa validada)
 5. aguardar confirmação do usuário antes de assumir commit
-6. se a tarefa fizer parte do plano, só então atualizar `plano-rascunho-admin.txt`
+6. se a tarefa fizer parte do plano, só então atualizar `docs/planos/plano-rascunho-admin.txt`
 
 Template de commit:
 

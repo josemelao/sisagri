@@ -3,7 +3,7 @@
  * check-draft-leak.mjs
  * ---------------------------------------------------------------------------
  * Prova que nenhum rascunho (publish_status = 'draft') é acessível com a
- * anon key pública. É a suíte adversarial do Bloco 1 do v2_plano_refatoração.md
+ * anon key pública. É a suíte adversarial do Bloco 1 do docs/planos/v2-plano-refatoracao.md
  * e a rede de regressão dos Blocos 3 / 3c / 7.
  *
  * Uso:

@@ -28,7 +28,7 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     conferencia.
   - MASCARAMENTO ADIADO por decisao do dono em 2026-10-21: os campos
     sensiveis seguem publicos ate nova ordem (ver PENDENTE 9, item 3).
-  - Plano mestre: v2_plano_refatoração.md.
+  - Plano mestre: docs/planos/v2-plano-refatoracao.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
 
@@ -140,7 +140,7 @@ SESSAO 2026-10-22 — HIGIENE DE DOCS / README / ADRs (SEM RUNTIME)
       encerrada; pendencias do 3c resolvidas)
       docs/superpowers/specs/2026-10-19-rbac-design.md (status implementado)
       docs/qualidade/linha-de-base-lint.md (nota historica)
-  - v2_plano_refatoração.md: checkboxes de T7, T9.4/T9.5 e T10.3 corrigidos;
+  - docs/planos/v2-plano-refatoracao.md: checkboxes de T7, T9.4/T9.5 e T10.3 corrigidos;
     decisoes 1,2,3,4,7,8,9,10 marcadas como resolvidas; T13.6 concluido.
   - Plano de acoes restantes:
       C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
@@ -471,7 +471,7 @@ SESSAO 2026-10-21/22 — BLOCO 12 / T12.0.1 — BRAINSTORMING (SPEC FECHADA)
     selects dependentes / T12.4 (nao existe sistema_id/processo_id, so
     `categoria`); P7 estados do Salvar; P8 uploads; P9 fechar modal com
     alteracoes; P10 listas que quebram linha; P11 nivel de acessibilidade.
-  - Detalhe completo em v2_plano_refatoracao.md, secao T12.0.1.
+  - Detalhe completo em docs/planos/v2-plano-refatoracao.md, secao T12.0.1.
   - Push autorizado explicitamente pelo dono nesta sessao.
 
 =========================================================================
@@ -868,7 +868,7 @@ LEIA PRIMEIRO (obrigatorio antes de qualquer acao)
 =========================================================================
 
 Plano vigente (substitui a v1):
-  C:\Users\PICHAU\Desktop\SisAgri\v2_plano_refatoração.md
+  C:\Users\PICHAU\Desktop\SisAgri\docs\planos\v2-plano-refatoracao.md
   -> Blocos 0, 0.5, 1, 2, 3 (tabela), 3c, 4, 4.1 e 5 CONCLUIDOS.
   -> Bloco 10 PARCIAL: codigo pronto, deploy da function pendente (humano).
   -> Bloco 9 CONCLUIDO: 9a (SisUtils + guarda de CI), 9b (escape na saida +
@@ -1140,7 +1140,7 @@ PENDENTE 9 — Bloco 6: o que falta (2026-10-20)
 
 PENDENTE 10 — graphify com DOCUMENTACAO (build semantico, decisao do dono 2026-10-22)
   Pedido do dono em 2026-10-22: rodar o build COMPLETO do graphify incluindo
-  documentacao (handoff, v2_plano_refatoracao.md, AGENTS.md, docs/, migrations),
+  documentacao (handoff, docs/planos/v2-plano-refatoracao.md, AGENTS.md, docs/, migrations),
   nao apenas codigo. Fica para "momento oportuno" — nao executar sem o dono pedir.
   Estado atual do grafo (conferido em 2026-10-22 na branch codex3):
     - graphify-out/ e gitignored (.gitignore linha 7); e artefato local.

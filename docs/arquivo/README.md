@@ -2,8 +2,8 @@
 
 Documentos mantidos apenas para histórico. **Não são o plano vigente.**
 
-O plano mestre atual é `v2_plano_refatoração.md`; o handoff operacional é
-`plano-rascunho-admin.txt`.
+O plano mestre atual é `docs/planos/v2-plano-refatoracao.md`; o handoff operacional é
+`docs/planos/plano-rascunho-admin.txt`.
 
 | Arquivo | Situação |
 |---|---|
@@ -20,5 +20,5 @@ O plano mestre atual é `v2_plano_refatoração.md`; o handoff operacional é
 ## Regra
 
 Ao retomar um assunto coberto por um destes arquivos, leia primeiro
-`v2_plano_refatoração.md` e `plano-rascunho-admin.txt`. Se o assunto não estiver
+`docs/planos/v2-plano-refatoracao.md` e `docs/planos/plano-rascunho-admin.txt`. Se o assunto não estiver
 neles, trate o arquivo antigo como referência, não como instrução.

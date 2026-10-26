@@ -113,8 +113,9 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
 ## Documentação
 
 - `AGENTS.md` — regras de trabalho no repositório.
-- `plano-rascunho-admin.txt` — handoff operacional vigente.
-- `v2_plano_refatoração.md` — plano mestre e registro das etapas.
+- `docs/planos/plano-rascunho-admin.txt` — handoff operacional vigente.
+- `docs/planos/v2-plano-refatoracao.md` — plano mestre e registro das etapas.
+- `docs/planos/README.md` — índice dos planos e convenções.
 - `docs/adr/` — decisões de arquitetura.
 - `docs/arquivo/` — planos antigos, mantidos apenas para histórico.
 - `docs/seguranca/` — auditoria de RLS e decisões de segurança.
@@ -122,12 +123,10 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
 
 ## Pendências conhecidas
 
-- Fallback de `dados.js` ainda com referências antigas a Luziânia; o Supabase de
-  produção já está com Cidade Ocidental.
 - Edge Function do Instagram ainda não publicada (widget mostra indisponível).
 - Cobertura e2e do admin depende de credenciais reais.
-- Acessibilidade pública (T13.3), CDN local (T13.5) e frescor ao entrar no
-  módulo (T13.7) concluídas em 2026-10-22; resta T13.4 (CSS em camadas).
+- Bloco 13 concluído em 2026-10-23 (T13.1 a T13.7); resta o deploy para `main`.
+- Registros de teste publicados em produção aguardam limpeza pelo painel.
 
 O plano detalhado de ações restantes fica, no ambiente local, em
 `C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md`.
