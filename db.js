@@ -270,6 +270,28 @@ const SUPABASE_TABLES = {
   processos: 'processos',
 };
 
+/**
+ * Colunas que o visitante anonimo pode ler.
+ *
+ * A RLS continua sendo a barreira principal; esta lista e a segunda camada e
+ * existe porque a partir da migration 0015 o papel `anon` perde o SELECT de
+ * tabela em `funcionarios` e `veiculos` e passa a ter apenas estas colunas.
+ * Nunca incluir cpf, telefone, email, chassi ou renavam aqui.
+ */
+const CAMPOS_PUBLICOS = {
+  funcionarios:
+    'id,nome,cargo,matricula,lotacao,departamento,orgao,vinculo,data_admissao,' +
+    'descricao,foto,foto_storage_path,foto_storage_bucket,publish_status,updated_at',
+  veiculos:
+    'id,nome,tipo,marca,modelo,ano,placa,patrimonio,combustivel,situacao,' +
+    'localizacao,motoristas,observacoes,arquivo_ids,motorista_ids,icone,cor,' +
+    'cor_veiculo,publish_status,updated_at',
+};
+
+/** Colecoes que so existem para quem tem login interno (admin/servidor). */
+const COLECOES_INTERNAS = new Set(['escalaFerias']);
+
+
 function _isSupabaseCollection(colecao) {
   return !!SUPABASE_TABLES[colecao];
 }
@@ -282,18 +304,36 @@ function _isSupabaseCollection(colecao) {
  */
 let _podeVerRascunhos = false;
 
-async function _resolverPodeVerRascunhos() {
+/** True quando ha sessao com `pode_editar()` (admin ou servidor). */
+let _acessoInterno = false;
+
+/** True quando a pagina e o index publico (nunca mostra rascunho). */
+let _modoPublico = false;
+
+/** Dados basicos do usuario logado: { id, email } ou null. */
+let _usuarioAtual = null;
+
+async function _resolverAcessoInterno() {
+  _usuarioAtual = null;
   if (!_sb) return false;
   try {
     const { data: sessao, error: erroSessao } = await _sb.auth.getSession();
     if (erroSessao || !sessao?.session) return false;
+    _usuarioAtual = {
+      id: sessao.session.user?.id || null,
+      email: sessao.session.user?.email || '',
+    };
     const { data: podeEditar, error: erroRpc } = await _sb.rpc('pode_editar');
     if (erroRpc) return false;
     return podeEditar === true;
   } catch (e) {
-    console.warn('[DB] Falha ao verificar permissao de rascunho; aplicando filtro publico.', e);
+    console.warn('[DB] Falha ao verificar acesso interno; aplicando visao publica.', e);
     return false;
   }
+}
+
+async function _resolverPodeVerRascunhos() {
+  return _resolverAcessoInterno();
 }
 
 function _createSupabaseClient() {
@@ -656,12 +696,27 @@ function _toSupabasePayload(colecao, registro) {
   }
 }
 
+/** Colunas do SELECT conforme o perfil. `arquivos` mantem a lista historica. */
+function _colunasDaColecao(colecao, interno) {
+  if (colecao === 'arquivos') {
+    return 'id,nome,tipo,tags,url,arquivo_nome,storage_path,storage_bucket,publish_status';
+  }
+  if (interno) return '*';
+  return CAMPOS_PUBLICOS[colecao] || '*';
+}
+
 async function _loadSupabaseCollection(colecao) {
   if (!_sb || !_isSupabaseCollection(colecao)) return;
+
+  // Colecao interna (escala) nao e buscada no modo publico. Zera para nao
+  // herdar o snapshot do dados.js/localStorage.
+  if (!_acessoInterno && COLECOES_INTERNAS.has(colecao)) {
+    _db[colecao] = [];
+    return;
+  }
+
   const tabela = SUPABASE_TABLES[colecao];
-  const columns = (colecao === 'arquivos')
-    ? 'id,nome,tipo,tags,url,arquivo_nome,storage_path,storage_bucket,publish_status'
-    : '*';
+  const columns = _colunasDaColecao(colecao, _acessoInterno);
   let consulta = _sb.from(tabela).select(columns);
   // Bloco 7 (T7.1): segunda camada do gate de rascunho. A RLS ja bloqueia o
   // anonimo; aqui evitamos ate o download do rascunho. Fail-closed: na duvida
@@ -670,6 +725,33 @@ async function _loadSupabaseCollection(colecao) {
   const { data, error } = await consulta.order('id', { ascending: true });
   if (error) throw error;
   _db[colecao] = _normalizeCollectionData(colecao, data || []);
+}
+
+/**
+ * Carrega varias colecoes sem que uma falha derrube as demais.
+ *
+ * Caso tipico: o anon recebe 403 em uma colecao restrita. O boot segue com as
+ * outras. So rejeita quando TODAS falham, o que indica Supabase fora do ar e
+ * justifica o fallback local.
+ */
+async function _carregarColecoesSupabase(colecoes) {
+  const resultados = await Promise.allSettled(
+    colecoes.map((colecao) => _loadSupabaseCollection(colecao))
+  );
+  const falhas = resultados.filter((resultado) => resultado.status === 'rejected');
+  if (resultados.length > 0 && falhas.length === resultados.length) {
+    throw falhas[0].reason;
+  }
+  resultados.forEach((resultado, indice) => {
+    if (resultado.status !== 'rejected') return;
+    // Colecao negada/indisponivel fica vazia; o renderer nunca ve `undefined`.
+    _db[colecoes[indice]] = [];
+    console.warn(
+      '[DB] Colecao indisponivel para este perfil:',
+      resultado.reason?.message || resultado.reason
+    );
+  });
+  return resultados;
 }
 
 async function _refreshSupabaseCollectionsForExport() {
@@ -886,9 +968,11 @@ function _enviarParaSupabase(colecao, tipo, id, registro, opcoes = {}) {
  * Retorna uma Promise que resolve quando os dados estão prontos.
  * O script.js chama DB.init().then(() => renderApp()).
  */
-async function dbInit() {
+async function dbInit(opcoes = {}) {
+  const escopo = opcoes.escopo === 'publico' ? 'publico' : 'admin';
+  _modoPublico = escopo === 'publico';
   const pronto = DB_CONFIG.USE_SUPABASE
-    ? await _initSupabase()
+    ? await _initSupabase(escopo)
     : await _initLocal();
 
   // No fallback local o _initSupabase nao chega a assinar as URLs do Storage.
@@ -908,6 +992,10 @@ async function dbInit() {
 }
 
 function _initLocal() {
+  _acessoInterno = false;
+  _podeVerRascunhos = false;
+  _usuarioAtual = null;
+
   // 1. Tenta a chave atual do localStorage
   const saved = localStorage.getItem(DB_CONFIG.LS_KEY);
   if (saved) {
@@ -957,7 +1045,7 @@ function _initLocal() {
   return Promise.resolve();
 }
 
-async function _initSupabase() {
+async function _initSupabase(escopo = 'admin') {
   _sb = _createSupabaseClient();
   // Reinit (ex.: apos login) nao pode anunciar fallback antes de tentar
   // carregar: mantem o status atual se a conexao ja estava provada.
@@ -986,12 +1074,17 @@ async function _initSupabase() {
   _normalizeDbCollections();
   _applyLocalAppConfig();
 
-  _podeVerRascunhos = await _resolverPodeVerRascunhos();
+  _acessoInterno = await _resolverAcessoInterno();
+  // Rascunho so no painel. No index publico, mesmo logado, o filtro de
+  // `published` continua valendo.
+  _podeVerRascunhos = escopo === 'admin' ? _acessoInterno : false;
 
   try {
-    const colecoes = Object.keys(SUPABASE_TABLES);
-    await Promise.all(colecoes.filter(c => c !== 'arquivos').map(_loadSupabaseCollection));
-    await _loadSupabaseCollection('arquivos');
+    const colecoes = Object.keys(SUPABASE_TABLES).filter(
+      (colecao) => _acessoInterno || !COLECOES_INTERNAS.has(colecao)
+    );
+    await _carregarColecoesSupabase(colecoes.filter((colecao) => colecao !== 'arquivos'));
+    await _carregarColecoesSupabase(['arquivos']);
     const remoteLayoutConfig = await _loadSupabaseLayoutConfig();
     if (Object.keys(remoteLayoutConfig).length) {
       _db.layoutConfig = { ..._db.layoutConfig, ...remoteLayoutConfig };
@@ -1037,8 +1130,20 @@ async function _initSupabase() {
    ============================================================ */
 const DB = {
 
+  /** True quando ha sessao com `pode_editar()` (admin ou servidor). */
+  temAcessoInterno() {
+    return _acessoInterno === true;
+  },
+
+  /** Dados basicos do usuario logado: { id, email } ou null. */
+  usuarioAtual() {
+    return _usuarioAtual ? { ..._usuarioAtual } : null;
+  },
+
   /** Retorna uma cópia de uma coleção */
   get(colecao) {
+    // Defesa em profundidade: no index publico, colecao interna nao existe.
+    if (COLECOES_INTERNAS.has(colecao) && _modoPublico && !_acessoInterno) return [];
     if (!_db || !_db[colecao]) return [];
     const lista = JSON.parse(JSON.stringify(_normalizeCollectionData(colecao, _db[colecao])));
     return lista.map(item => _decorateRuntimeUrls(colecao, item));
