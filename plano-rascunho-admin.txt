@@ -1,5 +1,5 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-23
+Atualizado em: 2026-10-26
 Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
@@ -31,6 +31,44 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - Plano mestre: v2_plano_refatoração.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-26 — CORRECAO DO FALLBACK (dados.js)
+=========================================================================
+
+  - dados.js corrigido para refletir a producao de Cidade Ocidental. Um unico
+    arquivo alterado; db.js, script.js, admin.js e o runtime intocados.
+    Nenhum contrato de DB.*, auth ou rascunho/publicado mudou.
+  - Colecoes atualizadas:
+      sistemas       6 -> 4 (CAF, PRODATA, Prefeitura Virtual, CECAF)
+      servicos       6 -> 6, ids reais de producao (1, 4, 5, 6, 7, 8)
+      infoJuridico   4 -> 5 (endereco Jardim ABC, contatos, gestao
+                     2025-2028, Competencias da Lei 1.470/2025)
+      infoMunicipio  4 -> 4, ids 1, 3, 4, 5 (IBGE 5205497, CNPJ
+                     36.862.621/0001-21, links institucionais); o bloco
+                     "Estrutura Municipal" (id 2) nao existe em producao
+      infoOrgaos     7 -> 3 (EMATER-GO, SENAR-GO, MAPA)
+      acessoRapido   4 links + 2 placeholders -> 6 links reais
+      agendaEventos  item 6: "Centro de Eventos de Cidade Ocidental"
+  - Preservado de proposito: publish_status ausente no fallback (formato
+    legado tratado pela migracao do 4.1); manuais_ids/processos_ids nao
+    importados (evita id orfao no fallback); funcionarios, manuais,
+    processos, arquivos, veiculos, escalaFerias, avisos e layoutConfig
+    intocados; zero ocorrencia de "Luziania" no arquivo.
+  - Decisoes do dono: "E-mail Institucional" usa a base
+    https://sh-pro92.hostgator.com.br:2096/ (producao guardava URL de sessao
+    do Roundcube, que expira e carrega sessao); os 4 orgaos que nao existem
+    em producao (SEAPA-GO, AGRODEFESA, INCRA, EMBRAPA) sairam do fallback.
+  - Achado registrado (NAO tratado): producao tem registros de teste
+    publicados - sistemas "aa", servicos "q", info_orgaos "teste", agenda
+    "teste event"/"a", funcionarios "a". Eles nao entraram no fallback, mas
+    seguem visiveis no site via Supabase. Pendencia de limpeza no admin.
+  - Prova: npm run check exit 0 (270 testes, 0 falhas); smoke Playwright
+    com Supabase bloqueado (fallback puro): 6 acessos rapidos, 4 sistemas,
+    6 servicos, 5/4/3 em informacoes, detalhe do municipio com "Cidade
+    Ocidental" e 0 ocorrencias de Luziania.
+  - Commits: d4a2344 (dados.js) + este commit de docs. Nada foi enviado ao
+    remoto; o deploy para main continua pendente.
 
 =========================================================================
 SESSAO 2026-10-23 — BLOCO 13 / T13.4 (CSS EM CAMADAS + TOKENS)
