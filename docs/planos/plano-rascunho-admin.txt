@@ -33,6 +33,55 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
 
 =========================================================================
+SESSAO 2026-10-27 (2) — LOGO, FAVICON E SITE FORA DOS BUSCADORES
+=========================================================================
+
+  - Push e deploy na main autorizados pelo dono. Commit de codigo 2c64786 +
+    este commit de docs.
+  - Logo: logo_agricultura.png (596x418, fundo transparente, com o texto da
+    secretaria) saiu da raiz para assets/logo-agricultura.png. Dele foram
+    gerados, via Chromium do Playwright (pngjs nao esta instalado):
+      assets/logo-emblema.png  128x128  recorte quadrado do emblema (x 173,
+                                        y 32, lado 241), para a sidebar
+      assets/favicon-32.png     32x32   mesmo recorte, 1px de folga
+      assets/apple-touch-icon.png 180x180  mesmo recorte, fundo branco
+    O recorte quadrado preserva monumento + planta; o emblema inteiro (434x241)
+    virava uma tira fina e ilegivel em 32px.
+  - index.html: o <i class="ph-leaf"> do .logo-icon virou
+    <img src="assets/logo-emblema.png" alt="" width="32" height="32">.
+    css/02-shell.css: .logo-icon ganhou fundo branco translucido (0.92) e
+    padding 4px; nova regra .logo-icon img com object-fit: contain. Classe,
+    IDs e o texto "SisAgri / Secretaria de Agricultura" preservados.
+  - Favicon: <link rel="icon" sizes="32x32"> + apple-touch-icon no index.html
+    e no admin.html.
+  - Rodape: "v1.1 - por Jose Tadeu" -> "v2.0 - por Jose Tadeu".
+  - Site interno (decisao do dono): index.html recebeu
+    noindex, nofollow, noarchive, nosnippet, noimageindex; sairam description,
+    canonical, Open Graph e Twitter Card. robots.txt agora e Disallow: / sem
+    linha Sitemap. Apagados sitemap.xml e assets/og-image.png.
+    ATENCAO: em project site do GitHub Pages o robots.txt autoritativo e o da
+    raiz do host, entao a garantia real e o meta noindex (ADR 0004 marcada
+    como substituida). A saida dos indices existentes depende do recrawl ou de
+    remocao manual no Search Console (acao do dono).
+  - Testes: tests/unit/seo.test.mjs (8 casos) e tests/e2e/seo.spec.mjs (3)
+    foram invertidos para cobrar a nao indexacao, a ausencia de
+    sitemap/og-image, os icones (PNG quadrados) e a logo/versao.
+  - Docs: README (tabela de arquivos, secao de deploy e pendencia do Bloco 13),
+    AGENTS.md (raiz sem sitemap e regra "imagem nova vai em assets/") e
+    docs/adr/0004-seo-em-project-site.md (status substituida + substituta).
+  - Contratos preservados: db.js, dados.js, admin.js, script.js, DB.*,
+    publish_status, mascaramento/PII e chaves persistidas intocados.
+  - Prova: npm run check exit 0 (319 testes, 0 falhas, 23 warnings, guard
+    innerHTML 29/9/0); npm run test:e2e 35 passed / 0 skipped / 0 failed com
+    login real de servidor; conferencia visual da sidebar em 1440 e no menu
+    mobile em 390.
+  - Deploy: codex3 -> codex/fase3, merge fast-forward em main (base 654341d),
+    push publicado no GitHub Pages.
+  - ACOES DO DONO: (a) pedir remocao no Search Console, se quiser sair dos
+    buscadores antes do recrawl; (b) PENDENTE 11 (limpeza dos dados de teste)
+    e regeneracao do fallback continuam abertos.
+
+=========================================================================
 SESSAO 2026-10-27 — BOOT, BUSCA SEM ACENTO E SESSAO (DEPLOY NA MAIN)
 =========================================================================
 
