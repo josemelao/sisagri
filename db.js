@@ -765,6 +765,8 @@ async function _carregarColecoesSupabase(colecoes) {
   if (resultados.length > 0 && falhas.length === resultados.length) {
     throw falhas[0].reason;
   }
+  const semSnapshot = [];
+
   resultados.forEach((resultado, indice) => {
     if (resultado.status !== 'rejected') return;
     const colecao = colecoes[indice];
@@ -774,12 +776,26 @@ async function _carregarColecoesSupabase(colecoes) {
       || status === 401 || status === 403;
     // Negado: zera (perfil sem acesso). Falha transitoria: mantem o snapshot
     // de dados.js em vez de sumir com a lista inteira.
-    if (negado || !_db[colecao]) _db[colecao] = [];
+    if (negado) {
+      _db[colecao] = [];
+    } else if (!_db[colecao]) {
+      semSnapshot.push(colecao);
+    }
     console.warn(
       '[DB] Colecao indisponivel para este perfil:',
       resultado.reason?.message || resultado.reason
     );
   });
+
+  // Falha transitoria sem snapshot em memoria: carrega o fallback uma vez.
+  if (semSnapshot.length) {
+    const carregou = await _carregarDadosFallback();
+    semSnapshot.forEach((colecao) => {
+      const snapshot = carregou ? window.DADOS_INICIAIS?.[colecao] : null;
+      _db[colecao] = Array.isArray(snapshot) ? JSON.parse(JSON.stringify(snapshot)) : [];
+    });
+  }
+
   return resultados;
 }
 
@@ -1068,6 +1084,40 @@ async function dbInit(opcoes = {}) {
   return pronto;
 }
 
+/**
+ * Carrega `dados.js` sob demanda (fase 1.2 do plano de evolucao).
+ *
+ * O arquivo e a rede de seguranca para quando o Supabase nao responde; no
+ * caminho normal ele nao pesa no boot. A promessa e memoizada para que boot,
+ * retry e falha parcial reaproveitem a mesma injecao (e liberada se falhar).
+ */
+let _dadosFallbackPromessa = null;
+
+function _carregarDadosFallback() {
+  if (window.DADOS_INICIAIS) return Promise.resolve(true);
+  if (_dadosFallbackPromessa) return _dadosFallbackPromessa;
+
+  _dadosFallbackPromessa = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'dados.js';
+    script.async = true;
+    // Se a carga falhar, libera a promessa: um retry (login, volta da rede)
+    // ainda pode carregar o fallback nesta mesma sessao.
+    const concluir = (ok) => {
+      if (!ok) _dadosFallbackPromessa = null;
+      resolve(ok);
+    };
+    script.onload = () => concluir(!!window.DADOS_INICIAIS);
+    script.onerror = () => {
+      console.warn('[DB] Falha ao carregar dados.js (fallback).');
+      concluir(false);
+    };
+    document.head.appendChild(script);
+  });
+
+  return _dadosFallbackPromessa;
+}
+
 function _initLocal() {
   _geracaoAuth += 1;
   _acessoInterno = false;
@@ -1121,19 +1171,21 @@ function _initLocal() {
     }
   }
 
-  // 3. Fallback: dados iniciais de dados.js
-  if (!window.DADOS_INICIAIS) {
-    console.error('[DB] dados.js não encontrado! Inclua <script src="dados.js"> antes de db.js.');
-    _db = {};
-    return Promise.resolve();
-  }
-  _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
-  _migrarPublishStatusLegado(_db);
-  _ensureAppConfig();
-  _normalizeDbCollections();
-  _applyLocalAppConfig();
-  console.info('[DB] Dados carregados de dados.js (padrão).');
-  return Promise.resolve();
+  // 3. Fallback: dados iniciais de dados.js (carregado sob demanda)
+  return _carregarDadosFallback().then((disponivel) => {
+    if (!disponivel) {
+      console.error('[DB] dados.js indisponível; iniciando com a base vazia.');
+      _db = {};
+      _ensureAppConfig();
+      return;
+    }
+    _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
+    _migrarPublishStatusLegado(_db);
+    _ensureAppConfig();
+    _normalizeDbCollections();
+    _applyLocalAppConfig();
+    console.info('[DB] Dados carregados de dados.js (padrão).');
+  });
 }
 
 async function _initSupabase(escopo = 'admin') {
@@ -1161,7 +1213,9 @@ async function _initSupabase(escopo = 'admin') {
     return _initLocal();
   }
 
-  _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS || {}));
+  // Sem snapshot em memoria: o fallback (dados.js) entra sob demanda, so no
+  // caminho de falha. No boot normal a base comeca vazia e o Supabase preenche.
+  _db = {};
   _ensureAppConfig();
   _normalizeDbCollections();
   _applyLocalAppConfig();
