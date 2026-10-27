@@ -1,5 +1,5 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-26
+Atualizado em: 2026-10-27
 Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
@@ -31,6 +31,48 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - Plano mestre: docs/planos/v2-plano-refatoracao.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-27 — BOOT, BUSCA SEM ACENTO E SESSAO (DEPLOY NA MAIN)
+=========================================================================
+
+  - Push e deploy na main AUTORIZADOS explicitamente pelo dono em 2026-10-27.
+  - Lote de UX/estabilidade: 11 arquivos, 943 insercoes / 151 remocoes.
+    Commit de codigo 654341d + este commit de docs.
+  - Boot: barra de progresso com shimmer e avanco imprevisivel ate 90% no
+    indice (iniciarProgressoBoot/finalizarProgressoBoot) e no admin
+    (iniciarBootAdmin/finalizarBootAdmin). Login, logout e refresh de sessao
+    reaproveitam a mesma tela com minimo de 450 ms (BOOT_SESSAO_MIN_MS /
+    BOOT_ADMIN_MIN_MS); prefers-reduced-motion desliga o shimmer
+    (css/02-shell.css e admin.css). Marcos do boot agora elevam o minimo em
+    vez de recuar a barra.
+  - Dashboard: renderSeMudou + RENDER_SIGNATURES evitam trocar o innerHTML de
+    ferias, acesso rapido e avisos quando a assinatura nao mudou (fim do
+    flicker em focus/visibility). O evento db:collection-updated passou a
+    re-renderizar apenas a colecao afetada (COLECOES_DASHBOARD /
+    COLECOES_BUSCA_GLOBAL) e so invalida o indice global quando a colecao
+    participa da busca.
+  - Sessao: deveRecarregarAposEventoAuth ignora SIGNED_IN da mesma identidade
+    (o Supabase revalida a sessao quando a aba volta a ficar visivel);
+    revalidarAcessoWhenPageBecomesActive chama DB.isStaff no maximo 1x por
+    hora e so recarrega quando motivoUltimoAcesso === "sem_sessao". O sync de
+    escalaFerias ao focar a janela ficou limitado a 1x por minuto.
+  - Busca global: normalizarBusca (NFD, sem acento) no indice, no ranking e no
+    highlight; rebuildGlobalSearchIndex tolera lista malformada (comoLista)
+    sem zerar o indice inteiro.
+  - Login: o modal so fecha quando pointerdown e pointerup acontecem no
+    backdrop (arrastar texto de dentro nao fecha). O formulario mostra o boot
+    durante a validacao e o esconde em erro.
+  - Contratos preservados: DB.*, publish_status, mascaramento/PII, IDs,
+    classes, chaves persistidas e dados.js intocados.
+  - Prova: npm run check exit 0 (318 testes, 0 falhas, 23 warnings de lint,
+    guard innerHTML 29/9/0) e npm run test:e2e 35 passed / 0 skipped / 0
+    failed com login real de servidor (SISAGRI_ADMIN_EMAIL/PASSWORD).
+  - Deploy: codex3 -> codex/fase3 e merge fast-forward em main (origin/main
+    estava em 79fb9c8), publicado pelo GitHub Pages.
+  - PENDENTE 12: o login real de admin/servidor no index agora esta coberto
+    pelo e2e (publico.spec 11); resta regerar o fallback depois da limpeza
+    do PENDENTE 11, que continua sendo acao do dono no painel.
 
 =========================================================================
 SESSAO 2026-10-26 — CORRECAO DO FALLBACK (dados.js)
