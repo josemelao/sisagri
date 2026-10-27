@@ -33,6 +33,45 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
 
 =========================================================================
+SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
+=========================================================================
+
+  - Plano vigente desta sessao: docs/planos/plano-evolucao-2026-10.md
+    (commit/push 07af2a6 em origin/codex/fase3), aprovado pelo dono.
+    Sessoes 1.1 e 1.2 concluidas e validadas pelo dono; commits locais
+    263d1e8 (icones/2.0.0) e a653daf (fallback sob demanda). Sem push e sem
+    deploy nesta etapa.
+  - Fase 1.1 — subset de icones: scripts/gerar-icones.mjs (npm run icones)
+    varre as classes ph-* do codigo, le os codepoints de
+    vendor/phosphor/bold/style.css e gera vendor/phosphor/subset/
+    phosphor.css (7,2 KB) + phosphor-bold.woff2 (15,1 KB). As paginas
+    carregam so o subset; vendors originais ficam no repo como fonte.
+    tests/unit/icones.test.mjs falha se um icone novo ficar fora do subset.
+  - Bug real achado pelo teste-guarda: ph-file-check nao existe na Phosphor
+    (o selo "arquivo carregado" do admin sempre saiu vazio). Trocado por
+    ph-check-circle em 2 pontos do admin.js; ph ph-image -> ph-bold.
+  - Fase 1.2 — dados.js sob demanda: <script src="dados.js"> saiu do
+    index.html e do admin.html. db.js ganhou _carregarDadosFallback()
+    (promessa memoizada, liberada se a carga falhar) chamada em _initLocal
+    e na falha transitoria sem snapshot; _initSupabase inicia _db = {}.
+    Com o Supabase no ar, /dados.js nao e baixado; sem rede, o app abre com
+    o fallback (tests/e2e/fallback-sob-demanda.spec.mjs, 2 casos).
+  - Travamento dos testes unitarios de db.js: era o helper
+    tests/helpers/load-script.mjs — o <script> falso nunca disparava onload.
+    Agora appendChild de <script src> executa o arquivo no vm e chama
+    onload/onerror, como no navegador. Teste novo cobre a liberacao da
+    promessa para retry.
+  - Prova: npm run check exit 0 (324 testes, 0 falhas); npm run test:e2e
+    37 passed (35 + 2 novos); 121/121 glifos desenham (checagem por pixel);
+    25 icones distintos vindos do banco cobertos pelo subset.
+  - Medicao (mesmo script, sem compressao): 1275 -> 910 KB (-29%),
+    requisicoes 40 -> 38, boot 1,66 s -> 1,02 s (-38%). A meta de 800 KB
+    nao foi atingida: o restante e supabase-js (213 KB), decisao estrutural
+    adiada. Fases 2.1 (menu mobile), 2.2 (auditoria) e 2.3 (previa) e o
+    Bloco 3 (PWA) seguem pendentes.
+  - Proximo passo: fase 2.1 — menu lateral responsivo do admin.
+
+=========================================================================
 SESSAO 2026-10-27 (2) — LOGO, FAVICON E SITE FORA DOS BUSCADORES
 =========================================================================
 
