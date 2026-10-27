@@ -1,6 +1,19 @@
 # ADR 0004 — SEO em GitHub Pages project site
 
-**Status:** aceita (2026-10-22)
+**Status:** **substituída em 2026-10-27** — o site passou a ser interno e não
+deve ser indexado. O texto abaixo fica como registro histórico da decisão de
+2026-10-22.
+
+## Substituta (2026-10-27)
+
+- `index.html` e `admin.html` levam `noindex, nofollow` (o index também com
+  `noarchive, nosnippet, noimageindex`).
+- `robots.txt` responde `Disallow: /`; `sitemap.xml`, `canonical`, Open Graph,
+  Twitter Card, `description` e `assets/og-image.png` foram removidos.
+- A limitação do project site continua: o `robots.txt` autoritativo é o da raiz
+  do host, então a garantia real é o `noindex` das páginas.
+- A remoção dos índices já existentes depende do recrawl ou de uma remoção
+  manual no Search Console.
 
 ## Contexto
 

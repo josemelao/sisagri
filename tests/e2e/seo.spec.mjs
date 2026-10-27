@@ -1,43 +1,57 @@
 /**
- * Bloco 13 (T13.2) — SEO no navegador e no servidor.
+ * Site interno fora dos buscadores (substitui o e2e de SEO do T13.2).
  *
- * Complementa tests/unit/seo.test.mjs: aqui os arquivos sao servidos de
- * verdade (HTTP 200 + content-type) e o <head> e lido pelo Chromium.
+ * Complementa tests/unit/seo.test.mjs: aqui o Chromium le o <head> e o
+ * servidor responde de verdade (200 para os icones, 404 para o que saiu).
  */
 
 import { test, expect } from '@playwright/test';
 
-const BASE = 'https://josemelao.github.io/sisagri/';
-
-test.describe('SEO do app publico', () => {
-  test('head entrega title, description, canonical e Open Graph', async ({ page }) => {
+test.describe('site interno fora dos buscadores', () => {
+  test('index.html e admin.html entregam noindex e nao carregam sinais de divulgacao', async ({ page }) => {
     await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
 
-    await expect(page).toHaveTitle(/SisAgri/i);
-    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /^.{50,160}$/);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', BASE);
-    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', BASE);
-    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${BASE}assets/og-image.png`);
-    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+    await expect(page.locator('meta[property^="og:"]')).toHaveCount(0);
+    await expect(page.locator('meta[name^="twitter:"]')).toHaveCount(0);
+    await expect(page.locator('meta[name="description"]')).toHaveCount(0);
+
+    await page.goto('/admin.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   });
 
-  test('robots.txt, sitemap.xml e imagem OG respondem 200', async ({ request }) => {
+  test('robots.txt fecha tudo, sitemap e og-image dao 404 e os icones respondem 200', async ({ request }) => {
     const robots = await request.get('/robots.txt');
     expect(robots.status()).toBe(200);
-    expect(await robots.text()).toContain(`Sitemap: ${BASE}sitemap.xml`);
+    const texto = await robots.text();
+    expect(texto).toMatch(/Disallow:\s*\//);
+    expect(texto).not.toMatch(/Sitemap:/i);
 
-    const sitemap = await request.get('/sitemap.xml');
-    expect(sitemap.status()).toBe(200);
-    expect(await sitemap.text()).toContain(`<loc>${BASE}</loc>`);
+    expect((await request.get('/sitemap.xml')).status()).toBe(404);
+    expect((await request.get('/assets/og-image.png')).status()).toBe(404);
 
-    const imagem = await request.get('/assets/og-image.png');
-    expect(imagem.status()).toBe(200);
-    expect(imagem.headers()['content-type']).toContain('image/png');
+    for (const arquivo of [
+      '/assets/favicon-32.png',
+      '/assets/apple-touch-icon.png',
+      '/assets/logo-emblema.png',
+      '/assets/logo-agricultura.png',
+    ]) {
+      const resposta = await request.get(arquivo);
+      expect(resposta.status(), arquivo).toBe(200);
+      expect(resposta.headers()['content-type'], arquivo).toContain('image/png');
+    }
   });
 
-  test('admin.html nao entra no indice', async ({ page }) => {
-    await page.goto('/admin.html', { waitUntil: 'domcontentloaded' });
+  test('a logo nova carrega na sidebar e o rodape esta em v2.0', async ({ page }) => {
+    await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+    const logo = page.locator('.logo-icon img');
+    await expect(logo).toHaveAttribute('src', 'assets/logo-emblema.png');
+    await expect
+      .poll(() => logo.evaluate((img) => img.naturalWidth), { timeout: 10_000 })
+      .toBeGreaterThan(0);
+
+    await expect(page.locator('.sidebar-footer span')).toHaveText('v2.0 - por José Tadeu');
   });
 });

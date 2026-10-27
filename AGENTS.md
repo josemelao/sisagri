@@ -87,14 +87,15 @@ Quando parar e alinhar antes:
 - `scripts/` — servidor local (`serve.mjs`) e guardas de qualidade
 - `tests/unit/` — testes `node:test`
 - `tests/e2e/` — Playwright
-- `assets/`, `robots.txt`, `sitemap.xml` — imagens e SEO
+- `assets/`, `robots.txt` — imagens (logo, favicon) e bloqueio de buscadores
 - `docs/` — ADRs, segurança, qualidade, planos vivos e planos arquivados
 
 ### Raiz — o que fica e por quê
 - **Runtime (não mover):** `index.html`, `admin.html`, `script.js`, `admin.js`,
-  `db.js`, `dados.js`, `admin.css`, `robots.txt`, `sitemap.xml` e as pastas
+  `db.js`, `dados.js`, `admin.css`, `robots.txt` e as pastas
   `css/`, `js/`, `assets/`, `vendor/`. O GitHub Pages publica a raiz do repo;
   mover esses arquivos muda as URLs públicas e quebra o deploy.
+  Imagens novas vão em `assets/` (a raiz não recebe logo, favicon nem foto).
 - **Ferramentas (não mover sem ajustar scripts):** `package.json`,
   `package-lock.json`, `eslint.config.js`, `playwright.config.mjs`,
   `.gitattributes`, `.gitignore`, `.github/`.

@@ -24,8 +24,8 @@ framework. A persistência usa **Supabase** quando configurado e mantém
 | `scripts/` | servidor local e guardas de qualidade |
 | `tests/unit/` | testes unitários (`node:test`) |
 | `tests/e2e/` | testes de navegador (Playwright) |
-| `assets/` | imagens e card Open Graph |
-| `robots.txt` / `sitemap.xml` | SEO do site público |
+| `assets/` | imagens, logo e favicon |
+| `robots.txt` | bloqueio de buscadores (o `noindex` das páginas é a garantia real) |
 | `docs/` | segurança, qualidade, ADRs e planos arquivados |
 
 As camadas do app público são carregadas nesta ordem, declarada no `index.html`
@@ -125,6 +125,11 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
 - Em project site, o crawler lê o `robots.txt` da raiz do domínio; o arquivo em
   `/sisagri/robots.txt` não é autoritativo. A proteção efetiva do admin é o
   `noindex` em `admin.html`.
+- **Site interno desde 2026-10-27:** o `index.html` também leva
+  `noindex, nofollow, noarchive, nosnippet, noimageindex`, `robots.txt` responde
+  `Disallow: /` e não há mais `sitemap.xml`, `canonical`, Open Graph nem Twitter
+  Card. A remoção dos índices existentes depende do recrawl (ou de uma remoção
+  manual no Search Console).
 
 ## Documentação
 
@@ -141,7 +146,8 @@ O baseline atual de lint é **0 erros** e alguns avisos; ver
 
 - Edge Function do Instagram ainda não publicada (widget mostra indisponível).
 - Cobertura e2e do admin depende de credenciais reais.
-- Bloco 13 concluído em 2026-10-23 (T13.1 a T13.7); resta o deploy para `main`.
+- Bloco 13 concluído em 2026-10-23 (T13.1 a T13.7) e publicado em `main` em
+  2026-10-27.
 - Registros de teste publicados em produção aguardam limpeza pelo painel.
 
 O plano detalhado de ações restantes fica, no ambiente local, em
