@@ -8,37 +8,117 @@
 /* ============================================================
    AUTENTICAÇÃO
    ============================================================ */
+let bootAdminTimer = null;
+let bootAdminValor = 8;
+const BOOT_ADMIN_MIN_MS = 450;
+
+function setBootAdminProgress(percent, titulo, sub) {
+  const barra = document.getElementById('boot-progress-bar');
+  const tituloEl = document.getElementById('boot-title');
+  const subEl = document.getElementById('boot-sub');
+  if (titulo && tituloEl) tituloEl.textContent = titulo;
+  if (sub && subEl) subEl.textContent = sub;
+  bootAdminValor = Math.max(8, Math.min(100, Number(percent) || 8));
+  if (barra) barra.style.width = `${bootAdminValor}%`;
+}
+
+function iniciarBootAdmin(titulo, sub, inicio = 8) {
+  if (bootAdminTimer) clearInterval(bootAdminTimer);
+  setBootAdminProgress(inicio, titulo, sub);
+
+  bootAdminTimer = setInterval(() => {
+    if (bootAdminValor >= 90) return;
+    const restante = 90 - bootAdminValor;
+    const passo = Math.max(0.6, restante * 0.08) * (0.5 + Math.random());
+    setBootAdminProgress(Math.min(90, bootAdminValor + passo));
+  }, 320);
+}
+
+function pararBootAdmin() {
+  if (bootAdminTimer) {
+    clearInterval(bootAdminTimer);
+    bootAdminTimer = null;
+  }
+}
+
+function finalizarBootAdmin(titulo, sub) {
+  pararBootAdmin();
+  setBootAdminProgress(100, titulo, sub);
+}
+
+function mostrarBootAdmin(titulo, sub) {
+  document.getElementById('boot-screen').style.display = 'flex';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'none';
+  window.scrollTo(0, 0);
+  iniciarBootAdmin(titulo, sub, 8);
+}
+
+async function concluirBootAdmin(inicio, titulo, sub) {
+  const restante = Math.max(0, BOOT_ADMIN_MIN_MS - (Date.now() - inicio));
+  if (restante > 0) {
+    await new Promise(resolve => setTimeout(resolve, restante));
+  }
+  finalizarBootAdmin(titulo, sub);
+  await new Promise(resolve => setTimeout(resolve, 320));
+}
+
 function mostrarLogin() {
+  pararBootAdmin();
   document.getElementById('boot-screen').style.display = 'none';
   document.getElementById('admin-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
 
 function mostrarAdmin() {
+  pararBootAdmin();
   document.getElementById('boot-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-app').style.display = 'block';
 }
 
+let loginAdminEmAndamento = false;
+
 async function fazerLogin() {
+  if (loginAdminEmAndamento) return;
+  loginAdminEmAndamento = true;
+
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
-  if (await DB.adminLogin(email, senha)) {
-    // Autenticou, mas autenticação não é permissão: só entra quem o banco
-    // confirma como admin ou servidor em app_admins.
-    if (!(await DB.isStaff())) {
-      document.getElementById('login-error').textContent =
-        'Sua conta não tem permissão de acesso ao painel. Fale com o administrador.';
-      return;
+  const inicio = Date.now();
+  mostrarBootAdmin('Verificando acesso', 'Validando credenciais e permissões...');
+
+  try {
+    if (await DB.adminLogin(email, senha)) {
+      // Autenticou, mas autenticação não é permissão: só entra quem o banco
+      // confirma como admin ou servidor em app_admins.
+      if (!(await DB.isStaff())) {
+        document.getElementById('login-error').textContent =
+          'Sua conta não tem permissão de acesso ao painel. Fale com o administrador.';
+        await concluirBootAdmin(inicio, 'Acesso não permitido', 'Sua conta não tem permissão para o painel.');
+        mostrarLogin();
+        return;
+      }
+      // Recarrega com a sessão ativa para o servidor enxergar rascunhos.
+      await dbInit();
+      await concluirBootAdmin(inicio, 'Sessão pronta', 'Abrindo o painel administrativo...');
+      mostrarAdmin();
+      initAdmin();
+    } else {
+      document.getElementById('login-error').textContent = 'E-mail ou senha incorretos. Tente novamente.';
+      document.getElementById('login-email').value = email;
+      document.getElementById('login-senha').value = '';
+      await concluirBootAdmin(inicio, 'Acesso não concluído', 'Confira o e-mail e a senha e tente novamente.');
+      mostrarLogin();
     }
-    // Recarrega com a sessão ativa para o servidor enxergar rascunhos.
-    await dbInit();
-    mostrarAdmin();
-    initAdmin();
-  } else {
-    document.getElementById('login-error').textContent = 'E-mail ou senha incorretos. Tente novamente.';
-    document.getElementById('login-email').value = email;
-    document.getElementById('login-senha').value = '';
+  } catch (erro) {
+    console.error('[Admin] Falha inesperada no login.', erro);
+    document.getElementById('login-error').textContent =
+      'Não foi possível concluir o acesso agora. Tente novamente.';
+    await concluirBootAdmin(inicio, 'Acesso não concluído', 'Não foi possível validar a sessão agora.');
+    mostrarLogin();
+  } finally {
+    loginAdminEmAndamento = false;
   }
 }
 
@@ -51,12 +131,20 @@ document.getElementById('login-senha').addEventListener('keydown', (e) => {
 });
 
 async function fazerLogout() {
-  await DB.adminLogout();
+  const inicio = Date.now();
+  mostrarBootAdmin('Saindo', 'Encerrando a sessão e voltando para o login...');
+  try {
+    await DB.adminLogout();
+  } catch (erro) {
+    console.warn('[Admin] Falha ao encerrar sessão; recarregando mesmo assim.', erro);
+  }
+  await concluirBootAdmin(inicio, 'Sessão encerrada', 'Voltando para a tela de login...');
   location.reload();
 }
 
 // Verifica se já estava logado (sessão ativa)
 document.addEventListener('DOMContentLoaded', () => {
+  iniciarBootAdmin('Verificando sessão', 'Aguarde um instante para carregar o painel admin.', 8);
   dbInit().then(async () => {
     instalarFeedbackAcoesAdmin();
     atualizarStatusBanco();

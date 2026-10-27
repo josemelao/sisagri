@@ -13,6 +13,7 @@
  * o Bloco 3b parte 2).
  */
 
+/* global DB -- global real do db.js no contexto da pagina */
 import { test, expect } from '@playwright/test';
 
 const EMAIL = process.env.SISAGRI_ADMIN_EMAIL;
@@ -66,5 +67,32 @@ test.describe('painel admin', () => {
       .toBeGreaterThan(200);
 
     expect(erros, `erros de JS ao abrir o modulo: ${erros.join(' | ')}`).toEqual([]);
+  });
+});
+
+test.describe('painel admin — transicao de login', () => {
+  test('7. login: o boot cobre a transicao e abre o painel', async ({ page }) => {
+    await page.goto('/admin.html');
+    await expect(page.locator('#login-screen')).toBeVisible({ timeout: 30_000 });
+
+    await page.evaluate(() => {
+      DB.adminLogin = async () => true;
+      DB.isStaff = async () => true;
+      window.dbInit = async () => {};
+      window.initAdmin = () => {};
+    });
+
+    await page.locator('#login-email').fill('teste@local');
+    await page.locator('#login-senha').fill('senha');
+
+    const inicio = Date.now();
+    await page.locator('[data-acao="fazer-login"]').click();
+
+    await expect(page.locator('#boot-screen')).toBeVisible();
+    await expect(page.locator('#admin-app')).toBeVisible({ timeout: 3_000 });
+    expect(Date.now() - inicio).toBeGreaterThanOrEqual(400);
+
+    await expect(page.locator('#login-screen')).toBeHidden();
+    await expect(page.locator('#boot-screen')).toBeHidden();
   });
 });

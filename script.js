@@ -32,6 +32,7 @@ let globalSearchIndexReady = false;
 let globalSearchIndexBuilding = false;
 let bootHideTimer = null;
 let authRecarregando = false;
+let identidadeAuthAnterior = null;
 const MODULE_SEARCH_STATE_KEY = "smader_module_search_state_v1";
 
 function isPublished(item) {
@@ -45,6 +46,21 @@ function isPublished(item) {
 function filterPublished(list) {
   if (!Array.isArray(list)) return [];
   return list.filter(isPublished);
+}
+
+/**
+ * Evita trocar o innerHTML quando os dados que alimentam o bloco não mudaram.
+ * Sem isso, qualquer evento de coleção (inclusive o sync de foco) re-renderiza
+ * férias, acesso rápido, avisos, eventos e calendário, causando flicker.
+ */
+const RENDER_SIGNATURES = new WeakMap();
+
+function renderSeMudou(container, assinatura, renderFn) {
+  if (!container) return false;
+  if (RENDER_SIGNATURES.get(container) === assinatura) return false;
+  renderFn();
+  RENDER_SIGNATURES.set(container, assinatura);
+  return true;
 }
 
 /** True quando a sessao atual pode ver dados internos (admin ou servidor). */
@@ -272,6 +288,12 @@ const bootState = {
   progressBar: null,
 };
 
+let bootProgressTimer = null;
+let bootProgressoAtual = 8;
+let bootSessaoAtiva = false;
+let bootSessaoInicio = 0;
+const BOOT_SESSAO_MIN_MS = 450;
+
 function initBootScreen() {
   bootState.screen = document.getElementById("boot-screen");
   bootState.title = document.getElementById("boot-title");
@@ -283,19 +305,92 @@ function setBootProgress(percent, title, sub) {
   if (!bootState.screen) return;
   if (title && bootState.title) bootState.title.textContent = title;
   if (sub && bootState.sub) bootState.sub.textContent = sub;
+  bootProgressoAtual = Math.max(8, Math.min(100, Number(percent) || 8));
   if (bootState.progressBar) {
-    bootState.progressBar.style.width = `${Math.max(8, Math.min(100, percent))}%`;
+    bootState.progressBar.style.width = `${bootProgressoAtual}%`;
   }
+}
+
+/**
+ * Avança a barra em passos variáveis até 90%. Os marcos do boot (dados,
+ * interface) só elevam o mínimo; o restante é imprevisível de propósito.
+ */
+function iniciarProgressoBoot(titulo, sub, inicio = 8) {
+  if (!bootState.screen) initBootScreen();
+  if (bootProgressTimer) clearInterval(bootProgressTimer);
+
+  bootProgressoAtual = Math.max(8, Math.min(90, Number(inicio) || 8));
+  setBootProgress(bootProgressoAtual, titulo, sub);
+
+  bootProgressTimer = setInterval(() => {
+    if (bootProgressoAtual >= 90) return;
+    const restante = 90 - bootProgressoAtual;
+    const passo = Math.max(0.6, restante * 0.08) * (0.5 + Math.random());
+    setBootProgress(Math.min(90, bootProgressoAtual + passo));
+  }, 320);
+}
+
+function finalizarProgressoBoot(titulo, sub) {
+  if (bootProgressTimer) {
+    clearInterval(bootProgressTimer);
+    bootProgressTimer = null;
+  }
+  setBootProgress(100, titulo, sub);
 }
 
 function hideBootScreen() {
   if (!bootState.screen) return;
+  if (bootProgressTimer) {
+    clearInterval(bootProgressTimer);
+    bootProgressTimer = null;
+  }
   if (bootHideTimer) clearTimeout(bootHideTimer);
   bootHideTimer = setTimeout(() => {
     bootState.screen.classList.add("is-hidden");
     document.body.classList.remove("app-loading");
     document.body.style.overflow = "";
-  }, 260);
+  }, 320);
+}
+
+/** Reutiliza o boot screen para a transição curta de login/logout. */
+function mostrarBootSessao(titulo, sub) {
+  initBootScreen();
+  if (!bootState.screen) return;
+
+  if (bootSessaoAtiva) {
+    setBootProgress(Math.max(bootProgressoAtual, 24), titulo, sub);
+    return;
+  }
+
+  if (bootHideTimer) {
+    clearTimeout(bootHideTimer);
+    bootHideTimer = null;
+  }
+
+  bootSessaoAtiva = true;
+  bootSessaoInicio = Date.now();
+  bootState.screen.classList.remove("is-hidden", "is-complete");
+  bootState.screen.setAttribute("aria-busy", "true");
+  document.body.classList.add("app-loading");
+  document.body.style.overflow = "hidden";
+  iniciarProgressoBoot(titulo, sub, 18);
+}
+
+/** Fecha a transição de sessão respeitando um tempo mínimo legível. */
+async function finalizarBootSessao(titulo = "Sessão atualizada", sub = "Os dados foram recarregados.") {
+  if (!bootSessaoAtiva) return;
+  bootSessaoAtiva = false;
+
+  const restante = Math.max(0, BOOT_SESSAO_MIN_MS - (Date.now() - bootSessaoInicio));
+  if (restante > 0) {
+    await new Promise(resolve => setTimeout(resolve, restante));
+  }
+
+  if (!bootState.screen) return;
+  bootState.screen.classList.add("is-complete");
+  bootState.screen.setAttribute("aria-busy", "false");
+  finalizarProgressoBoot(titulo, sub);
+  hideBootScreen();
 }
 
 async function waitForInitialPaint() {
@@ -333,23 +428,119 @@ function refreshLiveSections() {
   renderCalendar();
 }
 
-window.addEventListener('db:collection-updated', () => {
+const COLECOES_DASHBOARD = new Set([
+  'escalaFerias',
+  'funcionarios',
+  'acessoRapido',
+  'avisos',
+  'agendaEventos',
+]);
+
+const COLECOES_BUSCA_GLOBAL = new Set([
+  'funcionarios',
+  'manuais',
+  'processos',
+  'arquivos',
+  'veiculos',
+  'sistemas',
+  'servicos',
+  'infoJuridico',
+  'infoMunicipio',
+  'infoOrgaos',
+  'avisos',
+  'agendaEventos',
+]);
+
+function renderizarColecaoNoDashboard(colecao) {
+  if (colecao === 'escalaFerias' || colecao === 'funcionarios') renderFerias();
+  if (colecao === 'acessoRapido') renderAcessoRapido();
+  if (colecao === 'avisos') renderDashAvisos();
+  if (colecao === 'agendaEventos') {
+    renderDashEventos();
+    renderCalendar();
+  }
+}
+
+window.addEventListener('db:collection-updated', (event) => {
+  const colecao = event?.detail?.colecao;
   carregarDados();
-  refreshLiveSections();
-  invalidateGlobalSearchIndex();
-  scheduleGlobalSearchIndexBuild();
+
+  if (!colecao) {
+    refreshLiveSections();
+  } else if (COLECOES_DASHBOARD.has(colecao)) {
+    renderizarColecaoNoDashboard(colecao);
+  } else if (!COLECOES_BUSCA_GLOBAL.has(colecao)) {
+    // Coleção nova/desconhecida: mantém o comportamento antigo.
+    refreshLiveSections();
+  }
+
+  // Escala e acesso rápido não entram na busca global: não invalida o índice.
+  if (!colecao || COLECOES_BUSCA_GLOBAL.has(colecao)) {
+    invalidateGlobalSearchIndex();
+    scheduleGlobalSearchIndexBuild();
+  }
 });
+
+const SYNC_FERIAS_INTERVALO_MS = 60_000;
+const REVALIDACAO_ACESSO_INTERVALO_MS = 60 * 60 * 1000;
+let ultimaSyncFeriasEm = 0;
+let ultimaRevalidacaoAcessoEm = Date.now();
+let revalidandoAcesso = false;
 
 function syncFeriasWhenPageBecomesActive() {
   if (!acessoInternoAtivo()) return;
   if (document.visibilityState === 'hidden' || !window.DB?.refreshCollection) return;
+
+  const agora = Date.now();
+  if (agora - ultimaSyncFeriasEm < SYNC_FERIAS_INTERVALO_MS) return;
+  ultimaSyncFeriasEm = agora;
+
   DB.refreshCollection('escalaFerias').catch((error) => {
+    ultimaSyncFeriasEm = 0;
     console.warn('[App] Falha ao sincronizar escalaFerias ao reativar a pagina.', error);
   });
 }
 
 window.addEventListener('focus', syncFeriasWhenPageBecomesActive);
 document.addEventListener('visibilitychange', syncFeriasWhenPageBecomesActive);
+
+/**
+ * O Supabase dispara `SIGNED_IN` ao revalidar a mesma sessao quando a aba
+ * volta a ficar visivel. Isso nao e um login novo e nao deve recarregar a UI.
+ */
+function deveRecarregarAposEventoAuth(evento, identidadeAtual, identidadeAnterior) {
+  if (evento === "SIGNED_IN") {
+    return !!identidadeAtual && identidadeAtual !== identidadeAnterior;
+  }
+  if (evento === "SIGNED_OUT") return !!identidadeAnterior;
+  return false;
+}
+
+/** Revalida a permissao no maximo uma vez por hora, sem abrir o boot. */
+async function revalidarAcessoWhenPageBecomesActive() {
+  if (!acessoInternoAtivo()) return;
+  if (document.visibilityState === 'hidden' || authRecarregando || revalidandoAcesso) return;
+  if (typeof DB === "undefined" || typeof DB.isStaff !== "function") return;
+
+  const agora = Date.now();
+  if (agora - ultimaRevalidacaoAcessoEm < REVALIDACAO_ACESSO_INTERVALO_MS) return;
+  ultimaRevalidacaoAcessoEm = agora;
+  revalidandoAcesso = true;
+
+  try {
+    const staff = await DB.isStaff();
+    if (!staff && DB.motivoUltimoAcesso === "sem_sessao") {
+      await recarregarAposAuth();
+    }
+  } catch (error) {
+    console.warn("[App] Falha ao revalidar acesso ao reativar a pagina.", error);
+  } finally {
+    revalidandoAcesso = false;
+  }
+}
+
+window.addEventListener('focus', revalidarAcessoWhenPageBecomesActive);
+document.addEventListener('visibilitychange', revalidarAcessoWhenPageBecomesActive);
 
 function invalidateGlobalSearchIndex() {
   globalSearchIndex = [];
@@ -374,11 +565,11 @@ function scheduleGlobalSearchIndexBuild() {
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   initBootScreen();
-  setBootProgress(12, "Carregando sistema", "Conectando ao banco e preparando a p\u00e1gina inicial.");
+  iniciarProgressoBoot("Carregando sistema", "Conectando ao banco e preparando a p\u00e1gina inicial.", 8);
   // dbInit() carrega os dados (localStorage ou dados.js)
   // e s\u00f3 ent\u00e3o renderiza a aplica\u00e7\u00e3o
   dbInit({ escopo: "publico" }).then(() => {
-    setBootProgress(52, "Dados carregados", "Organizando os m\u00f3dulos e sincronizando as informa\u00e7\u00f5es iniciais.");
+    setBootProgress(Math.max(bootProgressoAtual, 46), "Dados carregados", "Organizando os m\u00f3dulos e sincronizando as informa\u00e7\u00f5es iniciais.");
     carregarDados();
     initDate();
     initNavigation();
@@ -391,14 +582,14 @@ document.addEventListener("DOMContentLoaded", () => {
     initAcoesDelegadas();
     initAuthPublico();
     modulosInicializados.add("dashboard");
-    setBootProgress(82, "Renderizando interface", "Montando o dashboard inicial e finalizando a experi\u00eancia.");
+    setBootProgress(Math.max(bootProgressoAtual, 78), "Renderizando interface", "Montando o dashboard inicial e finalizando a experi\u00eancia.");
     return waitForInitialPaint();
   }).then(() => {
     if (bootState.screen) {
       bootState.screen.classList.add("is-complete");
       bootState.screen.setAttribute("aria-busy", "false");
     }
-    setBootProgress(100, "Sistema pronto", "Tudo foi carregado com sucesso. Voc\u00ea j\u00e1 pode usar a p\u00e1gina.");
+    finalizarProgressoBoot("Sistema pronto", "Tudo foi carregado com sucesso. Voc\u00ea j\u00e1 pode usar a p\u00e1gina.");
     hideBootScreen();
   }).catch((error) => {
     console.error("[App] Falha ao inicializar a aplica\u00e7\u00e3o.", error);
@@ -406,7 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
       bootState.screen.classList.remove("is-complete");
       bootState.screen.setAttribute("aria-busy", "false");
     }
-    setBootProgress(100, "Falha ao carregar", "O carregamento n\u00e3o foi conclu\u00eddo corretamente. Atualize a p\u00e1gina para tentar novamente.");
+    finalizarProgressoBoot("Falha ao carregar", "O carregamento n\u00e3o foi conclu\u00eddo corretamente. Atualize a p\u00e1gina para tentar novamente.");
     document.body.classList.remove("app-loading");
     document.body.style.overflow = "";
   });
@@ -456,13 +647,20 @@ function renderFerias() {
     })
     .sort((a, b) => new Date(a.periodo_inicio) - new Date(b.periodo_inicio));
 
-  if (lista.length === 0) {
-    container.innerHTML = `<p class="dash-empty">Nenhuma férias agendada.</p>`;
-    return;
-  }
+  const assinatura = JSON.stringify({
+    hoje: hoje.toDateString(),
+    escalaFerias,
+    funcionarios: funcionarios.map(f => [f.id, f.nome, f.foto_url || f.foto]),
+  });
 
-  animateGridReflow(container, () => {
-  container.innerHTML = lista.map(f => {
+  renderSeMudou(container, assinatura, () => {
+    if (lista.length === 0) {
+      container.innerHTML = `<p class="dash-empty">Nenhuma férias agendada.</p>`;
+      return;
+    }
+
+    animateGridReflow(container, () => {
+    container.innerHTML = lista.map(f => {
     const ini = new Date(f.periodo_inicio + "T00:00:00");
     const fim = new Date(f.periodo_fim    + "T00:00:00");
     const emCurso = getFeriasStatus(f.periodo_inicio, f.periodo_fim) === "em_curso";
@@ -505,6 +703,7 @@ function renderFerias() {
         ${emCurso ? '<span class="ferias-badge-ativo">Em férias</span>' : ""}
       </div>`;
   }).join("");
+    });
   });
 }
 
@@ -513,20 +712,22 @@ function renderAcessoRapido() {
   const container = document.getElementById("acesso-grid");
   if (!container) return;
 
-  container.innerHTML = acessoRapido.map(a => {
-    if (a.coringa) {
+  renderSeMudou(container, JSON.stringify(acessoRapido), () => {
+    container.innerHTML = acessoRapido.map(a => {
+      if (a.coringa) {
+        return `
+          <div class="acesso-btn acesso-btn--coringa" title="Clique para configurar">
+            <i class="ph-bold ph-plus"></i>
+            <span>Configurar</span>
+          </div>`;
+      }
       return `
-        <div class="acesso-btn acesso-btn--coringa" title="Clique para configurar">
-          <i class="ph-bold ph-plus"></i>
-          <span>Configurar</span>
-        </div>`;
-    }
-    return `
-      <a href="${escapeAttr(urlSegura(a.url))}" target="_blank" rel="noopener" class="acesso-btn" style="--ac:${escapeAttr(a.cor)}">
-        <i class="ph-bold ${escapeAttr(a.icone)}"></i>
-        <span>${escapeHtml(a.titulo)}</span>
-      </a>`;
-  }).join("");
+        <a href="${escapeAttr(urlSegura(a.url))}" target="_blank" rel="noopener" class="acesso-btn" style="--ac:${escapeAttr(a.cor)}">
+          <i class="ph-bold ${escapeAttr(a.icone)}"></i>
+          <span>${escapeHtml(a.titulo)}</span>
+        </a>`;
+    }).join("");
+  });
 }
 
 
@@ -785,11 +986,14 @@ function avisoItemHTML(a) {
 function renderDashAvisos() {
   const container = document.getElementById("dash-avisos-list");
   if (!container) return;
-  if (avisos.length === 0) {
-    container.innerHTML = `<p class="eventos-vazio">Nenhum aviso no momento.</p>`;
-    return;
-  }
-  container.innerHTML = avisos.map(a => avisoItemHTML(a)).join("");
+
+  renderSeMudou(container, JSON.stringify(avisos), () => {
+    if (avisos.length === 0) {
+      container.innerHTML = `<p class="eventos-vazio">Nenhum aviso no momento.</p>`;
+      return;
+    }
+    container.innerHTML = avisos.map(a => avisoItemHTML(a)).join("");
+  });
 }
 
 /* ------------------------------------------------------------
@@ -985,9 +1189,22 @@ function initAuthPublico() {
 
   btnEntrar.addEventListener("click", abrirModal);
   fechar?.addEventListener("click", fecharModal);
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) fecharModal();
+
+  // Só fecha quando o gesto inteiro começa e termina no backdrop. Arrastar
+  // texto de dentro do modal e soltar fora não deve fechar a janela.
+  let pointerDownNoBackdrop = false;
+  overlay.addEventListener("pointerdown", (event) => {
+    pointerDownNoBackdrop = event.target === overlay;
   });
+  overlay.addEventListener("pointerup", (event) => {
+    const fecharAgora = pointerDownNoBackdrop && event.target === overlay;
+    pointerDownNoBackdrop = false;
+    if (fecharAgora) fecharModal();
+  });
+  overlay.addEventListener("pointercancel", () => {
+    pointerDownNoBackdrop = false;
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !overlay.hidden) fecharModal();
   });
@@ -1006,44 +1223,57 @@ function initAuthPublico() {
     if (erro) erro.hidden = true;
     if (submit) submit.disabled = true;
 
-    const email = String(inputEmail?.value || "").trim();
-    const senha = String(inputSenha?.value || "");
-    const resultado = await DB.entrar(email, senha);
+    let sessaoAtualizada = false;
+    mostrarBootSessao("Validando acesso", "Conferindo suas credenciais...");
 
-    if (!resultado.ok) {
-      if (erro) {
-        erro.textContent = resultado.erro;
-        erro.hidden = false;
-      }
-      if (submit) submit.disabled = false;
-      return;
-    }
+    try {
+      const email = String(inputEmail?.value || "").trim();
+      const senha = String(inputSenha?.value || "");
+      const resultado = await DB.entrar(email, senha);
 
-    const staff = await DB.isStaff();
-    if (!staff) {
-      if (DB.motivoUltimoAcesso === 'erro') {
-        // Falha de rede/RPC nao prova falta de permissao: nao derruba a sessao
-        // compartilhada com o admin.
+      if (!resultado.ok) {
         if (erro) {
-          erro.textContent = "N\u00e3o foi poss\u00edvel validar seu acesso agora. Tente novamente.";
+          erro.textContent = resultado.erro;
           erro.hidden = false;
         }
-        if (submit) submit.disabled = false;
         return;
       }
-      await DB.sair();
+
+      const staff = await DB.isStaff();
+      if (!staff) {
+        if (DB.motivoUltimoAcesso === 'erro') {
+          // Falha de rede/RPC nao prova falta de permissao: nao derruba a sessao
+          // compartilhada com o admin.
+          if (erro) {
+            erro.textContent = "N\u00e3o foi poss\u00edvel validar seu acesso agora. Tente novamente.";
+            erro.hidden = false;
+          }
+          return;
+        }
+        await DB.sair();
+        if (erro) {
+          erro.textContent = "Esta conta n\u00e3o tem acesso interno.";
+          erro.hidden = false;
+        }
+        return;
+      }
+
+      await recarregarAposAuth();
+      sessaoAtualizada = true;
+      form.reset();
+      fecharModal();
+    } catch (falhaLogin) {
+      console.error("[App] Falha inesperada no login.", falhaLogin);
       if (erro) {
-        erro.textContent = "Esta conta n\u00e3o tem acesso interno.";
+        erro.textContent = "N\u00e3o foi poss\u00edvel concluir o acesso agora. Tente novamente.";
         erro.hidden = false;
       }
+    } finally {
+      if (!sessaoAtualizada) {
+        await finalizarBootSessao("Acesso n\u00e3o conclu\u00eddo", "Confira os dados e tente novamente.");
+      }
       if (submit) submit.disabled = false;
-      return;
     }
-
-    await recarregarAposAuth();
-    form.reset();
-    fecharModal();
-    if (submit) submit.disabled = false;
   });
 
   // Sessao valida sem papel: encerra para nao deixar sessao orfa no navegador.
@@ -1055,9 +1285,20 @@ function initAuthPublico() {
   // Sessao compartilhada entre abas: se o admin sair em outra aba, o index
   // precisa parar de exibir PII. O flag evita recarregar duas vezes quando o
   // login/logout acontece aqui.
-  DB.aoMudarSessao((evento) => {
-    if (authRecarregando) return;
-    if (evento !== "SIGNED_IN" && evento !== "SIGNED_OUT") return;
+  identidadeAuthAnterior = DB.usuarioAtual()?.id || null;
+  DB.aoMudarSessao((evento, sessao) => {
+    const identidadeAtual = sessao?.user?.id || null;
+    const deveRecarregar = deveRecarregarAposEventoAuth(
+      evento,
+      identidadeAtual,
+      identidadeAuthAnterior,
+    );
+
+    if (deveRecarregar) {
+      identidadeAuthAnterior = evento === "SIGNED_OUT" ? null : identidadeAtual;
+    }
+
+    if (!deveRecarregar || authRecarregando) return;
     recarregarAposAuth().catch((e) => console.warn("[App] Falha ao recarregar sessao.", e));
   });
 
@@ -1067,6 +1308,12 @@ function initAuthPublico() {
 /** Recarrega os dados e a UI depois de login/logout. */
 async function recarregarAposAuth(acao) {
   authRecarregando = true;
+  if (bootSessaoAtiva) {
+    setBootProgress(Math.max(bootProgressoAtual, 34), "Atualizando sess\u00e3o", "Recarregando os dados com a nova permiss\u00e3o...");
+  } else {
+    mostrarBootSessao("Atualizando sess\u00e3o", "Recarregando os dados com a nova permiss\u00e3o...");
+  }
+
   try {
     if (typeof acao === "function") await acao();
 
@@ -1100,6 +1347,10 @@ async function recarregarAposAuth(acao) {
     const config = MODULE_SYNC[paginaAtiva];
     if (config && typeof config.render === "function") config.render();
   } finally {
+    ultimaSyncFeriasEm = 0;
+    ultimaRevalidacaoAcessoEm = Date.now();
+    identidadeAuthAnterior = DB.usuarioAtual()?.id || null;
+    await finalizarBootSessao("Sess\u00e3o atualizada", "Tudo pronto. Voc\u00ea j\u00e1 pode continuar.");
     authRecarregando = false;
   }
 }
@@ -2726,6 +2977,15 @@ function initSearch() {
   });
 }
 
+/** Normaliza texto para busca: sem acento, caixa baixa e sem espaços nas pontas. */
+function normalizarBusca(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 /**
  * Busca global rankeada — retorna um resultado por item, ordenado por score.
  *
@@ -2738,7 +2998,7 @@ function initSearch() {
  * (módulos mais relevantes primeiro: Funcionários, Manuais, etc.).
  */
 function buildGlobalIndex(query) {
-  const q = query.toLowerCase().trim();
+  const q = normalizarBusca(query);
   if (!globalSearchIndexReady) rebuildGlobalSearchIndex();
 
   const resultados = [];
@@ -2762,19 +3022,19 @@ function buildGlobalIndex(query) {
 
     if (melhorScore === 0) continue;
 
-    const nomeNormalizado = item.itemNome.toLowerCase();
+    const nomeNormalizado = normalizarBusca(item.itemNome);
     let campoDeContexto = melhorCampo;
 
-    if (melhorCampo && melhorCampo.valor.toLowerCase() === nomeNormalizado) {
+    if (melhorCampo && normalizarBusca(melhorCampo.valor) === nomeNormalizado) {
       campoDeContexto =
         camposComMatch.find(campo =>
           campo !== melhorCampo &&
           campo.tier === melhorScore &&
-          campo.valor.toLowerCase() !== nomeNormalizado
+          normalizarBusca(campo.valor) !== nomeNormalizado
         ) ||
         camposComMatch.find(campo =>
           campo !== melhorCampo &&
-          campo.valor.toLowerCase() !== nomeNormalizado
+          normalizarBusca(campo.valor) !== nomeNormalizado
         ) ||
         melhorCampo;
     }
@@ -2796,36 +3056,39 @@ function buildGlobalIndex(query) {
 
 function rebuildGlobalSearchIndex() {
   const entries = [];
+  const comoLista = (valor) => (Array.isArray(valor) ? valor : []);
+  let falha = null;
 
-  /**
-   * Registra um item no índice.
-   * @param {string}   modulo   - Nome do módulo
-   * @param {string}   itemNome - Nome/título principal do item
-   * @param {Array}    campos   - [{tier, label, valor}] — campos com seus pesos
-   * @param {Function} action   - O que fazer ao clicar no resultado
-   */
-  function addItem(modulo, itemNome, campos, action) {
-    const camposValidos = campos
-      .filter(c => c.valor !== undefined && c.valor !== null && String(c.valor).trim() !== "")
-      .map(c => ({
-        tier:       c.tier,
-        label:      c.label,
-        valor:      String(c.valor),
-        searchText: String(c.valor).toLowerCase(),
-      }));
+  try {
+    /**
+     * Registra um item no índice.
+     * @param {string}   modulo   - Nome do módulo
+     * @param {string}   itemNome - Nome/título principal do item
+     * @param {Array}    campos   - [{tier, label, valor}] — campos com seus pesos
+     * @param {Function} action   - O que fazer ao clicar no resultado
+     */
+    function addItem(modulo, itemNome, campos, action) {
+      const camposValidos = comoLista(campos)
+        .filter(c => c && c.valor !== undefined && c.valor !== null && String(c.valor).trim() !== "")
+        .map(c => ({
+          tier:       c.tier,
+          label:      c.label,
+          valor:      String(c.valor),
+          searchText: normalizarBusca(c.valor),
+        }));
 
-    if (camposValidos.length === 0) return;
+      if (camposValidos.length === 0) return;
 
-    entries.push({ modulo, itemNome, campos: camposValidos, action });
-  }
+      entries.push({ modulo, itemNome, campos: camposValidos, action });
+    }
 
-  // Atalhos de tier para clareza
-  const T1 = 100; // nome/título principal
-  const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
-  const T3 = 10; // texto livre (descrição, observações, passos, campos de contato)
-  const interno = acessoInternoAtivo();
+    // Atalhos de tier para clareza
+    const T1 = 100; // nome/título principal
+    const T2 = 50;  // identificadores secundários (cargo, categoria, placa, órgão...)
+    const T3 = 10; // texto livre (descrição, observações, passos, campos de contato)
+    const interno = acessoInternoAtivo();
 
-  funcionarios.forEach(f => {
+    funcionarios.forEach(f => {
     const ir = () => { navigateTo("funcionarios"); setTimeout(() => openFuncionario(f.id), 120); };
     addItem("Funcionários", f.nome, [
       { tier: T1, label: "Nome",        valor: f.nome },
@@ -2841,15 +3104,15 @@ function rebuildGlobalSearchIndex() {
 
   manuais.forEach(m => {
     const ir = () => { navigateTo("manuais"); setTimeout(() => openManual(m.id), 120); };
-    const passosCampos = (m.passos || []).map((p, i) => ({
+    const passosCampos = comoLista(m.passos).map((p, i) => ({
       tier: T3,
       label: `Passo ${i + 1}`,
-      valor: typeof p === "object" ? (p.texto || p.descricao || "") : p,
+      valor: p && typeof p === "object" ? (p.texto || p.descricao || "") : p,
     }));
-    const docsCampos = (m.documentos || []).map(d => ({
+    const docsCampos = comoLista(m.documentos).map(d => ({
       tier: T3,
       label: "Documento necessário",
-      valor: typeof d === "object" ? d.nome : d,
+      valor: d && typeof d === "object" ? d.nome : d,
     }));
     addItem("Manuais", m.titulo, [
       { tier: T1, label: "Tí­tulo",       valor: m.titulo },
@@ -2862,9 +3125,9 @@ function rebuildGlobalSearchIndex() {
 
   processos.forEach(p => {
     const ir = () => { navigateTo("processos"); setTimeout(() => openProcesso(p.id), 120); };
-    const etapasCampos = (p.etapas || []).flatMap(e => [
-      { tier: T2, label: "Etapa",      valor: e.titulo },
-      { tier: T3, label: "Descrição",  valor: e.descricao },
+    const etapasCampos = comoLista(p.etapas).flatMap(e => [
+      { tier: T2, label: "Etapa",      valor: e?.titulo },
+      { tier: T3, label: "Descrição",  valor: e?.descricao },
     ]);
     addItem("Processos", p.titulo, [
       { tier: T1, label: "Título",    valor: p.titulo },
@@ -2875,7 +3138,7 @@ function rebuildGlobalSearchIndex() {
 
   arquivos.forEach(a => {
     const ir = () => { navigateTo("arquivos"); setTimeout(() => openArquivo(a.id), 120); };
-    const tagsCampos = (a.tags || []).map(t => ({ tier: T2, label: "Tag", valor: t }));
+    const tagsCampos = comoLista(a.tags).map(t => ({ tier: T2, label: "Tag", valor: t }));
     addItem("Arquivos", a.nome, [
       { tier: T1, label: "Nome", valor: a.nome },
       { tier: T2, label: "Tipo", valor: a.tipo },
@@ -2885,7 +3148,7 @@ function rebuildGlobalSearchIndex() {
 
   infoJuridico.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openJuridico(item.id), 120); };
-    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    const camposCampos = comoLista(item.campos).map(c => ({ tier: T3, label: c?.label, valor: c?.valor }));
     addItem("Secretaria", item.titulo, [
       { tier: T1, label: "Bloco",  valor: item.titulo },
       { tier: T2, label: "Badge", valor: item.badge || item.tag },
@@ -2895,7 +3158,7 @@ function rebuildGlobalSearchIndex() {
 
   infoMunicipio.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openMunicipio(item.id), 120); };
-    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    const camposCampos = comoLista(item.campos).map(c => ({ tier: T3, label: c?.label, valor: c?.valor }));
     addItem("Município", item.titulo, [
       { tier: T1, label: "Bloco", valor: item.titulo },
       { tier: T2, label: "Tag",   valor: item.tag || item.badge },
@@ -2905,7 +3168,7 @@ function rebuildGlobalSearchIndex() {
 
   infoOrgaos.forEach(item => {
     const ir = () => { navigateTo("informacoes"); setTimeout(() => openOrgao(item.id), 120); };
-    const camposCampos = (item.campos || []).map(c => ({ tier: T3, label: c.label, valor: c.valor }));
+    const camposCampos = comoLista(item.campos).map(c => ({ tier: T3, label: c?.label, valor: c?.valor }));
     addItem("Órgãos", item.titulo, [
       { tier: T1, label: "Sigla",        valor: item.titulo },
       { tier: T1, label: "Nome",         valor: item.nome_completo },
@@ -2945,10 +3208,10 @@ function rebuildGlobalSearchIndex() {
 
   servicos.forEach(s => {
     const ir = () => { navigateTo("servicos"); setTimeout(() => openServico(s.id), 120); };
-    const docsCampos = (s.documentos || []).map(d => ({
+    const docsCampos = comoLista(s.documentos).map(d => ({
       tier: T3,
       label: "Documento",
-      valor: typeof d === "object" ? d.nome : d,
+      valor: d && typeof d === "object" ? d.nome : d,
     }));
     addItem("Serviços", s.nome, [
       { tier: T1, label: "Nome",           valor: s.nome },
@@ -2983,18 +3246,57 @@ function rebuildGlobalSearchIndex() {
     ], ir);
   });
 
-  globalSearchIndex = entries;
-  globalSearchIndexReady = true;
-  globalSearchIndexBuilding = false;
+  } catch (erro) {
+    falha = erro;
+    console.error('[Busca] Falha ao montar o indice global.', erro);
+  } finally {
+    globalSearchIndex = entries;
+    // Se falhou antes de indexar qualquer item, deixa o proximo build tentar
+    // de novo. Se ja ha itens, a busca continua util mesmo com uma colecao ruim.
+    globalSearchIndexReady = entries.length > 0 || !falha;
+    globalSearchIndexBuilding = false;
+  }
+}
+
+/** Localiza a query no texto ignorando acentos, devolvendo os índices originais. */
+function localizarTrechoSemAcento(texto, query) {
+  const original = String(texto ?? "");
+  const q = normalizarBusca(query);
+  if (!q) return null;
+
+  const direto = original.toLowerCase().indexOf(q);
+  if (direto !== -1) return { inicio: direto, fim: direto + q.length };
+
+  let normalizado = "";
+  const mapa = [];
+  for (let i = 0; i < original.length; i++) {
+    const base = original[i]
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    for (const char of base) {
+      normalizado += char;
+      mapa.push(i);
+    }
+  }
+
+  const idx = normalizado.indexOf(q);
+  if (idx === -1) return null;
+
+  return {
+    inicio: mapa[idx],
+    fim: mapa[idx + q.length - 1] + 1,
+  };
 }
 
 /** Destaca a substring encontrada em negrito */
 function highlightMatch(text, query) {
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return escapeHtml(text);
-  return escapeHtml(text.slice(0, idx))
-    + `<mark>${escapeHtml(text.slice(idx, idx + query.length))}</mark>`
-    + escapeHtml(text.slice(idx + query.length));
+  const original = String(text ?? "");
+  const trecho = localizarTrechoSemAcento(original, query);
+  if (!trecho) return escapeHtml(original);
+  return escapeHtml(original.slice(0, trecho.inicio))
+    + `<mark>${escapeHtml(original.slice(trecho.inicio, trecho.fim))}</mark>`
+    + escapeHtml(original.slice(trecho.fim));
 }
 
 /* Escape unico, definido em `js/core/utils.js` (carregado antes de db.js).
@@ -3022,7 +3324,7 @@ function renderGlobalResults(results, resultsBox, input) {
 
   // Contexto: se o valor é o pròprio nome do item, não repete — mostra o label do campo
   function buildContexto(r) {
-    const valorIgualNome = r.contextoValor.toLowerCase() === r.itemNome.toLowerCase();
+    const valorIgualNome = normalizarBusca(r.contextoValor) === normalizarBusca(r.itemNome);
     if (valorIgualNome) {
       // O match foi no próprio título — contexto fica vazio (nome já aparece acima)
       return "";
@@ -3070,15 +3372,16 @@ function renderGlobalResults(results, resultsBox, input) {
  * Ex: "...assistência técnica e extensão rural..." ao buscar "extensão"
  */
 function truncarContexto(texto, query, maxLen = 60) {
-  const idx = texto.toLowerCase().indexOf(query.toLowerCase());
+  const trecho = localizarTrechoSemAcento(texto, query);
+  const idx = trecho ? trecho.inicio : -1;
   if (idx === -1) return texto.slice(0, maxLen) + (texto.length > maxLen ? "…" : "");
 
   const meio = Math.floor(maxLen / 2);
   const inicio = Math.max(0, idx - meio);
   const fim = Math.min(texto.length, inicio + maxLen);
-  const trecho = texto.slice(inicio, fim);
+  const trechoTexto = texto.slice(inicio, fim);
 
-  return (inicio > 0 ? "…" : "") + trecho + (fim < texto.length ? "…" : "");
+  return (inicio > 0 ? "…" : "") + trechoTexto + (fim < texto.length ? "…" : "");
 }
 
 
@@ -4199,11 +4502,18 @@ function renderDashEventos() {
     })
     .sort((a, b) => getEventoTiming(a).sortDate - getEventoTiming(b).sortDate);
 
-  if (proximos.length === 0) {
-    container.innerHTML = `<p class="eventos-vazio">Nenhum evento próximo.</p>`;
-    return;
-  }
-  container.innerHTML = proximos.map(e => eventoItemHTML(e)).join("");
+  const assinatura = JSON.stringify({
+    minuto: new Date().toISOString().slice(0, 16),
+    proximos,
+  });
+
+  renderSeMudou(container, assinatura, () => {
+    if (proximos.length === 0) {
+      container.innerHTML = `<p class="eventos-vazio">Nenhum evento próximo.</p>`;
+      return;
+    }
+    container.innerHTML = proximos.map(e => eventoItemHTML(e)).join("");
+  });
 }
 
 function renderCalendar() {
@@ -4211,9 +4521,17 @@ function renderCalendar() {
   const grid  = document.getElementById("cal-grid");
   if (!label || !grid) return;
 
+  const hoje = new Date();
+  const assinatura = JSON.stringify({
+    calYear,
+    calMonth,
+    hoje: hoje.toDateString(),
+    agendaEventos,
+  });
+
+  renderSeMudou(grid, assinatura, () => {
   label.textContent = `${MESES_PT[calMonth]} ${calYear}`;
 
-  const hoje        = new Date();
   const primeiroDia = new Date(calYear, calMonth, 1).getDay();
   const diasNoMes   = new Date(calYear, calMonth + 1, 0).getDate();
 
@@ -4266,6 +4584,7 @@ function renderCalendar() {
 
   grid.innerHTML = html;
   initCalTooltip(grid);
+  });
 }
 
 function initCalTooltip(grid) {

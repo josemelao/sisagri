@@ -41,6 +41,29 @@
     @keyframes boot-spin { to { transform: rotate(360deg); } }
     .boot-title { font-family: var(--font-serif); font-size: 1.35rem; margin-bottom: 6px; }
     .boot-sub { font-size: 0.82rem; color: var(--text-muted); }
+    .boot-progress {
+      margin-top: 18px; height: 8px; border-radius: 999px;
+      background: var(--surface-2); overflow: hidden;
+    }
+    .boot-progress-bar {
+      display: block; height: 100%; width: 8%; border-radius: inherit;
+      background:
+        linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%),
+        linear-gradient(90deg, var(--accent-hover) 0%, var(--accent) 55%, #5a8f73 100%);
+      background-size: 55% 100%, 100% 100%;
+      background-repeat: no-repeat;
+      background-position: -80% 0, 0 0;
+      transition: width .32s ease;
+      animation: boot-progress-shimmer 1.7s ease-in-out infinite;
+    }
+    @keyframes boot-progress-shimmer {
+      0% { background-position: -80% 0, 0 0; }
+      55% { background-position: 180% 0, 0 0; }
+      100% { background-position: 180% 0, 0 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .boot-progress-bar { animation: none; background-position: 0 0, 0 0; }
+    }
     .login-box {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 40px 36px;

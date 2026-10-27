@@ -5,7 +5,7 @@
  * render e confere que o navegador NAO executa nada e mostra o texto literal.
  */
 
-/* global arquivos, renderTagFilter -- globais reais do script.js (page context) */
+/* global arquivos, renderTagFilter, sincronizacoesEmAndamento -- globais reais do script.js (page context) */
 
 import { test, expect } from '@playwright/test';
 
@@ -79,6 +79,10 @@ test.describe('saida segura', () => {
 
     await page.locator('.nav-item[data-page="arquivos"]').click();
     await expect(page.locator('#page-arquivos')).toHaveClass(/active/);
+
+    // O sync da coleção pode terminar depois do clique e re-renderizar as tags
+    // com os dados reais. Espera ele sair antes de injetar o registro de teste.
+    await page.waitForFunction(() => sincronizacoesEmAndamento.size === 0);
 
     await page.evaluate(() => {
       // `arquivos` e um `let` global: a atribuicao aqui alcanca o binding real.

@@ -460,3 +460,169 @@ test('renderArquivos: arquivo com nome e tags nulos nao quebra a busca por texto
 
   assert.match(lista.innerHTML, /Edital\.pdf/);
 });
+
+/* ==========================================================================
+   Busca global sem acento e indice tolerante a dados malformados
+   ========================================================================== */
+
+test('normalizarBusca: remove acento e normaliza caixa', () => {
+  const h = carregarApp();
+  const normalizarBusca = h.get('normalizarBusca');
+
+  assert.equal(normalizarBusca('Férias'), 'ferias');
+  assert.equal(normalizarBusca('João  da Silva'), 'joao  da silva');
+  assert.equal(normalizarBusca(null), '');
+});
+
+test('busca global: "ferias" encontra "Férias" no titulo', () => {
+  const h = carregarApp();
+  h.run(`
+    funcionarios = [];
+    processos = [];
+    arquivos = [];
+    veiculos = [];
+    sistemas = [];
+    servicos = [];
+    infoJuridico = [];
+    infoMunicipio = [];
+    infoOrgaos = [];
+    avisos = [];
+    agendaEventos = [];
+    manuais = [{
+      id: 1,
+      titulo: 'Aviso de Férias - 2025',
+      categoria: 'RH',
+      passos: [],
+      documentos: []
+    }];
+  `);
+
+  h.get('rebuildGlobalSearchIndex')();
+  const resultados = h.get('buildGlobalIndex')('ferias');
+
+  assert.equal(resultados.length, 1);
+  assert.equal(resultados[0].itemNome, 'Aviso de Férias - 2025');
+});
+
+test('highlightMatch: destaca o texto original mesmo buscando sem acento', () => {
+  const h = carregarApp();
+  const html = h.get('highlightMatch')('Aviso de Férias', 'ferias');
+
+  assert.match(html, /<mark>Férias<\/mark>/);
+});
+
+test('rebuildGlobalSearchIndex: lista malformada nao zera o indice inteiro', () => {
+  const h = carregarApp();
+  h.run(`
+    funcionarios = [];
+    processos = [];
+    veiculos = [];
+    sistemas = [];
+    servicos = [];
+    infoJuridico = [];
+    infoMunicipio = [];
+    infoOrgaos = [];
+    avisos = [];
+    agendaEventos = [];
+    manuais = [{
+      id: 1,
+      titulo: 'Manual de Férias',
+      categoria: 'RH',
+      passos: 'texto legado',
+      documentos: null
+    }];
+    arquivos = [{ id: 2, nome: 'Edital', tags: 'tag1', tipo: 'PDF' }];
+  `);
+
+  assert.doesNotThrow(() => h.get('rebuildGlobalSearchIndex')());
+
+  const resultados = h.get('buildGlobalIndex')('edital');
+  assert.equal(resultados.length, 1);
+  assert.equal(resultados[0].itemNome, 'Edital');
+});
+
+/* ==========================================================================
+   Sessao: nao recarregar quando o Supabase revalida a mesma sessao
+   ========================================================================== */
+
+test('deveRecarregarAposEventoAuth: SIGNED_IN da mesma identidade nao recarrega', () => {
+  const h = carregarApp();
+  const deveRecarregar = h.get('deveRecarregarAposEventoAuth');
+
+  assert.equal(deveRecarregar('SIGNED_IN', 'usuario-1', 'usuario-1'), false);
+});
+
+test('deveRecarregarAposEventoAuth: SIGNED_IN de outra identidade recarrega', () => {
+  const h = carregarApp();
+  const deveRecarregar = h.get('deveRecarregarAposEventoAuth');
+
+  assert.equal(deveRecarregar('SIGNED_IN', 'usuario-2', 'usuario-1'), true);
+  assert.equal(deveRecarregar('SIGNED_IN', 'usuario-1', null), true);
+});
+
+test('deveRecarregarAposEventoAuth: SIGNED_OUT so recarrega se havia sessao', () => {
+  const h = carregarApp();
+  const deveRecarregar = h.get('deveRecarregarAposEventoAuth');
+
+  assert.equal(deveRecarregar('SIGNED_OUT', null, 'usuario-1'), true);
+  assert.equal(deveRecarregar('SIGNED_OUT', null, null), false);
+});
+
+test('deveRecarregarAposEventoAuth: eventos sem troca de sessao sao ignorados', () => {
+  const h = carregarApp();
+  const deveRecarregar = h.get('deveRecarregarAposEventoAuth');
+
+  assert.equal(deveRecarregar('TOKEN_REFRESHED', 'usuario-1', 'usuario-1'), false);
+  assert.equal(deveRecarregar('SIGNED_IN', null, 'usuario-1'), false);
+});
+
+test('initAuthPublico: evento SIGNED_IN da mesma identidade nao chama recarregarAposAuth', () => {
+  const h = carregarApp({
+    elementos: {
+      'auth-entrar': criarElemento('button'),
+      'login-overlay': criarElemento('div'),
+      'login-form': criarElemento('form'),
+    },
+  });
+  h.run(`
+    let __callbackAuth = null;
+    let __recargas = 0;
+    DB.usuarioAtual = () => ({ id: 'usuario-1', email: 'teste@local' });
+    DB.temAcessoInterno = () => true;
+    DB.motivoUltimoAcesso = 'ok';
+    DB.aoMudarSessao = (cb) => { __callbackAuth = cb; return () => {}; };
+    recarregarAposAuth = async () => { __recargas += 1; };
+    initAuthPublico();
+  `);
+
+  h.get('__callbackAuth')('SIGNED_IN', { user: { id: 'usuario-1' } });
+  assert.equal(h.get('__recargas'), 0);
+
+  h.get('__callbackAuth')('SIGNED_IN', { user: { id: 'usuario-2' } });
+  assert.equal(h.get('__recargas'), 1);
+});
+
+/* ==========================================================================
+   Revalidacao de acesso ao voltar para a aba (limite de 1 hora)
+   ========================================================================== */
+
+test('revalidarAcessoWhenPageBecomesActive: chama isStaff no maximo uma vez por hora', async () => {
+  const h = carregarApp();
+  h.run(`
+    let __chamadasIsStaff = 0;
+    DB.temAcessoInterno = () => true;
+    DB.isStaff = async () => { __chamadasIsStaff += 1; return true; };
+    DB.motivoUltimoAcesso = 'ok';
+    Date.now = () => 3_600_000;
+    ultimaRevalidacaoAcessoEm = 0;
+  `);
+
+  const revalidar = h.get('revalidarAcessoWhenPageBecomesActive');
+  await revalidar();
+  await revalidar();
+  assert.equal(h.get('__chamadasIsStaff'), 1);
+
+  h.run('Date.now = () => 7_200_000;');
+  await revalidar();
+  assert.equal(h.get('__chamadasIsStaff'), 2);
+});

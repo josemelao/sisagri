@@ -5,10 +5,16 @@
  * retorno de foco ao fechar, estado do menu mobile e ordem de headings.
  */
 
+/* global sincronizacoesEmAndamento -- global real do script.js no contexto da pagina */
 import { test, expect } from '@playwright/test';
 
 async function esperarBoot(page) {
   await expect(page.locator('#boot-screen')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+}
+
+/** Espera o sync da coleção terminar para o teste não disputar com o re-render. */
+async function esperarSync(page) {
+  await page.waitForFunction(() => sincronizacoesEmAndamento.size === 0);
 }
 
 test.describe('acessibilidade publica', () => {
@@ -33,6 +39,7 @@ test.describe('acessibilidade publica', () => {
     await esperarBoot(page);
 
     await page.locator('.nav-item[data-page="processos"]').click();
+    await esperarSync(page);
     const card = page.locator('#processos-list .list-card').first();
     await expect(card).toHaveAttribute('role', 'button');
     await expect(card).toHaveAttribute('tabindex', '0');

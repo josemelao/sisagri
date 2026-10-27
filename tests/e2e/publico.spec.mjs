@@ -4,6 +4,7 @@
  * Nao cria, nao edita, nao apaga. So observa o que o site faz quando abre.
  */
 
+/* global DB -- global real do db.js no contexto da pagina */
 import { test, expect } from '@playwright/test';
 
 /** Espera o boot terminar. Falha aqui = o app nao inicializou. */
@@ -47,6 +48,7 @@ test.describe('app publico', () => {
     // 2 letras disparam o debounce de 300ms.
     await page.locator('#global-search').fill('se');
     await expect(page.locator('#search-results')).toHaveClass(/visible/, { timeout: 15_000 });
+    await expect(page.locator('#search-results .search-result-item').first()).toBeVisible();
 
     // Esc fecha.
     await page.locator('#global-search').press('Escape');
@@ -212,5 +214,138 @@ test.describe('app publico', () => {
     await expect(page.locator('#nav-relatorios')).toBeHidden();
     await expect(page.locator('#dash-escala')).toBeHidden();
     await expect(page.locator('#dash-acesso')).toBeHidden();
+  });
+
+  test('12. busca global ignora acento sem alterar o texto exibido', async ({ page }) => {
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.locator('#global-search').fill('ferias');
+    await expect(page.locator('#search-results')).toHaveClass(/visible/, { timeout: 15_000 });
+    await expect(page.locator('#search-results .search-result-item').first()).toBeVisible();
+    await expect(page.locator('#search-results')).toContainText('Férias');
+
+    await page.locator('#global-search').fill('servicos');
+    await expect(page.locator('#search-results .search-result-item').first()).toBeVisible();
+    await expect(page.locator('#search-results')).toContainText('Serviços');
+  });
+
+  test('13. foco/visibilidade nao re-renderiza blocos que nao mudaram', async ({ page }) => {
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.evaluate(() => {
+      const ids = ['acesso-grid', 'dash-avisos-list', 'dash-eventos-list', 'cal-grid'];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el?.firstElementChild) el.firstElementChild.dataset.testMarker = id;
+      }
+
+      // Simula acesso interno e evita rede real: o foco so atualiza férias.
+      DB.temAcessoInterno = () => true;
+      DB.refreshCollection = async () => {
+        window.dispatchEvent(new CustomEvent('db:collection-updated', {
+          detail: { colecao: 'escalaFerias' },
+        }));
+      };
+    });
+
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(500);
+
+    const marcadores = await page.evaluate(() => (
+      ['acesso-grid', 'dash-avisos-list', 'dash-eventos-list', 'cal-grid']
+        .map((id) => document.querySelector(`#${id} [data-test-marker]`)?.dataset.testMarker || null)
+    ));
+
+    expect(marcadores).toEqual(['acesso-grid', 'dash-avisos-list', 'dash-eventos-list', 'cal-grid']);
+  });
+
+  test('14. modal de login nao fecha ao arrastar de dentro para o backdrop', async ({ page }) => {
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.locator('#auth-entrar').click();
+    await expect(page.locator('#login-overlay')).toBeVisible();
+
+    const campo = page.locator('#login-email');
+    const caixa = await campo.boundingBox();
+    expect(caixa).not.toBeNull();
+
+    await page.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(2, 2, { steps: 6 });
+    await page.mouse.up();
+
+    await expect(page.locator('#login-overlay')).toBeVisible();
+
+    // Clique iniciado e terminado no backdrop fecha normalmente.
+    await page.mouse.click(2, 2);
+    await expect(page.locator('#login-overlay')).toBeHidden();
+
+    // Escape continua fechando.
+    await page.locator('#auth-entrar').click();
+    await expect(page.locator('#login-overlay')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#login-overlay')).toBeHidden();
+  });
+
+  test('15. login mostra o boot durante a transicao e atualiza a sessao', async ({ page }) => {
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.evaluate(() => {
+      DB.entrar = async () => ({ ok: true });
+      DB.isStaff = async () => true;
+      DB.usuarioAtual = () => ({ email: 'teste@local' });
+      DB.temAcessoInterno = () => true;
+      DB.aoMudarSessao = () => {};
+      window.dbInit = async () => {};
+    });
+
+    await page.locator('#auth-entrar').click();
+    await page.locator('#login-email').fill('teste@local');
+    await page.locator('#login-senha').fill('senha');
+
+    const inicio = Date.now();
+    await page.locator('#login-submit').click();
+
+    await expect(page.locator('#boot-screen')).not.toHaveClass(/is-hidden/);
+    await expect(page.locator('#boot-screen')).toHaveClass(/is-hidden/, { timeout: 3_000 });
+    expect(Date.now() - inicio).toBeGreaterThanOrEqual(400);
+
+    await expect(page.locator('#auth-usuario')).toBeVisible();
+    await expect(page.locator('#auth-entrar')).toBeHidden();
+  });
+
+  test('16. voltar para a aba nao recarrega a sessao da mesma identidade', async ({ page }) => {
+    const email = process.env.SISAGRI_ADMIN_EMAIL;
+    const senha = process.env.SISAGRI_ADMIN_PASSWORD;
+    test.skip(!email || !senha, 'sem SISAGRI_ADMIN_EMAIL/SISAGRI_ADMIN_PASSWORD');
+
+    await page.goto('/index.html');
+    await esperarBoot(page);
+
+    await page.locator('#auth-entrar').click();
+    await page.locator('#login-email').fill(email);
+    await page.locator('#login-senha').fill(senha);
+    await page.locator('#login-submit').click();
+    await expect(page.locator('#auth-usuario')).toBeVisible({ timeout: 30_000 });
+
+    await page.evaluate(() => {
+      const original = DB.usuarioAtual.bind(DB);
+      window.__usuarioAtualChamadas = 0;
+      DB.usuarioAtual = () => {
+        window.__usuarioAtualChamadas += 1;
+        return original();
+      };
+      DB.refreshCollection = async () => {};
+    });
+
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await page.waitForTimeout(500);
+
+    expect(await page.evaluate(() => window.__usuarioAtualChamadas)).toBe(0);
+    await expect(page.locator('#boot-screen')).toHaveClass(/is-hidden/);
   });
 });

@@ -81,7 +81,7 @@ test('T13.4: nenhum @media se perdeu no split', () => {
     (soma, camada) => soma + (ler(camada).match(/@media/g) ?? []).length,
     0
   );
-  assert.equal(total, 13, 'o style.css original tinha 13 @media intercalados');
+  assert.equal(total, 14, '13 @media do split + 1 de prefers-reduced-motion no boot');
 });
 
 test('T13.4: todo var(--x) do publico tem definicao ou fallback', () => {
@@ -115,7 +115,7 @@ test('T13.4: o css do admin saiu do HTML e vive em admin.css', () => {
 
   const css = ler('admin.css');
   assert.match(css, /:root\s*\{/, 'admin.css deveria declarar :root');
-  assert.equal((css.match(/@media/g) ?? []).length, 4, 'admin.css tinha 4 @media');
+  assert.equal((css.match(/@media/g) ?? []).length, 5, '4 @media originais + prefers-reduced-motion no boot');
 
   const definidos = tokensDefinidos(css);
   const orfaos = [...tokensSemFallback(css)].filter((token) => !definidos.has(token));
