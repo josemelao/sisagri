@@ -2164,7 +2164,7 @@ function manualPassoHTML(p = {}, i = 0) {
   const id = novoIdItemV2();
   const thumb = imagem
     ? `<img src="${escHtml(imagem)}" alt="" />`
-    : '<i class="ph ph-image"></i>';
+    : '<i class="ph-bold ph-image"></i>';
   return `
     <div class="step" data-id="${id}">
       <div class="step-head" role="button" tabindex="0" aria-expanded="false">
@@ -2889,7 +2889,7 @@ function formArquivo(a = {}) {
 
   const arquivoStatus = temArquivo
     ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
-         <i class="ph-bold ph-file-check"></i>
+         <i class="ph-bold ph-check-circle"></i>
          <span>${escHtml(nomeArquivoAtual)}</span>
          <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
        </div>`
@@ -2960,7 +2960,7 @@ function processarArquivoUpload(input) {
   const status = document.querySelector('#a-file-input').closest('.form-group').querySelector('div:first-of-type');
   if (status) {
     status.outerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
-      <i class="ph-bold ph-file-check"></i>
+      <i class="ph-bold ph-check-circle"></i>
       <span>${escHtml(file.name)}</span>
       <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
     </div>`;

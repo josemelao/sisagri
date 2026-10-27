@@ -119,14 +119,15 @@ test('T13.5: fontes, Phosphor e supabase-js sao locais', () => {
     'vendor/phosphor/regular/Phosphor.woff2',
     'vendor/phosphor/bold/style.css',
     'vendor/phosphor/bold/Phosphor-Bold.woff2',
+    'vendor/phosphor/subset/phosphor.css',
+    'vendor/phosphor/subset/phosphor-bold.woff2',
     SUPABASE_LOCAL,
   ];
 
   for (const arquivo of HTMLS) {
     const html = lerHtml(arquivo);
     assert.match(html, /assets\/fonts\/fonts\.css/, `${arquivo}: falta o CSS de fontes local`);
-    assert.match(html, /vendor\/phosphor\/regular\/style\.css/, `${arquivo}: falta o Phosphor regular local`);
-    assert.match(html, /vendor\/phosphor\/bold\/style\.css/, `${arquivo}: falta o Phosphor bold local`);
+    assert.match(html, /vendor\/phosphor\/subset\/phosphor\.css/, `${arquivo}: falta o subset de icones local`);
     assert.doesNotMatch(
       html,
       /unpkg\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/,

@@ -1,6 +1,6 @@
 {
   "name": "sisagri-smader",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "SisAgri / SMADER - frontend vanilla (HTML + CSS + JS) com Supabase e fallback local. Este package.json existe apenas para ferramentas de qualidade; o app nao e compilado.",
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "node --test \"tests/unit/**/*.test.mjs\"",
     "guard": "node scripts/check-innerhtml.mjs",
+    "icones": "node scripts/gerar-icones.mjs",
     "test:e2e": "playwright test",
     "visual:diff": "node scripts/visual/css-diff.mjs",
     "check": "npm run syntax && npm run lint && npm run guard && npm test"
@@ -18,6 +19,7 @@
     "eslint": "^9.0.0",
     "globals": "^15.0.0",
     "pixelmatch": "^8.0.0",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "subset-font": "^2.9.0"
   }
 }
