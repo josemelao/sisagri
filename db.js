@@ -1280,6 +1280,22 @@ async function _initSupabase(escopo = 'admin') {
 }
 
 /* ============================================================
+   PREVIA DE RASCUNHO (fase 2.3) — seed em memoria
+   ------------------------------------------------------------
+   O iframe de previa (`index.html?previa=1`) nao faz boot do Supabase:
+   recebe o rascunho do painel por postMessage e o coloca SO na memoria
+   deste processo. Nada e persistido, nada vai para o localStorage e o
+   registro principal e marcado como publicado para as buscas fail-closed
+   do app publico (`getPublished*ById`) funcionarem.
+   ============================================================ */
+let _previaHabilitada = false;
+
+/** Liga o seed de previa. So o modo `?previa=1` liga; o padrao e desligado. */
+function _habilitarPrevia(habilitar) {
+  _previaHabilitada = !!habilitar;
+}
+
+/* ============================================================
    AUDITORIA (fase 2.2) — leitura do historico de alteracoes
    ------------------------------------------------------------
    A gravacao e do banco: trigger `auditar_alteracoes` nas 14 tabelas de
@@ -1600,6 +1616,46 @@ const DB = {
   /** Retorna o banco completo (para exportação) */
   exportAll() {
     return JSON.parse(JSON.stringify(_db));
+  },
+
+  /**
+   * Fase 2.3: coloca o rascunho na memoria do iframe de previa. Sem
+   * persistencia e sem Supabase. Fora do modo previa, nao faz nada.
+   */
+  aplicarPrevia(colecao, registro, relacionados = {}) {
+    if (!_previaHabilitada) return false;
+    if (typeof colecao !== 'string' || !colecao) return false;
+    if (!registro || typeof registro !== 'object' || Array.isArray(registro)) return false;
+
+    if (!_db) _db = {};
+    // O registro principal precisa passar pelas buscas fail-closed do app
+    // publico; a copia vive so aqui dentro.
+    const principal = { ...registro, publish_status: 'published' };
+    const listaPrincipal = [principal];
+
+    if (relacionados && typeof relacionados === 'object' && !Array.isArray(relacionados)) {
+      Object.entries(relacionados).forEach(([nome, itens]) => {
+        if (!Array.isArray(itens)) return;
+        const publicados = itens
+          .filter((item) => item && typeof item === 'object' && item.publish_status === 'published')
+          .map((item) => ({ ...item }));
+
+        if (nome === colecao) {
+          // Irmaos publicados da mesma colecao entram DEPOIS do registro da
+          // previa: sem isso a lista publicada sobrescreveria o rascunho, e
+          // os paineis filhos perderiam os registros navegaveis.
+          publicados.forEach((item) => {
+            if (String(item.id) !== String(principal.id)) listaPrincipal.push(item);
+          });
+          return;
+        }
+
+        _db[nome] = publicados;
+      });
+    }
+
+    _db[colecao] = listaPrincipal;
+    return true;
   },
 
   /* ---- Fase 2.2: historico de alteracoes (somente leitura) ---- */

@@ -243,6 +243,24 @@
   </div>
 </div>
 
+<!-- Prévia de rascunho (fase 2.3): iframe somente leitura por cima do modal -->
+<div class="preview-overlay" id="preview-overlay" hidden role="dialog" aria-modal="true" aria-label="Prévia do rascunho">
+  <div class="preview-box">
+    <div class="preview-head">
+      <span class="preview-title">Prévia do rascunho</span>
+      <span class="preview-hint">Última versão salva</span>
+      <button class="btn btn-ghost btn-sm" data-acao="fechar-previa" aria-label="Fechar prévia"><i class="ph-bold ph-x"></i> Fechar</button>
+    </div>
+    <div class="preview-body">
+      <iframe id="preview-frame" class="preview-frame" title="Prévia do rascunho" src="about:blank"></iframe>
+      <div class="preview-state" id="preview-estado" hidden>
+        <p id="preview-estado-texto">Não foi possível carregar a prévia.</p>
+        <button class="btn btn-primary btn-sm" data-acao="tentar-previa">Tentar novamente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="admin-action-indicator" id="admin-action-indicator">
   <div class="admin-action-card">
     <div class="admin-action-spinner"></div>

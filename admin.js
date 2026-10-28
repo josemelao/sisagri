@@ -621,6 +621,7 @@ function fecharModal(force = false) {
     return;
   }
   const tinhaV2 = !!_modalV2;
+  fecharPrevia();
   _modalCloseOnBackdrop = false;
   _modalV2 = null;
   document.getElementById('modal-box').classList.remove('modal-box--v2');
@@ -638,6 +639,7 @@ function inicializarModalV2() {
   document.querySelectorAll('#modal-content .step-list[data-acordeao]').forEach((list) => {
     iniciarAcordeaoV2(list);
   });
+  montarBotaoPrevia();
   setTimeout(() => {
     const titulo = document.getElementById('modal-title');
     if (titulo) titulo.focus();
@@ -765,6 +767,8 @@ if (_modalContentEl) {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    // A previa fica por cima do modal: Esc fecha so ela.
+    if (_previaAtiva) { fecharPrevia(); return; }
     if (_modalV2 && _modalV2.sujo) {
       const barra = document.getElementById('unsaved-bar');
       if (barra && barra.classList.contains('visible')) esconderBarraAlteracoes();
@@ -2151,6 +2155,225 @@ function modalV2HTML(titulo, corpo, rodape, item = {}) {
       ${barraAlteracoesHTML(item)}
       <div class="modal-footer">${rodape}</div>
     </div>`;
+}
+
+/* ============================================================
+   PREVIA DE RASCUNHO (fase 2.3)
+   ------------------------------------------------------------
+   O botao "Previa" entra no rodape dos modais v2 e abre um iframe de
+   `index.html?previa=1` por cima do modal. O rascunho viaja por postMessage
+   (mesma origem, com nonce) e fica so na memoria do iframe. A previa mostra
+   a ULTIMA VERSAO SALVA: editar sem salvar nao muda a previa.
+   Colecoes sem detalhe publico (ferias/acesso) nao tem previa.
+   ============================================================ */
+const PREVIA_POR_ACAO = {
+  funcionario: 'funcionarios',
+  manual: 'manuais',
+  processo: 'processos',
+  arquivo: 'arquivos',
+  veiculo: 'veiculos',
+  sistema: 'sistemas',
+  servico: 'servicos',
+  aviso: 'avisos',
+  evento: 'agendaEventos',
+  orgao: 'infoOrgaos',
+};
+
+const PREVIA_COLECOES_PUBLICAS = [
+  'agendaEventos',
+  'arquivos',
+  'avisos',
+  'funcionarios',
+  'infoJuridico',
+  'infoMunicipio',
+  'infoOrgaos',
+  'manuais',
+  'processos',
+  'servicos',
+  'sistemas',
+  'veiculos',
+];
+
+const PREVIA_TIMEOUT_MS = 8000;
+let _previaAtiva = null;
+
+/** Traduz o `data-salvar` do modal na colecao que tem detalhe publico. */
+function previaColecaoPorSalvar(acao, colecaoExtra = '') {
+  if (!acao) return null;
+  if (acao === 'infoSimples') {
+    return PREVIA_COLECOES_PUBLICAS.includes(colecaoExtra) ? colecaoExtra : null;
+  }
+  const colecao = PREVIA_POR_ACAO[acao] || '';
+  return PREVIA_COLECOES_PUBLICAS.includes(colecao) ? colecao : null;
+}
+
+function previaPermitida(colecao) {
+  return PREVIA_COLECOES_PUBLICAS.includes(colecao);
+}
+
+/**
+ * Payload da previa: o registro salvo + os publicados que ele referencia.
+ * Rascunhos de outras colecoes ficam de fora (o publico nunca os mostraria).
+ */
+function previaMontarPayload(colecao, id) {
+  const registro = DB.getById(colecao, id);
+  if (!registro) return null;
+
+  const relacionados = {};
+  ['funcionarios', 'manuais', 'processos', 'arquivos'].forEach((nome) => {
+    // Fail-closed, igual ao publico: so 'published' explicito viaja.
+    relacionados[nome] = DB.get(nome).filter((item) => item.publish_status === 'published');
+  });
+
+  return { colecao, registro, relacionados };
+}
+
+/** Botao no rodape do modal. Sem registro salvo, nasce desabilitado. */
+function montarBotaoPrevia() {
+  const conteudo = document.getElementById('modal-content');
+  if (!conteudo || typeof conteudo.querySelector !== 'function') return;
+
+  const rodape = conteudo.querySelector('.modal-footer');
+  const salvar = rodape && rodape.querySelector('[data-acao="salvar-modal"]');
+  if (!rodape || !salvar) return;
+  if (rodape.querySelector('[data-acao="abrir-previa"]')) return;
+
+  const colecao = previaColecaoPorSalvar(
+    salvar.dataset.salvar || '',
+    salvar.dataset.colecao || '',
+  );
+  const id = Number(salvar.dataset.id || 0);
+  if (!colecao) return;
+
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'btn btn-ghost';
+  botao.setAttribute('data-acao', 'abrir-previa');
+  botao.dataset.colecao = colecao;
+  botao.dataset.id = String(id);
+
+  const icone = document.createElement('i');
+  icone.className = 'ph-bold ph-eye';
+  botao.appendChild(icone);
+  botao.appendChild(document.createTextNode(' Prévia'));
+
+  if (!id) {
+    botao.disabled = true;
+    botao.title = 'Salve como rascunho para ver a prévia.';
+  } else {
+    botao.title = 'Ver a última versão salva como o público veria.';
+  }
+
+  // `salvar` vive dentro de `.footer-actions`, nao no `.modal-footer`: a
+  // insercao tem de ser no pai dele, senao o insertBefore lanca.
+  const paiDoSalvar = salvar.parentNode;
+  if (!paiDoSalvar) return;
+
+  paiDoSalvar.insertBefore(botao, salvar);
+}
+
+function abrirPrevia(colecao, id) {
+  if (!previaPermitida(colecao)) {
+    toast('Prévia não disponível para este tipo.', 'error');
+    return;
+  }
+
+  const payload = previaMontarPayload(colecao, id);
+  if (!payload) {
+    toast('Salve o registro antes de abrir a prévia.', 'error');
+    return;
+  }
+
+  fecharPrevia();
+
+  const overlay = document.getElementById('preview-overlay');
+  const frame = document.getElementById('preview-frame');
+  const estado = document.getElementById('preview-estado');
+  if (!overlay || !frame) return;
+
+  _previaAtiva = { colecao, id, payload, frame, overlay, estado, nonce: '', timer: null };
+  overlay.hidden = false;
+  overlay.classList.add('open');
+  if (estado) estado.hidden = true;
+
+  const fechar = overlay.querySelector('[data-acao="fechar-previa"]');
+  if (fechar && typeof fechar.focus === 'function') fechar.focus();
+
+  frame.src = 'index.html?previa=1';
+  _previaAtiva.timer = setTimeout(() => {
+    previaFalhou('A prévia não respondeu. Verifique se o navegador bloqueou o iframe.');
+  }, PREVIA_TIMEOUT_MS);
+}
+
+function previaFalhou(mensagem) {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  if (ativa.timer) clearTimeout(ativa.timer);
+  ativa.timer = null;
+
+  const texto = document.getElementById('preview-estado-texto');
+  if (texto) texto.textContent = mensagem;
+  if (ativa.estado) ativa.estado.hidden = false;
+}
+
+function fecharPrevia() {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  if (ativa.timer) clearTimeout(ativa.timer);
+
+  const { overlay, frame } = ativa;
+  if (frame) frame.src = 'about:blank';
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.hidden = true;
+  }
+  _previaAtiva = null;
+
+  const gatilho = document.querySelector('[data-acao="abrir-previa"]');
+  if (gatilho && typeof gatilho.focus === 'function') gatilho.focus();
+}
+
+function tentarPreviaNovamente() {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  abrirPrevia(ativa.colecao, ativa.id);
+}
+
+/** Handshake: o iframe manda o nonce; so entao o payload sai do painel. */
+function tratarMensagemPrevia(evento) {
+  const ativa = _previaAtiva;
+  if (!ativa || !evento || !evento.data) return;
+  if (evento.origin !== location.origin) return;
+  if (!ativa.frame || evento.source !== ativa.frame.contentWindow) return;
+
+  const dados = evento.data;
+  if (dados.tipo === 'sisagri-previa-pronta') {
+    if (typeof dados.nonce !== 'string' || !dados.nonce) return;
+    ativa.nonce = dados.nonce;
+    // O iframe respondeu: o restante (parse do app + render) pode demorar.
+    if (ativa.timer) clearTimeout(ativa.timer);
+    ativa.timer = null;
+    ativa.frame.contentWindow.postMessage(
+      {
+        tipo: 'sisagri-previa-registro',
+        nonce: dados.nonce,
+        colecao: ativa.payload.colecao,
+        registro: ativa.payload.registro,
+        relacionados: ativa.payload.relacionados,
+      },
+      location.origin,
+    );
+    return;
+  }
+
+  if (dados.tipo === 'sisagri-previa-erro') {
+    if (!ativa.nonce || dados.nonce !== ativa.nonce) return;
+    previaFalhou('A prévia não conseguiu renderizar este registro.');
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('message', tratarMensagemPrevia);
 }
 
 function iconPickerCompactoHTML(iconeAtual, corAtual, fieldId) {
@@ -4764,6 +4987,11 @@ const ACOES_ADMIN_CLIQUE = {
   'descartar-alteracoes': () => descartarAlteracoes(),
   'salvar-rascunho': () => salvarComoRascunho(),
   'continuar-editando': () => esconderBarraAlteracoes(),
+
+  // Previa de rascunho (fase 2.3)
+  'abrir-previa': (el) => abrirPrevia(el.dataset.colecao, Number(el.dataset.id)),
+  'fechar-previa': () => fecharPrevia(),
+  'tentar-previa': () => tentarPreviaNovamente(),
 
   // Acoes do HTML (grupo 4)
   'fazer-login': () => fazerLogin(),
