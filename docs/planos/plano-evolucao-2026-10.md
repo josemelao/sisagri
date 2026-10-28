@@ -135,6 +135,21 @@ boot ainda incomodar após 1.1 e 1.2.
   `tests/e2e/previa-rascunho.spec.mjs` (payload com rascunho e com irmão
   rascunho, que não aparece) e pelos testes unitários do seed.
 
+### Fase 2.4 — Busca do histórico no servidor (só quando o dono pedir)
+
+> **Não fazer agora.** Gatilho: o dono relatar que a busca não acha registro
+> antigo, ou o `audit_log` passar de ~1.000 linhas. Registro operacional em
+> `docs/planos/plano-rascunho-admin.txt` ("SESSAO 2026-10-28 (4)").
+
+- Hoje a busca e a paginação são no cliente sobre as 1.000 linhas carregadas
+  (`AUDITORIA_LIMITE`); a tela avisa quando bate no teto.
+- Coluna gerada `busca text` em `audit_log` (rótulo + tabela + e-mail +
+  `array_to_string(campos)`), com índice `pg_trgm` GIN.
+- `DB.auditoria.listar` ganha `busca` (`.or('busca.ilike.%termo%')`) e
+  `.range()` com `count: 'exact'`; o admin passa a paginar no servidor.
+- Exige migration (SQL Editor; o MCP de produção é read-only) e adição
+  opcional ao contrato de `DB.*`.
+
 ## Bloco 3 — PWA (somente leitura)
 
 > **Descartado em 2026-10-28 por decisão do dono — o bloco inteiro, incluindo o
@@ -172,6 +187,7 @@ boot ainda incomodar após 1.1 e 1.2.
 | 3 | 2.1 | `feat(admin): menu lateral responsivo` |
 | 4 | 2.2 (migration + tela) | `feat(auditoria): registra alteracoes` |
 | 5 | 2.3 | `feat(admin): previa de rascunho` |
+| — | 2.4 (só sob pedido) | `feat(admin): busca do historico no servidor` |
 | 6–7 | 3.1 e 3.2 | **descartado em 2026-10-28** (não faremos) |
 
 ## Fora de escopo
@@ -193,6 +209,7 @@ rascunho e sem refactor de passagem.
 ## Ações do dono
 
 1. Criar os secrets do CI.
-2. PENDENTE 11: limpeza dos 10 registros de teste e
-   `node scripts/gerar-dados-fallback.mjs`.
+2. ~~PENDENTE 11: limpeza dos 10 registros de teste~~ — feito em 2026-10-28.
+   Falta só `node scripts/gerar-dados-fallback.mjs` e trocar a URL de sessão do
+   `acesso_rapido` id=2.
 3. Confirmar a retenção do log de auditoria (sugestão: 12 meses).

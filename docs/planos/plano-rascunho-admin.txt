@@ -185,7 +185,45 @@ SESSAO 2026-10-28 (3) — BLOCO 3 (PWA) DESCARTOU-SE
     file:// em abrirPrevia (~3 linhas em admin.js, evita esperar 8 s por um
     erro que e imediato) e timeout do dbInit.
   - Estado do repo: nada foi criado nem removido nesta decisao; so os dois
-    planos. main segue em d210411, sem 2.2/2.3 publicadas.
+    planos. main = d210411 ate o merge de 2026-10-28 (ver SESSAO (4)).
+
+=========================================================================
+SESSAO 2026-10-28 (4) — BUSCA DO HISTORICO: EVENTO ERRADO, DEBOUNCE E TETO
+=========================================================================
+
+  - Bug relatado pelo dono: "o campo buscar no historico nao faz nada; os
+    filtros funcionam". Causa real: a acao `buscar-auditoria` estava em
+    ACOES_ADMIN_CLIQUE (admin.js) e NAO em ACOES_ADMIN_INPUT. Digitar dispara
+    `input`; o despachante procurava a acao na tabela de input, nao achava e
+    voltava em silencio. Clicar dentro do campo filtrava — foi essa a prova
+    (input -> 2 linhas, clique -> 1).
+  - Correcao: acao movida para ACOES_ADMIN_INPUT + debounce de 200 ms
+    (agendarBuscaAuditoria). O foco/cursor so voltam se o campo ainda estiver
+    ativo. Filtrar, Limpar e paginar chamam liberarBuscaAuditoriaPendente()
+    antes do re-render, senao o texto digitado e ainda nao aplicado se
+    perderia (o render nasce de estado.query).
+  - Teto de leitura 200 -> 1000 (AUDITORIA_LIMITE_PADRAO/MAXIMO em db.js e
+    AUDITORIA_LIMITE em admin.js). Acima do teto a tela mostra "Mostrando os
+    1000 registros mais recentes...". Producao em 2026-10-28: 25 linhas no
+    audit_log.
+  - LIMITACAO CONHECIDA (caminho 2, NAO implementado): busca e paginacao sao
+    no cliente sobre os 1000 carregados. QUANDO O DONO RELATAR "a busca nao
+    acha registro antigo" (ou o log passar de ~1000 linhas), PROPOR: coluna
+    gerada `busca text` em audit_log (rotulo + tabela + usuario_email +
+    array_to_string(campos)) + pg_trgm GIN + `.or(busca.ilike...)` +
+    `.range()` com count exato em DB.auditoria.listar. Resolve busca e
+    paginacao de uma vez; exige migration (SQL Editor; MCP de producao e
+    read-only) e adicao opcional no contrato de DB.*. Nao fazer sem o dono
+    pedir.
+  - Filtros (tabela/usuario/de/ate) continuam no botao "Filtrar": sao
+    consultas ao servidor, nao filtro local; aplicar a cada tecla no e-mail
+    geraria uma query por caractere e perderia o foco. Avaliado e mantido.
+  - Prova: npm run check exit 0 (368 testes, 0 falhas); npm run test:e2e 40
+    passed / 6 skipped / 0 failed. Navegador (secao visivel, sem login):
+    depois de 280 ms, 1 linha; foco em #auditoria-search; cursor na posicao 3.
+  - Arquivos: admin.js, db.js, tests/unit/auditoria.test.mjs (+4 testes).
+  - Merge para main e deploy autorizados pelo dono em 2026-10-28 (fases 2.2,
+    2.3 e esta correcao). main = topo do repositorio apos o push.
 
 =========================================================================
 SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
@@ -1486,6 +1524,13 @@ PENDENTE 10 — graphify com DOCUMENTACAO (build semantico, decisao do dono 2026
   nao muda codigo nem banco. Sem pressa.
 
 PENDENTE 11 — LIMPEZA DOS DADOS DE TESTE EM PRODUCAO (acao do dono)
+  [RESOLVIDO 2026-10-28] O dono fez a limpeza pelo painel. Conferido por
+  SELECT read-only em producao: 0 registros para funcionarios 18, manuais 7,
+  processos 5, veiculos 4 e 5, arquivos 67 e avisos 2 (os 10 "claros" e os 2
+  "despublicar e revisar" nao existem mais). FALTA: acesso_rapido id=2 ainda
+  aponta para a URL de sessao do Roundcube (cpsess3814901933), que expira —
+  trocar por https://sh-pro92.hostgator.com.br:2096/.
+  Historico da pendencia (texto original):
   O MCP de producao e READ_ONLY; a execucao e pelo painel administrativo.
   Antes: exportar os dados pelo painel e guardar fora do repo (backup).
   Excluir (10 registros claros):
