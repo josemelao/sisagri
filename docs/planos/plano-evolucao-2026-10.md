@@ -105,12 +105,32 @@ boot ainda incomodar após 1.1 e 1.2.
 
 ### Fase 2.3 — Prévia de rascunho
 
-- Iframe de `index.html` + `postMessage` com o registro; a página pública
-  renderiza o detalhe sem gravar nada e só aceita mensagem de mesma origem com
-  sessão interna.
+> **Concluída em 2026-10-28**, validada pelo dono no navegador (modal
+> "Editar Veículo" → botão Prévia → painel de detalhe). Registro completo em
+> `docs/planos/plano-rascunho-admin.txt`.
+
+- Botão **Prévia** no rodapé dos modais v2, entre Cancelar e Salvar, para as 12
+  coleções com detalhe público; `escalaFerias` e `acessoRapido` não têm prévia.
+  Registro novo (ainda sem `id`) nasce com o botão desabilitado.
+- Iframe de `index.html?previa=1` **por cima** do modal (`z-index: 600`),
+  mostrando só o painel de detalhe público; o resto da página fica oculto por
+  `body.modo-previa`.
+- `postMessage` com handshake: o iframe gera um nonce, avisa o pai
+  (`sisagri-previa-pronta`) e só então recebe o payload. O público exige
+  `origin`, `source === window.parent`, tipo, nonce e coleção na allowlist.
+  Falha de render volta como `sisagri-previa-erro` com o mesmo nonce.
+- O rascunho viaja no payload e vive **só na memória** do iframe
+  (`DB.aplicarPrevia`): nada em URL, `localStorage` ou rede. O registro
+  principal é promovido a `published` apenas na cópia; relacionados só entram
+  se já estiverem `published`.
+- A prévia mostra a **última versão salva** (edição não salva não aparece) e
+  mantém os painéis filhos/netos navegáveis.
 - Proibido abrir URL pública com rascunho: furaria o filtro `publish_status`.
-- Aceite: rascunho visível na prévia e invisível para o anônimo (teste e2e com
-  duas sessões).
+- Sem fallback para a URL pública quando o iframe falha: timeout de 8 s até o
+  handshake + "Tentar novamente".
+- Aceite: rascunho visível na prévia e invisível para o anônimo — coberto por
+  `tests/e2e/previa-rascunho.spec.mjs` (payload com rascunho e com irmão
+  rascunho, que não aparece) e pelos testes unitários do seed.
 
 ## Bloco 3 — PWA (somente leitura)
 

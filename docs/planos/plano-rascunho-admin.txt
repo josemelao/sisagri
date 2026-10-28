@@ -1,6 +1,6 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
 Atualizado em: 2026-10-28
-Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
+Branch de trabalho: codex/fase3 (base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
 ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
@@ -16,6 +16,8 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     do Bloco 12).
   - EXCECAO AUTORIZADA em 2026-10-22: push de codex/fase3 (Onda 1, Onda 2,
     T12.6, T13.1, T13.2 e registros). O merge para main NAO foi feito.
+  - EXCECAO AUTORIZADA em 2026-10-28: push de codex/fase3 com as fases 2.2
+    e 2.3. O merge para main continua NAO autorizado.
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
@@ -87,6 +89,64 @@ SESSAO 2026-10-28 — FASE 2.2 CONCLUIDA (HISTORICO DE ALTERACOES) + DEPLOY
     (chore: alinha versao do package-lock) + este commit de docs. Push
     pendente de autorizacao; main segue sem merge.
   - Proximo passo: fase 2.3 — previa de rascunho.
+
+=========================================================================
+SESSAO 2026-10-28 (2) — FASE 2.3 CONCLUIDA (PREVIA DE RASCUNHO)
+=========================================================================
+
+  - Plano: docs/planos/plano-evolucao-2026-10.md, fase 2.3. Concluida e
+    validada pelo dono em 2026-10-28 no navegador (modal "Editar Veiculo" ->
+    botao Previa -> painel de detalhe com o registro).
+  - Desenho aprovado pelo dono: iframe de index.html?previa=1 POR CIMA do
+    modal de edicao (z-index 600), mostrando so o painel de detalhe publico;
+    botao no rodape do modal v2, entre Cancelar e Salvar. Sem fallback para
+    abrir a URL publica quando o iframe falha.
+  - Handshake: o iframe gera um nonce, avisa o pai (sisagri-previa-pronta) e
+    so entao o painel manda o payload. O publico aceita apenas mensagem com
+    origin igual, source === window.parent, tipo, nonce e colecao na
+    allowlist de 12. Falha de render volta como sisagri-previa-erro com o
+    mesmo nonce. O timeout de 8 s vale so ate o "pronta" (depois disso o
+    iframe pode demorar a parsear sem falso erro).
+  - Rascunho so em memoria: DB.aplicarPrevia (db.js, metodo NOVO; nenhum
+    metodo existente mudou de assinatura) escreve em _db, nunca em
+    localStorage nem em rede. O registro principal vira 'published' SO na
+    copia (as buscas getPublished*ById sao fail-closed); relacionados entram
+    apenas se ja forem 'published'. Irmaos publicados da mesma colecao entram
+    DEPOIS do registro da previa, o que mantem os paineis filhos navegaveis.
+    carregarDados() roda depois do seed porque os open* leem as listas do
+    modulo, nao o DB.
+  - Colecoes: as 12 com detalhe publico (agendaEventos, arquivos, avisos,
+    funcionarios, infoJuridico, infoMunicipio, infoOrgaos, manuais,
+    processos, servicos, sistemas, veiculos). escalaFerias e acessoRapido
+    nao tem previa. Registro novo (data-id 0) nasce com o botao desabilitado.
+    A previa mostra a ULTIMA VERSAO SALVA, com o aviso no cabecalho.
+  - Bug pego na validacao do dono: montarBotaoPrevia fazia
+    rodape.insertBefore(botao, salvar), mas o Salvar vive dentro de
+    .footer-actions (nao no .modal-footer). O NotFoundError abortava
+    inicializarModalV2 e o botao nunca aparecia. Corrigido inserindo em
+    salvar.parentNode; o e2e 4 trava o contrato sem precisar de login.
+  - file:// NAO serve para testar esta feature (nem o resto do app):
+    location.origin vira a string "null" e postMessage(payload, "null")
+    lanca SyntaxError. Testar sempre por npm run serve
+    (http://localhost:5173), com Ctrl+Shift+R.
+  - Arquivos: db.js, script.js, admin.js, admin.html, admin.css,
+    css/05-detail.css, eslint.config.js (_habilitarPrevia como global
+    consumido, mesmo padrao de DB/dbInit) + tests/unit/previa-rascunho.test.mjs
+    (25 testes) e tests/e2e/previa-rascunho.spec.mjs (4 testes).
+  - Sem migration e sem mudanca de banco. publish_status, auth, chaves
+    persistidas e o fluxo rascunho/publicado ficaram intocados.
+  - Prova: npm run check exit 0 (364 testes, 0 falhas, 24 warnings; o +1 em
+    relacao a 2.2 e no-unused-vars de _habilitarPrevia, consumido por outro
+    arquivo) e guarda de innerHTML abaixo do baseline; npm run test:e2e 40
+    passed / 6 skipped / 0 failed (skips = login sem credenciais). Prova
+    manual no navegador: botao -> overlay -> iframe em modo-previa -> detalhe
+    "Trator YTO EX854".
+  - Commits: 9f78c05 (feat(admin): previa de rascunho em iframe isolado) e
+    f51231c (test(previa): contratos do handshake, do seed e do botao no
+    modal) + este commit de docs. Push de codex/fase3 autorizado pelo dono em
+    2026-10-28; merge para main nao.
+  - Proximo passo: bloco 3 (PWA) — fases 3.1 (manifest) e 3.2 (service
+    worker), ver docs/planos/plano-evolucao-2026-10.md.
 
 =========================================================================
 SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
