@@ -131,6 +131,9 @@
   background: var(--surface);
   border-radius: var(--radius-md);
   overflow-y: auto;
+  /* Nao encadear a rolagem com o painel pai: ao chegar no fim do manual,
+     insistir na roda empurrava o pai e o conteudo dele aparecia por baixo. */
+  overscroll-behavior: contain;
   padding: 20px 36px 60px;
   transform: translateX(100%);
   transition: transform 0.28s cubic-bezier(.4,0,.2,1);

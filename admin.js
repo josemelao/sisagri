@@ -4885,7 +4885,7 @@ function pintarAuditoria(estado) {
       </div>
       <div class="form-group" style="margin:0;min-width:190px">
         <label for="auditoria-email">Usu&#225;rio</label>
-        <input id="auditoria-email" value="${escHtml(AUDITORIA_FILTROS.email)}" placeholder="e-mail" />
+        <input id="auditoria-email" value="${escHtml(AUDITORIA_FILTROS.email)}" placeholder="e-mail" style="height:38px" />
       </div>
       <div class="form-group" style="margin:0">
         <label for="auditoria-de">De</label>
@@ -4895,8 +4895,8 @@ function pintarAuditoria(estado) {
         <label for="auditoria-ate">At&#233;</label>
         <input id="auditoria-ate" type="date" value="${escHtml(AUDITORIA_FILTROS.ate)}" />
       </div>
-      <button class="btn btn-ghost btn-sm" data-acao="filtrar-auditoria">Filtrar</button>
-      <button class="btn btn-ghost btn-sm" data-acao="limpar-auditoria">Limpar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="filtrar-auditoria" style="height:38px">Filtrar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="limpar-auditoria" style="height:38px">Limpar</button>
     </div>
     <div class="admin-table-wrap"><table>
       <caption class="sr-only">Histórico</caption>
