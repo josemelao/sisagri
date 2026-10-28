@@ -68,8 +68,18 @@ SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
     requisicoes 40 -> 38, boot 1,66 s -> 1,02 s (-38%). A meta de 800 KB
     nao foi atingida: o restante e supabase-js (213 KB), decisao estrutural
     adiada. Fases 2.1 (menu mobile), 2.2 (auditoria) e 2.3 (previa) e o
-    Bloco 3 (PWA) seguem pendentes.
-  - Proximo passo: fase 2.1 — menu lateral responsivo do admin.
+    Bloco 3 (PWA) seguem pendentes; a fase 2.1 foi concluida depois, conforme
+    registrado abaixo.
+  - Fase 2.1 — menu lateral responsivo: implementada no commit ec82ee3.
+    O hamburguer informa aria-expanded/aria-controls; abaixo de 900px a
+    sidebar vira off-canvas, com backdrop, fechamento por selecao de secao ou
+    Esc e devolucao do foco ao botao. Desktop preservado. Revisao do codigo
+    confirmou os fluxos; npx playwright test
+    tests/e2e/admin-mobile-menu.spec.mjs: 3 testes estruturais passaram e 2
+    testes de interacao foram pulados por falta de SISAGRI_ADMIN_EMAIL e
+    SISAGRI_ADMIN_PASSWORD. Portanto, interacao com login real ainda requer
+    validacao com credenciais.
+  - Proximo passo: fase 2.2 — auditoria.
 
 =========================================================================
 SESSAO 2026-10-27 (2) — LOGO, FAVICON E SITE FORA DOS BUSCADORES
