@@ -1303,8 +1303,12 @@ function _habilitarPrevia(habilitar) {
    leitura, para a tela "Historico" do admin. Nada de escrita pelo cliente.
    ============================================================ */
 const AUDITORIA_TABELAS = Object.values(SUPABASE_TABLES);
-const AUDITORIA_LIMITE_PADRAO = 200;
-const AUDITORIA_LIMITE_MAXIMO = 500;
+// Teto de leitura da tela de Historico. A busca e a paginacao sao no cliente,
+// entao tudo que passa disso fica invisivel para a busca (ver PENDENTE no
+// handoff: quando o dono relatar "nao acha registro antigo", propor a busca
+// no servidor com coluna gerada + indice trigram).
+const AUDITORIA_LIMITE_PADRAO = 1000;
+const AUDITORIA_LIMITE_MAXIMO = 1000;
 const AUDITORIA_DATA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Converte `YYYY-MM-DD` no comeco/fim do dia. Valor invalido vira ''. */

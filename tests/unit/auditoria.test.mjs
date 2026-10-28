@@ -93,10 +93,10 @@ test('_normalizarFiltrosAuditoria: periodo cobre o dia inteiro', () => {
 
 test('_normalizarFiltrosAuditoria: limite padrao, teto e valor invalido', () => {
   const normalizar = ambiente.h.get('_normalizarFiltrosAuditoria');
-  assert.equal(normalizar({}).limite, 200);
-  assert.equal(normalizar({ limite: 5000 }).limite, 500);
-  assert.equal(normalizar({ limite: -3 }).limite, 200);
-  assert.equal(normalizar({ limite: 'abc' }).limite, 200);
+  assert.equal(normalizar({}).limite, 1000);
+  assert.equal(normalizar({ limite: 5000 }).limite, 1000);
+  assert.equal(normalizar({ limite: -3 }).limite, 1000);
+  assert.equal(normalizar({ limite: 'abc' }).limite, 1000);
 });
 
 test('_normalizarFiltrosAuditoria: email sem espacos e vazio quando ausente', () => {
@@ -156,7 +156,7 @@ test('DB.auditoria.listar: aplica tabela, usuario e periodo na consulta', async 
     'ordem decrescente por data nao foi pedida',
   );
   assert.ok(
-    chamadas.some((c) => c[0] === 'limit' && c[1] === 200),
+    chamadas.some((c) => c[0] === 'limit' && c[1] === 1000),
     'limite nao foi aplicado',
   );
 });
@@ -227,4 +227,63 @@ test('pintarAuditoria: mostra operacao, campos e data legivel', () => {
   assert.match(html, /descricao/);
   assert.match(html, /Atualiza|atualiza/);
   assert.match(html, /jose@sisagri\.test/);
+});
+
+/* ------------------------------------------------------------------ */
+/* busca do historico (debounce de 200 ms)                             */
+/* ------------------------------------------------------------------ */
+
+test('busca do historico: acao ligada no input, nao no clique', () => {
+  const { h } = ambiente;
+  assert.equal(typeof h.get('ACOES_ADMIN_INPUT')['buscar-auditoria'], 'function');
+  assert.equal(h.get('ACOES_ADMIN_CLIQUE')['buscar-auditoria'], undefined);
+});
+
+test('busca do historico: digitar filtra so depois de 200 ms', async () => {
+  const { h } = ambiente;
+  const lista = h.get('AUDITORIA_LISTA');
+  lista.setQuery('');
+  lista.setItems([
+    { ...REGISTRO, id: 1, rotulo: 'AAA', tabela: 'veiculos' },
+    { ...REGISTRO, id: 2, rotulo: 'BBB', tabela: 'manuais' },
+  ]);
+  assert.equal(lista.getState().total, 2);
+
+  // O despachante recebe o evento como o navegador entrega: input + data-acao.
+  h.get('document').getElementById('auditoria-search').value = 'AAA';
+  const alvo = criarElemento('input');
+  alvo.dataset.acao = 'buscar-auditoria';
+  alvo.closest = (seletor) => (seletor === '[data-acao]' ? alvo : null);
+
+  h.get('despacharAcaoAdmin')({ target: alvo }, h.get('ACOES_ADMIN_INPUT'));
+  assert.equal(lista.getState().total, 2, 'nao pode filtrar antes do debounce');
+
+  await new Promise((ok) => setTimeout(ok, 250));
+
+  assert.equal(lista.getState().query, 'AAA');
+  assert.equal(lista.getState().total, 1);
+});
+
+/* ------------------------------------------------------------------ */
+/* teto de leitura (busca e paginacao sao no cliente)                   */
+/* ------------------------------------------------------------------ */
+
+test('carregarAuditoria: pede o teto de 1000 ao banco', async () => {
+  const chamadas = instalarCliente();
+  await ambiente.h.get('carregarAuditoria')();
+  assert.ok(
+    chamadas.some((c) => c[0] === 'limit' && c[1] === 1000),
+    'a tela precisa pedir o mesmo teto de db.js',
+  );
+});
+
+test('pintarAuditoria: avisa quando o teto de 1000 foi atingido', () => {
+  const { h, secao } = ambiente;
+  const lista = h.get('AUDITORIA_LISTA');
+
+  lista.setItems(Array.from({ length: 1000 }, (_, i) => ({ ...REGISTRO, id: i + 1 })));
+  assert.match(secao.innerHTML, /Mostrando os 1000 registros mais recentes/);
+
+  lista.setItems([REGISTRO]);
+  assert.doesNotMatch(secao.innerHTML, /registros mais recentes/);
 });

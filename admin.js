@@ -4716,6 +4716,9 @@ const AUDITORIA_OPERACOES = {
 let AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
 let AUDITORIA_ERRO = '';
 let AUDITORIA_CARREGANDO = false;
+// Teto de leitura (igual ao de db.js). A busca e a paginacao sao no cliente:
+// o que passar disso fica fora do alcance da tela.
+const AUDITORIA_LIMITE = 1000;
 
 const AUDITORIA_LISTA = window.SisListas.createListController({
   colecao: 'auditoria',
@@ -4759,7 +4762,7 @@ async function carregarAuditoria() {
   AUDITORIA_ERRO = '';
   AUDITORIA_LISTA.render();
 
-  const resposta = await DB.auditoria.listar({ ...AUDITORIA_FILTROS, limite: 200 });
+  const resposta = await DB.auditoria.listar({ ...AUDITORIA_FILTROS, limite: AUDITORIA_LIMITE });
 
   AUDITORIA_CARREGANDO = false;
   if (!resposta.ok) AUDITORIA_ERRO = resposta.erro || 'Falha ao carregar o histórico.';
@@ -4767,6 +4770,10 @@ async function carregarAuditoria() {
 }
 
 function aplicarFiltrosAuditoria() {
+  // Se o usuario digitou e clicou em Filtrar antes dos 200 ms, aplica a busca
+  // pendente primeiro: o re-render abaixo nasce de `estado.query` e apagaria
+  // o texto ainda nao aplicado.
+  liberarBuscaAuditoriaPendente();
   const valor = (id) => {
     const campo = document.getElementById(id);
     return campo ? String(campo.value || '').trim() : '';
@@ -4781,8 +4788,42 @@ function aplicarFiltrosAuditoria() {
 }
 
 function limparFiltrosAuditoria() {
+  liberarBuscaAuditoriaPendente();
   AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
   carregarAuditoria();
+}
+
+/**
+ * Busca do historico com debounce de 200 ms.
+ *
+ * Sem o atraso, cada tecla re-renderiza a secao inteira (cabecalho, filtros,
+ * tabela e animacao de linhas). O atraso e so desta tela: as outras 13 buscas
+ * do admin continuam em tempo real.
+ */
+let AUDITORIA_BUSCA_TIMER = null;
+
+/** Aplica o valor atual do campo; so devolve o foco se ele ainda estiver nele. */
+function aplicarBuscaAuditoria() {
+  const campo = document.getElementById('auditoria-search');
+  if (!campo) return;
+  if (document.activeElement === campo) AUDITORIA_LISTA.aplicarBusca(campo);
+  else AUDITORIA_LISTA.setQuery(campo.value);
+}
+
+function agendarBuscaAuditoria() {
+  if (AUDITORIA_BUSCA_TIMER) clearTimeout(AUDITORIA_BUSCA_TIMER);
+  AUDITORIA_BUSCA_TIMER = setTimeout(() => {
+    AUDITORIA_BUSCA_TIMER = null;
+    aplicarBuscaAuditoria();
+  }, 200);
+}
+
+/** Antes de paginar/filtrar: aplica agora o que estava esperando o debounce. */
+function liberarBuscaAuditoriaPendente() {
+  if (!AUDITORIA_BUSCA_TIMER) return;
+  clearTimeout(AUDITORIA_BUSCA_TIMER);
+  AUDITORIA_BUSCA_TIMER = null;
+  aplicarBuscaAuditoria();
 }
 
 function pintarAuditoria(estado) {
@@ -4808,6 +4849,16 @@ function pintarAuditoria(estado) {
         ? 'Nenhuma alteração corresponde à busca.'
         : 'Nenhuma alteração registrada para os filtros informados.';
 
+  // A busca e a paginacao sao no cliente sobre o que foi carregado. Se o teto
+  // foi atingido, existe historico mais antigo que esta tela nao ve: avisar
+  // evita o falso "nao existe" quando alguem procura um registro antigo.
+  const avisoLimite = estado.totalColecao >= AUDITORIA_LIMITE
+    ? `<p style="font-size:.78rem;color:var(--text-muted);margin:-8px 0 16px">
+         <strong>Mostrando os ${AUDITORIA_LIMITE} registros mais recentes.</strong>
+         Use os filtros ou o per&#237;odo para alcan&#231;ar os anteriores.
+       </p>`
+    : '';
+
   renderAdminSectionWithTableAnimation(document.getElementById('section-auditoria'), `
     <div class="admin-section-header">
       <h1 class="admin-section-title">Hist&#243;rico</h1>
@@ -4823,6 +4874,7 @@ function pintarAuditoria(estado) {
     <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">
       Registro autom&#225;tico das altera&#231;&#245;es feitas no painel. Somente leitura: guarda <strong>quais</strong> campos mudaram, nunca o conte&#250;do (sem CPF, telefone, chassi ou RENAVAM).
     </p>
+    ${avisoLimite}
     <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
       <div class="form-group" style="margin:0;min-width:170px">
         <label for="auditoria-tabela">Tabela</label>
@@ -4935,10 +4987,10 @@ const ACOES_ADMIN_CLIQUE = {
   'editar-orgao': (el) => editarOrgao(Number(el.dataset.id)),
 
   // Historico (fase 2.2) — somente leitura
-  'pagina-auditoria': (el) => AUDITORIA_LISTA.setPage(
-    AUDITORIA_LISTA.getState().pagina + Number(el.dataset.delta),
-  ),
-  'buscar-auditoria': (el) => AUDITORIA_LISTA.aplicarBusca(el),
+  'pagina-auditoria': (el) => {
+    liberarBuscaAuditoriaPendente();
+    AUDITORIA_LISTA.setPage(AUDITORIA_LISTA.getState().pagina + Number(el.dataset.delta));
+  },
   'filtrar-auditoria': () => aplicarFiltrosAuditoria(),
   'limpar-auditoria': () => limparFiltrosAuditoria(),
 
@@ -5014,6 +5066,9 @@ const ACOES_ADMIN_INPUT = {
   'buscar-acesso': (el) => atualizarBuscaAcesso(el),
   'buscar-info-simples': (el) => atualizarBuscaInfoSimples(el.dataset.colecao, el),
   'buscar-info-orgaos': (el) => atualizarBuscaInfoOrgaos(el),
+  // O historico tem debounce proprio (200 ms); a acao mora aqui, no input,
+  // e nao na tabela de clique — era esse o defeito que deixava a busca muda.
+  'buscar-auditoria': () => agendarBuscaAuditoria(),
 };
 
 const ACOES_ADMIN_CHANGE = {
