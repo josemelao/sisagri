@@ -86,8 +86,8 @@ SESSAO 2026-10-28 — FASE 2.2 CONCLUIDA (HISTORICO DE ALTERACOES) + DEPLOY
     trigger nas 14 tabelas, drop function limpar_audit_log, drop function
     registrar_auditoria, drop table audit_log.
   - Commits: 502ad46 (feat(auditoria): registra alteracoes) e f19e0de
-    (chore: alinha versao do package-lock) + este commit de docs. Push
-    pendente de autorizacao; main segue sem merge.
+    (chore: alinha versao do package-lock) + este commit de docs. O push
+    saiu em 2026-10-28, junto com a 2.3; main segue sem merge.
   - Proximo passo: fase 2.3 — previa de rascunho.
 
 =========================================================================
