@@ -51,6 +51,10 @@
 <div id="admin-app">
 
   <header class="admin-header">
+    <button class="admin-menu-toggle" id="admin-menu-toggle" type="button"
+            aria-label="Abrir menu" aria-expanded="false" aria-controls="admin-sidebar">
+      <i class="ph-bold ph-list" aria-hidden="true"></i>
+    </button>
     <i class="ph-bold ph-leaf" style="font-size:1.3rem;color:#a8c8b8"></i>
     <div>
       <div class="admin-header-logo">SisAgri Admin</div>
@@ -73,10 +77,12 @@
     </button>
   </header>
 
+  <div class="admin-backdrop" id="admin-backdrop" hidden></div>
+
   <div class="admin-body">
 
     <!-- Sidebar de navegação -->
-    <nav class="admin-sidebar">
+    <nav class="admin-sidebar" id="admin-sidebar" tabindex="-1" aria-label="Seções do painel">
       <span class="admin-nav-label">Conteúdo</span>
       <div class="admin-nav-item active" data-section="overview">
         <i class="ph-bold ph-squares-four"></i> Visão Geral

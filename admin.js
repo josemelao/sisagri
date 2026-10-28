@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAdmin() {
   atualizarStatusBanco();
   initNav();
+  initMenuMobile();
   renderOverview();
   aplicarPermissoesUI();
 }
@@ -408,6 +409,53 @@ function initNav() {
         renderSection(item.dataset.section);
       }
     });
+  });
+}
+
+/* ============================================================
+   MENU LATERAL NO CELULAR (fase 2.1)
+   ------------------------------------------------------------
+   Abaixo de 900px a sidebar vira off-canvas (CSS). Aqui ficam so o
+   estado: abrir/fechar, aria-expanded, backdrop, Esc e devolucao do foco.
+   Em desktop o botao esta oculto e nada disto roda.
+   ============================================================ */
+function initMenuMobile() {
+  const botao = document.getElementById('admin-menu-toggle');
+  const sidebar = document.getElementById('admin-sidebar');
+  const backdrop = document.getElementById('admin-backdrop');
+  if (!botao || !sidebar) return;
+
+  const estaAberto = () => sidebar.classList.contains('is-open');
+
+  const fechar = (devolverFoco = true) => {
+    if (!estaAberto()) return;
+    sidebar.classList.remove('is-open');
+    botao.setAttribute('aria-expanded', 'false');
+    botao.setAttribute('aria-label', 'Abrir menu');
+    if (backdrop) backdrop.hidden = true;
+    document.body.classList.remove('admin-menu-aberto');
+    if (devolverFoco) botao.focus();
+  };
+
+  const abrir = () => {
+    sidebar.classList.add('is-open');
+    botao.setAttribute('aria-expanded', 'true');
+    botao.setAttribute('aria-label', 'Fechar menu');
+    if (backdrop) backdrop.hidden = false;
+    document.body.classList.add('admin-menu-aberto');
+    sidebar.focus();
+  };
+
+  botao.addEventListener('click', () => (estaAberto() ? fechar(true) : abrir()));
+  if (backdrop) backdrop.addEventListener('click', () => fechar(true));
+
+  // Escolher uma secao fecha o menu (o clique continua tratado em initNav).
+  sidebar.addEventListener('click', (e) => {
+    if (e.target.closest('.admin-nav-item[data-section]')) fechar(true);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && estaAberto()) fechar(true);
   });
 }
 
