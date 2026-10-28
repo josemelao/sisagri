@@ -84,6 +84,11 @@ boot ainda incomodar após 1.1 e 1.2.
 
 ### Fase 2.2 — Histórico de alterações
 
+> **Concluída em 2026-10-28.** Aplicada em `supabase-teste` (versão
+> `20261028144459`) e em produção (versão `20261028150742`), validada pelo
+> dono na tela com login real. Registro completo em
+> `docs/planos/plano-rascunho-admin.txt`.
+
 - Migration `supabase/migrations/0016_audit_log.sql` com tabela `audit_log`
   (`tabela`, `registro_id`, `operacao`, `campos text[]`, `usuario_email`,
   `usuario_id`, `em`, `rotulo`).

@@ -1,5 +1,5 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-27
+Atualizado em: 2026-10-28
 Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
@@ -21,8 +21,8 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
     Nesta sessao o catalogo do MCP nao expos get_advisors; conferir no
     dashboard antes de afirmar "0 avisos".
-  - Producao conferida em 2026-10-22 via MCP: 13 migrations (0002-0014),
-    16 tabelas; ultima conferencia de avisos em 2026-10-21: 0.
+  - Producao conferida em 2026-10-28 via MCP: 15 migrations (0002-0015 +
+    audit_log), 17 tabelas; ultima conferencia de avisos em 2026-10-21: 0.
   - Teste conferido em 2026-10-22 via MCP: 15 migrations (0001-0014),
     16 tabelas, 3 buckets privados, 0 edge functions; avisos: 0 na ultima
     conferencia.
@@ -31,6 +31,62 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - Plano mestre: docs/planos/v2-plano-refatoracao.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-28 — FASE 2.2 CONCLUIDA (HISTORICO DE ALTERACOES) + DEPLOY
+=========================================================================
+
+  - Plano: docs/planos/plano-evolucao-2026-10.md, fase 2.2. Concluida e
+    validada pelo dono em 2026-10-28 (tela "Historico" com login real, ja
+    com a migration aplicada em producao).
+  - Migration 0016_audit_log.sql aplicada em `supabase-teste` (versao
+    20261028144459) e em producao (versao 20261028150742).
+    ATENCAO para as proximas sessoes: o MCP `supabase` (producao) e
+    read-only (`supabase_read_only_user`, sem CREATE em public) e NAO expoe
+    apply_migration. A 0016 foi colada pelo dono no SQL Editor do dashboard
+    e a linha em supabase_migrations.schema_migrations foi inserida na
+    mesma janela. Nao perder tempo tentando DDL por esse MCP.
+  - Banco: public.audit_log com 9 colunas, check insert/update/delete,
+    PK + 3 indices de filtro (em, tabela+em, usuario_email+em), RLS ligada,
+    1 policy de SELECT com pode_editar(), ZERO policy de escrita, `anon`
+    sem select/insert e sem execute em limpar_audit_log, `authenticated`
+    com select mas sem insert; 14 triggers auditar_alteracoes (AFTER
+    insert/update/delete), funcao SECURITY DEFINER com
+    search_path = public, pg_temp.
+  - Privacidade: campos text[] guarda so NOMES de coluna (id e updated_at
+    excluidos). INSERT e DELETE gravam campos '{}'; UPDATE grava o diff;
+    rotulo vem de titulo > nome > assunto, truncado em 120. Nenhum valor
+    de CPF, telefone, chassi ou RENAVAM entra no log. Prova no teste: 0
+    vazamentos na transacao revertida.
+  - Resiliencia: falha da auditoria faz `raise warning` e a gravacao do
+    painel continua (decisao do dono). Importacao em massa pela
+    replace_collection (0013) gera uma linha por item, sem alterar a RPC.
+  - App: DB.auditoria.tabelas() e DB.auditoria.listar() em db.js (somente
+    leitura, allowlist de tabela, teto de 500 linhas, retorno
+    {ok, itens, erro}, nunca lanca) e a secao "Historico" em admin.html /
+    admin.js, com filtro de tabela/usuario/periodo no servidor, busca e
+    paginacao pelo list-controller. Zero botao de escrita. Nenhum contrato
+    de DB.* mudou; publish_status, auth e chaves persistidas intocados.
+  - Retencao: select public.limpar_audit_log(); (12 meses) ou
+    limpar_audit_log(24), restrita a is_admin(). O historico nasce vazio:
+    nada anterior ao deploy e registrado.
+  - Prova: npm run check exit 0 (339 testes, 0 falhas, 23 warnings, guard
+    innerHTML abaixo do baseline); npm run test:e2e 36 passed / 6 skipped /
+    0 failed (skips = login sem credenciais). Producao conferida apos o
+    deploy: 9 colunas, 4 indices, RLS, 1 policy de select, 0 de escrita,
+    14 triggers, security definer, anon bloqueado. Probe anonimo:
+    /rest/v1/audit_log -> 401 (42501); /rest/v1/funcionarios -> 200;
+    /rest/v1/manuais?publish_status=eq.published -> 200;
+    /rest/v1/rpc/limpar_audit_log -> 401. Contagem das 14 tabelas igual
+    antes e depois do deploy (138 linhas).
+  - Deploy nao toca em dado: a 0016 nao faz ALTER, DELETE nem INSERT em
+    tabela de conteudo, entao nao ha vinculo a corrigir. Rollback: drop
+    trigger nas 14 tabelas, drop function limpar_audit_log, drop function
+    registrar_auditoria, drop table audit_log.
+  - Commits: 502ad46 (feat(auditoria): registra alteracoes) e f19e0de
+    (chore: alinha versao do package-lock) + este commit de docs. Push
+    pendente de autorizacao; main segue sem merge.
+  - Proximo passo: fase 2.3 — previa de rascunho.
 
 =========================================================================
 SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
