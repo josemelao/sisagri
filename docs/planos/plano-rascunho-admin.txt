@@ -18,6 +18,9 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     T12.6, T13.1, T13.2 e registros). O merge para main NAO foi feito.
   - EXCECAO AUTORIZADA em 2026-10-28: push de codex/fase3 com as fases 2.2
     e 2.3. O merge para main continua NAO autorizado.
+  - EXCECAO AUTORIZADA em 2026-10-28: push de codex/fase3 com a correcao dos
+    dois bugs visuais (ver SESSAO (5)). O merge para main desta rodada nao foi
+    pedido.
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
@@ -186,6 +189,46 @@ SESSAO 2026-10-28 (3) — BLOCO 3 (PWA) DESCARTOU-SE
     erro que e imediato) e timeout do dbInit.
   - Estado do repo: nada foi criado nem removido nesta decisao; so os dois
     planos. main = d210411 ate o merge de 2026-10-28 (ver SESSAO (4)).
+
+=========================================================================
+SESSAO 2026-10-28 (5) — DOIS BUGS VISUAIS: FILTROS DO HISTORICO E PAINEL FILHO
+=========================================================================
+
+  - Bug 1 (admin): "Filtrar" e "Limpar" do historico apareciam desalinhados.
+    A linha usa `align-items: flex-end`, entao os FUNDOS ja alinhavam; o
+    problema era a altura: botoes `.btn-sm` com 28px contra 38px do select e
+    das datas e 36px do e-mail (input de texto nao tem a altura minima do
+    date). Correcao: `height:38px` inline no #auditoria-email e nos dois
+    botoes. Medido no HTML real a 1100px: os seis ficam em top 343 / bottom
+    381 / height 38. Nenhum outro botao do admin foi tocado.
+  - Bug 2 (index): ao abrir um manual filho, o conteudo do processo aparecia
+    por baixo. Causa: `.manual-filho-panel` e `position: absolute; inset: 0`
+    dentro do `.detail-panel`, que e o container de rolagem (`height: 100vh`,
+    `overflow-y: auto`). O filho se ancora no topo do CONTEUDO, nao na area
+    visivel: com o pai rolado 551px (necessario para chegar nos chips da
+    etapa "Enviar Oficios", 9a de 10), o filho ia para -551..249 e 551px do
+    processo reapareciam embaixo; o cabecalho "Voltar" saia da tela junto.
+    Segundo gatilho: rolar o manual ate o fim encadeava no pai (medido: pai
+    saltava para 551).
+  - Correcao (script.js): `openNestedPanel` guarda `paiPanel`/`paiScroll` no
+    dataset do filho e zera `parent.scrollTop`; `closeChildPanel` devolve a
+    posicao depois de remover o filho. `ensureChildPanel` nao mudou.
+  - Correcao (css/09-forms-preview.css): `overscroll-behavior: contain` no
+    `.manual-filho-panel` para cortar o encadeamento de rolagem.
+  - Vale para todos os pares pai/filho, porque as duas funcoes sao genericas:
+    processo -> manual, sistema -> filho (manual/processo), sistema -> filho
+    -> neto, servico -> filho -> neto e a previa de rascunho (mesmo painel).
+    Verificado no navegador: processo 3 (pai 551 -> filho 0..800, header em
+    20px, roda no fim nao move o pai, fechar devolve 551) e sistema 1 ->
+    processo 1 -> neto (filho 92 -> neto 0..800, fechar devolve 92). Esc com
+    filho aberto fecha limpo e o proximo processo abre normal.
+  - Ficam de fora, por serem outro assunto: arrastar a barra de rolagem do
+    pai com o filho aberto ainda desloca o filho (daria para travar com
+    `:has` + `overflow: hidden`, com mudanca de largura em alguns
+    navegadores) e `100vh` no celular (o certo seria `100dvh`).
+  - Prova: npm run check exit 0 (368 testes, 0 falhas); npm run test:e2e 40
+    passed / 6 skipped / 0 failed. Validado pelo dono em 2026-10-28.
+  - Arquivos: admin.js, script.js, css/09-forms-preview.css (12 linhas).
 
 =========================================================================
 SESSAO 2026-10-28 (4) — BUSCA DO HISTORICO: EVENTO ERRADO, DEBOUNCE E TETO
