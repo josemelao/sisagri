@@ -145,8 +145,47 @@ SESSAO 2026-10-28 (2) — FASE 2.3 CONCLUIDA (PREVIA DE RASCUNHO)
     f51231c (test(previa): contratos do handshake, do seed e do botao no
     modal) + este commit de docs. Push de codex/fase3 autorizado pelo dono em
     2026-10-28; merge para main nao.
-  - Proximo passo: bloco 3 (PWA) — fases 3.1 (manifest) e 3.2 (service
-    worker), ver docs/planos/plano-evolucao-2026-10.md.
+  - Proximo passo: bloco 3 (PWA) — DESCARTADO em 2026-10-28, ver a sessao
+    seguinte. Restam as pendencias do dono (PENDENTE 11 e PENDENTE 12).
+
+=========================================================================
+SESSAO 2026-10-28 (3) — BLOCO 3 (PWA) DESCARTOU-SE
+=========================================================================
+
+  - Decisao do dono em 2026-10-28: o bloco 3 INTEIRO (3.1 manifest + 3.2
+    service worker) foi descartado por ora. Nao e adiamento com data: fica
+    fora do plano ate o dono reabrir. Nao criar manifest.webmanifest, sw.js
+    nem registro de service worker.
+  - Motivo principal: o app e PULL. dbInit carrega as tabelas do Supabase a
+    cada abertura e grava o retrato no localStorage; nao ha realtime, push
+    nem canal aberto. O SW nao muda isso: ele faz o shell abrir offline e
+    mostra o ultimo retrato do aparelho. Evento gravado as 09:00 pelo admin
+    nao chega ao secretario que abre o app as 14:00 no sitio, sem rede: ele
+    ve o retrato da ultima abertura COM rede.
+  - Risco de confianca maior que o risco tecnico: agenda velha sem aviso de
+    idade leva a decisao errada; hoje a pagina de erro do navegador e
+    honesta.
+  - Custo tecnico maior que o previsto no plano: _initSupabase nao tem
+    timeout (so _erroTransiente trata erro de rede), entao com sinal fraco o
+    boot pode travar dezenas de segundos antes de cair no cache. A 3.2 real
+    seria maior que "um sw.js": timeout no boot + selo "atualizado em HH:MM"
+    + cache do shell.
+  - Outros custos avaliados: SW pegajoso no GitHub Pages (exige
+    skipWaiting/clients.claim, updateViaCache 'none' e rollback); cachear GET
+    do Supabase gravaria resposta autenticada no Cache API, que sobrevive ao
+    logout (PII que o 0015 fechou); fotos e anexos continuariam sem funcionar
+    offline (URL assinada expira e vive so em memoria); precache do shell
+    ~855 KB (index, css, js, vendor supabase-js, fontes e dados.js).
+  - Alternativa operacional adotada no lugar do PWA: abrir o app uma vez com
+    rede antes de ir a campo. O retrato do dia fica no aparelho.
+  - Reavaliar SE, e so entao: (a) houver uso real de consulta em campo com
+    frequencia, (b) o dono aceitar o dado com selo de horario e (c) a 3.2
+    entrar junto com o timeout do dbInit — sem isso o offline nao ajuda.
+  - Ficam de pe, sem depender do PWA e sem prioridade definida: guarda de
+    file:// em abrirPrevia (~3 linhas em admin.js, evita esperar 8 s por um
+    erro que e imediato) e timeout do dbInit.
+  - Estado do repo: nada foi criado nem removido nesta decisao; so os dois
+    planos. main segue em d210411, sem 2.2/2.3 publicadas.
 
 =========================================================================
 SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js

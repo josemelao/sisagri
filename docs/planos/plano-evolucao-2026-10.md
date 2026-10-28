@@ -1,7 +1,9 @@
 # Plano de evolução — performance, operação e offline
 
-**Status:** vigente (2026-10-27)
+**Status:** vigente (2026-10-28) — blocos 1 e 2 concluídos; bloco 3 descartado.
 **Escopo:** três blocos aprovados pelo dono — performance, admin/operação e PWA.
+O **Bloco 3 (PWA) foi descartado em 2026-10-28** por decisão do dono; o registro
+fica abaixo, na seção do bloco, para consulta futura.
 **Regra geral:** cada fase é um patch local, com teste antes da implementação,
 `npm run check` + `npm run test:e2e` verdes e deploy só com autorização.
 
@@ -30,6 +32,7 @@ conta bytes reais por resposta e o tempo até `#boot-screen.is-hidden`).
 1. **Auditoria:** registrar as 14 tabelas de `SUPABASE_TABLES`.
 2. **PWA:** somente leitura offline; escrita offline continua bloqueada com
    mensagem clara. A fila de pendências existente em `db.js` não será ativada.
+   *(Bloco descartado em 2026-10-28 — ver "Bloco 3".)*
 3. **Prévia de rascunho:** fidelidade total via iframe + `postMessage`.
 
 ## Bloco 1 — Performance
@@ -134,6 +137,15 @@ boot ainda incomodar após 1.1 e 1.2.
 
 ## Bloco 3 — PWA (somente leitura)
 
+> **Descartado em 2026-10-28 por decisão do dono — o bloco inteiro, incluindo o
+> manifest (3.1).** O custo/risco não se paga no uso atual: o app é *pull* e o
+> service worker não sincroniza dados — ele só faz o shell abrir. Um secretário
+> que chega ao sítio sem ter aberto o app antes vê o retrato antigo do aparelho,
+> sem saber que é antigo, o que é pior que a página de erro de hoje. Motivos
+> completos e condições de reavaliação em
+> `docs/planos/plano-rascunho-admin.txt` ("SESSAO 2026-10-28 (3)"). O texto
+> abaixo fica como registro da proposta, **não** como trabalho pendente.
+
 ### Fase 3.1 — Manifest
 
 - `manifest.webmanifest` na raiz: `start_url: "./index.html"`, `scope: "./"`,
@@ -160,7 +172,7 @@ boot ainda incomodar após 1.1 e 1.2.
 | 3 | 2.1 | `feat(admin): menu lateral responsivo` |
 | 4 | 2.2 (migration + tela) | `feat(auditoria): registra alteracoes` |
 | 5 | 2.3 | `feat(admin): previa de rascunho` |
-| 6–7 | 3.1 e 3.2 | `feat(pwa): manifest` / `feat(pwa): offline` |
+| 6–7 | 3.1 e 3.2 | **descartado em 2026-10-28** (não faremos) |
 
 ## Fora de escopo
 
