@@ -1,6 +1,6 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
-Atualizado em: 2026-10-27
-Branch de trabalho: codex3 (local, rastreia origin/codex/fase3; base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
+Atualizado em: 2026-10-28
+Branch de trabalho: codex/fase3 (base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
 
 =========================================================================
 ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
@@ -16,13 +16,15 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
     do Bloco 12).
   - EXCECAO AUTORIZADA em 2026-10-22: push de codex/fase3 (Onda 1, Onda 2,
     T12.6, T13.1, T13.2 e registros). O merge para main NAO foi feito.
+  - EXCECAO AUTORIZADA em 2026-10-28: push de codex/fase3 com as fases 2.2
+    e 2.3. O merge para main continua NAO autorizado.
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
     Nesta sessao o catalogo do MCP nao expos get_advisors; conferir no
     dashboard antes de afirmar "0 avisos".
-  - Producao conferida em 2026-10-22 via MCP: 13 migrations (0002-0014),
-    16 tabelas; ultima conferencia de avisos em 2026-10-21: 0.
+  - Producao conferida em 2026-10-28 via MCP: 15 migrations (0002-0015 +
+    audit_log), 17 tabelas; ultima conferencia de avisos em 2026-10-21: 0.
   - Teste conferido em 2026-10-22 via MCP: 15 migrations (0001-0014),
     16 tabelas, 3 buckets privados, 0 edge functions; avisos: 0 na ultima
     conferencia.
@@ -31,6 +33,246 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - Plano mestre: docs/planos/v2-plano-refatoracao.md.
   - Plano de acoes restantes:
     C:\Users\PICHAU\.opencode\plan\2026-10-22-plano-acoes-restantes.md
+
+=========================================================================
+SESSAO 2026-10-28 — FASE 2.2 CONCLUIDA (HISTORICO DE ALTERACOES) + DEPLOY
+=========================================================================
+
+  - Plano: docs/planos/plano-evolucao-2026-10.md, fase 2.2. Concluida e
+    validada pelo dono em 2026-10-28 (tela "Historico" com login real, ja
+    com a migration aplicada em producao).
+  - Migration 0016_audit_log.sql aplicada em `supabase-teste` (versao
+    20261028144459) e em producao (versao 20261028150742).
+    ATENCAO para as proximas sessoes: o MCP `supabase` (producao) e
+    read-only (`supabase_read_only_user`, sem CREATE em public) e NAO expoe
+    apply_migration. A 0016 foi colada pelo dono no SQL Editor do dashboard
+    e a linha em supabase_migrations.schema_migrations foi inserida na
+    mesma janela. Nao perder tempo tentando DDL por esse MCP.
+  - Banco: public.audit_log com 9 colunas, check insert/update/delete,
+    PK + 3 indices de filtro (em, tabela+em, usuario_email+em), RLS ligada,
+    1 policy de SELECT com pode_editar(), ZERO policy de escrita, `anon`
+    sem select/insert e sem execute em limpar_audit_log, `authenticated`
+    com select mas sem insert; 14 triggers auditar_alteracoes (AFTER
+    insert/update/delete), funcao SECURITY DEFINER com
+    search_path = public, pg_temp.
+  - Privacidade: campos text[] guarda so NOMES de coluna (id e updated_at
+    excluidos). INSERT e DELETE gravam campos '{}'; UPDATE grava o diff;
+    rotulo vem de titulo > nome > assunto, truncado em 120. Nenhum valor
+    de CPF, telefone, chassi ou RENAVAM entra no log. Prova no teste: 0
+    vazamentos na transacao revertida.
+  - Resiliencia: falha da auditoria faz `raise warning` e a gravacao do
+    painel continua (decisao do dono). Importacao em massa pela
+    replace_collection (0013) gera uma linha por item, sem alterar a RPC.
+  - App: DB.auditoria.tabelas() e DB.auditoria.listar() em db.js (somente
+    leitura, allowlist de tabela, teto de 500 linhas, retorno
+    {ok, itens, erro}, nunca lanca) e a secao "Historico" em admin.html /
+    admin.js, com filtro de tabela/usuario/periodo no servidor, busca e
+    paginacao pelo list-controller. Zero botao de escrita. Nenhum contrato
+    de DB.* mudou; publish_status, auth e chaves persistidas intocados.
+  - Retencao: select public.limpar_audit_log(); (12 meses) ou
+    limpar_audit_log(24), restrita a is_admin(). O historico nasce vazio:
+    nada anterior ao deploy e registrado.
+  - Prova: npm run check exit 0 (339 testes, 0 falhas, 23 warnings, guard
+    innerHTML abaixo do baseline); npm run test:e2e 36 passed / 6 skipped /
+    0 failed (skips = login sem credenciais). Producao conferida apos o
+    deploy: 9 colunas, 4 indices, RLS, 1 policy de select, 0 de escrita,
+    14 triggers, security definer, anon bloqueado. Probe anonimo:
+    /rest/v1/audit_log -> 401 (42501); /rest/v1/funcionarios -> 200;
+    /rest/v1/manuais?publish_status=eq.published -> 200;
+    /rest/v1/rpc/limpar_audit_log -> 401. Contagem das 14 tabelas igual
+    antes e depois do deploy (138 linhas).
+  - Deploy nao toca em dado: a 0016 nao faz ALTER, DELETE nem INSERT em
+    tabela de conteudo, entao nao ha vinculo a corrigir. Rollback: drop
+    trigger nas 14 tabelas, drop function limpar_audit_log, drop function
+    registrar_auditoria, drop table audit_log.
+  - Commits: 502ad46 (feat(auditoria): registra alteracoes) e f19e0de
+    (chore: alinha versao do package-lock) + este commit de docs. O push
+    saiu em 2026-10-28, junto com a 2.3; main segue sem merge.
+  - Proximo passo: fase 2.3 — previa de rascunho.
+
+=========================================================================
+SESSAO 2026-10-28 (2) — FASE 2.3 CONCLUIDA (PREVIA DE RASCUNHO)
+=========================================================================
+
+  - Plano: docs/planos/plano-evolucao-2026-10.md, fase 2.3. Concluida e
+    validada pelo dono em 2026-10-28 no navegador (modal "Editar Veiculo" ->
+    botao Previa -> painel de detalhe com o registro).
+  - Desenho aprovado pelo dono: iframe de index.html?previa=1 POR CIMA do
+    modal de edicao (z-index 600), mostrando so o painel de detalhe publico;
+    botao no rodape do modal v2, entre Cancelar e Salvar. Sem fallback para
+    abrir a URL publica quando o iframe falha.
+  - Handshake: o iframe gera um nonce, avisa o pai (sisagri-previa-pronta) e
+    so entao o painel manda o payload. O publico aceita apenas mensagem com
+    origin igual, source === window.parent, tipo, nonce e colecao na
+    allowlist de 12. Falha de render volta como sisagri-previa-erro com o
+    mesmo nonce. O timeout de 8 s vale so ate o "pronta" (depois disso o
+    iframe pode demorar a parsear sem falso erro).
+  - Rascunho so em memoria: DB.aplicarPrevia (db.js, metodo NOVO; nenhum
+    metodo existente mudou de assinatura) escreve em _db, nunca em
+    localStorage nem em rede. O registro principal vira 'published' SO na
+    copia (as buscas getPublished*ById sao fail-closed); relacionados entram
+    apenas se ja forem 'published'. Irmaos publicados da mesma colecao entram
+    DEPOIS do registro da previa, o que mantem os paineis filhos navegaveis.
+    carregarDados() roda depois do seed porque os open* leem as listas do
+    modulo, nao o DB.
+  - Colecoes: as 12 com detalhe publico (agendaEventos, arquivos, avisos,
+    funcionarios, infoJuridico, infoMunicipio, infoOrgaos, manuais,
+    processos, servicos, sistemas, veiculos). escalaFerias e acessoRapido
+    nao tem previa. Registro novo (data-id 0) nasce com o botao desabilitado.
+    A previa mostra a ULTIMA VERSAO SALVA, com o aviso no cabecalho.
+  - Bug pego na validacao do dono: montarBotaoPrevia fazia
+    rodape.insertBefore(botao, salvar), mas o Salvar vive dentro de
+    .footer-actions (nao no .modal-footer). O NotFoundError abortava
+    inicializarModalV2 e o botao nunca aparecia. Corrigido inserindo em
+    salvar.parentNode; o e2e 4 trava o contrato sem precisar de login.
+  - file:// NAO serve para testar esta feature (nem o resto do app):
+    location.origin vira a string "null" e postMessage(payload, "null")
+    lanca SyntaxError. Testar sempre por npm run serve
+    (http://localhost:5173), com Ctrl+Shift+R.
+  - Arquivos: db.js, script.js, admin.js, admin.html, admin.css,
+    css/05-detail.css, eslint.config.js (_habilitarPrevia como global
+    consumido, mesmo padrao de DB/dbInit) + tests/unit/previa-rascunho.test.mjs
+    (25 testes) e tests/e2e/previa-rascunho.spec.mjs (4 testes).
+  - Sem migration e sem mudanca de banco. publish_status, auth, chaves
+    persistidas e o fluxo rascunho/publicado ficaram intocados.
+  - Prova: npm run check exit 0 (364 testes, 0 falhas, 24 warnings; o +1 em
+    relacao a 2.2 e no-unused-vars de _habilitarPrevia, consumido por outro
+    arquivo) e guarda de innerHTML abaixo do baseline; npm run test:e2e 40
+    passed / 6 skipped / 0 failed (skips = login sem credenciais). Prova
+    manual no navegador: botao -> overlay -> iframe em modo-previa -> detalhe
+    "Trator YTO EX854".
+  - Commits: 9f78c05 (feat(admin): previa de rascunho em iframe isolado) e
+    f51231c (test(previa): contratos do handshake, do seed e do botao no
+    modal) + este commit de docs. Push de codex/fase3 autorizado pelo dono em
+    2026-10-28; merge para main nao.
+  - Proximo passo: bloco 3 (PWA) — DESCARTADO em 2026-10-28, ver a sessao
+    seguinte. Restam as pendencias do dono (PENDENTE 11 e PENDENTE 12).
+
+=========================================================================
+SESSAO 2026-10-28 (3) — BLOCO 3 (PWA) DESCARTOU-SE
+=========================================================================
+
+  - Decisao do dono em 2026-10-28: o bloco 3 INTEIRO (3.1 manifest + 3.2
+    service worker) foi descartado por ora. Nao e adiamento com data: fica
+    fora do plano ate o dono reabrir. Nao criar manifest.webmanifest, sw.js
+    nem registro de service worker.
+  - Motivo principal: o app e PULL. dbInit carrega as tabelas do Supabase a
+    cada abertura e grava o retrato no localStorage; nao ha realtime, push
+    nem canal aberto. O SW nao muda isso: ele faz o shell abrir offline e
+    mostra o ultimo retrato do aparelho. Evento gravado as 09:00 pelo admin
+    nao chega ao secretario que abre o app as 14:00 no sitio, sem rede: ele
+    ve o retrato da ultima abertura COM rede.
+  - Risco de confianca maior que o risco tecnico: agenda velha sem aviso de
+    idade leva a decisao errada; hoje a pagina de erro do navegador e
+    honesta.
+  - Custo tecnico maior que o previsto no plano: _initSupabase nao tem
+    timeout (so _erroTransiente trata erro de rede), entao com sinal fraco o
+    boot pode travar dezenas de segundos antes de cair no cache. A 3.2 real
+    seria maior que "um sw.js": timeout no boot + selo "atualizado em HH:MM"
+    + cache do shell.
+  - Outros custos avaliados: SW pegajoso no GitHub Pages (exige
+    skipWaiting/clients.claim, updateViaCache 'none' e rollback); cachear GET
+    do Supabase gravaria resposta autenticada no Cache API, que sobrevive ao
+    logout (PII que o 0015 fechou); fotos e anexos continuariam sem funcionar
+    offline (URL assinada expira e vive so em memoria); precache do shell
+    ~855 KB (index, css, js, vendor supabase-js, fontes e dados.js).
+  - Alternativa operacional adotada no lugar do PWA: abrir o app uma vez com
+    rede antes de ir a campo. O retrato do dia fica no aparelho.
+  - Reavaliar SE, e so entao: (a) houver uso real de consulta em campo com
+    frequencia, (b) o dono aceitar o dado com selo de horario e (c) a 3.2
+    entrar junto com o timeout do dbInit — sem isso o offline nao ajuda.
+  - Ficam de pe, sem depender do PWA e sem prioridade definida: guarda de
+    file:// em abrirPrevia (~3 linhas em admin.js, evita esperar 8 s por um
+    erro que e imediato) e timeout do dbInit.
+  - Estado do repo: nada foi criado nem removido nesta decisao; so os dois
+    planos. main = d210411 ate o merge de 2026-10-28 (ver SESSAO (4)).
+
+=========================================================================
+SESSAO 2026-10-28 (4) — BUSCA DO HISTORICO: EVENTO ERRADO, DEBOUNCE E TETO
+=========================================================================
+
+  - Bug relatado pelo dono: "o campo buscar no historico nao faz nada; os
+    filtros funcionam". Causa real: a acao `buscar-auditoria` estava em
+    ACOES_ADMIN_CLIQUE (admin.js) e NAO em ACOES_ADMIN_INPUT. Digitar dispara
+    `input`; o despachante procurava a acao na tabela de input, nao achava e
+    voltava em silencio. Clicar dentro do campo filtrava — foi essa a prova
+    (input -> 2 linhas, clique -> 1).
+  - Correcao: acao movida para ACOES_ADMIN_INPUT + debounce de 200 ms
+    (agendarBuscaAuditoria). O foco/cursor so voltam se o campo ainda estiver
+    ativo. Filtrar, Limpar e paginar chamam liberarBuscaAuditoriaPendente()
+    antes do re-render, senao o texto digitado e ainda nao aplicado se
+    perderia (o render nasce de estado.query).
+  - Teto de leitura 200 -> 1000 (AUDITORIA_LIMITE_PADRAO/MAXIMO em db.js e
+    AUDITORIA_LIMITE em admin.js). Acima do teto a tela mostra "Mostrando os
+    1000 registros mais recentes...". Producao em 2026-10-28: 25 linhas no
+    audit_log.
+  - LIMITACAO CONHECIDA (caminho 2, NAO implementado): busca e paginacao sao
+    no cliente sobre os 1000 carregados. QUANDO O DONO RELATAR "a busca nao
+    acha registro antigo" (ou o log passar de ~1000 linhas), PROPOR: coluna
+    gerada `busca text` em audit_log (rotulo + tabela + usuario_email +
+    array_to_string(campos)) + pg_trgm GIN + `.or(busca.ilike...)` +
+    `.range()` com count exato em DB.auditoria.listar. Resolve busca e
+    paginacao de uma vez; exige migration (SQL Editor; MCP de producao e
+    read-only) e adicao opcional no contrato de DB.*. Nao fazer sem o dono
+    pedir.
+  - Filtros (tabela/usuario/de/ate) continuam no botao "Filtrar": sao
+    consultas ao servidor, nao filtro local; aplicar a cada tecla no e-mail
+    geraria uma query por caractere e perderia o foco. Avaliado e mantido.
+  - Prova: npm run check exit 0 (368 testes, 0 falhas); npm run test:e2e 40
+    passed / 6 skipped / 0 failed. Navegador (secao visivel, sem login):
+    depois de 280 ms, 1 linha; foco em #auditoria-search; cursor na posicao 3.
+  - Arquivos: admin.js, db.js, tests/unit/auditoria.test.mjs (+4 testes).
+  - Merge para main e deploy autorizados pelo dono em 2026-10-28 (fases 2.2,
+    2.3 e esta correcao). main = topo do repositorio apos o push.
+
+=========================================================================
+SESSAO 2026-10-27 (3) — PERFORMANCE: SUBSET DE ICONES E BOOT SEM dados.js
+=========================================================================
+
+  - Plano vigente desta sessao: docs/planos/plano-evolucao-2026-10.md
+    (commit/push 07af2a6 em origin/codex/fase3), aprovado pelo dono.
+    Sessoes 1.1 e 1.2 concluidas e validadas pelo dono; commits locais
+    263d1e8 (icones/2.0.0) e a653daf (fallback sob demanda). Sem push e sem
+    deploy nesta etapa.
+  - Fase 1.1 — subset de icones: scripts/gerar-icones.mjs (npm run icones)
+    varre as classes ph-* do codigo, le os codepoints de
+    vendor/phosphor/bold/style.css e gera vendor/phosphor/subset/
+    phosphor.css (7,2 KB) + phosphor-bold.woff2 (15,1 KB). As paginas
+    carregam so o subset; vendors originais ficam no repo como fonte.
+    tests/unit/icones.test.mjs falha se um icone novo ficar fora do subset.
+  - Bug real achado pelo teste-guarda: ph-file-check nao existe na Phosphor
+    (o selo "arquivo carregado" do admin sempre saiu vazio). Trocado por
+    ph-check-circle em 2 pontos do admin.js; ph ph-image -> ph-bold.
+  - Fase 1.2 — dados.js sob demanda: <script src="dados.js"> saiu do
+    index.html e do admin.html. db.js ganhou _carregarDadosFallback()
+    (promessa memoizada, liberada se a carga falhar) chamada em _initLocal
+    e na falha transitoria sem snapshot; _initSupabase inicia _db = {}.
+    Com o Supabase no ar, /dados.js nao e baixado; sem rede, o app abre com
+    o fallback (tests/e2e/fallback-sob-demanda.spec.mjs, 2 casos).
+  - Travamento dos testes unitarios de db.js: era o helper
+    tests/helpers/load-script.mjs — o <script> falso nunca disparava onload.
+    Agora appendChild de <script src> executa o arquivo no vm e chama
+    onload/onerror, como no navegador. Teste novo cobre a liberacao da
+    promessa para retry.
+  - Prova: npm run check exit 0 (324 testes, 0 falhas); npm run test:e2e
+    37 passed (35 + 2 novos); 121/121 glifos desenham (checagem por pixel);
+    25 icones distintos vindos do banco cobertos pelo subset.
+  - Medicao (mesmo script, sem compressao): 1275 -> 910 KB (-29%),
+    requisicoes 40 -> 38, boot 1,66 s -> 1,02 s (-38%). A meta de 800 KB
+    nao foi atingida: o restante e supabase-js (213 KB), decisao estrutural
+    adiada. Fases 2.1 (menu mobile), 2.2 (auditoria) e 2.3 (previa) e o
+    Bloco 3 (PWA) seguem pendentes; a fase 2.1 foi concluida depois, conforme
+    registrado abaixo.
+  - Fase 2.1 — menu lateral responsivo: implementada no commit ec82ee3.
+    O hamburguer informa aria-expanded/aria-controls; abaixo de 900px a
+    sidebar vira off-canvas, com backdrop, fechamento por selecao de secao ou
+    Esc e devolucao do foco ao botao. Desktop preservado. Revisao do codigo
+    confirmou os fluxos; npx playwright test
+    tests/e2e/admin-mobile-menu.spec.mjs: 3 testes estruturais passaram e 2
+    testes de interacao foram pulados por falta de SISAGRI_ADMIN_EMAIL e
+    SISAGRI_ADMIN_PASSWORD. Portanto, interacao com login real ainda requer
+    validacao com credenciais.
+  - Proximo passo: fase 2.2 — auditoria.
 
 =========================================================================
 SESSAO 2026-10-27 (2) — LOGO, FAVICON E SITE FORA DOS BUSCADORES
@@ -1282,6 +1524,13 @@ PENDENTE 10 — graphify com DOCUMENTACAO (build semantico, decisao do dono 2026
   nao muda codigo nem banco. Sem pressa.
 
 PENDENTE 11 — LIMPEZA DOS DADOS DE TESTE EM PRODUCAO (acao do dono)
+  [RESOLVIDO 2026-10-28] O dono fez a limpeza pelo painel. Conferido por
+  SELECT read-only em producao: 0 registros para funcionarios 18, manuais 7,
+  processos 5, veiculos 4 e 5, arquivos 67 e avisos 2 (os 10 "claros" e os 2
+  "despublicar e revisar" nao existem mais). FALTA: acesso_rapido id=2 ainda
+  aponta para a URL de sessao do Roundcube (cpsess3814901933), que expira —
+  trocar por https://sh-pro92.hostgator.com.br:2096/.
+  Historico da pendencia (texto original):
   O MCP de producao e READ_ONLY; a execucao e pelo painel administrativo.
   Antes: exportar os dados pelo painel e guardar fora do repo (backup).
   Excluir (10 registros claros):

@@ -765,6 +765,8 @@ async function _carregarColecoesSupabase(colecoes) {
   if (resultados.length > 0 && falhas.length === resultados.length) {
     throw falhas[0].reason;
   }
+  const semSnapshot = [];
+
   resultados.forEach((resultado, indice) => {
     if (resultado.status !== 'rejected') return;
     const colecao = colecoes[indice];
@@ -774,12 +776,26 @@ async function _carregarColecoesSupabase(colecoes) {
       || status === 401 || status === 403;
     // Negado: zera (perfil sem acesso). Falha transitoria: mantem o snapshot
     // de dados.js em vez de sumir com a lista inteira.
-    if (negado || !_db[colecao]) _db[colecao] = [];
+    if (negado) {
+      _db[colecao] = [];
+    } else if (!_db[colecao]) {
+      semSnapshot.push(colecao);
+    }
     console.warn(
       '[DB] Colecao indisponivel para este perfil:',
       resultado.reason?.message || resultado.reason
     );
   });
+
+  // Falha transitoria sem snapshot em memoria: carrega o fallback uma vez.
+  if (semSnapshot.length) {
+    const carregou = await _carregarDadosFallback();
+    semSnapshot.forEach((colecao) => {
+      const snapshot = carregou ? window.DADOS_INICIAIS?.[colecao] : null;
+      _db[colecao] = Array.isArray(snapshot) ? JSON.parse(JSON.stringify(snapshot)) : [];
+    });
+  }
+
   return resultados;
 }
 
@@ -1068,6 +1084,40 @@ async function dbInit(opcoes = {}) {
   return pronto;
 }
 
+/**
+ * Carrega `dados.js` sob demanda (fase 1.2 do plano de evolucao).
+ *
+ * O arquivo e a rede de seguranca para quando o Supabase nao responde; no
+ * caminho normal ele nao pesa no boot. A promessa e memoizada para que boot,
+ * retry e falha parcial reaproveitem a mesma injecao (e liberada se falhar).
+ */
+let _dadosFallbackPromessa = null;
+
+function _carregarDadosFallback() {
+  if (window.DADOS_INICIAIS) return Promise.resolve(true);
+  if (_dadosFallbackPromessa) return _dadosFallbackPromessa;
+
+  _dadosFallbackPromessa = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'dados.js';
+    script.async = true;
+    // Se a carga falhar, libera a promessa: um retry (login, volta da rede)
+    // ainda pode carregar o fallback nesta mesma sessao.
+    const concluir = (ok) => {
+      if (!ok) _dadosFallbackPromessa = null;
+      resolve(ok);
+    };
+    script.onload = () => concluir(!!window.DADOS_INICIAIS);
+    script.onerror = () => {
+      console.warn('[DB] Falha ao carregar dados.js (fallback).');
+      concluir(false);
+    };
+    document.head.appendChild(script);
+  });
+
+  return _dadosFallbackPromessa;
+}
+
 function _initLocal() {
   _geracaoAuth += 1;
   _acessoInterno = false;
@@ -1121,19 +1171,21 @@ function _initLocal() {
     }
   }
 
-  // 3. Fallback: dados iniciais de dados.js
-  if (!window.DADOS_INICIAIS) {
-    console.error('[DB] dados.js não encontrado! Inclua <script src="dados.js"> antes de db.js.');
-    _db = {};
-    return Promise.resolve();
-  }
-  _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
-  _migrarPublishStatusLegado(_db);
-  _ensureAppConfig();
-  _normalizeDbCollections();
-  _applyLocalAppConfig();
-  console.info('[DB] Dados carregados de dados.js (padrão).');
-  return Promise.resolve();
+  // 3. Fallback: dados iniciais de dados.js (carregado sob demanda)
+  return _carregarDadosFallback().then((disponivel) => {
+    if (!disponivel) {
+      console.error('[DB] dados.js indisponível; iniciando com a base vazia.');
+      _db = {};
+      _ensureAppConfig();
+      return;
+    }
+    _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS)); // deep clone
+    _migrarPublishStatusLegado(_db);
+    _ensureAppConfig();
+    _normalizeDbCollections();
+    _applyLocalAppConfig();
+    console.info('[DB] Dados carregados de dados.js (padrão).');
+  });
 }
 
 async function _initSupabase(escopo = 'admin') {
@@ -1161,7 +1213,9 @@ async function _initSupabase(escopo = 'admin') {
     return _initLocal();
   }
 
-  _db = JSON.parse(JSON.stringify(window.DADOS_INICIAIS || {}));
+  // Sem snapshot em memoria: o fallback (dados.js) entra sob demanda, so no
+  // caminho de falha. No boot normal a base comeca vazia e o Supabase preenche.
+  _db = {};
   _ensureAppConfig();
   _normalizeDbCollections();
   _applyLocalAppConfig();
@@ -1223,6 +1277,81 @@ async function _initSupabase(escopo = 'admin') {
     });
     return _initLocal();
   }
+}
+
+/* ============================================================
+   PREVIA DE RASCUNHO (fase 2.3) — seed em memoria
+   ------------------------------------------------------------
+   O iframe de previa (`index.html?previa=1`) nao faz boot do Supabase:
+   recebe o rascunho do painel por postMessage e o coloca SO na memoria
+   deste processo. Nada e persistido, nada vai para o localStorage e o
+   registro principal e marcado como publicado para as buscas fail-closed
+   do app publico (`getPublished*ById`) funcionarem.
+   ============================================================ */
+let _previaHabilitada = false;
+
+/** Liga o seed de previa. So o modo `?previa=1` liga; o padrao e desligado. */
+function _habilitarPrevia(habilitar) {
+  _previaHabilitada = !!habilitar;
+}
+
+/* ============================================================
+   AUDITORIA (fase 2.2) — leitura do historico de alteracoes
+   ------------------------------------------------------------
+   A gravacao e do banco: trigger `auditar_alteracoes` nas 14 tabelas de
+   SUPABASE_TABLES (supabase/migrations/0016_audit_log.sql). Aqui so existe
+   leitura, para a tela "Historico" do admin. Nada de escrita pelo cliente.
+   ============================================================ */
+const AUDITORIA_TABELAS = Object.values(SUPABASE_TABLES);
+// Teto de leitura da tela de Historico. A busca e a paginacao sao no cliente,
+// entao tudo que passa disso fica invisivel para a busca (ver PENDENTE no
+// handoff: quando o dono relatar "nao acha registro antigo", propor a busca
+// no servidor com coluna gerada + indice trigram).
+const AUDITORIA_LIMITE_PADRAO = 1000;
+const AUDITORIA_LIMITE_MAXIMO = 1000;
+const AUDITORIA_DATA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Converte `YYYY-MM-DD` no comeco/fim do dia. Valor invalido vira ''. */
+function _limiteDoDiaAuditoria(valor, hora) {
+  const texto = typeof valor === 'string' ? valor.trim() : '';
+  return AUDITORIA_DATA_ISO.test(texto) ? `${texto}T${hora}` : '';
+}
+
+/**
+ * Normaliza os filtros da tela. Tabela fora da allowlist e ignorada (nunca
+ * vira consulta arbitraria) e o limite tem teto fixo.
+ */
+function _normalizarFiltrosAuditoria(filtros = {}) {
+  const dados = filtros && typeof filtros === 'object' ? filtros : {};
+  const tabela = typeof dados.tabela === 'string' ? dados.tabela.trim() : '';
+  const email = typeof dados.email === 'string' ? dados.email.trim() : '';
+  const limitePedido = Number(dados.limite);
+  const limite = Number.isFinite(limitePedido) && limitePedido > 0
+    ? Math.min(Math.trunc(limitePedido), AUDITORIA_LIMITE_MAXIMO)
+    : AUDITORIA_LIMITE_PADRAO;
+
+  return {
+    tabela: AUDITORIA_TABELAS.includes(tabela) ? tabela : '',
+    email,
+    de: _limiteDoDiaAuditoria(dados.de, '00:00:00'),
+    ate: _limiteDoDiaAuditoria(dados.ate, '23:59:59.999'),
+    limite,
+  };
+}
+
+/** Deixa a linha do log previsivel para a tela (campos sempre array). */
+function _normalizarRegistroAuditoria(registro) {
+  const item = registro && typeof registro === 'object' ? registro : {};
+  return {
+    id: item.id ?? null,
+    tabela: item.tabela || '',
+    registro_id: item.registro_id ?? null,
+    operacao: item.operacao || '',
+    campos: Array.isArray(item.campos) ? item.campos.map(String) : [],
+    rotulo: item.rotulo || '',
+    usuario_email: item.usuario_email || '',
+    em: item.em || '',
+  };
 }
 
 /* ============================================================
@@ -1491,6 +1620,97 @@ const DB = {
   /** Retorna o banco completo (para exportação) */
   exportAll() {
     return JSON.parse(JSON.stringify(_db));
+  },
+
+  /**
+   * Fase 2.3: coloca o rascunho na memoria do iframe de previa. Sem
+   * persistencia e sem Supabase. Fora do modo previa, nao faz nada.
+   */
+  aplicarPrevia(colecao, registro, relacionados = {}) {
+    if (!_previaHabilitada) return false;
+    if (typeof colecao !== 'string' || !colecao) return false;
+    if (!registro || typeof registro !== 'object' || Array.isArray(registro)) return false;
+
+    if (!_db) _db = {};
+    // O registro principal precisa passar pelas buscas fail-closed do app
+    // publico; a copia vive so aqui dentro.
+    const principal = { ...registro, publish_status: 'published' };
+    const listaPrincipal = [principal];
+
+    if (relacionados && typeof relacionados === 'object' && !Array.isArray(relacionados)) {
+      Object.entries(relacionados).forEach(([nome, itens]) => {
+        if (!Array.isArray(itens)) return;
+        const publicados = itens
+          .filter((item) => item && typeof item === 'object' && item.publish_status === 'published')
+          .map((item) => ({ ...item }));
+
+        if (nome === colecao) {
+          // Irmaos publicados da mesma colecao entram DEPOIS do registro da
+          // previa: sem isso a lista publicada sobrescreveria o rascunho, e
+          // os paineis filhos perderiam os registros navegaveis.
+          publicados.forEach((item) => {
+            if (String(item.id) !== String(principal.id)) listaPrincipal.push(item);
+          });
+          return;
+        }
+
+        _db[nome] = publicados;
+      });
+    }
+
+    _db[colecao] = listaPrincipal;
+    return true;
+  },
+
+  /* ---- Fase 2.2: historico de alteracoes (somente leitura) ---- */
+  auditoria: {
+    /** Tabelas auditadas pelo trigger, na ordem de SUPABASE_TABLES. */
+    tabelas() {
+      return AUDITORIA_TABELAS.slice();
+    },
+
+    /**
+     * Le o log de auditoria. Nunca lanca: devolve `{ ok, itens, erro }` para a
+     * tela mostrar o motivo sem derrubar o painel.
+     */
+    async listar(filtros = {}) {
+      const params = _normalizarFiltrosAuditoria(filtros);
+      if (!_sb) {
+        return {
+          ok: false,
+          itens: [],
+          erro: 'Supabase indisponivel: o historico vem do banco.',
+        };
+      }
+
+      try {
+        let consulta = _sb
+          .from('audit_log')
+          .select('id, tabela, registro_id, operacao, campos, rotulo, usuario_email, em')
+          .order('em', { ascending: false })
+          .limit(params.limite);
+
+        if (params.tabela) consulta = consulta.eq('tabela', params.tabela);
+        if (params.email) consulta = consulta.ilike('usuario_email', `%${params.email}%`);
+        if (params.de) consulta = consulta.gte('em', params.de);
+        if (params.ate) consulta = consulta.lte('em', params.ate);
+
+        const { data, error } = await consulta;
+        if (error) throw error;
+
+        return {
+          ok: true,
+          itens: (Array.isArray(data) ? data : []).map(_normalizarRegistroAuditoria),
+          erro: '',
+        };
+      } catch (e) {
+        return {
+          ok: false,
+          itens: [],
+          erro: e?.message || 'Falha ao carregar o historico.',
+        };
+      }
+    },
   },
 
   getLayoutConfig() {

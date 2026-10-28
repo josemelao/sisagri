@@ -10,6 +10,7 @@ aceitos.
 |---|---|---|
 | `plano-rascunho-admin.txt` | Handoff operacional entre agentes: estado da fase, pendências, provas e próximo passo | **Vigente** |
 | `v2-plano-refatoracao.md` | Plano mestre de refatoração e robustez (blocos 0–13) e registro das etapas | **Vigente** |
+| `plano-evolucao-2026-10.md` | Evolução aprovada: performance, admin/operação e PWA offline de leitura | **Vigente** |
 
 ## Documentos relacionados
 

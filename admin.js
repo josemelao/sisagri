@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAdmin() {
   atualizarStatusBanco();
   initNav();
+  initMenuMobile();
   renderOverview();
   aplicarPermissoesUI();
 }
@@ -412,6 +413,53 @@ function initNav() {
 }
 
 /* ============================================================
+   MENU LATERAL NO CELULAR (fase 2.1)
+   ------------------------------------------------------------
+   Abaixo de 900px a sidebar vira off-canvas (CSS). Aqui ficam so o
+   estado: abrir/fechar, aria-expanded, backdrop, Esc e devolucao do foco.
+   Em desktop o botao esta oculto e nada disto roda.
+   ============================================================ */
+function initMenuMobile() {
+  const botao = document.getElementById('admin-menu-toggle');
+  const sidebar = document.getElementById('admin-sidebar');
+  const backdrop = document.getElementById('admin-backdrop');
+  if (!botao || !sidebar) return;
+
+  const estaAberto = () => sidebar.classList.contains('is-open');
+
+  const fechar = (devolverFoco = true) => {
+    if (!estaAberto()) return;
+    sidebar.classList.remove('is-open');
+    botao.setAttribute('aria-expanded', 'false');
+    botao.setAttribute('aria-label', 'Abrir menu');
+    if (backdrop) backdrop.hidden = true;
+    document.body.classList.remove('admin-menu-aberto');
+    if (devolverFoco) botao.focus();
+  };
+
+  const abrir = () => {
+    sidebar.classList.add('is-open');
+    botao.setAttribute('aria-expanded', 'true');
+    botao.setAttribute('aria-label', 'Fechar menu');
+    if (backdrop) backdrop.hidden = false;
+    document.body.classList.add('admin-menu-aberto');
+    sidebar.focus();
+  };
+
+  botao.addEventListener('click', () => (estaAberto() ? fechar(true) : abrir()));
+  if (backdrop) backdrop.addEventListener('click', () => fechar(true));
+
+  // Escolher uma secao fecha o menu (o clique continua tratado em initNav).
+  sidebar.addEventListener('click', (e) => {
+    if (e.target.closest('.admin-nav-item[data-section]')) fechar(true);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && estaAberto()) fechar(true);
+  });
+}
+
+/* ============================================================
    VISÃO GERAL
    ============================================================ */
 function renderOverview() {
@@ -460,6 +508,7 @@ const MODULES = {
   infoJuridico: { render: () => renderInfoSimples('infoJuridico', 'Secretaria', 'Informações da Secretaria'), searchId: 'infosimples-search-infoJuridico' },
   infoMunicipio: { render: () => renderInfoSimples('infoMunicipio', 'Município e Prefeitura', 'Informações do Município'), searchId: 'infosimples-search-infoMunicipio' },
   infoOrgaos: { render: () => renderInfoOrgaos(), searchId: 'orgaos-search' },
+  auditoria: { render: () => renderAuditoria(), searchId: 'auditoria-search' },
   configuracoes: { render: () => carregarConfigDashboard() },
 };
 
@@ -572,6 +621,7 @@ function fecharModal(force = false) {
     return;
   }
   const tinhaV2 = !!_modalV2;
+  fecharPrevia();
   _modalCloseOnBackdrop = false;
   _modalV2 = null;
   document.getElementById('modal-box').classList.remove('modal-box--v2');
@@ -589,6 +639,7 @@ function inicializarModalV2() {
   document.querySelectorAll('#modal-content .step-list[data-acordeao]').forEach((list) => {
     iniciarAcordeaoV2(list);
   });
+  montarBotaoPrevia();
   setTimeout(() => {
     const titulo = document.getElementById('modal-title');
     if (titulo) titulo.focus();
@@ -716,6 +767,8 @@ if (_modalContentEl) {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    // A previa fica por cima do modal: Esc fecha so ela.
+    if (_previaAtiva) { fecharPrevia(); return; }
     if (_modalV2 && _modalV2.sujo) {
       const barra = document.getElementById('unsaved-bar');
       if (barra && barra.classList.contains('visible')) esconderBarraAlteracoes();
@@ -2104,6 +2157,225 @@ function modalV2HTML(titulo, corpo, rodape, item = {}) {
     </div>`;
 }
 
+/* ============================================================
+   PREVIA DE RASCUNHO (fase 2.3)
+   ------------------------------------------------------------
+   O botao "Previa" entra no rodape dos modais v2 e abre um iframe de
+   `index.html?previa=1` por cima do modal. O rascunho viaja por postMessage
+   (mesma origem, com nonce) e fica so na memoria do iframe. A previa mostra
+   a ULTIMA VERSAO SALVA: editar sem salvar nao muda a previa.
+   Colecoes sem detalhe publico (ferias/acesso) nao tem previa.
+   ============================================================ */
+const PREVIA_POR_ACAO = {
+  funcionario: 'funcionarios',
+  manual: 'manuais',
+  processo: 'processos',
+  arquivo: 'arquivos',
+  veiculo: 'veiculos',
+  sistema: 'sistemas',
+  servico: 'servicos',
+  aviso: 'avisos',
+  evento: 'agendaEventos',
+  orgao: 'infoOrgaos',
+};
+
+const PREVIA_COLECOES_PUBLICAS = [
+  'agendaEventos',
+  'arquivos',
+  'avisos',
+  'funcionarios',
+  'infoJuridico',
+  'infoMunicipio',
+  'infoOrgaos',
+  'manuais',
+  'processos',
+  'servicos',
+  'sistemas',
+  'veiculos',
+];
+
+const PREVIA_TIMEOUT_MS = 8000;
+let _previaAtiva = null;
+
+/** Traduz o `data-salvar` do modal na colecao que tem detalhe publico. */
+function previaColecaoPorSalvar(acao, colecaoExtra = '') {
+  if (!acao) return null;
+  if (acao === 'infoSimples') {
+    return PREVIA_COLECOES_PUBLICAS.includes(colecaoExtra) ? colecaoExtra : null;
+  }
+  const colecao = PREVIA_POR_ACAO[acao] || '';
+  return PREVIA_COLECOES_PUBLICAS.includes(colecao) ? colecao : null;
+}
+
+function previaPermitida(colecao) {
+  return PREVIA_COLECOES_PUBLICAS.includes(colecao);
+}
+
+/**
+ * Payload da previa: o registro salvo + os publicados que ele referencia.
+ * Rascunhos de outras colecoes ficam de fora (o publico nunca os mostraria).
+ */
+function previaMontarPayload(colecao, id) {
+  const registro = DB.getById(colecao, id);
+  if (!registro) return null;
+
+  const relacionados = {};
+  ['funcionarios', 'manuais', 'processos', 'arquivos'].forEach((nome) => {
+    // Fail-closed, igual ao publico: so 'published' explicito viaja.
+    relacionados[nome] = DB.get(nome).filter((item) => item.publish_status === 'published');
+  });
+
+  return { colecao, registro, relacionados };
+}
+
+/** Botao no rodape do modal. Sem registro salvo, nasce desabilitado. */
+function montarBotaoPrevia() {
+  const conteudo = document.getElementById('modal-content');
+  if (!conteudo || typeof conteudo.querySelector !== 'function') return;
+
+  const rodape = conteudo.querySelector('.modal-footer');
+  const salvar = rodape && rodape.querySelector('[data-acao="salvar-modal"]');
+  if (!rodape || !salvar) return;
+  if (rodape.querySelector('[data-acao="abrir-previa"]')) return;
+
+  const colecao = previaColecaoPorSalvar(
+    salvar.dataset.salvar || '',
+    salvar.dataset.colecao || '',
+  );
+  const id = Number(salvar.dataset.id || 0);
+  if (!colecao) return;
+
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'btn btn-ghost';
+  botao.setAttribute('data-acao', 'abrir-previa');
+  botao.dataset.colecao = colecao;
+  botao.dataset.id = String(id);
+
+  const icone = document.createElement('i');
+  icone.className = 'ph-bold ph-eye';
+  botao.appendChild(icone);
+  botao.appendChild(document.createTextNode(' Prévia'));
+
+  if (!id) {
+    botao.disabled = true;
+    botao.title = 'Salve como rascunho para ver a prévia.';
+  } else {
+    botao.title = 'Ver a última versão salva como o público veria.';
+  }
+
+  // `salvar` vive dentro de `.footer-actions`, nao no `.modal-footer`: a
+  // insercao tem de ser no pai dele, senao o insertBefore lanca.
+  const paiDoSalvar = salvar.parentNode;
+  if (!paiDoSalvar) return;
+
+  paiDoSalvar.insertBefore(botao, salvar);
+}
+
+function abrirPrevia(colecao, id) {
+  if (!previaPermitida(colecao)) {
+    toast('Prévia não disponível para este tipo.', 'error');
+    return;
+  }
+
+  const payload = previaMontarPayload(colecao, id);
+  if (!payload) {
+    toast('Salve o registro antes de abrir a prévia.', 'error');
+    return;
+  }
+
+  fecharPrevia();
+
+  const overlay = document.getElementById('preview-overlay');
+  const frame = document.getElementById('preview-frame');
+  const estado = document.getElementById('preview-estado');
+  if (!overlay || !frame) return;
+
+  _previaAtiva = { colecao, id, payload, frame, overlay, estado, nonce: '', timer: null };
+  overlay.hidden = false;
+  overlay.classList.add('open');
+  if (estado) estado.hidden = true;
+
+  const fechar = overlay.querySelector('[data-acao="fechar-previa"]');
+  if (fechar && typeof fechar.focus === 'function') fechar.focus();
+
+  frame.src = 'index.html?previa=1';
+  _previaAtiva.timer = setTimeout(() => {
+    previaFalhou('A prévia não respondeu. Verifique se o navegador bloqueou o iframe.');
+  }, PREVIA_TIMEOUT_MS);
+}
+
+function previaFalhou(mensagem) {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  if (ativa.timer) clearTimeout(ativa.timer);
+  ativa.timer = null;
+
+  const texto = document.getElementById('preview-estado-texto');
+  if (texto) texto.textContent = mensagem;
+  if (ativa.estado) ativa.estado.hidden = false;
+}
+
+function fecharPrevia() {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  if (ativa.timer) clearTimeout(ativa.timer);
+
+  const { overlay, frame } = ativa;
+  if (frame) frame.src = 'about:blank';
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.hidden = true;
+  }
+  _previaAtiva = null;
+
+  const gatilho = document.querySelector('[data-acao="abrir-previa"]');
+  if (gatilho && typeof gatilho.focus === 'function') gatilho.focus();
+}
+
+function tentarPreviaNovamente() {
+  const ativa = _previaAtiva;
+  if (!ativa) return;
+  abrirPrevia(ativa.colecao, ativa.id);
+}
+
+/** Handshake: o iframe manda o nonce; so entao o payload sai do painel. */
+function tratarMensagemPrevia(evento) {
+  const ativa = _previaAtiva;
+  if (!ativa || !evento || !evento.data) return;
+  if (evento.origin !== location.origin) return;
+  if (!ativa.frame || evento.source !== ativa.frame.contentWindow) return;
+
+  const dados = evento.data;
+  if (dados.tipo === 'sisagri-previa-pronta') {
+    if (typeof dados.nonce !== 'string' || !dados.nonce) return;
+    ativa.nonce = dados.nonce;
+    // O iframe respondeu: o restante (parse do app + render) pode demorar.
+    if (ativa.timer) clearTimeout(ativa.timer);
+    ativa.timer = null;
+    ativa.frame.contentWindow.postMessage(
+      {
+        tipo: 'sisagri-previa-registro',
+        nonce: dados.nonce,
+        colecao: ativa.payload.colecao,
+        registro: ativa.payload.registro,
+        relacionados: ativa.payload.relacionados,
+      },
+      location.origin,
+    );
+    return;
+  }
+
+  if (dados.tipo === 'sisagri-previa-erro') {
+    if (!ativa.nonce || dados.nonce !== ativa.nonce) return;
+    previaFalhou('A prévia não conseguiu renderizar este registro.');
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('message', tratarMensagemPrevia);
+}
+
 function iconPickerCompactoHTML(iconeAtual, corAtual, fieldId) {
   const ic = iconeAtual || 'ph-leaf';
   const cor = corAtual || '#2d6a4f';
@@ -2164,7 +2436,7 @@ function manualPassoHTML(p = {}, i = 0) {
   const id = novoIdItemV2();
   const thumb = imagem
     ? `<img src="${escHtml(imagem)}" alt="" />`
-    : '<i class="ph ph-image"></i>';
+    : '<i class="ph-bold ph-image"></i>';
   return `
     <div class="step" data-id="${id}">
       <div class="step-head" role="button" tabindex="0" aria-expanded="false">
@@ -2889,7 +3161,7 @@ function formArquivo(a = {}) {
 
   const arquivoStatus = temArquivo
     ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
-         <i class="ph-bold ph-file-check"></i>
+         <i class="ph-bold ph-check-circle"></i>
          <span>${escHtml(nomeArquivoAtual)}</span>
          <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
        </div>`
@@ -2960,7 +3232,7 @@ function processarArquivoUpload(input) {
   const status = document.querySelector('#a-file-input').closest('.form-group').querySelector('div:first-of-type');
   if (status) {
     status.outerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:.8rem;color:var(--accent)">
-      <i class="ph-bold ph-file-check"></i>
+      <i class="ph-bold ph-check-circle"></i>
       <span>${escHtml(file.name)}</span>
       <button type="button" class="btn btn-danger btn-sm" style="margin-left:auto" data-acao="remover-arquivo-upload"><i class="ph-bold ph-trash"></i></button>
     </div>`;
@@ -4410,6 +4682,232 @@ async function salvarOrgao(id) {
 
 
 /* ============================================================
+   HISTORICO DE ALTERACOES (fase 2.2) — somente leitura
+   ------------------------------------------------------------
+   A gravacao e do banco (trigger `auditar_alteracoes`, migration 0016).
+   Aqui so existe leitura: filtros por tabela/usuario/periodo, busca livre
+   no que ja foi carregado e paginacao do list-controller. Nenhum botao de
+   escrita, de proposito.
+   ============================================================ */
+
+const AUDITORIA_ROTULOS_TABELA = {
+  acesso_rapido: 'Acesso Rápido',
+  agenda_eventos: 'Eventos',
+  arquivos: 'Arquivos',
+  avisos: 'Avisos',
+  escala_ferias: 'Férias',
+  funcionarios: 'Funcionários',
+  info_juridico: 'Secretaria',
+  info_municipio: 'Município',
+  info_orgaos: 'Órgãos Externos',
+  manuais: 'Manuais',
+  processos: 'Processos',
+  servicos: 'Serviços',
+  sistemas: 'Sistemas',
+  veiculos: 'Veículos',
+};
+
+const AUDITORIA_OPERACOES = {
+  insert: 'Criado',
+  update: 'Atualizado',
+  delete: 'Excluído',
+};
+
+let AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
+let AUDITORIA_ERRO = '';
+let AUDITORIA_CARREGANDO = false;
+// Teto de leitura (igual ao de db.js). A busca e a paginacao sao no cliente:
+// o que passar disso fica fora do alcance da tela.
+const AUDITORIA_LIMITE = 1000;
+
+const AUDITORIA_LISTA = window.SisListas.createListController({
+  colecao: 'auditoria',
+  pageSize: 20,
+  filter: filtrarAuditoriaLista,
+  render: pintarAuditoria,
+  searchInputId: 'auditoria-search',
+});
+
+function filtrarAuditoriaLista(itens, query) {
+  const alvo = normalizeSearchText(query);
+  if (!alvo) return itens;
+  return itens.filter((item) => {
+    const busca = [
+      item.rotulo,
+      item.tabela,
+      AUDITORIA_ROTULOS_TABELA[item.tabela] || '',
+      item.usuario_email,
+      item.operacao,
+      AUDITORIA_OPERACOES[item.operacao] || '',
+      (item.campos || []).join(' '),
+    ].join(' ');
+    return normalizeSearchText(busca).includes(alvo);
+  });
+}
+
+function formatarDataAuditoria(valor) {
+  const data = valor ? new Date(valor) : null;
+  if (!data || Number.isNaN(data.getTime())) return '';
+  return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** Casca imediata (tabela + filtros) e depois a leitura no banco. */
+function renderAuditoria() {
+  AUDITORIA_LISTA.render();
+  carregarAuditoria();
+}
+
+async function carregarAuditoria() {
+  AUDITORIA_CARREGANDO = true;
+  AUDITORIA_ERRO = '';
+  AUDITORIA_LISTA.render();
+
+  const resposta = await DB.auditoria.listar({ ...AUDITORIA_FILTROS, limite: AUDITORIA_LIMITE });
+
+  AUDITORIA_CARREGANDO = false;
+  if (!resposta.ok) AUDITORIA_ERRO = resposta.erro || 'Falha ao carregar o histórico.';
+  AUDITORIA_LISTA.setItems(resposta.itens);
+}
+
+function aplicarFiltrosAuditoria() {
+  // Se o usuario digitou e clicou em Filtrar antes dos 200 ms, aplica a busca
+  // pendente primeiro: o re-render abaixo nasce de `estado.query` e apagaria
+  // o texto ainda nao aplicado.
+  liberarBuscaAuditoriaPendente();
+  const valor = (id) => {
+    const campo = document.getElementById(id);
+    return campo ? String(campo.value || '').trim() : '';
+  };
+  AUDITORIA_FILTROS = {
+    tabela: valor('auditoria-tabela'),
+    email: valor('auditoria-email'),
+    de: valor('auditoria-de'),
+    ate: valor('auditoria-ate'),
+  };
+  carregarAuditoria();
+}
+
+function limparFiltrosAuditoria() {
+  liberarBuscaAuditoriaPendente();
+  AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
+  carregarAuditoria();
+}
+
+/**
+ * Busca do historico com debounce de 200 ms.
+ *
+ * Sem o atraso, cada tecla re-renderiza a secao inteira (cabecalho, filtros,
+ * tabela e animacao de linhas). O atraso e so desta tela: as outras 13 buscas
+ * do admin continuam em tempo real.
+ */
+let AUDITORIA_BUSCA_TIMER = null;
+
+/** Aplica o valor atual do campo; so devolve o foco se ele ainda estiver nele. */
+function aplicarBuscaAuditoria() {
+  const campo = document.getElementById('auditoria-search');
+  if (!campo) return;
+  if (document.activeElement === campo) AUDITORIA_LISTA.aplicarBusca(campo);
+  else AUDITORIA_LISTA.setQuery(campo.value);
+}
+
+function agendarBuscaAuditoria() {
+  if (AUDITORIA_BUSCA_TIMER) clearTimeout(AUDITORIA_BUSCA_TIMER);
+  AUDITORIA_BUSCA_TIMER = setTimeout(() => {
+    AUDITORIA_BUSCA_TIMER = null;
+    aplicarBuscaAuditoria();
+  }, 200);
+}
+
+/** Antes de paginar/filtrar: aplica agora o que estava esperando o debounce. */
+function liberarBuscaAuditoriaPendente() {
+  if (!AUDITORIA_BUSCA_TIMER) return;
+  clearTimeout(AUDITORIA_BUSCA_TIMER);
+  AUDITORIA_BUSCA_TIMER = null;
+  aplicarBuscaAuditoria();
+}
+
+function pintarAuditoria(estado) {
+  const opcoesTabela = DB.auditoria.tabelas()
+    .map((tabela) => `<option value="${escHtml(tabela)}"${AUDITORIA_FILTROS.tabela === tabela ? ' selected' : ''}>${escHtml(AUDITORIA_ROTULOS_TABELA[tabela] || tabela)}</option>`)
+    .join('');
+
+  const linhas = estado.itens.map((item) => `
+        <tr>
+          <td>${escHtml(formatarDataAuditoria(item.em))}</td>
+          <td>${escHtml(AUDITORIA_ROTULOS_TABELA[item.tabela] || item.tabela)}</td>
+          <td><div class="td-truncate td-truncate--curto" title="${escHtml(item.rotulo)}">${escHtml(item.rotulo) || `#${escHtml(item.registro_id)}`}</div></td>
+          <td>${escHtml(AUDITORIA_OPERACOES[item.operacao] || item.operacao)}</td>
+          <td><div class="td-truncate">${escHtml((item.campos || []).join(', ')) || '&mdash;'}</div></td>
+          <td>${escHtml(item.usuario_email) || 'sistema'}</td>
+        </tr>`).join('');
+
+  const vazio = AUDITORIA_CARREGANDO
+    ? 'Carregando histórico...'
+    : AUDITORIA_ERRO
+      ? `Não foi possível carregar o histórico: ${escHtml(AUDITORIA_ERRO)}`
+      : estado.semResultado
+        ? 'Nenhuma alteração corresponde à busca.'
+        : 'Nenhuma alteração registrada para os filtros informados.';
+
+  // A busca e a paginacao sao no cliente sobre o que foi carregado. Se o teto
+  // foi atingido, existe historico mais antigo que esta tela nao ve: avisar
+  // evita o falso "nao existe" quando alguem procura um registro antigo.
+  const avisoLimite = estado.totalColecao >= AUDITORIA_LIMITE
+    ? `<p style="font-size:.78rem;color:var(--text-muted);margin:-8px 0 16px">
+         <strong>Mostrando os ${AUDITORIA_LIMITE} registros mais recentes.</strong>
+         Use os filtros ou o per&#237;odo para alcan&#231;ar os anteriores.
+       </p>`
+    : '';
+
+  renderAdminSectionWithTableAnimation(document.getElementById('section-auditoria'), `
+    <div class="admin-section-header">
+      <h1 class="admin-section-title">Hist&#243;rico</h1>
+      <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="auditoria-search" value="${escHtml(estado.query)}" data-acao="buscar-auditoria" aria-label="Buscar no histórico por registro, tabela, usuário ou campo" placeholder="Buscar no historico..." style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-auditoria" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Histórico">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-auditoria" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Histórico">Proxima</button>
+      </div>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">
+      Registro autom&#225;tico das altera&#231;&#245;es feitas no painel. Somente leitura: guarda <strong>quais</strong> campos mudaram, nunca o conte&#250;do (sem CPF, telefone, chassi ou RENAVAM).
+    </p>
+    ${avisoLimite}
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+      <div class="form-group" style="margin:0;min-width:170px">
+        <label for="auditoria-tabela">Tabela</label>
+        <select id="auditoria-tabela">
+          <option value="">Todas</option>
+          ${opcoesTabela}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;min-width:190px">
+        <label for="auditoria-email">Usu&#225;rio</label>
+        <input id="auditoria-email" value="${escHtml(AUDITORIA_FILTROS.email)}" placeholder="e-mail" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label for="auditoria-de">De</label>
+        <input id="auditoria-de" type="date" value="${escHtml(AUDITORIA_FILTROS.de)}" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label for="auditoria-ate">At&#233;</label>
+        <input id="auditoria-ate" type="date" value="${escHtml(AUDITORIA_FILTROS.ate)}" />
+      </div>
+      <button class="btn btn-ghost btn-sm" data-acao="filtrar-auditoria">Filtrar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="limpar-auditoria">Limpar</button>
+    </div>
+    <div class="admin-table-wrap"><table>
+      <caption class="sr-only">Histórico</caption>
+      <thead><tr><th scope="col">Data</th><th scope="col">Tabela</th><th scope="col">Registro</th><th scope="col">Opera&#231;&#227;o</th><th scope="col">Campos</th><th scope="col">Usu&#225;rio</th></tr></thead>
+      <tbody>${linhas || `
+        <tr><td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">${vazio}</td></tr>`}
+      </tbody>
+    </table></div>`);
+}
+
+/* ============================================================
    ACOES DELEGADAS — um unico listener para os templates do admin
    ------------------------------------------------------------
    Os botoes/inputs das tabelas carregam `data-acao` + `data-*` e
@@ -4488,6 +4986,14 @@ const ACOES_ADMIN_CLIQUE = {
   'novo-orgao': () => novoOrgao(),
   'editar-orgao': (el) => editarOrgao(Number(el.dataset.id)),
 
+  // Historico (fase 2.2) — somente leitura
+  'pagina-auditoria': (el) => {
+    liberarBuscaAuditoriaPendente();
+    AUDITORIA_LISTA.setPage(AUDITORIA_LISTA.getState().pagina + Number(el.dataset.delta));
+  },
+  'filtrar-auditoria': () => aplicarFiltrosAuditoria(),
+  'limpar-auditoria': () => limparFiltrosAuditoria(),
+
   'confirmar-delecao': (el) => confirmarDelecao(el.dataset.colecao, Number(el.dataset.id), el.dataset.nome),
 
   // Modais e formularios (grupo 3)
@@ -4534,6 +5040,11 @@ const ACOES_ADMIN_CLIQUE = {
   'salvar-rascunho': () => salvarComoRascunho(),
   'continuar-editando': () => esconderBarraAlteracoes(),
 
+  // Previa de rascunho (fase 2.3)
+  'abrir-previa': (el) => abrirPrevia(el.dataset.colecao, Number(el.dataset.id)),
+  'fechar-previa': () => fecharPrevia(),
+  'tentar-previa': () => tentarPreviaNovamente(),
+
   // Acoes do HTML (grupo 4)
   'fazer-login': () => fazerLogin(),
   'fazer-logout': () => fazerLogout(),
@@ -4555,6 +5066,9 @@ const ACOES_ADMIN_INPUT = {
   'buscar-acesso': (el) => atualizarBuscaAcesso(el),
   'buscar-info-simples': (el) => atualizarBuscaInfoSimples(el.dataset.colecao, el),
   'buscar-info-orgaos': (el) => atualizarBuscaInfoOrgaos(el),
+  // O historico tem debounce proprio (200 ms); a acao mora aqui, no input,
+  // e nao na tabela de clique — era esse o defeito que deixava a busca muda.
+  'buscar-auditoria': () => agendarBuscaAuditoria(),
 };
 
 const ACOES_ADMIN_CHANGE = {

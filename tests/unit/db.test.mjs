@@ -413,6 +413,27 @@ test('_initLocal: migra a chave legada seagri_db_v1', async () => {
   assert.equal(h.localStorage.getItem('seagri_db_v1'), null, 'deveria remover a chave antiga');
 });
 
+test('_carregarDadosFallback: falha nao trava o app e libera nova tentativa', async () => {
+  const h = carregarDb();
+  // Aponta o <script> injetado para um arquivo inexistente: exercita o onerror.
+  h.run(`
+    const criarElementoOriginal = document.createElement;
+    document.createElement = (tag) => {
+      const el = criarElementoOriginal(tag);
+      if (tag === 'script') Object.defineProperty(el, 'src', { value: 'arquivo-inexistente.js' });
+      return el;
+    };
+  `);
+
+  const carregou = await h.get('_carregarDadosFallback')();
+  assert.equal(carregou, false, 'sem arquivo, o fallback deve falhar sem excecao');
+  assert.equal(
+    h.run('_dadosFallbackPromessa === null'),
+    true,
+    'a promessa rejeitada deve ser liberada para uma nova tentativa'
+  );
+});
+
 test('dbInit: no fallback local ainda assina as URLs do Storage', async () => {
   const { cliente, chamadas } = clienteStorageFake();
   // Simula o Supabase fora do ar: _initSupabase lanca e o app cai em _initLocal.

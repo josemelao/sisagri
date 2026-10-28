@@ -74,6 +74,7 @@ O Playwright usa a porta 5173 por padrão (`playwright.config.mjs`).
 ```bash
 npm run check       # sintaxe + lint + guarda de innerHTML + testes unitários
 npm run test:e2e    # Playwright
+npm run icones      # regenera o subset de ícones (após adicionar um ícone novo)
 npm run visual:diff -- <refA> <refB>   # compara CSS renderizado entre dois commits
 ```
 

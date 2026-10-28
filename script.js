@@ -563,7 +563,143 @@ function scheduleGlobalSearchIndexBuild() {
 /* ============================================================
    INICIALIZAÇÃO
    ============================================================ */
+/* ============================================================
+   PREVIA DE RASCUNHO (fase 2.3) — modo `?previa=1`
+   ------------------------------------------------------------
+   O painel abre esta pagina num iframe e manda o rascunho por postMessage.
+   Aqui NAO ha boot de dados: a pagina so valida a mensagem (mesma origem,
+   window pai e nonce), guarda o registro em memoria (DB.aplicarPrevia) e
+   abre o painel de detalhe publico que ja existe. Nada e gravado.
+   ============================================================ */
+const PREVIA_COLECOES = {
+  agendaEventos: "openEvento",
+  arquivos: "openArquivo",
+  avisos: "openAviso",
+  funcionarios: "openFuncionario",
+  infoJuridico: "openJuridico",
+  infoMunicipio: "openMunicipio",
+  infoOrgaos: "openOrgao",
+  manuais: "openManual",
+  processos: "openProcesso",
+  servicos: "openServico",
+  sistemas: "openSistema",
+  veiculos: "openVeiculo",
+};
+
+const PREVIA_OVERLAYS = {
+  agendaEventos: "evento-detail-overlay",
+  arquivos: "arquivo-detail-overlay",
+  avisos: "aviso-detail-overlay",
+  funcionarios: "func-detail-overlay",
+  infoJuridico: "juridico-detail-overlay",
+  infoMunicipio: "municipio-detail-overlay",
+  infoOrgaos: "orgaos-detail-overlay",
+  manuais: "manual-detail-overlay",
+  processos: "processo-detail-overlay",
+  servicos: "servico-detail-overlay",
+  sistemas: "sistema-detail-overlay",
+  veiculos: "veiculo-detail-overlay",
+};
+
+const MODO_PREVIA = typeof location !== "undefined"
+  && new URLSearchParams(location.search || "").get("previa") === "1";
+
+/** Valida a mensagem do painel: origem, janela pai, tipo, nonce e colecao. */
+function previaAceitaMensagem(evento, esperado = {}) {
+  if (!evento || !evento.data) return false;
+  if (!esperado.origin || evento.origin !== esperado.origin) return false;
+  if (!esperado.source || evento.source !== esperado.source) return false;
+
+  const dados = evento.data;
+  if (dados.tipo !== "sisagri-previa-registro") return false;
+  if (!esperado.nonce || dados.nonce !== esperado.nonce) return false;
+  if (typeof dados.colecao !== "string" || !PREVIA_COLECOES[dados.colecao]) return false;
+  if (!dados.registro || typeof dados.registro !== "object" || Array.isArray(dados.registro)) return false;
+
+  return true;
+}
+
+/** Chama o abridor publico da colecao (o mesmo do clique no card). */
+function previaDespachar(colecao, id) {
+  const nome = PREVIA_COLECOES[colecao];
+  if (!nome) return false;
+  const abrir = window[nome];
+  if (typeof abrir !== "function") return false;
+  abrir(id);
+  return true;
+}
+
+/** Guarda o payload em memoria e abre o painel. */
+function previaAplicarPayload(dados) {
+  if (!DB.aplicarPrevia(dados.colecao, dados.registro, dados.relacionados || {})) return false;
+
+  // Os abridores publicos leem as listas do modulo (`manuais`, `processos`...),
+  // nao o `DB`. Sem isso o registro existiria so no banco em memoria.
+  carregarDados();
+
+  // O overlay vive dentro da secao da pagina; no modo previa a secao fica
+  // oculta. Mover para o body preserva o `position: fixed` e isola o painel.
+  const overlay = document.getElementById(PREVIA_OVERLAYS[dados.colecao]);
+  if (overlay && overlay.parentNode && overlay.parentNode !== document.body) {
+    document.body.appendChild(overlay);
+  }
+
+  return previaDespachar(dados.colecao, dados.registro.id);
+}
+
+/** Nonce do handshake. `crypto` pode faltar em contexto antigo/teste. */
+function previaGerarNonce() {
+  try {
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+  } catch {
+    // segue para o fallback
+  }
+  return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/** Boot curto do iframe: sem Supabase, sem rota, sem dados publicos. */
+function iniciarModoPrevia() {
+  const nonce = previaGerarNonce();
+  const esperado = { origin: location.origin, source: window.parent, nonce };
+
+  _habilitarPrevia(true);
+  document.body.classList.add("modo-previa");
+  document.body.classList.remove("app-loading");
+  document.documentElement.style.background = "transparent";
+
+  const boot = document.getElementById("boot-screen");
+  if (boot) {
+    boot.classList.add("is-hidden");
+    boot.setAttribute("aria-busy", "false");
+  }
+
+  initAcoesDelegadas();
+  initAcessibilidade();
+
+  window.addEventListener("message", (evento) => {
+    if (!previaAceitaMensagem(evento, esperado)) return;
+    if (previaAplicarPayload(evento.data)) return;
+    // O painel fica esperando; avisa para ele mostrar o estado de erro.
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ tipo: "sisagri-previa-erro", nonce }, location.origin);
+    }
+  });
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ tipo: "sisagri-previa-pronta", nonce }, location.origin);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  if (MODO_PREVIA) {
+    iniciarModoPrevia();
+    return;
+  }
+
   initBootScreen();
   iniciarProgressoBoot("Carregando sistema", "Conectando ao banco e preparando a p\u00e1gina inicial.", 8);
   // dbInit() carrega os dados (localStorage ou dados.js)

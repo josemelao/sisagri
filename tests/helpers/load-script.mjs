@@ -138,12 +138,13 @@ export function criarDocumento(elementos = {}) {
  */
 export function carregarScripts(arquivos, opcoes = {}) {
   const ouvintes = new Map();
+  const documento = criarDocumento(opcoes.elementos);
 
   const sandbox = {
     console: opcoes.console || console,
     localStorage: criarLocalStorage(opcoes.localStorage),
     sessionStorage: criarLocalStorage(),
-    document: criarDocumento(opcoes.elementos),
+    document: documento,
     navigator: { userAgent: 'node-test', language: 'pt-BR', onLine: true },
     location: { href: 'http://localhost:5173/index.html', pathname: '/index.html', hash: '', search: '', origin: 'http://localhost:5173' },
     history: { pushState: () => {}, replaceState: () => {}, back: () => {}, forward: () => {} },
@@ -210,6 +211,29 @@ export function carregarScripts(arquivos, opcoes = {}) {
   if (opcoes.cliente) sandbox.__clienteFake = opcoes.cliente;
 
   const contexto = vm.createContext(sandbox);
+
+  // Como no navegador: anexar um <script src> executa o arquivo e chama
+  // `onload` (ou `onerror`). Sem isso, quem carrega script sob demanda —
+  // `db.js` -> `dados.js` no fallback — ficaria pendurado para sempre.
+  const anexarScript = (filho) => {
+    if (filho?.tagName !== 'SCRIPT' || !filho.src) return;
+    const relativo = String(filho.src).replace(/^\.?\//, '');
+    try {
+      const codigo = fs.readFileSync(path.join(RAIZ, relativo), 'utf8');
+      new vm.Script(codigo, { filename: relativo }).runInContext(contexto);
+      queueMicrotask(() => filho.onload?.({ type: 'load' }));
+    } catch (erro) {
+      queueMicrotask(() => filho.onerror?.(erro));
+    }
+  };
+  for (const alvo of [documento.head, documento.body]) {
+    const anexarOriginal = alvo.appendChild;
+    alvo.appendChild = (filho) => {
+      const resultado = anexarOriginal(filho);
+      anexarScript(filho);
+      return resultado;
+    };
+  }
 
   for (const arquivo of arquivos) {
     const codigo = fs.readFileSync(path.join(RAIZ, arquivo), 'utf8');

@@ -612,3 +612,23 @@
   color: white;
 }
 
+/* ============================================================
+   MODO PREVIA (fase 2.3) — `index.html?previa=1`
+   A pagina vira so o painel de detalhe, com fundo transparente, para o
+   iframe do painel mostrar o rascunho por cima do modal de edicao.
+   ============================================================ */
+body.modo-previa {
+  background: transparent;
+  overflow: hidden;
+}
+
+body.modo-previa .sidebar,
+body.modo-previa .main-content,
+body.modo-previa #boot-screen {
+  display: none;
+}
+
+body.modo-previa .detail-overlay {
+  background: transparent;
+}
+
