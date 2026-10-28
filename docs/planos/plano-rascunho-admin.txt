@@ -1,15 +1,16 @@
 HANDOFF VIGENTE — SisAgri / Fase 2
 Atualizado em: 2026-10-28
-Branch de trabalho: codex/fase3 (base main = d210411; main = producao; deploy atual e anterior ao Bloco 12/13)
+Branch de trabalho: codex/fase3 (main = producao = d9bf4b0, merge de 2026-10-28)
 
 =========================================================================
 ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
 =========================================================================
 
-  - Repo em C:\Users\PICHAU\Desktop\SisAgri.
+  - Repo em C:\Users\Usuario\Desktop\SisAgri (antes C:\Users\PICHAU\Desktop\SisAgri).
   - Branch local codex3, rastreando origin/codex/fase3. O trabalho vai nela.
-  - main = producao; origin/main em d210411. O site publicado ainda e anterior
-    ao Bloco 12/13 (hash routing, SEO, robots e sitemap nao estao no ar).
+  - main = producao; origin/main em d9bf4b0 (merge de 2026-10-28). O site
+    publicado ja inclui hash routing, SEO, robots/sitemap, fases 2.2 e 2.3, a
+    correcao dos dois bugs visuais e o fallback com 13 funcionarios.
   - POLITICA DESTA FASE: commit local SIM, push NAO. Nada vai para o remoto
     sem o dono pedir explicitamente.
   - EXCECAO AUTORIZADA em 2026-10-21: push de codex/fase3 (Bloco 11 + registro
@@ -21,6 +22,9 @@ ESTADO NESTA MAQUINA (2026-10-22) — leia antes do "ESTADO DO REMOTO"
   - EXCECAO AUTORIZADA em 2026-10-28: push de codex/fase3 com a correcao dos
     dois bugs visuais (ver SESSAO (5)). O merge para main desta rodada nao foi
     pedido.
+  - EXCECAO AUTORIZADA em 2026-10-28: MERGE de codex/fase3 em main e push de
+    main (d9bf4b0), a pedido do dono. Deploy do GitHub Pages concluido; site
+    conferido no ar (ver SESSAO (6)).
   - MCPs do OpenCode conectados em 2026-10-21:
       supabase        -> producao yiujxempodimegdoexqo, READ_ONLY
       supabase-teste  -> teste zoywmvuswyosehlddmma, escrita
@@ -189,6 +193,41 @@ SESSAO 2026-10-28 (3) — BLOCO 3 (PWA) DESCARTOU-SE
     erro que e imediato) e timeout do dbInit.
   - Estado do repo: nada foi criado nem removido nesta decisao; so os dois
     planos. main = d210411 ate o merge de 2026-10-28 (ver SESSAO (4)).
+
+=========================================================================
+SESSAO 2026-10-28 (6) — MERGE PARA MAIN E DEPLOY DOS DOIS BUGS VISUAIS
+=========================================================================
+
+  - Autorizado pelo dono em 2026-10-28: merge de codex/fase3 em main.
+    Merge commit d9bf4b0 ("merge: publica a correcao dos bugs visuais e o
+    fallback atualizado"), --no-ff, sem conflito (7 arquivos, +108/-49).
+    Push: b2a20c6..d9bf4b0. Branch de trabalho voltou para codex/fase3.
+  - Antes do merge, nesta mesma rodada:
+      * dados.js regerado por scripts/gerar-dados-fallback.mjs (68cdbf5):
+        13 funcionarios (saem ids 2 Railson e 15 Marcio), 6 manuais,
+        3 processos, 61 arquivos, 3 veiculos. Arquivos id 64 passa ao nome
+        atual da producao ("Modelo - Ordem de Servico - Trator").
+      * PENDENTE 9.3, 11 e 12 fechadas nos planos e bloco `env:` do ci.yml
+        descomentado com os secrets criados pelo dono (0c190b9).
+  - Prova local antes do merge: npm run check exit 0 (368 testes, 0 falhas).
+  - Prova no CI: run #35 (0c190b9, branch) verde nos dois jobs, com o passo
+    E2E em 144 s (antes ~96 s com 6 testes pulados), sinal de que os logins
+    reais rodaram. Pages build de d9bf4b0: success.
+  - Prova no site publicado (https://josemelao.github.io/sisagri/):
+      * dados.js: DB.get("funcionarios").length = 13, processos = 3;
+      * admin.js publicado tem 3 ocorrencias de style="height:38px"
+        (e-mail + Filtrar + Limpar);
+      * script.js publicado tem paiScroll; 09-forms-preview.css publicado tem
+        overscroll-behavior: contain;
+      * processo 3 no ar: pai rolado 500 -> filho cobre 0..800, fundo dentro do
+        filho; fechar devolve 500. Nenhum pageerror.
+  - Observacao de dados (nao corrigida, decisao do dono): infoMunicipio id 4
+    ("Gestao e Lideranca") ainda cita "Railson Rodrigues Do Nascimento" como
+    Subsecretario(a) Municipal. Essa colecao nao e coberta pelo gerador do
+    fallback e o registro continua publicado; se ele saiu do cargo, o texto
+    precisa ser atualizado no painel.
+  - Estado final: main = origin/main = d9bf4b0; codex/fase3 = origin/codex/fase3
+    (1 commit de docs a frente: este registro).
 
 =========================================================================
 SESSAO 2026-10-28 (5) — DOIS BUGS VISUAIS: FILTROS DO HISTORICO E PAINEL FILHO
