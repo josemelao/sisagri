@@ -45,11 +45,11 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Testes de ponta a ponta
-        # Os fluxos do painel sao pulados sem credenciais.
-        # Para roda-los no CI, criar os secrets e descomentar o env abaixo.
-        # env:
-        #   SISAGRI_ADMIN_EMAIL: ${{ secrets.SISAGRI_ADMIN_EMAIL }}
-        #   SISAGRI_ADMIN_PASSWORD: ${{ secrets.SISAGRI_ADMIN_PASSWORD }}
+        # Os fluxos do painel rodam com os secrets do repositorio. Sem eles,
+        # os 6 testes de login sao pulados em vez de falhar.
+        env:
+          SISAGRI_ADMIN_EMAIL: ${{ secrets.SISAGRI_ADMIN_EMAIL }}
+          SISAGRI_ADMIN_PASSWORD: ${{ secrets.SISAGRI_ADMIN_PASSWORD }}
         run: npm run test:e2e
 
       - name: Guardar relatorio em caso de falha

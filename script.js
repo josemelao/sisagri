@@ -3669,6 +3669,11 @@ function closeChildPanel(panelId, nestedPanelIds = []) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
 
+  // Posicao do pai guardada em openNestedPanel (o filho e absoluto dentro
+  // de um pai rolavel, entao sobe junto com o scroll do pai).
+  const pai = document.getElementById(panel.dataset.paiPanel || '');
+  const paiScroll = panel.dataset.paiScroll;
+
   nestedPanelIds.forEach((nestedId) => {
     const nested = document.getElementById(nestedId);
     if (nested) nested.remove();
@@ -3677,6 +3682,7 @@ function closeChildPanel(panelId, nestedPanelIds = []) {
   panel.classList.remove('open');
   setTimeout(() => {
     if (panel.isConnected) panel.remove();
+    if (pai && paiScroll !== undefined) pai.scrollTop = Number(paiScroll);
   }, CHILD_PANEL_TRANSITION_MS);
 }
 
@@ -3697,6 +3703,20 @@ function ensureChildPanel(parentPanelId, panelId, className = 'manual-filho-pane
 function openNestedPanel({ parentPanelId, panelId, renderFn, className = 'manual-filho-panel' }) {
   const panel = ensureChildPanel(parentPanelId, panelId, className);
   if (!panel) return null;
+
+  // O filho e `position: absolute` dentro de um pai rolavel: se o pai estiver
+  // rolado, o filho sobe junto e o conteudo do pai reaparece por baixo dele.
+  // Guardar a posicao e voltar ao topo mantem o filho cobrindo o painel
+  // inteiro; closeChildPanel devolve a posicao ao fechar.
+  const pai = document.getElementById(parentPanelId);
+  if (pai) {
+    if (panel.dataset.paiPanel === undefined) {
+      panel.dataset.paiPanel = parentPanelId;
+      panel.dataset.paiScroll = String(pai.scrollTop);
+    }
+    pai.scrollTop = 0;
+  }
+
   animateChildPanelSwap(panel, () => renderFn(panel));
   return panel;
 }

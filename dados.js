@@ -40,17 +40,6 @@ window.DADOS_INICIAIS = {
       foto_storage_path: "funcionarios/1792502351870-foto-1.jpg"
     },
     {
-      id: 2,
-      nome: "Railson Rodrigues Do Nascimento",
-      cargo: "Subsecretário de Agricultura",
-      lotacao: "Secretaria de Agricultura E Desenv Rural",
-      departamento: "Gabinete do Subsecretário",
-      orgao: "Governo Municipal de Cidade Ocidental",
-      vinculo: "Comissão",
-      descricao: null,
-      foto_storage_path: "funcionarios/1792502353083-foto-2.jpg"
-    },
-    {
       id: 3,
       nome: "Adson Botelho Junior",
       cargo: "Gerente de Cadastro do Sim",
@@ -181,17 +170,6 @@ window.DADOS_INICIAIS = {
       vinculo: "Comissão",
       descricao: null,
       foto_storage_path: "funcionarios/1792502361094-foto-14.jpg"
-    },
-    {
-      id: 15,
-      nome: "Marcio Aranha da Costa",
-      cargo: "Supervisor de Serviços Administrativos I",
-      lotacao: "Secretaria de Agricultura E Desenv Rural",
-      departamento: "Gabinete do Secretário",
-      orgao: "Governo Municipal de Cidade Ocidental",
-      vinculo: "Comissão",
-      descricao: null,
-      foto_storage_path: "funcionarios/1777484157427-Maricio-Aranha.jpeg"
     },
   ],
 
@@ -1294,7 +1272,7 @@ window.DADOS_INICIAIS = {
     },
     {
       id: 64,
-      nome: "Ordem de Serviço - Trator",
+      nome: "Modelo - Ordem de Serviço - Trator",
       tipo: "PDF",
       tags: ["formulário", "relatório"],
       arquivo_nome: "Ordem de Serviço - Trator.pdf",

@@ -208,8 +208,10 @@ rascunho e sem refactor de passagem.
 
 ## Ações do dono
 
-1. Criar os secrets do CI.
-2. ~~PENDENTE 11: limpeza dos 10 registros de teste~~ — feito em 2026-10-28.
-   Falta só `node scripts/gerar-dados-fallback.mjs` e trocar a URL de sessão do
-   `acesso_rapido` id=2.
+1. ~~Criar os secrets do CI~~ — feito em 2026-10-28 (`SISAGRI_ADMIN_EMAIL` e
+   `SISAGRI_ADMIN_PASSWORD`); o bloco `env:` do `ci.yml` foi descomentado e os
+   6 testes antes pulados passam a rodar a partir do próximo push.
+2. ~~PENDENTE 11: limpeza dos 10 registros de teste~~ — fechado em 2026-10-28:
+   dados limpos, URL do `acesso_rapido` id=2 corrigida e `dados.js` regerado
+   (13 funcionários, 6 manuais, 3 processos, 61 arquivos, 3 veículos).
 3. Confirmar a retenção do log de auditoria (sugestão: 12 meses).
