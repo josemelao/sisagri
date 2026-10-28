@@ -508,6 +508,7 @@ const MODULES = {
   infoJuridico: { render: () => renderInfoSimples('infoJuridico', 'Secretaria', 'Informações da Secretaria'), searchId: 'infosimples-search-infoJuridico' },
   infoMunicipio: { render: () => renderInfoSimples('infoMunicipio', 'Município e Prefeitura', 'Informações do Município'), searchId: 'infosimples-search-infoMunicipio' },
   infoOrgaos: { render: () => renderInfoOrgaos(), searchId: 'orgaos-search' },
+  auditoria: { render: () => renderAuditoria(), searchId: 'auditoria-search' },
   configuracoes: { render: () => carregarConfigDashboard() },
 };
 
@@ -4458,6 +4459,180 @@ async function salvarOrgao(id) {
 
 
 /* ============================================================
+   HISTORICO DE ALTERACOES (fase 2.2) — somente leitura
+   ------------------------------------------------------------
+   A gravacao e do banco (trigger `auditar_alteracoes`, migration 0016).
+   Aqui so existe leitura: filtros por tabela/usuario/periodo, busca livre
+   no que ja foi carregado e paginacao do list-controller. Nenhum botao de
+   escrita, de proposito.
+   ============================================================ */
+
+const AUDITORIA_ROTULOS_TABELA = {
+  acesso_rapido: 'Acesso Rápido',
+  agenda_eventos: 'Eventos',
+  arquivos: 'Arquivos',
+  avisos: 'Avisos',
+  escala_ferias: 'Férias',
+  funcionarios: 'Funcionários',
+  info_juridico: 'Secretaria',
+  info_municipio: 'Município',
+  info_orgaos: 'Órgãos Externos',
+  manuais: 'Manuais',
+  processos: 'Processos',
+  servicos: 'Serviços',
+  sistemas: 'Sistemas',
+  veiculos: 'Veículos',
+};
+
+const AUDITORIA_OPERACOES = {
+  insert: 'Criado',
+  update: 'Atualizado',
+  delete: 'Excluído',
+};
+
+let AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
+let AUDITORIA_ERRO = '';
+let AUDITORIA_CARREGANDO = false;
+
+const AUDITORIA_LISTA = window.SisListas.createListController({
+  colecao: 'auditoria',
+  pageSize: 20,
+  filter: filtrarAuditoriaLista,
+  render: pintarAuditoria,
+  searchInputId: 'auditoria-search',
+});
+
+function filtrarAuditoriaLista(itens, query) {
+  const alvo = normalizeSearchText(query);
+  if (!alvo) return itens;
+  return itens.filter((item) => {
+    const busca = [
+      item.rotulo,
+      item.tabela,
+      AUDITORIA_ROTULOS_TABELA[item.tabela] || '',
+      item.usuario_email,
+      item.operacao,
+      AUDITORIA_OPERACOES[item.operacao] || '',
+      (item.campos || []).join(' '),
+    ].join(' ');
+    return normalizeSearchText(busca).includes(alvo);
+  });
+}
+
+function formatarDataAuditoria(valor) {
+  const data = valor ? new Date(valor) : null;
+  if (!data || Number.isNaN(data.getTime())) return '';
+  return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** Casca imediata (tabela + filtros) e depois a leitura no banco. */
+function renderAuditoria() {
+  AUDITORIA_LISTA.render();
+  carregarAuditoria();
+}
+
+async function carregarAuditoria() {
+  AUDITORIA_CARREGANDO = true;
+  AUDITORIA_ERRO = '';
+  AUDITORIA_LISTA.render();
+
+  const resposta = await DB.auditoria.listar({ ...AUDITORIA_FILTROS, limite: 200 });
+
+  AUDITORIA_CARREGANDO = false;
+  if (!resposta.ok) AUDITORIA_ERRO = resposta.erro || 'Falha ao carregar o histórico.';
+  AUDITORIA_LISTA.setItems(resposta.itens);
+}
+
+function aplicarFiltrosAuditoria() {
+  const valor = (id) => {
+    const campo = document.getElementById(id);
+    return campo ? String(campo.value || '').trim() : '';
+  };
+  AUDITORIA_FILTROS = {
+    tabela: valor('auditoria-tabela'),
+    email: valor('auditoria-email'),
+    de: valor('auditoria-de'),
+    ate: valor('auditoria-ate'),
+  };
+  carregarAuditoria();
+}
+
+function limparFiltrosAuditoria() {
+  AUDITORIA_FILTROS = { tabela: '', email: '', de: '', ate: '' };
+  carregarAuditoria();
+}
+
+function pintarAuditoria(estado) {
+  const opcoesTabela = DB.auditoria.tabelas()
+    .map((tabela) => `<option value="${escHtml(tabela)}"${AUDITORIA_FILTROS.tabela === tabela ? ' selected' : ''}>${escHtml(AUDITORIA_ROTULOS_TABELA[tabela] || tabela)}</option>`)
+    .join('');
+
+  const linhas = estado.itens.map((item) => `
+        <tr>
+          <td>${escHtml(formatarDataAuditoria(item.em))}</td>
+          <td>${escHtml(AUDITORIA_ROTULOS_TABELA[item.tabela] || item.tabela)}</td>
+          <td><div class="td-truncate td-truncate--curto" title="${escHtml(item.rotulo)}">${escHtml(item.rotulo) || `#${escHtml(item.registro_id)}`}</div></td>
+          <td>${escHtml(AUDITORIA_OPERACOES[item.operacao] || item.operacao)}</td>
+          <td><div class="td-truncate">${escHtml((item.campos || []).join(', ')) || '&mdash;'}</div></td>
+          <td>${escHtml(item.usuario_email) || 'sistema'}</td>
+        </tr>`).join('');
+
+  const vazio = AUDITORIA_CARREGANDO
+    ? 'Carregando histórico...'
+    : AUDITORIA_ERRO
+      ? `Não foi possível carregar o histórico: ${escHtml(AUDITORIA_ERRO)}`
+      : estado.semResultado
+        ? 'Nenhuma alteração corresponde à busca.'
+        : 'Nenhuma alteração registrada para os filtros informados.';
+
+  renderAdminSectionWithTableAnimation(document.getElementById('section-auditoria'), `
+    <div class="admin-section-header">
+      <h1 class="admin-section-title">Hist&#243;rico</h1>
+      <div class="admin-section-header-spacer"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="auditoria-search" value="${escHtml(estado.query)}" data-acao="buscar-auditoria" aria-label="Buscar no histórico por registro, tabela, usuário ou campo" placeholder="Buscar no historico..." style="width:260px;max-width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem" />
+        <span class="badge" role="status" aria-live="polite" aria-atomic="true">${estado.total} de ${estado.totalColecao}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-auditoria" data-delta="-1" ${estado.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior — Histórico">Anterior</button>
+        <span role="status" aria-live="polite" aria-atomic="true" style="font-size:.8rem;color:var(--text-muted);min-width:95px;text-align:center">Pagina ${estado.pagina} de ${estado.totalPaginas}</span>
+        <button class="btn btn-ghost btn-sm" data-acao="pagina-auditoria" data-delta="1" ${estado.pagina >= estado.totalPaginas ? 'disabled' : ''} aria-label="Próxima — Histórico">Proxima</button>
+      </div>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px">
+      Registro autom&#225;tico das altera&#231;&#245;es feitas no painel. Somente leitura: guarda <strong>quais</strong> campos mudaram, nunca o conte&#250;do (sem CPF, telefone, chassi ou RENAVAM).
+    </p>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+      <div class="form-group" style="margin:0;min-width:170px">
+        <label for="auditoria-tabela">Tabela</label>
+        <select id="auditoria-tabela">
+          <option value="">Todas</option>
+          ${opcoesTabela}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;min-width:190px">
+        <label for="auditoria-email">Usu&#225;rio</label>
+        <input id="auditoria-email" value="${escHtml(AUDITORIA_FILTROS.email)}" placeholder="e-mail" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label for="auditoria-de">De</label>
+        <input id="auditoria-de" type="date" value="${escHtml(AUDITORIA_FILTROS.de)}" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label for="auditoria-ate">At&#233;</label>
+        <input id="auditoria-ate" type="date" value="${escHtml(AUDITORIA_FILTROS.ate)}" />
+      </div>
+      <button class="btn btn-ghost btn-sm" data-acao="filtrar-auditoria">Filtrar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="limpar-auditoria">Limpar</button>
+    </div>
+    <div class="admin-table-wrap"><table>
+      <caption class="sr-only">Histórico</caption>
+      <thead><tr><th scope="col">Data</th><th scope="col">Tabela</th><th scope="col">Registro</th><th scope="col">Opera&#231;&#227;o</th><th scope="col">Campos</th><th scope="col">Usu&#225;rio</th></tr></thead>
+      <tbody>${linhas || `
+        <tr><td colspan="6" style="padding:14px;color:var(--text-muted);text-align:center">${vazio}</td></tr>`}
+      </tbody>
+    </table></div>`);
+}
+
+/* ============================================================
    ACOES DELEGADAS — um unico listener para os templates do admin
    ------------------------------------------------------------
    Os botoes/inputs das tabelas carregam `data-acao` + `data-*` e
@@ -4535,6 +4710,14 @@ const ACOES_ADMIN_CLIQUE = {
   'pagina-info-orgaos': (el) => mudarPaginaInfoOrgaos(Number(el.dataset.delta)),
   'novo-orgao': () => novoOrgao(),
   'editar-orgao': (el) => editarOrgao(Number(el.dataset.id)),
+
+  // Historico (fase 2.2) — somente leitura
+  'pagina-auditoria': (el) => AUDITORIA_LISTA.setPage(
+    AUDITORIA_LISTA.getState().pagina + Number(el.dataset.delta),
+  ),
+  'buscar-auditoria': (el) => AUDITORIA_LISTA.aplicarBusca(el),
+  'filtrar-auditoria': () => aplicarFiltrosAuditoria(),
+  'limpar-auditoria': () => limparFiltrosAuditoria(),
 
   'confirmar-delecao': (el) => confirmarDelecao(el.dataset.colecao, Number(el.dataset.id), el.dataset.nome),
 

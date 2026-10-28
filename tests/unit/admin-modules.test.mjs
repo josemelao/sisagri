@@ -26,6 +26,7 @@ const ESPERADOS = [
   'infoJuridico',
   'infoMunicipio',
   'infoOrgaos',
+  'auditoria',
   'configuracoes',
 ];
 
@@ -53,6 +54,7 @@ test('MODULES registra todos os modulos e os ids de busca', async () => {
   assert.equal(modulos.arquivos.searchId, 'arquivos-search');
   assert.equal(modulos.agendaEventos.searchId, 'agenda-search');
   assert.equal(modulos.infoJuridico.searchId, 'infosimples-search-infoJuridico');
+  assert.equal(modulos.auditoria.searchId, 'auditoria-search');
   assert.equal(modulos.overview.searchId, undefined);
   assert.equal(modulos.configuracoes.searchId, undefined);
 });

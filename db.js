@@ -1280,6 +1280,61 @@ async function _initSupabase(escopo = 'admin') {
 }
 
 /* ============================================================
+   AUDITORIA (fase 2.2) — leitura do historico de alteracoes
+   ------------------------------------------------------------
+   A gravacao e do banco: trigger `auditar_alteracoes` nas 14 tabelas de
+   SUPABASE_TABLES (supabase/migrations/0016_audit_log.sql). Aqui so existe
+   leitura, para a tela "Historico" do admin. Nada de escrita pelo cliente.
+   ============================================================ */
+const AUDITORIA_TABELAS = Object.values(SUPABASE_TABLES);
+const AUDITORIA_LIMITE_PADRAO = 200;
+const AUDITORIA_LIMITE_MAXIMO = 500;
+const AUDITORIA_DATA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Converte `YYYY-MM-DD` no comeco/fim do dia. Valor invalido vira ''. */
+function _limiteDoDiaAuditoria(valor, hora) {
+  const texto = typeof valor === 'string' ? valor.trim() : '';
+  return AUDITORIA_DATA_ISO.test(texto) ? `${texto}T${hora}` : '';
+}
+
+/**
+ * Normaliza os filtros da tela. Tabela fora da allowlist e ignorada (nunca
+ * vira consulta arbitraria) e o limite tem teto fixo.
+ */
+function _normalizarFiltrosAuditoria(filtros = {}) {
+  const dados = filtros && typeof filtros === 'object' ? filtros : {};
+  const tabela = typeof dados.tabela === 'string' ? dados.tabela.trim() : '';
+  const email = typeof dados.email === 'string' ? dados.email.trim() : '';
+  const limitePedido = Number(dados.limite);
+  const limite = Number.isFinite(limitePedido) && limitePedido > 0
+    ? Math.min(Math.trunc(limitePedido), AUDITORIA_LIMITE_MAXIMO)
+    : AUDITORIA_LIMITE_PADRAO;
+
+  return {
+    tabela: AUDITORIA_TABELAS.includes(tabela) ? tabela : '',
+    email,
+    de: _limiteDoDiaAuditoria(dados.de, '00:00:00'),
+    ate: _limiteDoDiaAuditoria(dados.ate, '23:59:59.999'),
+    limite,
+  };
+}
+
+/** Deixa a linha do log previsivel para a tela (campos sempre array). */
+function _normalizarRegistroAuditoria(registro) {
+  const item = registro && typeof registro === 'object' ? registro : {};
+  return {
+    id: item.id ?? null,
+    tabela: item.tabela || '',
+    registro_id: item.registro_id ?? null,
+    operacao: item.operacao || '',
+    campos: Array.isArray(item.campos) ? item.campos.map(String) : [],
+    rotulo: item.rotulo || '',
+    usuario_email: item.usuario_email || '',
+    em: item.em || '',
+  };
+}
+
+/* ============================================================
    API PÚBLICA — usada pelo script.js e admin.js
    ============================================================ */
 const DB = {
@@ -1545,6 +1600,57 @@ const DB = {
   /** Retorna o banco completo (para exportação) */
   exportAll() {
     return JSON.parse(JSON.stringify(_db));
+  },
+
+  /* ---- Fase 2.2: historico de alteracoes (somente leitura) ---- */
+  auditoria: {
+    /** Tabelas auditadas pelo trigger, na ordem de SUPABASE_TABLES. */
+    tabelas() {
+      return AUDITORIA_TABELAS.slice();
+    },
+
+    /**
+     * Le o log de auditoria. Nunca lanca: devolve `{ ok, itens, erro }` para a
+     * tela mostrar o motivo sem derrubar o painel.
+     */
+    async listar(filtros = {}) {
+      const params = _normalizarFiltrosAuditoria(filtros);
+      if (!_sb) {
+        return {
+          ok: false,
+          itens: [],
+          erro: 'Supabase indisponivel: o historico vem do banco.',
+        };
+      }
+
+      try {
+        let consulta = _sb
+          .from('audit_log')
+          .select('id, tabela, registro_id, operacao, campos, rotulo, usuario_email, em')
+          .order('em', { ascending: false })
+          .limit(params.limite);
+
+        if (params.tabela) consulta = consulta.eq('tabela', params.tabela);
+        if (params.email) consulta = consulta.ilike('usuario_email', `%${params.email}%`);
+        if (params.de) consulta = consulta.gte('em', params.de);
+        if (params.ate) consulta = consulta.lte('em', params.ate);
+
+        const { data, error } = await consulta;
+        if (error) throw error;
+
+        return {
+          ok: true,
+          itens: (Array.isArray(data) ? data : []).map(_normalizarRegistroAuditoria),
+          erro: '',
+        };
+      } catch (e) {
+        return {
+          ok: false,
+          itens: [],
+          erro: e?.message || 'Falha ao carregar o historico.',
+        };
+      }
+    },
   },
 
   getLayoutConfig() {

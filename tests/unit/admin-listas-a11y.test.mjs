@@ -1,7 +1,7 @@
 /**
  * Bloco 12 — T12.5: acessibilidade das listas do admin.
  *
- * Trava, para os 13 modulos (14 tabelas, porque Informacoes tem duas):
+ * Trava, para os 14 modulos (15 tabelas, porque Informacoes tem duas):
  *   - busca com nome acessivel (`aria-label`);
  *   - contador e indicador de pagina em regiao viva (`role="status"`);
  *   - botoes de paginacao com rotulo que inclui o modulo;
@@ -111,6 +111,13 @@ const LISTAS = [
     secao: 'section-infoOrgaos',
     busca: 'orgaos-search',
     render: (h) => h.get('renderInfoOrgaos')(),
+  },
+  {
+    nome: 'Histórico',
+    colecao: 'auditoria',
+    secao: 'section-auditoria',
+    busca: 'auditoria-search',
+    render: (h) => h.get('renderAuditoria')(),
   },
 ];
 

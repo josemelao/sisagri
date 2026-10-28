@@ -47,6 +47,8 @@ Postgres em **2026-10-19**, e não foram executados contra produção.
 | `migrations/0012_sync_identity_sequences.sql` | Bloco 8 (T8.3): sincroniza as sequences de identity das 14 tabelas de conteúdo | **Aplicada em produção** |
 | `migrations/0013_replace_collection.sql` | Bloco 8 (T8.4): RPC `replace_collection` (transação única, allowlist de tabelas, `security invoker`) | **Aplicada em produção** |
 | `migrations/0014_updated_at.sql` | Bloco 8 (T8.5): `updated_at` + trigger nas 14 tabelas de conteúdo | **Aplicada em produção** |
+| `migrations/0016_audit_log.sql` | Fase 2.2: `audit_log` + trigger `auditar_alteracoes` nas 14 tabelas (so nomes de campos e rotulo, nunca valores) | **Aplicada no projeto de teste em 2026-10-28** |
+| `tests/08_audit_log.sql` | Fase 2.2: 7 verificacoes (estrutura, indices, RLS, privilegios, triggers, privacidade, retencao) | Sim - **transacao revertida** |
 | `tests/00a_seed_auth.sql` | contas de teste do T6.5 (rodar antes da `0002`) | Só projeto de teste |
 | `tests/00b_seed_dados.sql` | papel servidor, buckets e seed do T6.5 (rodar após a `0007`) | Só projeto de teste |
 | `tests/01_anon_policy.sql` | 4 consultas de verificação de política anon | Sim — **só leitura** |
@@ -469,3 +471,24 @@ Resultado em producao (2026-10-26): as tres primeiras devolveram **401**
 
 Essas quatro provas sao o gate manual depois da migration. O e2e do app nao
 substitui o probe direto: ele so confirma que o cliente pede as colunas certas.
+
+## Fase 2.2 - historico de alteracoes
+
+A `0016_audit_log.sql` cria `public.audit_log` e o trigger `auditar_alteracoes`
+nas 14 tabelas de conteudo. Regras que nao devem ser afrouxadas:
+
+- o log guarda **nomes de campos** (`campos text[]`) e um rotulo (`titulo` >
+  `nome` > `assunto`), nunca valores - por isso nao ha CPF, telefone, chassi nem
+  RENAVAM no historico;
+- `anon` nao le nem escreve; `authenticated` le apenas com `pode_editar()`;
+  `INSERT` so acontece pela funcao `SECURITY DEFINER` do trigger;
+- se a auditoria falhar, a gravacao do painel continua (`raise warning`).
+
+Retencao (12 meses por padrao), execucao manual e restrita a `is_admin()`:
+
+    select public.limpar_audit_log();    -- apaga o que passou de 12 meses
+    select public.limpar_audit_log(24);  -- ou outro prazo, em meses
+
+O historico comeca vazio na data da migration: nada do que ja existia e
+retroativamente registrado.
+
